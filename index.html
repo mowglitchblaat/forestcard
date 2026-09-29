@@ -125,9 +125,10 @@ async function aCartes(){
   <h3>Ajouter une version alternative</h3>
   <form class="f" id="fv"><select name="carte">${opts(cartes)}</select><input name="nom" placeholder="Nom (ex : Alt 1)" required>
    <input name="poids" type="number" value="10" title="Taux d'apparition (Standard = 100)"><input name="file" type="file" accept="image/*" required><button>Ajouter la version</button></form>
-  <h3>Cartes (${cartes.length})</h3><table><tr><th>Nom</th><th>Type</th><th>Rareté</th><th>Collection</th><th>Versions</th><th>Publiée</th></tr>
+  <h3>Cartes (${cartes.length})</h3><table><tr><th>Nom</th><th>Type</th><th>Rareté</th><th>Collection</th><th>Versions</th><th>Publiée</th><th></th></tr>
   ${cartes.map(c=>`<tr><td>${esc(c.nom)}</td><td>${c.type}</td><td>${esc(c.raretes.nom)}</td><td>${esc(c.collections?.nom||'Commune')}</td><td>${c.variantes_carte.length}</td>
-  <td><button class="sec" data-a="${c.id}" data-v="${c.actif}">${c.actif?'<span class="ok">Oui</span>':'<span class="ko">Non</span>'}</button></td></tr>`).join('')}</table>`;
+  <td><button class="sec" data-a="${c.id}" data-v="${c.actif}">${c.actif?'<span class="ok">Oui</span>':'<span class="ko">Non</span>'}</button></td>
+  <td><button class="sec" data-del="${c.id}" data-nom="${esc(c.nom)}" title="Supprimer cette carte">🗑️</button></td></tr>`).join('')}</table>`;
   $('#fc').onsubmit=async e=>{e.preventDefault();const f=e.target,v=n=>f[n].value;
     try{const row={nom:v('nom'),type:v('type'),collection_id:v('col')||null,rarete_id:+v('rar'),atq:v('atq')===''?null:+v('atq'),pv:v('pv')===''?null:+v('pv'),
       description:v('desc')||null,actif:f.actif.checked,ultime:jsonOf(v('ultime')),passif:jsonOf(v('passif')),effet:jsonOf(v('effet'))};
@@ -140,6 +141,11 @@ async function aCartes(){
      await q(sb.from('variantes_carte').insert({carte_id:+f.carte.value,nom:f.nom.value,image_path:path,poids:+f.poids.value}));aCartes();}catch(x){}};
   $('#sub').querySelectorAll('button[data-a]').forEach(b=>b.onclick=async()=>{
     await q(sb.from('cartes').update({actif:b.dataset.v!=='true'}).eq('id',b.dataset.a));aCartes();});
+  $('#sub').querySelectorAll('button[data-del]').forEach(b=>b.onclick=async()=>{
+    if(!confirm('Supprimer définitivement « '+b.dataset.nom+' » ?\nElle disparaîtra aussi des collections et des decks des joueurs.'))return;
+    const chemins=await q(sb.rpc('supprimer_carte',{p_carte_id:+b.dataset.del}));
+    if(chemins&&chemins.length){try{await sb.storage.from('cartes').remove(chemins)}catch(x){}}
+    aCartes();});
 }
 
 async function aRaretes(){
