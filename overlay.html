@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8"><title>Overlay boosters</title>
+<style>
+html,body{margin:0;height:100%;overflow:hidden;background:transparent;font-family:system-ui,sans-serif;color:#fff}
+#box{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3vh;opacity:0;transition:opacity .6s}
+#box.on{opacity:1}
+#titre{font-size:4vh;font-weight:700;text-shadow:0 0 12px #000,0 0 4px #000;text-align:center}
+#cartes{display:flex;flex-wrap:wrap;gap:1.5vw;justify-content:center;max-width:94vw}
+.c{width:15vw;aspect-ratio:5/7;perspective:1000px}
+.in{position:relative;width:100%;height:100%;transition:transform .8s;transform-style:preserve-3d}
+.c.flip .in{transform:rotateY(180deg)}
+.f,.b{position:absolute;inset:0;backface-visibility:hidden;border-radius:12px;overflow:hidden}
+.b{background:linear-gradient(135deg,#4c1d95,#1e1b4b);border:4px solid #a78bfa;display:flex;align-items:center;justify-content:center;font-size:8vh}
+.f{transform:rotateY(180deg);border:4px solid var(--col);box-shadow:0 0 25px var(--col);background:#111;display:flex;align-items:center;justify-content:center;text-align:center}
+.f img{width:100%;height:100%;object-fit:cover}
+.f span{padding:8px;font-weight:700}
+</style></head><body>
+<div id="box"><div id="titre"></div><div id="cartes"></div></div>
+<script>
+const WS_URL='ws://127.0.0.1:8080/';
+const STORAGE='https://bjsvqikjnvaomyoifiml.supabase.co/storage/v1/object/public/cartes/';
+const box=document.getElementById('box'),titre=document.getElementById('titre'),zone=document.getElementById('cartes');
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+const queue=[];let busy=false;
+
+function connect(){
+  const ws=new WebSocket(WS_URL);
+  ws.onmessage=e=>{let d;try{d=JSON.parse(e.data)}catch(x){return}
+    if(d&&Array.isArray(d.cartes)){queue.push(d);run()}};
+  ws.onclose=()=>setTimeout(connect,3000);
+  ws.onerror=()=>ws.close();
+}
+async function run(){
+  if(busy)return;busy=true;
+  while(queue.length){
+    const d=queue.shift();
+    titre.textContent=`${d.pseudo} ouvre un ${d.booster} !`;
+    zone.innerHTML='';
+    const els=d.cartes.map(c=>{
+      const el=document.createElement('div');el.className='c';
+      el.style.setProperty('--col',c.couleur||'#fff');
+      el.innerHTML='<div class="in"><div class="b">?</div><div class="f"></div></div>';
+      const f=el.querySelector('.f');
+      if(c.image){const i=new Image();i.src=STORAGE+c.image;f.appendChild(i)}
+      else f.innerHTML='<span></span>',f.firstChild.textContent=c.carte;
+      zone.appendChild(el);return el;
+    });
+    box.classList.add('on');
+    await wait(2000);
+    for(const el of els){el.classList.add('flip');await wait(1200)}
+    await wait(6000);
+    box.classList.remove('on');
+    await wait(800);
+  }
+  busy=false;
+}
+connect();
+// Test : ajoute ?test à l'adresse de la page pour voir une ouverture factice
+if(location.search.includes('test')){
+  setTimeout(()=>{queue.push({pseudo:'Test',booster:'Booster de test',cartes:
+    [['Carte A','#9ca3af'],['Carte B','#3b82f6'],['Carte C','#f59e0b'],['Carte D','#9ca3af'],['Carte E','#3b82f6']]
+    .map(x=>({carte:x[0],couleur:x[1]}))});run()},1000);
+}
+</script></body></html>
