@@ -14,8 +14,10 @@ html,body{margin:0;height:100%;overflow:hidden;background:transparent;font-famil
 .f{transform:rotateY(180deg);border:4px solid var(--col);box-shadow:0 0 25px var(--col);background:#111;display:flex;align-items:center;justify-content:center;text-align:center}
 .f img{width:100%;height:100%;object-fit:cover}
 .f span{padding:8px;font-weight:700}
+#dbg{position:absolute;left:10px;bottom:10px;max-width:90vw;padding:8px 12px;background:rgba(0,0,0,.75);border-radius:8px;font:14px/1.4 monospace;white-space:pre-wrap;z-index:9;display:none}
 </style></head><body>
 <div id="box"><div id="titre"></div><div id="cartes"></div></div>
+<div id="dbg"></div>
 <script>
 const WS_URL='ws://127.0.0.1:8080/';
 const STORAGE='https://bjsvqikjnvaomyoifiml.supabase.co/storage/v1/object/public/cartes/';
@@ -23,11 +25,35 @@ const box=document.getElementById('box'),titre=document.getElementById('titre'),
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 const queue=[];let busy=false;
 
+// Mode debug : ajoute ?debug à l'adresse pour afficher l'état de la connexion
+const DEBUG=location.search.includes('debug');
+const dbg=document.getElementById('dbg');
+let dbgEtat='connexion...',dbgMsg='(aucun message reçu)';
+function majDbg(){if(!DEBUG)return;dbg.style.display='block';dbg.textContent='WebSocket : '+dbgEtat+'\nDernier message : '+dbgMsg}
+majDbg();
+
+// Accepte le message tel quel, en texte, dans un tableau, ou emballé dans un objet
+function extraire(d){
+  if(typeof d==='string'){try{d=JSON.parse(d)}catch(x){return null}}
+  if(Array.isArray(d))d=d[0];
+  if(d&&d.ouvrir_booster)d=d.ouvrir_booster;
+  if(typeof d==='string'){try{d=JSON.parse(d)}catch(x){return null}}
+  return (d&&Array.isArray(d.cartes))?d:null;
+}
+
 function connect(){
+  dbgEtat='connexion...';majDbg();
   const ws=new WebSocket(WS_URL);
-  ws.onmessage=e=>{let d;try{d=JSON.parse(e.data)}catch(x){return}
-    if(d&&Array.isArray(d.cartes)){queue.push(d);run()}};
-  ws.onclose=()=>setTimeout(connect,3000);
+  ws.onopen=()=>{dbgEtat='connecté';majDbg()};
+  ws.onmessage=e=>{
+    console.log('Message reçu :',e.data);
+    dbgMsg=String(e.data).slice(0,300);majDbg();
+    let d;try{d=JSON.parse(e.data)}catch(x){return}
+    const r=extraire(d);
+    if(r){queue.push(r);run()}
+    else{dbgMsg='Format non reconnu (pas de "cartes") : '+dbgMsg;majDbg()}
+  };
+  ws.onclose=()=>{dbgEtat='déconnecté, nouvel essai...';majDbg();setTimeout(connect,3000)};
   ws.onerror=()=>ws.close();
 }
 async function run(){
