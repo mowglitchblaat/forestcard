@@ -36,6 +36,8 @@ majDbg();
 function extraire(d){
   if(typeof d==='string'){try{d=JSON.parse(d)}catch(x){return null}}
   if(Array.isArray(d))d=d[0];
+  if(d&&d.data&&!d.cartes)d=d.data;
+  if(typeof d==='string'){try{d=JSON.parse(d)}catch(x){return null}}
   if(d&&d.ouvrir_booster)d=d.ouvrir_booster;
   if(typeof d==='string'){try{d=JSON.parse(d)}catch(x){return null}}
   return (d&&Array.isArray(d.cartes))?d:null;
@@ -44,7 +46,10 @@ function extraire(d){
 function connect(){
   dbgEtat='connexion...';majDbg();
   const ws=new WebSocket(WS_URL);
-  ws.onopen=()=>{dbgEtat='connecté';majDbg()};
+  ws.onopen=()=>{
+    dbgEtat='connecté (abonnement envoyé)';majDbg();
+    ws.send(JSON.stringify({request:'Subscribe',id:'sub-custom',events:{General:['Custom']}}));
+  };
   ws.onmessage=e=>{
     console.log('Message reçu :',e.data);
     dbgMsg=String(e.data).slice(0,300);majDbg();
