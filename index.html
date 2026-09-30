@@ -16,6 +16,10 @@ button{cursor:pointer;background:#7c3aed;border-color:#7c3aed}button.sec{backgro
 .cw{display:flex;flex-direction:column;gap:12px}
 .cimg{width:100%;display:block;filter:drop-shadow(0 0 3px var(--g)) drop-shadow(0 0 12px var(--g))}
 .inf{font-size:11px;color:#6b6b78;text-align:center;line-height:1.4;border-top:1px dashed #2c2c38;padding-top:6px}
+.dbar{position:sticky;top:0;z-index:5;background:#1d1d27;padding:10px 14px;border-radius:10px;margin:8px 0 14px;display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;border:1px solid #2c2c38}
+button:disabled{opacity:.4;cursor:not-allowed}
+.cimg.in{filter:drop-shadow(0 0 3px var(--g)) drop-shadow(0 0 12px var(--g)) drop-shadow(0 0 24px var(--g))}
+.cw button{font-size:13px}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
 form.f{display:grid;gap:8px;max-width:520px;background:#1d1d27;padding:14px;border-radius:10px;margin-bottom:20px}
 table{border-collapse:collapse;width:100%}td,th{padding:6px;border-bottom:1px solid #333;text-align:left}
@@ -59,11 +63,42 @@ function show(t){
 }
 
 /* ---------- Collection ---------- */
+let deck=null,typeOf={},flt='tout',collData=[];
+const TYPES={combattant:'Combattants',magie:'Magies',piege:'Pièges'};
+async function loadColl(){
+  collData=await q(sb.from('collection_joueur').select('quantite,variantes_carte(nom,image_path,cartes(id,nom,type,raretes(nom,couleur)))').eq('joueur_id',user.id));
+  typeOf={};collData.forEach(x=>{const c=x.variantes_carte.cartes;typeOf[c.id]=c.type});
+  if(!deck){const dk=await q(sb.from('deck').select('carte_id').eq('joueur_id',user.id));deck=new Set(dk.map(x=>x.carte_id))}
+}
+function updBar(){
+  const n=t=>[...deck].filter(i=>typeOf[i]==t).length,ok=deck.size>=9&&deck.size<=10&&n('combattant')>=3&&n('magie')>=3&&n('piege')>=3;
+  $('#dbar').innerHTML=`<span><b>${deck.size}/10</b> — combattants ${n('combattant')}/3 · magies ${n('magie')}/3 · pièges ${n('piege')}/3</span><button id="sv" ${ok?'':'disabled'} title="9 ou 10 cartes, au moins 3 de chaque type">Enregistrer le deck</button>`;
+  $('#sv').onclick=async()=>{
+    const {error}=await sb.rpc('enregistrer_deck',{p_cartes:[...deck]});
+    alert(error?({DECK_TAILLE_INVALIDE:'Il faut 9 ou 10 cartes.',DECK_COMPOSITION_INVALIDE:'Il faut au moins 3 cartes de chaque type.'}[error.message]||error.message):'Deck enregistré !');};
+}
+function cardHTML(x){
+  const v=x.variantes_carte,c=v.cartes,on=deck.has(c.id);
+  return `<div class="cw">${v.image_path?`<img class="cimg${on?' in':''}" style="--g:${esc(c.raretes.couleur)}" src="${img(v.image_path)}">`:''}<div class="inf">${esc(c.nom)} · ${esc(c.type)} · ${esc(c.raretes.nom)}<br>${esc(v.nom)} ×${x.quantite}</div><button class="${on?'sec':''}" data-c="${c.id}">${on?'✓ Retirer du deck':'Ajouter au deck'}</button></div>`;
+}
+function bindToggle(redraw){
+  main.querySelectorAll('button[data-c]').forEach(b=>b.onclick=()=>{const id=+b.dataset.c;
+    if(deck.has(id))deck.delete(id);
+    else if(deck.size>=10){alert('Deck complet : 10 cartes maximum.');return}
+    else deck.add(id);
+    redraw();});
+}
 async function vCollection(){
-  const d=await q(sb.from('collection_joueur').select('quantite,variantes_carte(nom,image_path,cartes(nom,type,raretes(nom,couleur)))').eq('joueur_id',user.id));
-  main.innerHTML=d.length?'<div class="cgrid">'+d.map(x=>{const v=x.variantes_carte,c=v.cartes;
-    return `<div class="cw">${v.image_path?`<img class="cimg" style="--g:${esc(c.raretes.couleur)}" src="${img(v.image_path)}">`:''}<div class="inf">${esc(c.nom)} · ${esc(c.type)} · ${esc(c.raretes.nom)}<br>${esc(v.nom)} ×${x.quantite}</div></div>`}).join('')+'</div>'
-    :'<p>Tu n\'as encore aucune carte. Achète un booster dans la boutique, puis ouvre-le en live avec !booster.</p>';
+  await loadColl();
+  if(!collData.length){main.innerHTML='<p>Tu n\'as encore aucune carte. Achète un booster dans la boutique, puis ouvre-le en live avec !booster.</p>';return}
+  main.innerHTML='<div id="dbar" class="dbar"></div><div class="row" id="flt"></div><div class="cgrid" id="gr"></div>';
+  drawColl();
+}
+function drawColl(){
+  $('#flt').innerHTML=[['tout','Tout'],...Object.entries(TYPES)].map(([k,v])=>`<button class="${k==flt?'on':'sec'}" data-f="${k}">${v}</button>`).join('');
+  $('#flt').querySelectorAll('button').forEach(b=>b.onclick=()=>{flt=b.dataset.f;drawColl()});
+  $('#gr').innerHTML=collData.filter(x=>flt=='tout'||x.variantes_carte.cartes.type==flt).map(cardHTML).join('');
+  bindToggle(drawColl);updBar();
 }
 
 /* ---------- Boutique ---------- */
@@ -80,22 +115,16 @@ async function vBoutique(){
 
 /* ---------- Deck ---------- */
 async function vDeck(){
-  const [c,dk]=await Promise.all([q(sb.from('collection_joueur').select('variantes_carte(cartes(id,nom,type))').eq('joueur_id',user.id)),
-    q(sb.from('deck').select('carte_id').eq('joueur_id',user.id))]);
-  const map=new Map();c.forEach(x=>{const k=x.variantes_carte.cartes;map.set(k.id,k)});
-  const sel=new Set(dk.map(x=>x.carte_id)),L=[...map.values()];
-  const NOM={combattant:'Combattants',magie:'Magies',piege:'Pièges'};
-  main.innerHTML=`<p>Deck : 9 ou 10 cartes différentes, dont au moins 3 combattants, 3 magies et 3 pièges.</p><p id="cnt"></p>`+
-   Object.keys(NOM).map(t=>`<h3>${NOM[t]}</h3><div class="row">${L.filter(x=>x.type==t).map(x=>`<label><input type="checkbox" value="${x.id}" data-t="${t}" ${sel.has(x.id)?'checked':''}> ${esc(x.nom)}</label>`).join('')||'<small>Aucune</small>'}</div>`).join('')+
-   '<button id="sv">Enregistrer le deck</button>';
-  const boxes=[...main.querySelectorAll('input[type=checkbox]')];
-  const upd=()=>{const on=boxes.filter(b=>b.checked),n=t=>on.filter(b=>b.dataset.t==t).length;
-    $('#cnt').innerHTML=`<b>${on.length}/10</b> — combattants ${n('combattant')}/3 · magies ${n('magie')}/3 · pièges ${n('piege')}/3`};
-  boxes.forEach(b=>b.onchange=upd);upd();
-  $('#sv').onclick=async()=>{
-    const ids=boxes.filter(b=>b.checked).map(b=>+b.value);
-    const {error}=await sb.rpc('enregistrer_deck',{p_cartes:ids});
-    alert(error?({DECK_TAILLE_INVALIDE:'Il faut 9 ou 10 cartes.',DECK_COMPOSITION_INVALIDE:'Il faut au moins 3 cartes de chaque type.'}[error.message]||error.message):'Deck enregistré !');};
+  await loadColl();
+  main.innerHTML='<div id="dbar" class="dbar"></div><div class="cgrid" id="gr"></div>';
+  drawDeck();
+}
+function drawDeck(){
+  const seen=new Set(),ord={combattant:0,magie:1,piege:2};
+  const L=collData.filter(x=>{const i=x.variantes_carte.cartes.id;if(!deck.has(i)||seen.has(i))return false;seen.add(i);return true})
+    .sort((a,b)=>ord[a.variantes_carte.cartes.type]-ord[b.variantes_carte.cartes.type]);
+  $('#gr').innerHTML=L.length?L.map(cardHTML).join(''):'<p>Ton deck est vide. Ajoute des cartes depuis « Ma collection ».</p>';
+  bindToggle(drawDeck);updBar();
 }
 
 /* ---------- Admin ---------- */
