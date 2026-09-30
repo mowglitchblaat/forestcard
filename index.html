@@ -129,10 +129,10 @@ function drawDeck(){
 
 /* ---------- Admin ---------- */
 async function vAdmin(){
-  const S={cartes:'Cartes',collections:'Collections',raretes:'Raretés',cadeaux:'Cadeaux'};
+  const S={cartes:'Cartes',collections:'Collections',boosters:'Boosters',raretes:'Raretés',cadeaux:'Cadeaux'};
   main.innerHTML=`<div class="row">${Object.entries(S).map(([k,v])=>`<button class="${k==sub?'on':'sec'}" data-s="${k}">${v}</button>`).join('')}</div><div id="sub"></div>`;
   main.querySelectorAll('button[data-s]').forEach(b=>b.onclick=()=>{sub=b.dataset.s;vAdmin()});
-  ({cartes:aCartes,collections:aCollections,raretes:aRaretes,cadeaux:aCadeaux})[sub]();
+  ({cartes:aCartes,collections:aCollections,boosters:aBoosters,raretes:aRaretes,cadeaux:aCadeaux})[sub]();
 }
 async function upload(file){
   const path=crypto.randomUUID()+'.'+(file.name.split('.').pop()||'png');
@@ -235,6 +235,38 @@ async function aCollections(){
       await q(tr.dataset.id=='new'?sb.from('collections').insert({nom}):sb.from('collections').update({nom}).eq('id',tr.dataset.id));aCollections();};
     if(b[1])b[1].onclick=async()=>{if(!confirm('Supprimer cette collection ?'))return;
       await q(sb.from('collections').delete().eq('id',tr.dataset.id));aCollections();};});
+}
+
+async function aBoosters(){
+  const [b,col,rar,bc,bm]=await Promise.all([q(sb.from('types_boosters').select('*').order('id')),q(sb.from('collections').select('*').order('nom')),
+    q(sb.from('raretes').select('*').order('ordre')),q(sb.from('boosters_collections').select('*')),q(sb.from('boosters_modifs').select('*'))]);
+  const form=x=>{
+    const cs=new Set(bc.filter(y=>x&&y.type_id==x.id).map(y=>y.collection_id)),ms={};
+    bm.filter(y=>x&&y.type_id==x.id).forEach(y=>ms[y.rarete_id]=y.modif);
+    return `<form class="f" data-id="${x?x.id:'new'}"><b>${x?esc(x.nom):'Nouveau booster'}</b>
+    <input name="nom" value="${esc(x?x.nom:'')}" placeholder="Nom du booster" required>
+    <div class="row"><label><small>Prix</small><br><input name="prix" type="number" min="0" value="${x?x.prix:100}" style="width:90px"></label>
+     <label><small>Nb de cartes</small><br><input name="nb" type="number" min="1" value="${x?x.nb_cartes:5}" style="width:90px"></label>
+     <label><input type="checkbox" name="actif" ${!x||x.actif?'checked':''}> En vente</label></div>
+    <small>Collections présentes (les cartes communes sont toujours incluses)</small>
+    <div class="row">${col.map(c=>`<label><input type="checkbox" name="c${c.id}" ${cs.has(c.id)?'checked':''}> ${esc(c.nom)}</label>`).join('')||'<small>Aucune collection</small>'}</div>
+    <small>Modificateur de drop : s'ajoute au poids de la rareté pour ce booster (négatif possible)</small>
+    <div class="row">${rar.map(r=>`<label><small>${esc(r.nom)} (poids ${r.poids})</small><br><input name="m${r.id}" type="number" value="${ms[r.id]||0}" style="width:90px"></label>`).join('')}</div>
+    <div class="row"><button>${x?'Enregistrer':'Créer le booster'}</button>${x?`<button type="button" class="sec" data-del="${x.id}" data-nom="${esc(x.nom)}">🗑️ Supprimer</button>`:''}</div></form>`};
+  $('#sub').innerHTML=form(null)+'<h3>Boosters existants ('+b.length+')</h3>'+b.map(form).join('');
+  $('#sub').querySelectorAll('form').forEach(f=>f.onsubmit=async e=>{e.preventDefault();
+    try{const row={nom:f.nom.value,prix:+f.prix.value,nb_cartes:+f.nb.value,actif:f.actif.checked};let id=f.dataset.id;
+     if(id=='new')id=(await q(sb.from('types_boosters').insert(row).select('id').single())).id;
+     else await q(sb.from('types_boosters').update(row).eq('id',id));
+     id=+id;
+     await q(sb.from('boosters_collections').delete().eq('type_id',id));
+     const cs=col.filter(c=>f['c'+c.id].checked).map(c=>({type_id:id,collection_id:c.id}));
+     if(cs.length)await q(sb.from('boosters_collections').insert(cs));
+     await q(sb.from('boosters_modifs').upsert(rar.map(r=>({type_id:id,rarete_id:r.id,modif:+f['m'+r.id].value||0}))));
+     aBoosters();}catch(x){}});
+  $('#sub').querySelectorAll('button[data-del]').forEach(x=>x.onclick=async()=>{
+    if(!confirm('Supprimer « '+x.dataset.nom+' » ?\nLes boosters non ouverts de ce type chez les joueurs seront perdus.\n(Pour seulement le retirer de la boutique, décoche « En vente ».)'))return;
+    await q(sb.from('types_boosters').delete().eq('id',x.dataset.del));aBoosters();});
 }
 
 async function aRaretes(){
