@@ -63,10 +63,11 @@ function show(t){
 }
 
 /* ---------- Collection ---------- */
-let deck=null,typeOf={},flt='tout',collData=[];
+let deck=null,typeOf={},flt='tout',fcol='tout',collData=[];
+const cn=x=>x.variantes_carte.cartes.collections?.nom||'Communes';
 const TYPES={combattant:'Combattants',magie:'Magies',piege:'Pièges'};
 async function loadColl(){
-  collData=await q(sb.from('collection_joueur').select('quantite,variantes_carte(nom,image_path,cartes(id,nom,type,raretes(nom,couleur)))').eq('joueur_id',user.id));
+  collData=await q(sb.from('collection_joueur').select('quantite,variantes_carte(nom,image_path,cartes(id,nom,type,collections(nom),raretes(nom,couleur)))').eq('joueur_id',user.id));
   typeOf={};collData.forEach(x=>{const c=x.variantes_carte.cartes;typeOf[c.id]=c.type});
   if(!deck){const dk=await q(sb.from('deck').select('carte_id').eq('joueur_id',user.id));deck=new Set(dk.map(x=>x.carte_id))}
 }
@@ -91,13 +92,16 @@ function bindToggle(redraw){
 async function vCollection(){
   await loadColl();
   if(!collData.length){main.innerHTML='<p>Tu n\'as encore aucune carte. Achète un booster dans la boutique, puis ouvre-le en live avec !booster.</p>';return}
-  main.innerHTML='<div id="dbar" class="dbar"></div><div class="row" id="flt"></div><div class="cgrid" id="gr"></div>';
+  main.innerHTML='<div id="dbar" class="dbar"></div><div class="row" id="flt"></div><div class="row" id="fcol"></div><div class="cgrid" id="gr"></div>';
   drawColl();
 }
 function drawColl(){
   $('#flt').innerHTML=[['tout','Tout'],...Object.entries(TYPES)].map(([k,v])=>`<button class="${k==flt?'on':'sec'}" data-f="${k}">${v}</button>`).join('');
   $('#flt').querySelectorAll('button').forEach(b=>b.onclick=()=>{flt=b.dataset.f;drawColl()});
-  $('#gr').innerHTML=collData.filter(x=>flt=='tout'||x.variantes_carte.cartes.type==flt).map(cardHTML).join('');
+  const names=[...new Set(collData.map(cn))].sort();
+  $('#fcol').innerHTML=[['tout','Toutes les collections'],...names.map(n=>[n,n])].map(([k,v])=>`<button class="${k==fcol?'on':'sec'}" data-k="${esc(k)}">${esc(v)}</button>`).join('');
+  $('#fcol').querySelectorAll('button').forEach(b=>b.onclick=()=>{fcol=b.dataset.k;drawColl()});
+  $('#gr').innerHTML=collData.filter(x=>(flt=='tout'||x.variantes_carte.cartes.type==flt)&&(fcol=='tout'||cn(x)==fcol)).map(cardHTML).join('');
   bindToggle(drawColl);updBar();
 }
 
@@ -191,8 +195,8 @@ async function aCartes(){
   <h3>Ajouter une version alternative</h3>
   <form class="f" id="fv"><select name="carte">${opts(cartes)}</select><input name="nom" placeholder="Nom (ex : Alt 1)" required>
    <input name="poids" type="number" value="10" title="Taux d'apparition (Standard = 100)"><input name="file" type="file" accept="image/*" required><button>Ajouter la version</button></form>
-  <h3>Cartes (${cartes.length})</h3><table><tr><th>Nom</th><th>Type</th><th>Rareté</th><th>Collection</th><th>Versions</th><th>Publiée</th><th></th></tr>
-  ${cartes.map(c=>`<tr><td>${esc(c.nom)}</td><td>${c.type}</td><td>${esc(c.raretes.nom)}</td><td>${esc(c.collections?.nom||'Commune')}</td><td>${c.variantes_carte.length}</td>
+  <h3>Cartes (${cartes.length})</h3><div class="row"><select id="fcolad"><option value="">Toutes les collections</option>${col.map(c=>`<option>${esc(c.nom)}</option>`).join('')}<option>Commune</option></select></div><table><tr><th>Nom</th><th>Type</th><th>Rareté</th><th>Collection</th><th>Versions</th><th>Publiée</th><th></th></tr>
+  ${cartes.map(c=>`<tr data-col="${esc(c.collections?.nom||'Commune')}"><td>${esc(c.nom)}</td><td>${c.type}</td><td>${esc(c.raretes.nom)}</td><td>${esc(c.collections?.nom||'Commune')}</td><td>${c.variantes_carte.length}</td>
   <td><button class="sec" data-a="${c.id}" data-v="${c.actif}">${c.actif?'<span class="ok">Oui</span>':'<span class="ko">Non</span>'}</button></td>
   <td><button class="sec" data-del="${c.id}" data-nom="${esc(c.nom)}" title="Supprimer cette carte">🗑️</button></td></tr>`).join('')}</table>`;
   const fc=$('#fc');
@@ -201,6 +205,7 @@ async function aCartes(){
     $('#r-stats').style.display=$('#s-comb').style.display=t=='combattant'?'':'none';
     $('#s-mag').style.display=t=='magie'?'':'none';$('#s-pie').style.display=t=='piege'?'':'none'};
   fc.type.onchange=toggle;toggle();
+  $('#fcolad').onchange=e=>{const v=e.target.value;$('#sub').querySelectorAll('tr[data-col]').forEach(tr=>tr.style.display=!v||tr.dataset.col==v?'':'none')};
   fc.onsubmit=async e=>{e.preventDefault();const f=e.target,v=n=>f[n].value,t=v('type');
     try{let ult=null,pas=null,eff=null;
      if(t=='combattant'){ult=B.ult.get();if(ult){if(+f.utours.value)ult.apres_tours=+f.utours.value;if(f.ucarte.checked)ult.sur_carte=true}pas=B.pas.get()}
@@ -226,10 +231,11 @@ async function aCartes(){
 }
 
 async function aCollections(){
-  const c=await q(sb.from('collections').select('*').order('id'));
-  $('#sub').innerHTML=`<table><tr><th>Nom</th><th></th></tr>
-  ${c.map(x=>`<tr data-id="${x.id}"><td><input value="${esc(x.nom)}"></td><td><button>Enregistrer</button> <button class="sec">🗑️</button></td></tr>`).join('')}
-  <tr data-id="new"><td><input placeholder="Nouvelle collection"></td><td><button>Ajouter</button></td></tr></table>`;
+  const [c,cc]=await Promise.all([q(sb.from('collections').select('*').order('id')),q(sb.from('cartes').select('collection_id'))]);
+  const nb=id=>cc.filter(y=>y.collection_id==id).length;
+  $('#sub').innerHTML=`<table><tr><th>Nom</th><th>Cartes</th><th></th></tr>
+  ${c.map(x=>`<tr data-id="${x.id}"><td><input value="${esc(x.nom)}"></td><td>${nb(x.id)}</td><td><button>Enregistrer</button> <button class="sec">🗑️</button></td></tr>`).join('')}
+  <tr data-id="new"><td><input placeholder="Nouvelle collection"></td><td></td><td><button>Ajouter</button></td></tr></table>`;
   $('#sub').querySelectorAll('tr[data-id]').forEach(tr=>{const b=tr.querySelectorAll('button');
     b[0].onclick=async()=>{const nom=tr.querySelector('input').value.trim();if(!nom)return;
       await q(tr.dataset.id=='new'?sb.from('collections').insert({nom}):sb.from('collections').update({nom}).eq('id',tr.dataset.id));aCollections();};
