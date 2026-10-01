@@ -147,7 +147,7 @@ async function upload(file){
 // Paramètres réutilisables : [libellé, 'n' (nombre) ou liste de choix]
 const P={val:['Valeur','n'],u:['Unité',['pts','pct']],tours:['Nb de tours','n'],chance:['Chance (%)','n'],frappes:['Nb de frappes','n'],
  coups:['Nb de coups','n'],cible:['Cible',['soi','adversaire']],carte:['Carte',['magie','piege']],seuil:['Seuil','n'],seuilpv:['Seuil (% PV)','n'],
- cond:['Condition',['pv_max','degats_infliges']],pct:['% PV rendus en plus','n'],val2:['2e valeur','n'],pctatq:["% de l'ATQ infligée volé en PV",'n'],pctpv:['% des PV de la cible perdus par tour','n'],degtour:['Points de dégâts par tour','n']};
+ cond:['Condition',['pv_max','degats_infliges']],pct:['% PV rendus en plus','n'],val2:['2e valeur','n'],pctatq:["% de l'ATQ infligée volé en PV",'n'],pctpv:['% des PV max de la cible perdus par tour','n'],degtour:['Points de dégâts par tour','n']};
 // Chaque effet : [libellé, ...paramètres]
 const PAS={evite_mort:['Évite la mort une fois'],soin_tour:['Se soigne de X chaque tour','val','u'],renvoi:['Renvoie X dégâts reçus','val','u'],
  atq_tours:["Augmente l'ATQ tous les X tours",'tours','val','u'],pv_tours:['Augmente les PV tous les X tours','tours','val','u'],
