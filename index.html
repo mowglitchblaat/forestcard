@@ -24,6 +24,11 @@ button:disabled{opacity:.4;cursor:not-allowed}
 form.f{display:grid;gap:8px;max-width:520px;background:#1d1d27;padding:14px;border-radius:10px;margin-bottom:20px}
 table{border-collapse:collapse;width:100%}td,th{padding:6px;border-bottom:1px solid #333;text-align:left}
 .ok{color:#4ade80}.ko{color:#f87171}
+.stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin:8px 0 22px}
+.stat{background:#1d1d27;border:1px solid #2c2c38;border-radius:10px;padding:12px}
+.stat b{display:block;font-size:26px;margin:2px 0}.stat span{color:#aaa;font-size:13px;display:block}
+.stat.card2{display:flex;gap:12px;align-items:center;grid-column:span 2}
+.stat.card2 img{width:80px;border-radius:4px;filter:drop-shadow(0 0 3px var(--g)) drop-shadow(0 0 10px var(--g))}
 </style></head><body>
 <header><h1>🃏 Jeu de cartes</h1><div id="me"></div></header>
 <nav id="nav"></nav><main id="main"></main>
@@ -35,7 +40,7 @@ const img=p=>p?sb.storage.from('cartes').getPublicUrl(p).data.publicUrl:'';
 async function q(p){const r=await p;if(r.error){alert(r.error.message);throw r.error}return r.data}
 let user,joueur,isAdmin,tab='collection',sub='cartes',B={};
 const opts=(a,l='nom')=>a.map(x=>`<option value="${x.id}">${esc(x[l])}</option>`).join('');
-const TABS={collection:'Ma collection',boutique:'Boutique',deck:'Mon deck'};
+const TABS={collection:'Ma collection',boutique:'Boutique',deck:'Mon deck',profil:'Profils'};
 
 async function init(){
   const {data:{session}}=await sb.auth.getSession();
@@ -59,7 +64,7 @@ function show(t){
   tab=t;const T={...TABS};if(isAdmin)T.admin='⚙️ Admin';
   $('#nav').innerHTML=Object.entries(T).map(([k,v])=>`<button class="${k==t?'on':'sec'}" data-t="${k}">${v}</button>`).join('');
   $('#nav').querySelectorAll('button').forEach(b=>b.onclick=()=>show(b.dataset.t));
-  ({collection:vCollection,boutique:vBoutique,deck:vDeck,admin:vAdmin})[t]();
+  ({collection:vCollection,boutique:vBoutique,deck:vDeck,profil:vProfil,admin:vAdmin})[t]();
 }
 
 /* ---------- Collection ---------- */
@@ -129,6 +134,49 @@ function drawDeck(){
     .sort((a,b)=>ord[a.variantes_carte.cartes.type]-ord[b.variantes_carte.cartes.type]);
   $('#gr').innerHTML=L.length?L.map(cardHTML).join(''):'<p>Ton deck est vide. Ajoute des cartes depuis « Ma collection ».</p>';
   bindToggle(drawDeck);updBar();
+}
+
+/* ---------- Profils (visibles par tous les joueurs connectés) ---------- */
+async function vProfil(id=user.id){
+  const mine=id==user.id;
+  const [rl,rp]=await Promise.all([sb.rpc('liste_profils'),sb.rpc('profil_public',{p_joueur:id})]);
+  if(rl.error||rp.error){main.innerHTML='<p class="ko">Profils indisponibles pour le moment (l\'admin doit d\'abord lancer 05-profil.sql puis 06-profils-publics.sql dans Supabase).</p>';return}
+  if(!rp.data){main.innerHTML='<p>Profil introuvable.</p>';return}
+  const D=rp.data,S=D.stats||{},n=k=>S[k]??0,tot=n('victoires')+n('defaites')+n('nuls');
+  const pct=tot?Math.round(100*n('victoires')/tot)+' %':'—';
+  const st=(l,v,s)=>`<div class="stat"><span>${l}</span><b>${v}</b>${s?`<span>${s}</span>`:''}</div>`;
+  const cardTile=(l,x,u)=>{
+    if(!x)return st(l,'—');
+    return `<div class="stat card2" style="--g:${esc(x.couleur||'#888')}">${x.image_path?`<img src="${img(x.image_path)}">`:''}<div><span>${l}</span><b style="font-size:18px">${esc(x.nom)}</b><span>${x.valeur} ${u}</span></div></div>`};
+  let coll='';
+  if(mine){
+    await loadColl();
+    const rt=await sb.from('cartes').select('id',{count:'exact',head:true}).eq('actif',true);
+    const mc=new Map();collData.forEach(x=>{const c=x.variantes_carte.cartes;mc.set(c.id,c)});
+    const copies=collData.reduce((a,x)=>a+x.quantite,0),byR={};
+    mc.forEach(c=>{const r=c.raretes.nom;byR[r]=(byR[r]||0)+1});
+    coll=`<h3>Collection</h3><div class="stats">
+   ${st('Cartes différentes',mc.size+(rt.count!=null?' / '+rt.count:''))}${st('Cartes au total',copies,'doublons compris')}
+   ${st('Boosters ouverts',n('boosters_ouverts'))}
+   ${Object.entries(byR).map(([k,v])=>st(esc(k),v,'cartes différentes')).join('')}</div>`;
+  }
+  const rank=rl.data.slice(0,50).map((x,i)=>`<tr><td>${i+1}</td><td><button class="${x.joueur_id==id?'on':'sec'}" data-p="${x.joueur_id}">${esc(x.pseudo)}${x.joueur_id==user.id?' (moi)':''}</button></td><td>${x.victoires}</td><td>${x.defaites}</td><td>${x.nuls}</td></tr>`).join('');
+  main.innerHTML=`<div class="row"><h3 style="margin:0">${mine?'Mon profil':'Profil de '+esc(D.pseudo)}</h3>${mine?'':`<button class="sec" data-p="${user.id}">← Mon profil</button>`}</div>
+  <h3>Combats</h3><div class="stats">
+   ${st('Victoires',n('victoires'))}${st('Défaites',n('defaites'))}${st('Nuls',n('nuls'))}
+   ${st('% de victoires',pct,tot+' combat'+(tot>1?'s':''))}
+   ${st('Meilleure série de victoires',n('meilleure_serie'))}${st('Série en cours',n('serie_actuelle'))}</div>
+  <h3>Records</h3><div class="stats">
+   ${st('Plus gros coup infligé',n('plus_gros_coup'),'dégâts en une attaque')}
+   ${st('Victoire la plus rapide',S.victoire_rapide_tours?S.victoire_rapide_tours+' tours':'—')}
+   ${st('Combat le plus long',S.combat_long_tours?S.combat_long_tours+' tours':'—')}
+   ${st('Dégâts totaux infligés',n('degats_totaux'))}</div>
+  <h3>Cartes</h3><div class="stats">${cardTile('Carte la plus jouée',D.plus_jouee,'combats')}${cardTile('Carte la plus victorieuse',D.plus_gagnante,'victoires')}</div>
+  ${coll}
+  ${tot?'':`<p><small>${mine?'Aucun combat joué pour l\'instant : tes statistiques de combat apparaîtront après ton premier combat.':'Ce joueur n\'a pas encore combattu.'}</small></p>`}
+  <h3>Classement</h3><p><small>Clique sur un pseudo pour voir son profil.</small></p>
+  <table><tr><th>#</th><th>Joueur</th><th>V</th><th>D</th><th>N</th></tr>${rank}</table>`;
+  main.querySelectorAll('button[data-p]').forEach(b=>b.onclick=()=>{vProfil(b.dataset.p);window.scrollTo(0,0)});
 }
 
 /* ---------- Admin ---------- */
