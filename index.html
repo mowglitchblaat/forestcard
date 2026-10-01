@@ -133,10 +133,10 @@ function drawDeck(){
 
 /* ---------- Admin ---------- */
 async function vAdmin(){
-  const S={cartes:'Cartes',collections:'Collections',boosters:'Boosters',raretes:'Raretés',cadeaux:'Cadeaux'};
+  const S={cartes:'Cartes',collections:'Collections',boosters:'Boosters',effets:'Effets',raretes:'Raretés',cadeaux:'Cadeaux'};
   main.innerHTML=`<div class="row">${Object.entries(S).map(([k,v])=>`<button class="${k==sub?'on':'sec'}" data-s="${k}">${v}</button>`).join('')}</div><div id="sub"></div>`;
   main.querySelectorAll('button[data-s]').forEach(b=>b.onclick=()=>{sub=b.dataset.s;vAdmin()});
-  ({cartes:aCartes,collections:aCollections,boosters:aBoosters,raretes:aRaretes,cadeaux:aCadeaux})[sub]();
+  ({cartes:aCartes,collections:aCollections,boosters:aBoosters,effets:aEffets,raretes:aRaretes,cadeaux:aCadeaux})[sub]();
 }
 async function upload(file){
   const path=crypto.randomUUID()+'.'+(file.name.split('.').pop()||'png');
@@ -147,7 +147,7 @@ async function upload(file){
 // Paramètres réutilisables : [libellé, 'n' (nombre) ou liste de choix]
 const P={val:['Valeur','n'],u:['Unité',['pts','pct']],tours:['Nb de tours','n'],chance:['Chance (%)','n'],frappes:['Nb de frappes','n'],
  coups:['Nb de coups','n'],cible:['Cible',['soi','adversaire']],carte:['Carte',['magie','piege']],seuil:['Seuil','n'],seuilpv:['Seuil (% PV)','n'],
- cond:['Condition',['pv_max','degats_infliges']],pct:['% PV rendus en plus','n']};
+ cond:['Condition',['pv_max','degats_infliges']],pct:['% PV rendus en plus','n'],val2:['2e valeur','n']};
 // Chaque effet : [libellé, ...paramètres]
 const PAS={evite_mort:['Évite la mort une fois'],soin_tour:['Se soigne de X chaque tour','val','u'],renvoi:['Renvoie X dégâts reçus','val','u'],
  atq_tours:["Augmente l'ATQ tous les X tours",'tours','val','u'],pv_tours:['Augmente les PV tous les X tours','tours','val','u'],
@@ -175,6 +175,9 @@ function mk(el,cat){
 async function aCartes(){
   const [col,rar,cartes]=await Promise.all([q(sb.from('collections').select('*')),q(sb.from('raretes').select('*').order('ordre')),
     q(sb.from('cartes').select('id,nom,type,actif,raretes(nom),collections(nom),variantes_carte(id)').order('id',{ascending:false}))]);
+  const ep=await sb.from('effets_perso').select('*'),cu=ep.data||[];
+  const mc=(b,k)=>({...b,...Object.fromEntries(cu.filter(x=>x.categorie==k).map(x=>[x.cle,[x.libelle,...x.params]]))});
+  const CAT={pas:mc(PAS,'passif'),ult:mc(ULT,'ultime'),mag:mc(MAG,'magie'),con:mc(CON,'condition')};
   $('#sub').innerHTML=`<h3>Nouvelle carte</h3>
   <form class="f" id="fc"><input name="nom" placeholder="Nom" required>
    <select name="type"><option value="combattant">Combattant</option><option value="magie">Magie</option><option value="piege">Piège</option></select>
@@ -186,6 +189,8 @@ async function aCartes(){
    <div id="s-comb"><b>Ultime</b><div id="b-ult"></div>
     <div class="row"><label><small>Après N tours</small><br><input name="utours" type="number" min="0" style="width:90px"></label>
     <label><input type="checkbox" name="ucarte"> ou quand une magie/piège s'active</label></div>
+    <div class="row"><label><small>Utilisations max (0 = illimité)</small><br><input name="uuses" type="number" min="0" value="1" style="width:90px"></label>
+    <label><small>Délai entre 2 utilisations (tours)</small><br><input name="ucd" type="number" min="0" value="0" style="width:90px"></label></div>
     <b>Passif</b><div id="b-pas"></div></div>
    <div id="s-mag" style="display:none"><b>Effet de la magie</b><div id="b-mag"></div></div>
    <div id="s-pie" style="display:none"><b>Condition du piège</b><div id="b-con"></div><b>Effet du piège</b><div id="b-pef"></div>
@@ -200,7 +205,7 @@ async function aCartes(){
   <td><button class="sec" data-a="${c.id}" data-v="${c.actif}">${c.actif?'<span class="ok">Oui</span>':'<span class="ko">Non</span>'}</button></td>
   <td><button class="sec" data-del="${c.id}" data-nom="${esc(c.nom)}" title="Supprimer cette carte">🗑️</button></td></tr>`).join('')}</table>`;
   const fc=$('#fc');
-  B={ult:mk($('#b-ult'),ULT),pas:mk($('#b-pas'),PAS),mag:mk($('#b-mag'),MAG),con:mk($('#b-con'),CON),pef:mk($('#b-pef'),{...ULT,...MAG})};
+  B={ult:mk($('#b-ult'),CAT.ult),pas:mk($('#b-pas'),CAT.pas),mag:mk($('#b-mag'),CAT.mag),con:mk($('#b-con'),CAT.con),pef:mk($('#b-pef'),{...CAT.ult,...CAT.mag})};
   const toggle=()=>{const t=fc.type.value;
     $('#r-stats').style.display=$('#s-comb').style.display=t=='combattant'?'':'none';
     $('#s-mag').style.display=t=='magie'?'':'none';$('#s-pie').style.display=t=='piege'?'':'none'};
@@ -208,7 +213,7 @@ async function aCartes(){
   $('#fcolad').onchange=e=>{const v=e.target.value;$('#sub').querySelectorAll('tr[data-col]').forEach(tr=>tr.style.display=!v||tr.dataset.col==v?'':'none')};
   fc.onsubmit=async e=>{e.preventDefault();const f=e.target,v=n=>f[n].value,t=v('type');
     try{let ult=null,pas=null,eff=null;
-     if(t=='combattant'){ult=B.ult.get();if(ult){if(+f.utours.value)ult.apres_tours=+f.utours.value;if(f.ucarte.checked)ult.sur_carte=true}pas=B.pas.get()}
+     if(t=='combattant'){ult=B.ult.get();if(ult){if(+f.utours.value)ult.apres_tours=+f.utours.value;if(f.ucarte.checked)ult.sur_carte=true;ult.utilisations=+f.uuses.value||0;ult.delai_tours=+f.ucd.value||0}pas=B.pas.get()}
      else if(t=='magie')eff=B.mag.get();
      else{const c=B.con.get(),x=B.pef.get();if(c||x)eff={condition:c,effet:x,declenchements:+f.decl.value||1}}
      const cb=t=='combattant';
@@ -274,6 +279,26 @@ async function aBoosters(){
   $('#sub').querySelectorAll('button[data-del]').forEach(x=>x.onclick=async()=>{
     if(!confirm('Supprimer « '+x.dataset.nom+' » ?\nLes boosters non ouverts de ce type chez les joueurs seront perdus.\n(Pour seulement le retirer de la boutique, décoche « En vente ».)'))return;
     await q(sb.from('types_boosters').delete().eq('id',x.dataset.del));aBoosters();});
+}
+
+async function aEffets(){
+  const r=await sb.from('effets_perso').select('*').order('id');
+  if(r.error){$('#sub').innerHTML='<p class="ko">Table introuvable : lance d\'abord 04-effets.sql dans Supabase.</p>';return}
+  const L=r.data,CATS={passif:'Passif',ultime:'Ultime',magie:'Magie',condition:'Condition de piège'};
+  $('#sub').innerHTML=`<form class="f" id="fe"><b>Nouvel effet</b><select name="cat">${Object.entries(CATS).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select>
+   <input name="lib" placeholder="Texte affiché (ex : Gagne X PV quand il attaque)" required>
+   <small>Valeurs à saisir pour cet effet</small>
+   <div class="row">${Object.entries(P).map(([k,v])=>`<label><input type="checkbox" name="p_${k}"> ${v[0]}</label>`).join('')}</div>
+   <button>Ajouter l'effet</button></form>
+   <h3>Effets ajoutés (${L.length})</h3><table><tr><th>Type</th><th>Texte</th><th>Valeurs</th><th></th></tr>
+   ${L.map(x=>`<tr><td>${CATS[x.categorie]}</td><td>${esc(x.libelle)}</td><td>${x.params.map(k=>esc(P[k]?P[k][0]:k)).join(', ')||'—'}</td><td><button class="sec" data-id="${x.id}">🗑️</button></td></tr>`).join('')}</table>`;
+  $('#fe').onsubmit=async e=>{e.preventDefault();const f=e.target;
+    const params=Object.keys(P).filter(k=>f['p_'+k].checked);
+    const cle='perso_'+f.lib.value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
+    try{await q(sb.from('effets_perso').insert({categorie:f.cat.value,cle,libelle:f.lib.value.trim(),params}));aEffets();}catch(x){}};
+  $('#sub').querySelectorAll('button[data-id]').forEach(b=>b.onclick=async()=>{
+    if(!confirm('Retirer cet effet de la liste ? (Les cartes déjà créées avec cet effet le gardent.)'))return;
+    await q(sb.from('effets_perso').delete().eq('id',b.dataset.id));aEffets();});
 }
 
 async function aRaretes(){
