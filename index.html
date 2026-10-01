@@ -167,22 +167,26 @@ const MAG={atq_mod:["Modifie l'ATQ (négatif = baisse)",'cible','val','u'],pv_mo
  degats_tours:['Inflige X dégâts après X tours','val','tours']};
 const CON={adv_attaque:["L'adversaire a attaqué X fois",'coups'],adv_ultime:["L'adversaire utilise son ultime"],proprio_pv_sous:['Le propriétaire passe sous X % de PV','seuilpv'],
  adv_pv_bas:["L'adversaire passe sous X % de PV",'seuilpv'],adv_soigne:["L'adversaire se soigne"],proprio_soigne:['Le propriétaire se soigne'],proprio_meurt:['Le propriétaire meurt']};
+let editId=null;
 function mk(el,cat){
   el.innerHTML=`<select><option value="">— Aucun —</option>${Object.entries(cat).map(([k,v])=>`<option value="${k}">${v[0]}</option>`).join('')}</select><div class="row"></div>`;
   const s=el.querySelector('select'),d=el.querySelector('.row');
   s.onchange=()=>{d.innerHTML=s.value?cat[s.value].slice(1).map(k=>{const [l,t]=P[k];
     return `<label><small>${l}</small><br>${t=='n'?`<input data-k="${k}" type="number" step="any" style="width:110px">`:`<select data-k="${k}">${t.map(o=>`<option>${o}</option>`).join('')}</select>`}</label>`}).join(''):''};
   return {get(){if(!s.value)return null;const o={type:s.value};
-    d.querySelectorAll('[data-k]').forEach(i=>o[i.dataset.k]=i.tagName=='INPUT'?(i.value===''?null:+i.value):i.value);return o}};
+    d.querySelectorAll('[data-k]').forEach(i=>o[i.dataset.k]=i.tagName=='INPUT'?(i.value===''?null:+i.value):i.value);return o},
+  set(o){if(!o||!o.type)return;s.value=o.type;if(s.value!==o.type){s.value='';return}s.onchange();
+    d.querySelectorAll('[data-k]').forEach(i=>{if(o[i.dataset.k]!=null)i.value=o[i.dataset.k]})}};
 }
 
 async function aCartes(){
+  editId=null;
   const [col,rar,cartes]=await Promise.all([q(sb.from('collections').select('*')),q(sb.from('raretes').select('*').order('ordre')),
     q(sb.from('cartes').select('id,nom,type,actif,raretes(nom),collections(nom),variantes_carte(id)').order('id',{ascending:false}))]);
   const ep=await sb.from('effets_perso').select('*'),cu=ep.data||[];
   const mc=(b,k)=>({...b,...Object.fromEntries(cu.filter(x=>x.categorie==k).map(x=>[x.cle,[x.libelle,...x.params]]))});
   const CAT={pas:mc(PAS,'passif'),ult:mc(ULT,'ultime'),mag:mc(MAG,'magie'),con:mc(CON,'condition')};
-  $('#sub').innerHTML=`<h3>Nouvelle carte</h3>
+  $('#sub').innerHTML=`<h3 id="ftitle">Nouvelle carte</h3>
   <form class="f" id="fc"><input name="nom" placeholder="Nom" required>
    <select name="type"><option value="combattant">Combattant</option><option value="magie">Magie</option><option value="piege">Piège</option></select>
    <select name="col"><option value="">Commune (aucune collection)</option>${opts(col)}</select>
@@ -200,14 +204,14 @@ async function aCartes(){
    <div id="s-pie" style="display:none"><b>Condition du piège</b><div id="b-con"></div><b>Effet du piège</b><div id="b-pef"></div>
     <label><small>Déclenchements max</small><br><input name="decl" type="number" min="1" value="1" style="width:90px"></label></div>
    <label><input type="checkbox" name="actif"> Publier (visible des joueurs et dans les boosters)</label>
-   <button>Créer la carte</button></form>
+   <div class="row"><button id="fbtn">Créer la carte</button><button type="button" class="sec" id="fcancel" style="display:none">Annuler la modification</button></div></form>
   <h3>Ajouter une version alternative</h3>
   <form class="f" id="fv"><select name="carte">${opts(cartes)}</select><input name="nom" placeholder="Nom (ex : Alt 1)" required>
    <input name="poids" type="number" value="10" title="Taux d'apparition (Standard = 100)"><input name="file" type="file" accept="image/*" required><button>Ajouter la version</button></form>
   <h3>Cartes (${cartes.length})</h3><div class="row"><select id="fcolad"><option value="">Toutes les collections</option>${col.map(c=>`<option>${esc(c.nom)}</option>`).join('')}<option>Commune</option></select></div><table><tr><th>Nom</th><th>Type</th><th>Rareté</th><th>Collection</th><th>Versions</th><th>Publiée</th><th></th></tr>
   ${cartes.map(c=>`<tr data-col="${esc(c.collections?.nom||'Commune')}"><td>${esc(c.nom)}</td><td>${c.type}</td><td>${esc(c.raretes.nom)}</td><td>${esc(c.collections?.nom||'Commune')}</td><td>${c.variantes_carte.length}</td>
   <td><button class="sec" data-a="${c.id}" data-v="${c.actif}">${c.actif?'<span class="ok">Oui</span>':'<span class="ko">Non</span>'}</button></td>
-  <td><button class="sec" data-del="${c.id}" data-nom="${esc(c.nom)}" title="Supprimer cette carte">🗑️</button></td></tr>`).join('')}</table>`;
+  <td><button class="sec" data-edit="${c.id}" title="Modifier cette carte">✏️</button> <button class="sec" data-del="${c.id}" data-nom="${esc(c.nom)}" title="Supprimer cette carte">🗑️</button></td></tr>`).join('')}</table>`;
   const fc=$('#fc');
   B={ult:mk($('#b-ult'),CAT.ult),pas:mk($('#b-pas'),CAT.pas),mag:mk($('#b-mag'),CAT.mag),con:mk($('#b-con'),CAT.con),pef:mk($('#b-pef'),{...CAT.ult,...CAT.mag})};
   const toggle=()=>{const t=fc.type.value;
@@ -223,6 +227,12 @@ async function aCartes(){
      const cb=t=='combattant';
      const row={nom:v('nom'),type:t,collection_id:v('col')||null,rarete_id:+v('rar'),atq:cb&&v('atq')!==''?+v('atq'):null,pv:cb&&v('pv')!==''?+v('pv'):null,
       description:v('desc')||null,actif:f.actif.checked,ultime:ult,passif:pas,effet:eff};
+     if(editId){delete row.type;await q(sb.from('cartes').update(row).eq('id',editId));
+      if(f.file.files[0]){const path=await upload(f.file.files[0]);
+       const vs=await q(sb.from('variantes_carte').select('id').eq('carte_id',editId).eq('nom','Standard').limit(1));
+       if(vs.length)await q(sb.from('variantes_carte').update({image_path:path}).eq('id',vs[0].id));
+       else await q(sb.from('variantes_carte').insert({carte_id:editId,nom:'Standard',image_path:path,poids:100}));}
+      editId=null;aCartes();return}
      const c=await q(sb.from('cartes').insert(row).select('id').single());
      const path=await upload(f.file.files[0]);
      await q(sb.from('variantes_carte').insert({carte_id:c.id,nom:'Standard',image_path:path,poids:100}));
@@ -230,6 +240,17 @@ async function aCartes(){
   $('#fv').onsubmit=async e=>{e.preventDefault();const f=e.target;
     try{const path=await upload(f.file.files[0]);
      await q(sb.from('variantes_carte').insert({carte_id:+f.carte.value,nom:f.nom.value,image_path:path,poids:+f.poids.value}));aCartes();}catch(x){}};
+  $('#sub').querySelectorAll('button[data-edit]').forEach(b=>b.onclick=async()=>{
+    const c=await q(sb.from('cartes').select('*').eq('id',b.dataset.edit).single()),f=fc;
+    editId=c.id;f.nom.value=c.nom;f.type.value=c.type;f.type.disabled=true;toggle();
+    f.col.value=c.collection_id||'';f.rar.value=c.rarete_id;f.atq.value=c.atq??'';f.pv.value=c.pv??'';f.desc.value=c.description||'';f.actif.checked=c.actif;
+    f.file.required=false;
+    const u=c.ultime||{};B.ult.set(c.ultime);f.utours.value=u.apres_tours||'';f.ucarte.checked=!!u.sur_carte;f.uuses.value=u.utilisations??1;f.ucd.value=u.delai_tours??0;
+    B.pas.set(c.passif);if(c.type=='magie')B.mag.set(c.effet);
+    if(c.type=='piege'&&c.effet){B.con.set(c.effet.condition);B.pef.set(c.effet.effet);f.decl.value=c.effet.declenchements||1}
+    $('#ftitle').textContent='Modifier : '+c.nom;$('#fbtn').textContent='Enregistrer les modifications';$('#fcancel').style.display='';
+    fc.scrollIntoView({behavior:'smooth'});});
+  $('#fcancel').onclick=()=>aCartes();
   $('#sub').querySelectorAll('button[data-a]').forEach(b=>b.onclick=async()=>{
     await q(sb.from('cartes').update({actif:b.dataset.v!=='true'}).eq('id',b.dataset.a));aCartes();});
   $('#sub').querySelectorAll('button[data-del]').forEach(b=>b.onclick=async()=>{
