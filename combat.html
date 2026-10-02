@@ -20,7 +20,7 @@ body.obs{background:transparent}
 #tour{font-size:2.4vh;opacity:.8;margin-bottom:1vh}
 #ctl{position:fixed;left:8px;bottom:8px;z-index:9;display:none;gap:8px;align-items:center;font-size:14px}
 #ctl button,#ctl select{padding:6px 10px;border-radius:6px;border:0}
-#log{position:fixed;right:8px;bottom:8px;width:24vw;max-height:30vh;overflow:auto;font:12px/1.4 monospace;background:rgba(0,0,0,.6);padding:6px;border-radius:6px;display:none}
+#log{position:fixed;left:50%;transform:translateX(-50%);top:8px;width:30vw;max-height:16vh;overflow:auto;font:12px/1.4 monospace;background:rgba(0,0,0,.6);padding:6px;border-radius:6px;display:none}
 
 .cw{position:relative}
 .aura{position:absolute;inset:-18%;border-radius:50%;background:radial-gradient(circle,rgba(255,0,0,.95),rgba(255,0,0,0) 68%);opacity:0;pointer-events:none}
@@ -50,7 +50,7 @@ body.obs{background:transparent}
 </style></head><body>
 <div id="scene"><div class="p" id="p0"></div>
 <div id="mid"><div id="tour"></div><div id="ban"></div></div><div class="p" id="p1"></div></div>
-<div id="ctl"><button id="nv">⚔️ Nouveau combat</button><button id="rj">↺ Rejouer le même</button>
+<div id="ctl"><button id="nv">⚔️ Nouveau combat</button><button id="rj">↺ Rejouer le même</button><button id="ts">🔥☠️ Test brûlure + poison</button>
 Vitesse <select id="vit"><option value="1.6">Lent</option><option value="1" selected>Normal</option><option value=".5">Rapide</option></select></div>
 <div id="log"></div>
 <script src="moteur-combat.js"></script>
@@ -115,7 +115,9 @@ const DECK=[
 let dernier=null;
 function lancer(seed){dernier=Moteur.simuler({pseudo:'Toi',deck:DECK},{pseudo:'Bot',deck:DECK},{seed});jouer(dernier)}
 if(TEST){$('#ctl').style.display='flex';$('#log').style.display='block';
- $('#nv').onclick=()=>{if(!enCours)lancer()};$('#rj').onclick=()=>{if(!enCours&&dernier)lancer(dernier.seed)};setTimeout(()=>lancer(),500)}
+ $('#nv').onclick=()=>{if(!enCours)lancer()};$('#ts').onclick=()=>{if(enCours)return;const f=n=>DECK.find(c=>c.nom===n),A={...f('Loup-garou'),passif:{type:'poison',chance:100,degtour:3,tours:3}},B={...f('Spectre'),passif:{type:'brulure',chance:100,pctpv:6,tours:3}},ult={...f('Chasseur'),passif:null,ultime:{type:'degats',val:10,apres_tours:2,utilisations:1}};
+  const m=DECK.filter(c=>c.type!=='combattant');dernier=Moteur.simuler({pseudo:'Toi',deck:[A,...m]},{pseudo:'Bot',deck:[B,...m]},{seed:7});jouer(dernier)};
+ $('#rj').onclick=()=>{if(!enCours&&dernier)lancer(dernier.seed)};setTimeout(()=>lancer(),500)}
 
 // ---------- Mode live : reçoit le journal par WebSocket (Streamer.bot) ----------
 function extraire(d){for(let k=0;k<4;k++){if(typeof d==='string'){try{d=JSON.parse(d)}catch(x){return null}}
