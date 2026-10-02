@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8"><title>Combat</title>
+<style>
+html,body{margin:0;height:100%;overflow:hidden;background:#0b1410;font-family:system-ui,sans-serif;color:#fff}
+body.obs{background:transparent}
+#scene{position:absolute;inset:0;display:flex;align-items:center;justify-content:space-around;opacity:0;transition:opacity .6s}
+#scene.on{opacity:1}
+.p{position:relative;width:24vw;text-align:center}
+.card{width:100%;aspect-ratio:5/7;border-radius:12px;background:#1b2a22 center/cover;display:flex;align-items:center;justify-content:center;font-size:3vh;font-weight:700;box-shadow:0 0 25px #000;transition:transform .15s}
+.card.hit{animation:hit .4s}.card.atk{transform:scale(1.07)}.card.ko{filter:grayscale(1) brightness(.5)}
+@keyframes hit{25%{transform:translateX(-12px)}75%{transform:translateX(12px)}}
+.nm{margin:1vh 0 .5vh;font-size:2.4vh;font-weight:700;text-shadow:0 0 6px #000}
+.bar{height:2.4vh;background:#400;border-radius:8px;overflow:hidden}.bar i{display:block;height:100%;width:100%;background:#22c55e;transition:width .5s}
+.pv{font-size:2vh;text-shadow:0 0 4px #000}.sub{font-size:1.7vh;opacity:.8}
+.fl{position:absolute;left:50%;top:30%;font-size:6vh;font-weight:800;text-shadow:0 0 8px #000;animation:fl 1.2s forwards;pointer-events:none}
+@keyframes fl{to{transform:translateY(-12vh);opacity:0}}
+#mid{width:34vw;text-align:center}
+#ban{font-size:3.4vh;font-weight:800;min-height:10vh;text-shadow:0 0 10px #000}
+#ban.magie{color:#60a5fa}#ban.piege{color:#f87171}#ban.ultime{color:#fbbf24;font-size:4.4vh}#ban.fin{color:#a7f3d0;font-size:4.6vh}
+#tour{font-size:2.4vh;opacity:.8;margin-bottom:1vh}
+#ctl{position:fixed;left:8px;bottom:8px;z-index:9;display:none;gap:8px;align-items:center;font-size:14px}
+#ctl button,#ctl select{padding:6px 10px;border-radius:6px;border:0}
+#log{position:fixed;right:8px;bottom:8px;width:24vw;max-height:30vh;overflow:auto;font:12px/1.4 monospace;background:rgba(0,0,0,.6);padding:6px;border-radius:6px;display:none}
+</style></head><body>
+<div id="scene"><div class="p" id="p0"></div>
+<div id="mid"><div id="tour"></div><div id="ban"></div></div><div class="p" id="p1"></div></div>
+<div id="ctl"><button id="nv">⚔️ Nouveau combat</button><button id="rj">↺ Rejouer le même</button>
+Vitesse <select id="vit"><option value="1.6">Lent</option><option value="1" selected>Normal</option><option value=".5">Rapide</option></select></div>
+<div id="log"></div>
+<script src="moteur-combat.js"></script>
+<script>
+const STORAGE='https://bjsvqikjnvaomyoifiml.supabase.co/storage/v1/object/public/cartes/';
+const $=s=>document.querySelector(s),wait=ms=>new Promise(r=>setTimeout(r,ms*+$('#vit').value));
+const TEST=location.search.includes('test');
+if(!TEST)document.body.classList.add('obs');
+
+// ---------- Affichage d'un journal ----------
+function panneau(i,j){$('#p'+i).innerHTML=`<div class="card" ${j.image?`style="background-image:url('${STORAGE+j.image}')"`:''}>${j.image?'':j.carte}</div>
+ <div class="nm">${j.pseudo} — ${j.carte}</div><div class="bar"><i></i></div><div class="pv"></div><div class="sub">Magie : ${j.magie} · Piège : ${j.piege}</div>`}
+function maj(e){[0,1].forEach(i=>{const p=$('#p'+i);p.querySelector('i').style.width=Math.max(0,e.pv[i]/e.max[i]*100)+'%';
+ p.querySelector('.pv').textContent=`${Math.max(0,e.pv[i])} / ${e.max[i]} PV · ATQ ${e.atq[i]}`})}
+function flot(i,txt,col){const d=document.createElement('div');d.className='fl';d.textContent=txt;d.style.color=col;$('#p'+i).appendChild(d);setTimeout(()=>d.remove(),1300)}
+let enCours=false;const file=[];
+async function jouer(res){
+ file.push(res);if(enCours)return;enCours=true;
+ while(file.length){const R=file.shift();$('#log').innerHTML='';
+  for(const e of R.journal){
+   $('#ban').className=e.t;$('#ban').textContent=e.txt;$('#log').innerHTML+=e.txt+'<br>';$('#log').scrollTop=1e5;
+   if(e.t==='debut'){e.joueurs.forEach((j,i)=>panneau(i,j));$('#scene').classList.add('on');maj(e);await wait(2500);continue}
+   if(e.t==='tour'){$('#tour').textContent=e.txt;await wait(700);continue}
+   const card=e.c!=null?$('#p'+e.c+' .card'):null;
+   if(e.t==='attaque'){card.classList.add('atk');await wait(450);card.classList.remove('atk');continue}
+   maj(e);
+   if(e.t==='degats'){card.classList.add('hit');flot(e.c,'-'+e.n,'#f87171');setTimeout(()=>card.classList.remove('hit'),450)}
+   else if(e.t==='soin')flot(e.c,'+'+e.n,'#4ade80');
+   else if(e.t==='esquive')flot(e.c,'Esquive !','#e5e7eb');
+   const ms={magie:1800,piege:2000,ultime:2200,fin:5000,degats:900,soin:900,esquive:900,statut:1100,stat:1100,vol:1500,protege:1600}[e.t]||900;
+   if(e.t==='fin'){$('#ban').textContent=e.txt+` (+${e.recompenses[e.gagnant??0]})`;[0,1].forEach(i=>{if(e.pv[i]<=0)$('#p'+i+' .card').classList.add('ko')})}
+   await wait(ms);
+  }
+  if(!TEST){$('#scene').classList.remove('on');await wait(800)}
+ }
+ enCours=false;
+}
+
+// ---------- Mode test : combat contre un bot (cartes factices) ----------
+const DECK=[
+ {type:'combattant',nom:'Loup-garou',atq:12,pv:60,passif:{type:'poison',chance:50,degtour:3,tours:3},ultime:{type:'degats',val:15,apres_tours:3,utilisations:1}},
+ {type:'combattant',nom:'Chasseur',atq:10,pv:70,passif:{type:'esquive',chance:30},ultime:{type:'soin',val:20,u:'pct',apres_tours:4,utilisations:1}},
+ {type:'combattant',nom:'Spectre',atq:9,pv:55,passif:{type:'brulure',chance:40,pctpv:6,tours:3},ultime:{type:'echange_atq',sur_carte:true,utilisations:1}},
+ {type:'combattant',nom:'Goule',atq:8,pv:80,passif:{type:'multi_frappe',chance:35,frappes:2},ultime:{type:'vol_vie',val:12,apres_tours:5,utilisations:1}},
+ {type:'magie',nom:'Rage',effet:{type:'atq_mod',cible:'soi',val:20,u:'pct'}},
+ {type:'magie',nom:'Malédiction',effet:{type:'pv_mod',cible:'adversaire',val:-10,u:'pct'}},
+ {type:'magie',nom:'Bouclier de ronces',effet:{type:'renvoi',val:25,tours:3}},
+ {type:'piege',nom:'Riposte',effet:{condition:{type:'adv_attaque',coups:2},effet:{type:'degats',val:8},declenchements:1}},
+ {type:'piege',nom:'Dernier souffle',effet:{condition:{type:'proprio_meurt'},effet:{type:'soin',val:30,u:'pct'},declenchements:1}},
+ {type:'piege',nom:'Sang froid',effet:{condition:{type:'proprio_pv_sous',seuilpv:40},effet:{type:'soin',val:15,u:'pct'},declenchements:1}}];
+let dernier=null;
+function lancer(seed){dernier=Moteur.simuler({pseudo:'Toi',deck:DECK},{pseudo:'Bot',deck:DECK},{seed});jouer(dernier)}
+if(TEST){$('#ctl').style.display='flex';$('#log').style.display='block';
+ $('#nv').onclick=()=>{if(!enCours)lancer()};$('#rj').onclick=()=>{if(!enCours&&dernier)lancer(dernier.seed)};setTimeout(()=>lancer(),500)}
+
+// ---------- Mode live : reçoit le journal par WebSocket (Streamer.bot) ----------
+function extraire(d){for(let k=0;k<4;k++){if(typeof d==='string'){try{d=JSON.parse(d)}catch(x){return null}}
+ if(Array.isArray(d))d=d[0];if(d&&d.journal)return d;if(d&&d.data)d=d.data;else return null}return null}
+function connect(){const ws=new WebSocket('ws://127.0.0.1:8080/');
+ ws.onopen=()=>ws.send(JSON.stringify({request:'Subscribe',id:'sub-combat',events:{General:['Custom']}}));
+ ws.onmessage=e=>{const r=extraire(e.data);if(r)jouer(r)};
+ ws.onclose=()=>setTimeout(connect,3000);ws.onerror=()=>ws.close()}
+if(!TEST)connect();
+</script></body></html>
