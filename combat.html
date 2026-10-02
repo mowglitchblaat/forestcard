@@ -5,8 +5,8 @@ html,body{margin:0;height:100%;overflow:hidden;background:#0b1410;font-family:sy
 body.obs{background:transparent}
 #scene{position:absolute;inset:0;display:flex;align-items:center;justify-content:space-around;opacity:0;transition:opacity .6s}
 #scene.on{opacity:1}
-.p{position:relative;width:24vw;text-align:center}
-.card{width:100%;aspect-ratio:5/7;border-radius:12px;background:#1b2a22 center/cover;display:flex;align-items:center;justify-content:center;font-size:3vh;font-weight:700;box-shadow:0 0 25px #000;transition:transform .15s}
+.p{position:relative;width:22vw;text-align:center}
+.card{position:relative;z-index:1;overflow:hidden;width:100%;aspect-ratio:5/7;border-radius:12px;background:#1b2a22 center/cover;display:flex;align-items:center;justify-content:center;font-size:3vh;font-weight:700;box-shadow:0 0 25px #000;transition:transform .15s}
 .card.hit{animation:hit .4s}.card.atk{transform:scale(1.07)}.card.ko{filter:grayscale(1) brightness(.5)}
 @keyframes hit{25%{transform:translateX(-12px)}75%{transform:translateX(12px)}}
 .nm{margin:1vh 0 .5vh;font-size:2.4vh;font-weight:700;text-shadow:0 0 6px #000}
@@ -21,6 +21,32 @@ body.obs{background:transparent}
 #ctl{position:fixed;left:8px;bottom:8px;z-index:9;display:none;gap:8px;align-items:center;font-size:14px}
 #ctl button,#ctl select{padding:6px 10px;border-radius:6px;border:0}
 #log{position:fixed;right:8px;bottom:8px;width:24vw;max-height:30vh;overflow:auto;font:12px/1.4 monospace;background:rgba(0,0,0,.6);padding:6px;border-radius:6px;display:none}
+
+.cw{position:relative}
+.aura{position:absolute;inset:-18%;border-radius:50%;background:radial-gradient(circle,rgba(255,0,0,.95),rgba(255,0,0,0) 68%);opacity:0;pointer-events:none}
+.aura.on{animation:aura 2s ease-in-out}
+@keyframes aura{0%{opacity:0;transform:scale(.6)}25%,75%{opacity:1;transform:scale(1.15)}100%{opacity:0;transform:scale(1.3)}}
+.card.ult{animation:ult 2s ease-in-out}
+@keyframes ult{0%,100%{box-shadow:0 0 25px #000;transform:scale(1)}25%,75%{box-shadow:0 0 30px 14px #ff1a1a,0 0 90px 40px rgba(255,0,0,.8);transform:scale(1.08)}}
+.fx{position:absolute;inset:0;pointer-events:none}
+.fx.brulure{background:linear-gradient(to top,rgba(255,80,0,.8),rgba(255,160,0,0) 65%);display:flex;align-items:flex-end;justify-content:space-around;box-shadow:inset 0 0 30px 8px #f97316}
+.fx.brulure span{font-size:8vh;animation:flam .5s infinite alternate;transform-origin:bottom}
+.fx.brulure span:nth-child(even){animation-delay:.25s}
+@keyframes flam{from{transform:scale(.8) translateY(0)}to{transform:scale(1.25) translateY(-1vh)}}
+.fx.poison{background:linear-gradient(to bottom,rgba(34,197,94,.6),rgba(34,197,94,.1) 70%);box-shadow:inset 0 0 30px 8px #16a34a}
+.fx.poison i{position:absolute;bottom:-5%;width:3vh;height:3vh;border-radius:50%;background:rgba(134,239,172,.85);animation:bul 2.2s infinite}
+.fx.poison i:nth-child(1){left:8%}.fx.poison i:nth-child(2){left:24%;animation-delay:.5s}.fx.poison i:nth-child(3){left:42%;animation-delay:1.1s}
+.fx.poison i:nth-child(4){left:58%;animation-delay:.3s}.fx.poison i:nth-child(5){left:74%;animation-delay:.9s}.fx.poison i:nth-child(6){left:88%;animation-delay:1.5s}
+@keyframes bul{from{transform:translateY(0);opacity:1}to{transform:translateY(-55vh);opacity:0}}
+.fx.poison b{position:absolute;top:6%;right:8%;font-size:6vh}
+.mp{display:flex;justify-content:center;gap:2vw;margin-top:1vh}
+.mw small{display:block;font-size:1.5vh;opacity:.8;margin-top:.4vh}
+.mini{width:6.5vw;aspect-ratio:5/7;border-radius:8px;background:#1b2a22 center/cover;display:flex;align-items:center;justify-content:center;font-size:1.4vh;font-weight:700;padding:3px;box-sizing:border-box;box-shadow:0 0 10px #000}
+.mini.back{background:linear-gradient(135deg,#7f1d1d,#1e1b4b);border:3px solid #f87171;font-size:4vh}
+.mini.rev{animation:rev .8s;box-shadow:0 0 20px #f87171}
+.mini.act{animation:act 1.6s;box-shadow:0 0 20px #60a5fa}
+@keyframes rev{from{transform:rotateY(90deg) scale(1.6)}to{transform:none}}
+@keyframes act{30%,70%{transform:scale(1.4);box-shadow:0 0 30px 10px #60a5fa}}
 </style></head><body>
 <div id="scene"><div class="p" id="p0"></div>
 <div id="mid"><div id="tour"></div><div id="ban"></div></div><div class="p" id="p1"></div></div>
@@ -35,8 +61,14 @@ const TEST=location.search.includes('test');
 if(!TEST)document.body.classList.add('obs');
 
 // ---------- Affichage d'un journal ----------
-function panneau(i,j){$('#p'+i).innerHTML=`<div class="card" ${j.image?`style="background-image:url('${STORAGE+j.image}')"`:''}>${j.image?'':j.carte}</div>
- <div class="nm">${j.pseudo} — ${j.carte}</div><div class="bar"><i></i></div><div class="pv"></div><div class="sub">Magie : ${j.magie} · Piège : ${j.piege}</div>`}
+function mini(img,txt){return img?`style="background-image:url('${STORAGE+img}')"`:''}
+function panneau(i,j){$('#p'+i).innerHTML=`<div class="cw"><div class="aura"></div><div class="card" ${j.image?`style="background-image:url('${STORAGE+j.image}')"`:''}>${j.image?'':j.carte}</div></div>
+ <div class="nm">${j.pseudo} — ${j.carte}</div><div class="bar"><i></i></div><div class="pv"></div>
+ <div class="mp"><div class="mw"><div class="mini" id="m${i}" ${mini(j.magieImg)}>${j.magieImg?'':j.magie}</div><small>Magie</small></div>
+ <div class="mw"><div class="mini back" id="g${i}">?</div><small>Piège</small></div></div>`}
+let st={};const FX={brulure:'<span>🔥</span>'.repeat(5),poison:'<i></i>'.repeat(6)+'<b>☠️</b>'};
+function statut(c,k,on){const key=c+k;st[key]=Math.max(0,(st[key]||0)+(on?1:-1));const card=$('#p'+c+' .card');let f=card.querySelector('.fx.'+k);
+ if(st[key]>0&&!f){f=document.createElement('div');f.className='fx '+k;f.innerHTML=FX[k];card.appendChild(f)}else if(!st[key]&&f)f.remove()}
 function maj(e){[0,1].forEach(i=>{const p=$('#p'+i);p.querySelector('i').style.width=Math.max(0,e.pv[i]/e.max[i]*100)+'%';
  p.querySelector('.pv').textContent=`${Math.max(0,e.pv[i])} / ${e.max[i]} PV · ATQ ${e.atq[i]}`})}
 function flot(i,txt,col){const d=document.createElement('div');d.className='fl';d.textContent=txt;d.style.color=col;$('#p'+i).appendChild(d);setTimeout(()=>d.remove(),1300)}
@@ -46,15 +78,20 @@ async function jouer(res){
  while(file.length){const R=file.shift();$('#log').innerHTML='';
   for(const e of R.journal){
    $('#ban').className=e.t;$('#ban').textContent=e.txt;$('#log').innerHTML+=e.txt+'<br>';$('#log').scrollTop=1e5;
-   if(e.t==='debut'){e.joueurs.forEach((j,i)=>panneau(i,j));$('#scene').classList.add('on');maj(e);await wait(2500);continue}
+   if(e.t==='debut'){st={};e.joueurs.forEach((j,i)=>panneau(i,j));$('#scene').classList.add('on');maj(e);await wait(2500);continue}
    if(e.t==='tour'){$('#tour').textContent=e.txt;await wait(700);continue}
    const card=e.c!=null?$('#p'+e.c+' .card'):null;
    if(e.t==='attaque'){card.classList.add('atk');await wait(450);card.classList.remove('atk');continue}
    maj(e);
-   if(e.t==='degats'){card.classList.add('hit');flot(e.c,'-'+e.n,'#f87171');setTimeout(()=>card.classList.remove('hit'),450)}
+   if(e.t==='degats'){card.classList.add('hit');flot(e.c,'-'+e.n,e.k==='poison'?'#4ade80':e.k?'#fb923c':'#f87171');setTimeout(()=>card.classList.remove('hit'),450)}
    else if(e.t==='soin')flot(e.c,'+'+e.n,'#4ade80');
    else if(e.t==='esquive')flot(e.c,'Esquive !','#e5e7eb');
-   const ms={magie:1800,piege:2000,ultime:2200,fin:5000,degats:900,soin:900,esquive:900,statut:1100,stat:1100,vol:1500,protege:1600}[e.t]||900;
+   else if(e.t==='statut'&&e.k)statut(e.c,e.k,true);
+   else if(e.t==='finstatut')statut(e.c,e.k,false);
+   else if(e.t==='ultime'){card.classList.add('ult');const au=$('#p'+e.c+' .aura');au.classList.add('on');setTimeout(()=>{card.classList.remove('ult');au.classList.remove('on')},2100)}
+   else if(e.t==='magie'){const m=$('#m'+e.c);m.classList.add('act');setTimeout(()=>m.classList.remove('act'),1700)}
+   else if(e.t==='piege'){const g=$('#g'+e.c);g.classList.remove('back');g.classList.add('rev');g.textContent=e.img?'':e.carte;g.style.backgroundImage=e.img?`url('${STORAGE+e.img}')`:''}
+   const ms={magie:1800,piege:2000,ultime:2200,fin:5000,degats:900,soin:900,esquive:900,statut:1100,stat:1100,vol:1500,protege:1600,finstatut:250}[e.t]||900;
    if(e.t==='fin'){$('#ban').textContent=e.txt+` (+${e.recompenses[e.gagnant??0]})`;[0,1].forEach(i=>{if(e.pv[i]<=0)$('#p'+i+' .card').classList.add('ko')})}
    await wait(ms);
   }
