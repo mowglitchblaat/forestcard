@@ -43,7 +43,7 @@ function simuler(pA,pB,opt={}){
    adv_soigne:ev.t==='soin'&&ev.who===ia,proprio_soigne:ev.t==='soin'&&ev.who===i,proprio_meurt:ev.t==='mort'&&ev.who===i}[c.type];
   if(!ok)return;
   if(x.st.insens>0){L('piege',`Le piège de ${o.pseudo} est bloqué (insensible)`,{c:i});return}
-  o.decl++;L('piege',`Piège de ${o.pseudo} : ${o.pie.nom} !`,{c:i,carte:o.pie.nom});fx(e.effet,o,x);S.forEach(s=>s.pend=1);
+  o.decl++;L('piege',`Piège de ${o.pseudo} : ${o.pie.nom} !`,{c:i,carte:o.pie.nom,img:o.pie.image||null});fx(e.effet,o,x);S.forEach(s=>s.pend=1);
  })}
  // Effets : o = propriétaire de l'effet, x = adversaire. mg=true : effet de magie (annulable/volable)
  function fx(e,o,x,mg){
@@ -100,8 +100,8 @@ function simuler(pA,pB,opt={}){
    if(n>0&&d.pv>0){
     if(p.type==='vol_pct_atq'&&roll(p.chance))heal(a,rd(n*p.pctatq/100));
     if(p.type==='etourdir'&&roll(p.chance)){d.st.stun=1;L('statut',`${nom(d)} est étourdi !`,{c:idd})}
-    if(p.type==='brulure'&&roll(p.chance)){d.st.dots.push({k:'brûlure',n:rd(d.max*p.pctpv/100),t:p.tours});L('statut',`${nom(d)} brûle !`,{c:idd})}
-    if(p.type==='poison'&&roll(p.chance)){d.st.dots.push({k:'poison',n:p.degtour,t:p.tours});L('statut',`${nom(d)} est empoisonné !`,{c:idd})}
+    if(p.type==='brulure'&&roll(p.chance)){d.st.dots.push({k:'brûlure',n:rd(d.max*p.pctpv/100),t:p.tours});L('statut',`${nom(d)} brûle !`,{c:idd,k:'brulure'})}
+    if(p.type==='poison'&&roll(p.chance)){d.st.dots.push({k:'poison',n:p.degtour,t:p.tours});L('statut',`${nom(d)} est empoisonné !`,{c:idd,k:'poison'})}
    }
    if(over())return;
   }
@@ -109,7 +109,7 @@ function simuler(pA,pB,opt={}){
  }
  function finDeTour(){
   S.forEach(s=>{if(s.pv<=0)return;const x=adv(s);
-   s.st.dots=s.st.dots.filter(d=>{const n=dmg(x,s,d.n);L('degats',`${nom(s)} subit ${n} (${d.k})`,{c:id(s),n});return--d.t>0});
+   s.st.dots=s.st.dots.filter(d=>{const n=dmg(x,s,d.n);L('degats',`${nom(s)} subit ${n} (${d.k})`,{c:id(s),n,k:d.k});if(--d.t>0)return true;L('finstatut',`${d.k} de ${nom(s)} se termine`,{c:id(s),k:d.k==='poison'?'poison':'brulure'});return false});
    if(s.pas.type==='soin_tour')heal(s,amt(s.pas,s.max));
    if(s.pas.type==='atq_tours'&&tour%s.pas.tours===0){s.atq+=amt(s.pas,s.atq);L('stat',`ATQ de ${nom(s)} augmente`,{c:id(s)})}
    if(s.pas.type==='pv_tours'&&tour%s.pas.tours===0){const d=amt(s.pas,s.max);s.max+=d;s.pv+=d;L('stat',`PV de ${nom(s)} augmentent`,{c:id(s)})}
@@ -121,8 +121,8 @@ function simuler(pA,pB,opt={}){
 
  // ---- Déroulé ----
  const first=r()<.5?0:1,ordre=[S[first],S[1-first]];
- L('debut','Le combat commence !',{joueurs:S.map(s=>({pseudo:s.pseudo,carte:s.card.nom,image:s.card.image||null,magie:s.mag.nom,piege:s.pie.nom})),premier:first});
- ordre.forEach(s=>{if(s.mag.effet){L('magie',`Magie de ${s.pseudo} : ${s.mag.nom}`,{c:id(s),carte:s.mag.nom});fx(s.mag.effet,s,adv(s),true);S.forEach(k=>k.pend=1)}});
+ L('debut','Le combat commence !',{joueurs:S.map(s=>({pseudo:s.pseudo,carte:s.card.nom,image:s.card.image||null,magie:s.mag.nom,piege:s.pie.nom,magieImg:s.mag.image||null,piegeImg:s.pie.image||null})),premier:first});
+ ordre.forEach(s=>{if(s.mag.effet){L('magie',`Magie de ${s.pseudo} : ${s.mag.nom}`,{c:id(s),carte:s.mag.nom,img:s.mag.image||null});fx(s.mag.effet,s,adv(s),true);S.forEach(k=>k.pend=1)}});
  for(tour=1;tour<=reg.maxTours&&!over();tour++){
   L('tour',`Tour ${tour}`);S.forEach(s=>s.rt=0);
   for(const a of ordre){if(over())break;ultime(a);if(over())break;attaque(a)}
