@@ -63,8 +63,8 @@ function simuler(pA,pB,opt={}){
    case'annule_magies':if(x.magOn){x.magOn=0;undo(x);L('statut',`La magie de ${x.pseudo} est annulée`,{c:id(x)})}break;
    case'degats_tours':x.st.prog.push({t:e.tours||1,n:e.val,src:o});break;
    case'double_degats':o.st.dbl=e.tours||1;L('statut',`${nom(o)} double ses dégâts`,{c:id(o)});break;
-   case'echange_atq':[o.atq,x.atq]=[x.atq,o.atq];L('stat',`${nom(o)} et ${nom(x)} échangent leur ATQ`);break;
-   case'echange_atq_def':[x.atq,x.pv]=[x.pv,x.atq];x.max=Math.max(x.max,x.pv);L('stat',`${nom(x)} : ATQ et PV échangés`);break;
+   case'echange_atq':[o.atq,x.atq]=[x.atq,o.atq];L('stat',`${nom(o)} et ${nom(x)} échangent leur ATQ`,{k:'echange',cs:[id(o),id(x)]});break;
+   case'echange_atq_def':[x.atq,x.pv]=[x.pv,x.atq];x.max=Math.max(x.max,x.pv);L('stat',`${nom(x)} : ATQ et PV échangés`,{k:'echange',c:id(x)});break;
    case'mort_evitee':break;                                    // lue directement dans dmg()
    case'detruire':case'voler':{
     if(e.carte==='magie'&&x.magOn){x.magOn=0;undo(x);if(e.type==='voler'){fx(x.mag.effet,o,x,true);L('vol',`${o.pseudo} vole la magie de ${x.pseudo}`)}else L('vol',`La magie de ${x.pseudo} est détruite`)}
@@ -86,16 +86,16 @@ function simuler(pA,pB,opt={}){
  function attaque(a){
   const d=adv(a),ia=id(a),idd=id(d);
   if(a.st.stun){a.st.stun=0;L('statut',`${nom(a)} est étourdi, il n'attaque pas`,{c:ia});return}
-  if(a.st.skip){a.st.skip=0;L('statut',`L'attaque de ${nom(a)} est annulée`,{c:ia});return}
+  if(a.st.skip){a.st.skip=0;L('bloque',`L'attaque de ${nom(a)} est annulée`,{c:id(adv(a))});return}
   const multi=a.pas.type==='multi_frappe'&&roll(a.pas.chance)?a.pas.frappes:1;
   a.coups++;L('attaque',`${nom(a)} attaque${multi>1?` (${multi} frappes)`:''}`,{c:ia});
   for(let k=0;k<multi&&d.pv>0;k++){
    if(d.pas.type==='esquive'&&roll(Math.min(reg.plafondEsquive,d.pas.chance))){L('esquive',`${nom(d)} esquive !`,{c:idd});continue} // l'esquive annule aussi les effets associés
    let n=a.atq*(a.st.dbl>0?2:1)+a.st.bonus;a.st.bonus=0;
-   if(d.pas.type==='reduc_degats'&&roll(d.pas.chance))n=Math.max(0,n-amt(d.pas,n));
+   if(d.pas.type==='reduc_degats'&&roll(d.pas.chance)){L('bloque',`${nom(d)} bloque une partie des dégâts`,{c:idd});n=Math.max(0,n-amt(d.pas,n))}
    d.rt++;n=dmg(a,d,n);L('degats',`${nom(d)} subit ${n} dégâts`,{c:idd,n});
-   if(d.pas.type==='renvoi'&&n>0){const b=dmg(d,a,amt(d.pas,n));L('degats',`${nom(a)} subit ${b} dégâts renvoyés`,{c:ia,n:b})}
-   d.st.ren.forEach(R=>{const b=dmg(d,a,n*R.pct/100);if(b>0)L('degats',`${nom(a)} subit ${b} dégâts renvoyés`,{c:ia,n:b})});
+   if(d.pas.type==='renvoi'&&n>0){const b=dmg(d,a,amt(d.pas,n));L('degats',`${nom(a)} subit ${b} dégâts renvoyés`,{c:ia,n:b,k:'renvoi',from:idd})}
+   d.st.ren.forEach(R=>{const b=dmg(d,a,n*R.pct/100);if(b>0)L('degats',`${nom(a)} subit ${b} dégâts renvoyés`,{c:ia,n:b,k:'renvoi',from:idd})});
    const p=a.pas;
    if(n>0&&d.pv>0){
     if(p.type==='vol_pct_atq'&&roll(p.chance))heal(a,rd(n*p.pctatq/100));
