@@ -52,8 +52,8 @@ function simuler(pA,pB,opt={}){
   const T=e.cible==='adversaire'?x:o;
   const delta=(s,k,d)=>{if(mg)o.mdelta.push({s,k,d})};
   switch(e.type){
-   case'atq_mod':{const d=amt(e,T.atq);T.atq=Math.max(0,T.atq+d);delta(T,'atq',d);L('stat',`ATQ de ${nom(T)} ${d>=0?'+':''}${d}`,{c:id(T)});break}
-   case'pv_mod':{const d=amt(e,T.max);T.max=Math.max(1,T.max+d);T.pv=Math.max(1,Math.min(T.max,T.pv+d));delta(T,'max',d);L('stat',`PV max de ${nom(T)} ${d>=0?'+':''}${d}`,{c:id(T)});break}
+   case'atq_mod':{const d=amt(e,T.atq);T.atq=Math.max(0,T.atq+d);delta(T,'atq',d);L('stat',`ATQ de ${nom(T)} ${d>=0?'+':''}${d}`,{c:id(T),k:'mod',s:'ATQ',d});break}
+   case'pv_mod':{const d=amt(e,T.max);T.max=Math.max(1,T.max+d);T.pv=Math.max(1,Math.min(T.max,T.pv+d));delta(T,'max',d);L('stat',`PV max de ${nom(T)} ${d>=0?'+':''}${d}`,{c:id(T),k:'mod',s:'PV max',d});break}
    case'soin':heal(o,amt(e,o.max));break;
    case'degats':{const n=dmg(o,x,e.val);L('degats',`${nom(x)} subit ${n} dégâts directs`,{c:id(x),n});break}
    case'vol_vie':{const n=dmg(o,x,e.val);L('degats',`${nom(x)} subit ${n} dégâts`,{c:id(x),n});heal(o,n);break}
@@ -85,7 +85,7 @@ function simuler(pA,pB,opt={}){
  }
  function attaque(a){
   const d=adv(a),ia=id(a),idd=id(d);
-  if(a.st.stun){a.st.stun=0;L('statut',`${nom(a)} est étourdi, il n'attaque pas`,{c:ia});return}
+  if(a.st.stun){a.st.stun=0;L('statut',`${nom(a)} est étourdi, il n'attaque pas`,{c:ia,k:'etourdi_fin'});return}
   if(a.st.skip){a.st.skip=0;L('bloque',`L'attaque de ${nom(a)} est annulée`,{c:id(adv(a))});return}
   const multi=a.pas.type==='multi_frappe'&&roll(a.pas.chance)?a.pas.frappes:1;
   a.coups++;L('attaque',`${nom(a)} attaque${multi>1?` (${multi} frappes)`:''}`,{c:ia});
@@ -99,7 +99,7 @@ function simuler(pA,pB,opt={}){
    const p=a.pas;
    if(n>0&&d.pv>0){
     if(p.type==='vol_pct_atq'&&roll(p.chance))heal(a,rd(n*p.pctatq/100));
-    if(p.type==='etourdir'&&roll(p.chance)){d.st.stun=1;L('statut',`${nom(d)} est étourdi !`,{c:idd})}
+    if(p.type==='etourdir'&&roll(p.chance)){d.st.stun=1;L('statut',`${nom(d)} est étourdi !`,{c:idd,k:'etourdi'})}
     if(p.type==='brulure'&&roll(p.chance)){d.st.dots.push({k:'brûlure',n:rd(d.max*p.pctpv/100),t:p.tours});L('statut',`${nom(d)} brûle !`,{c:idd,k:'brulure'})}
     if(p.type==='poison'&&roll(p.chance)){d.st.dots.push({k:'poison',n:p.degtour,t:p.tours});L('statut',`${nom(d)} est empoisonné !`,{c:idd,k:'poison'})}
    }
@@ -111,8 +111,8 @@ function simuler(pA,pB,opt={}){
   S.forEach(s=>{if(s.pv<=0)return;const x=adv(s);
    s.st.dots=s.st.dots.filter(d=>{const n=dmg(x,s,d.n);L('degats',`${nom(s)} subit ${n} (${d.k})`,{c:id(s),n,k:d.k});if(--d.t>0)return true;L('finstatut',`${d.k} de ${nom(s)} se termine`,{c:id(s),k:d.k==='poison'?'poison':'brulure'});return false});
    if(s.pas.type==='soin_tour')heal(s,amt(s.pas,s.max));
-   if(s.pas.type==='atq_tours'&&tour%s.pas.tours===0){s.atq+=amt(s.pas,s.atq);L('stat',`ATQ de ${nom(s)} augmente`,{c:id(s)})}
-   if(s.pas.type==='pv_tours'&&tour%s.pas.tours===0){const d=amt(s.pas,s.max);s.max+=d;s.pv+=d;L('stat',`PV de ${nom(s)} augmentent`,{c:id(s)})}
+   if(s.pas.type==='atq_tours'&&tour%s.pas.tours===0){const dd=amt(s.pas,s.atq);s.atq+=dd;L('stat',`ATQ de ${nom(s)} +${dd}`,{c:id(s),k:'mod',s:'ATQ',d:dd})}
+   if(s.pas.type==='pv_tours'&&tour%s.pas.tours===0){const d=amt(s.pas,s.max);s.max+=d;s.pv+=d;L('stat',`PV max de ${nom(s)} +${d}`,{c:id(s),k:'mod',s:'PV max',d})}
    if(s.pas.type==='bonus_frappe'&&s.rt>=s.pas.coups){s.st.bonus=amt(s.pas,s.atq);L('statut',`${nom(s)} prépare une contre-attaque renforcée`,{c:id(s)})}
    s.st.prog=s.st.prog.filter(p=>{if(--p.t>0)return true;const n=dmg(p.src,s,p.n);L('degats',`${nom(s)} subit ${n} (dégâts différés)`,{c:id(s),n});return false});
    s.st.ren=s.st.ren.filter(R=>--R.t>0);if(s.st.insens>0)s.st.insens--;if(s.st.dbl>0)s.st.dbl--;
