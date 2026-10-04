@@ -67,7 +67,7 @@ function simuler(pA,pB,opt={}){
    case'echange_atq_def':[x.atq,x.pv]=[x.pv,x.atq];x.max=Math.max(x.max,x.pv);L('stat',`${nom(x)} : ATQ et PV échangés`,{k:'echange',c:id(x)});break;
    case'echange_pv':[o.pv,x.pv]=[x.pv,o.pv];[o.max,x.max]=[x.max,o.max];L('stat',`${nom(o)} et ${nom(x)} échangent leurs PV`,{k:'echange',cs:[id(o),id(x)],col:'rouge'});break;
    case'echange_tout':[o.atq,x.atq]=[x.atq,o.atq];[o.pv,x.pv]=[x.pv,o.pv];[o.max,x.max]=[x.max,o.max];L('stat',`${nom(o)} et ${nom(x)} échangent ATQ et PV`,{k:'echange',cs:[id(o),id(x)],col:'mixte'});break;
-   case'malediction':maudire(e.cible==='soi'?o:x,e.val||0,e.tours||1);break;   // par défaut sur l'adversaire
+   case'malediction':maudire((e.ciblem||e.cible)==='soi'?o:x,e.val||0,e.tours||1);break;   // par défaut sur l'adversaire
    case'mort_evitee':break;                                    // lue directement dans dmg()
    case'detruire':case'voler':{
     if(e.carte==='magie'&&x.magOn){x.magOn=0;undo(x);if(e.type==='voler'){fx(x.mag.effet,o,x,true);L('vol',`${o.pseudo} vole la magie de ${x.pseudo}`)}else L('vol',`La magie de ${x.pseudo} est détruite`)}
