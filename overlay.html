@@ -14,14 +14,62 @@ html,body{margin:0;height:100%;overflow:hidden;background:transparent;font-famil
 .f{transform:rotateY(180deg);border:4px solid var(--col);box-shadow:0 0 25px var(--col);background:#111;display:flex;align-items:center;justify-content:center;text-align:center}
 .f img{width:100%;height:100%;object-fit:cover}
 .f span{padding:8px;font-weight:700}
+#cartes{transition:opacity .5s}
+#packwrap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding-top:12vh;pointer-events:none;opacity:0;z-index:2}
+#pack{position:relative;height:48vh;display:flex}
+#pack .lay{height:100%;display:block;position:relative}
+#pack .top{position:absolute;left:0;top:0;clip-path:inset(0 0 87% 0)}#pack .bot{clip-path:inset(13% 0 0 0)}
+#pack .lay.fb{width:34vh;border-radius:1.2vh;background:linear-gradient(160deg,#6d28d9,#1e1b4b);border:.5vh solid #a78bfa;box-sizing:border-box;display:flex;align-items:center;justify-content:center;text-align:center;font-weight:800;font-size:3.2vh;padding:2vh;text-shadow:0 0 1vh #000}
+#rays{position:absolute;left:50%;top:50%;width:170vh;height:170vh;margin:-85vh 0 0 -85vh;border-radius:50%;background:repeating-conic-gradient(rgba(255,236,170,.6) 0 5deg,transparent 5deg 18deg);-webkit-mask-image:radial-gradient(circle,#000 6%,transparent 60%);mask-image:radial-gradient(circle,#000 6%,transparent 60%);opacity:0;z-index:-1}
+#flash{position:absolute;inset:0;background:radial-gradient(circle at 50% 56%,#fff 0,rgba(255,240,190,.85) 22%,transparent 58%);opacity:0}
 #dbg{position:absolute;left:10px;bottom:10px;max-width:90vw;padding:8px 12px;background:rgba(0,0,0,.75);border-radius:8px;font:14px/1.4 monospace;white-space:pre-wrap;z-index:9;display:none}
 </style></head><body>
-<div id="box"><div id="titre"></div><div id="cartes"></div></div>
+<div id="box"><div id="titre"></div><div id="cartes"></div><div id="packwrap"><div id="flash"></div><div id="pack"><div id="rays"></div></div></div></div>
 <div id="dbg"></div>
 <script>
 const WS_URL='ws://127.0.0.1:8080/';
 const STORAGE='https://bjsvqikjnvaomyoifiml.supabase.co/storage/v1/object/public/cartes/';
 const box=document.getElementById('box'),titre=document.getElementById('titre'),zone=document.getElementById('cartes');
+const SB='https://bjsvqikjnvaomyoifiml.supabase.co',KEY='sb_publishable_-3cPqDCyE-zhb3z5r6dPhg_DJFKGAI6';
+const packwrap=document.getElementById('packwrap'),pack=document.getElementById('pack'),rays=document.getElementById('rays'),flash=document.getElementById('flash');
+const imgCache={};
+// Image du booster : celle envoyée par Streamer.bot (image_path) sinon lue dans la base d'après le nom du booster
+async function boosterImg(d){
+  let p=d.image_path||d.booster_image||d.image_booster||null;
+  if(!p&&d.booster){
+    if(d.booster in imgCache)p=imgCache[d.booster];
+    else{try{const c=new AbortController();setTimeout(()=>c.abort(),2500);
+      const r=await fetch(SB+'/rest/v1/types_boosters?select=image_path&nom=eq.'+encodeURIComponent(d.booster)+'&limit=1',{headers:{apikey:KEY},signal:c.signal});
+      const j=await r.json();p=(Array.isArray(j)&&j[0]&&j[0].image_path)||null}catch(x){p=null}
+      imgCache[d.booster]=p}}
+  if(!p)return null;
+  const url=/^https?:/.test(p)?p:STORAGE+p;
+  await new Promise(r=>{const i=new Image();i.onload=i.onerror=r;i.src=url;setTimeout(r,3000)});
+  return url;
+}
+// Animation d'ouverture : le paquet tombe, tremble, une lumière jaillit, le haut s'arrache puis les cartes apparaissent
+async function ouverture(d){
+  const url=await boosterImg(d);
+  if(DEBUG){dbgMsg+='\nImage du booster : '+(url||'aucune (paquet générique)');majDbg()}
+  const mkl=cl=>{let e;if(url){e=new Image();e.src=url}else{e=document.createElement('div');e.className='fb';e.textContent=d.booster||'Booster'}e.classList.add('lay',cl);return e};
+  pack.querySelectorAll('.lay').forEach(e=>e.remove());rays.getAnimations().forEach(a=>a.cancel());pack.getAnimations().forEach(a=>a.cancel());
+  const bot=mkl('bot'),top=mkl('top');pack.append(bot,top);
+  zone.style.opacity=0;packwrap.style.opacity=1;box.classList.add('on');
+  pack.animate([{transform:'translateY(-70vh) scale(.6) rotate(-10deg)',opacity:0},{transform:'translateY(3vh) scale(1.05) rotate(3deg)',opacity:1,offset:.7},{transform:'none',opacity:1}],{duration:900,easing:'cubic-bezier(.2,.8,.3,1)',fill:'both'});
+  await wait(1100);
+  pack.animate([{transform:'none'},{transform:'translate(-.6vw,0) rotate(-2deg)'},{transform:'translate(.6vw,0) rotate(2deg)'},{transform:'translate(-1vw,0) rotate(-3deg) scale(1.03)'},{transform:'translate(1vw,0) rotate(3deg) scale(1.05)'},{transform:'translate(-1.4vw,0) rotate(-4deg) scale(1.08)'},{transform:'translate(1.4vw,0) rotate(4deg) scale(1.1)'}],{duration:1100,easing:'ease-in',fill:'both'});
+  pack.animate([{filter:'drop-shadow(0 0 0 rgba(255,215,120,0))'},{filter:'drop-shadow(0 0 5vh rgba(255,215,120,1)) brightness(1.35)'}],{duration:1100,easing:'ease-in',fill:'both',composite:'add'});
+  rays.animate([{opacity:0,transform:'scale(.3) rotate(0deg)'},{opacity:.5,transform:'scale(.8) rotate(25deg)'}],{duration:1100,fill:'both'});
+  await wait(1100);
+  flash.animate([{opacity:0},{opacity:1,offset:.25},{opacity:0}],{duration:900});
+  rays.animate([{opacity:.9,transform:'scale(.8) rotate(25deg)'},{opacity:0,transform:'scale(1.7) rotate(80deg)'}],{duration:1400,fill:'both',easing:'ease-out'});
+  top.animate([{transform:'none',opacity:1},{transform:'translate(3vw,-38vh) rotate(22deg)',opacity:0}],{duration:800,easing:'cubic-bezier(.3,0,.8,.4)',fill:'both'});
+  bot.animate([{transform:'scale(1.1)',opacity:1},{transform:'scale(1.35) translateY(10vh)',opacity:0}],{duration:800,fill:'both'});
+  await wait(450);
+  zone.style.opacity=1;
+  await wait(1100);
+  packwrap.style.opacity=0;
+}
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 const queue=[];let busy=false;
 
@@ -76,19 +124,18 @@ async function run(){
       else f.innerHTML='<span></span>',f.firstChild.textContent=c.carte;
       zone.appendChild(el);return el;
     });
-    box.classList.add('on');
-    await wait(2000);
+    await ouverture(d);
     for(const el of els){el.classList.add('flip');await wait(1200)}
     await wait(6000);
     box.classList.remove('on');
-    await wait(800);
+    await wait(800);packwrap.style.opacity=0;zone.style.opacity=1;
   }
   busy=false;
 }
 connect();
 // Test : ajoute ?test à l'adresse de la page pour voir une ouverture factice
 if(location.search.includes('test')){
-  setTimeout(()=>{queue.push({pseudo:'Test',booster:'Booster de test',cartes:
+  setTimeout(()=>{queue.push({pseudo:'Test',booster:new URLSearchParams(location.search).get('booster')||'Booster de test',cartes:
     [['Carte A','#9ca3af'],['Carte B','#3b82f6'],['Carte C','#f59e0b'],['Carte D','#9ca3af'],['Carte E','#3b82f6']]
     .map(x=>({carte:x[0],couleur:x[1]}))});run()},1000);
 }
