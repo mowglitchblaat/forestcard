@@ -13,7 +13,7 @@ function simuler(pA,pB,opt={}){
  const tire=(deck,t)=>{const l=deck.filter(c=>c.type===t);return l[Math.floor(r()*l.length)]};
  const nw=p=>{const c=tire(p.deck,'combattant'),pa=c.passif||{};
   return{pseudo:p.pseudo,deck:p.deck,card:c,mag:tire(p.deck,'magie'),pie:tire(p.deck,'piege'),atq:c.atq,pv:c.pv,max:c.pv,pas:pa,ult:c.ultime,
-   magOn:1,pieOn:1,decl:0,mdelta:[],st:{stun:0,skip:0,dbl:0,dots:[],ren:[],insens:0,prog:[],evite:pa.type==='evite_mort',mortUsed:0,bonus:0},
+   magOn:1,pieOn:1,decl:0,mdelta:[],st:{stun:0,skip:0,dbl:0,dots:[],curses:[],ren:[],insens:0,prog:[],evite:pa.type==='evite_mort',mortUsed:0,bonus:0},
    cum:0,coups:0,rt:0,uses:0,last:-99,pend:0}};
  const S=[nw(pA),nw(pB)],id=s=>S.indexOf(s),adv=s=>S[1-id(s)],nom=s=>s.card.nom;
  let tour=0,rv=0;
@@ -48,7 +48,7 @@ function simuler(pA,pB,opt={}){
  // Effets : o = propriétaire de l'effet, x = adversaire. mg=true : effet de magie (annulable/volable)
  function fx(e,o,x,mg){
   if(!e)return;
-  if(e.briques){e.briques.forEach(b=>fx(b,o,x,mg));return}      // effet « maison » composé de briques de base
+  if(e.briques){e.briques.forEach(b=>fx(b,o,x,mg));return}      // effet « maison » composé de briques de base (multi-effet)
   const T=e.cible==='adversaire'?x:o;
   const delta=(s,k,d)=>{if(mg)o.mdelta.push({s,k,d})};
   switch(e.type){
@@ -67,6 +67,7 @@ function simuler(pA,pB,opt={}){
    case'echange_atq_def':[x.atq,x.pv]=[x.pv,x.atq];x.max=Math.max(x.max,x.pv);L('stat',`${nom(x)} : ATQ et PV échangés`,{k:'echange',c:id(x)});break;
    case'echange_pv':[o.pv,x.pv]=[x.pv,o.pv];[o.max,x.max]=[x.max,o.max];L('stat',`${nom(o)} et ${nom(x)} échangent leurs PV`,{k:'echange',cs:[id(o),id(x)],col:'rouge'});break;
    case'echange_tout':[o.atq,x.atq]=[x.atq,o.atq];[o.pv,x.pv]=[x.pv,o.pv];[o.max,x.max]=[x.max,o.max];L('stat',`${nom(o)} et ${nom(x)} échangent ATQ et PV`,{k:'echange',cs:[id(o),id(x)],col:'mixte'});break;
+   case'malediction':maudire(e.cible==='soi'?o:x,e.val||0,e.tours||1);break;   // par défaut sur l'adversaire
    case'mort_evitee':break;                                    // lue directement dans dmg()
    case'detruire':case'voler':{
     if(e.carte==='magie'&&x.magOn){x.magOn=0;undo(x);if(e.type==='voler'){fx(x.mag.effet,o,x,true);L('vol',`${o.pseudo} vole la magie de ${x.pseudo}`)}else L('vol',`La magie de ${x.pseudo} est détruite`)}
@@ -77,6 +78,8 @@ function simuler(pA,pB,opt={}){
   }
  }
  function undo(s){s.mdelta.forEach(d=>{d.s[d.k]-=d.d;if(d.k==='max')d.s.pv=Math.min(d.s.pv,d.s.max)});s.mdelta=[]}
+ // Malédiction : l'ATQ de la cible baisse de n points à chaque fin de tour pendant t tours (se cumule)
+ function maudire(dst,n,t){dst.st.curses.push({n,t});L('statut',`${nom(dst)} est maudit (ATQ −${n} par tour, ${t} tour${t>1?'s':''}) !`,{c:id(dst),k:'malediction'})}
 
  function ultime(s){
   const u=s.ult;if(!u||!u.type||s.pv<=0)return;
@@ -89,9 +92,12 @@ function simuler(pA,pB,opt={}){
   const d=adv(a),ia=id(a),idd=id(d);
   if(a.st.stun){a.st.stun=0;L('statut',`${nom(a)} est étourdi, il n'attaque pas`,{c:ia,k:'etourdi_fin'});return}
   if(a.st.skip){a.st.skip=0;L('bloque',`L'attaque de ${nom(a)} est annulée`,{c:id(adv(a))});return}
-  const multi=a.pas.type==='multi_frappe'&&roll(a.pas.chance)?a.pas.frappes:1;
+  let multi=a.pas.type==='multi_frappe'&&roll(a.pas.chance)?a.pas.frappes:1;
   a.coups++;L('attaque',`${nom(a)} attaque${multi>1?` (${multi} frappes)`:''}`,{c:ia});
-  for(let k=0;k<multi&&d.pv>0;k++){
+  // Enchaînement : après chaque frappe on retente la chance ; au premier échec, on s'arrête (max = plafond de frappes en plus, 10 par défaut)
+  const ench=a.pas.type==='enchainement',cap=a.pas.max>0?a.pas.max:10;
+  for(let k=0;k<multi&&d.pv>0;k++,ench&&d.pv>0&&k<=cap&&roll(a.pas.chance)&&multi++){
+   if(ench&&k>0)L('attaque',`${nom(a)} enchaîne une frappe de plus !`,{c:ia,k:'enchaine'});
    if(d.pas.type==='esquive'&&roll(Math.min(reg.plafondEsquive,d.pas.chance))){L('esquive',`${nom(d)} esquive !`,{c:idd});continue} // l'esquive annule aussi les effets associés
    let n=a.atq*(a.st.dbl>0?2:1)+a.st.bonus;a.st.bonus=0;
    if(d.pas.type==='reduc_degats'&&roll(d.pas.chance)){L('bloque',`${nom(d)} bloque une partie des dégâts`,{c:idd});n=Math.max(0,n-amt(d.pas,n))}
@@ -104,6 +110,7 @@ function simuler(pA,pB,opt={}){
     if(p.type==='etourdir'&&roll(p.chance)){d.st.stun=1;L('statut',`${nom(d)} est étourdi !`,{c:idd,k:'etourdi'})}
     if(p.type==='brulure'&&roll(p.chance)){d.st.dots.push({k:'brûlure',n:rd(d.max*p.pctpv/100),t:p.tours});L('statut',`${nom(d)} brûle !`,{c:idd,k:'brulure'})}
     if(p.type==='poison'&&roll(p.chance)){d.st.dots.push({k:'poison',n:p.degtour,t:p.tours});L('statut',`${nom(d)} est empoisonné !`,{c:idd,k:'poison'})}
+    if(p.type==='malediction'&&roll(p.chance))maudire(d,p.val,p.tours);
    }
    if(over())return;
   }
@@ -112,6 +119,7 @@ function simuler(pA,pB,opt={}){
  function finDeTour(){
   S.forEach(s=>{if(s.pv<=0)return;const x=adv(s);
    s.st.dots=s.st.dots.filter(d=>{const n=dmg(x,s,d.n);L('degats',`${nom(s)} subit ${n} (${d.k})`,{c:id(s),n,k:d.k});if(--d.t>0)return true;L('finstatut',`${d.k} de ${nom(s)} se termine`,{c:id(s),k:d.k==='poison'?'poison':'brulure'});return false});
+   s.st.curses=s.st.curses.filter(c=>{const q=Math.min(c.n,s.atq);s.atq-=q;if(q>0)L('stat',`ATQ de ${nom(s)} −${q} (malédiction)`,{c:id(s),k:'malediction_tick',s:'ATQ',d:-q});if(--c.t>0)return true;L('finstatut',`La malédiction de ${nom(s)} se termine`,{c:id(s),k:'malediction'});return false});
    if(s.pas.type==='soin_tour')heal(s,amt(s.pas,s.max));
    if(s.pas.type==='atq_tours'&&tour%s.pas.tours===0){const dd=amt(s.pas,s.atq);s.atq+=dd;L('stat',`ATQ de ${nom(s)} +${dd}`,{c:id(s),k:'mod',s:'ATQ',d:dd})}
    if(s.pas.type==='pv_tours'&&tour%s.pas.tours===0){const d=amt(s.pas,s.max);s.max+=d;s.pv+=d;L('stat',`PV max de ${nom(s)} +${d}`,{c:id(s),k:'mod',s:'PV max',d})}
