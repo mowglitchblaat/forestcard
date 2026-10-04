@@ -21,7 +21,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
 .cimg.in{filter:drop-shadow(0 0 3px var(--g)) drop-shadow(0 0 12px var(--g)) drop-shadow(0 0 24px var(--g))}
 .cw button{font-size:13px}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
-form.f{display:grid;gap:8px;max-width:520px;background:#1d1d27;padding:14px;border-radius:10px;margin-bottom:20px}
+form.f{display:grid;gap:8px;max-width:720px;background:#1d1d27;padding:14px;border-radius:10px;margin-bottom:20px}
 table{border-collapse:collapse;width:100%}td,th{padding:6px;border-bottom:1px solid #333;text-align:left}
 .ok{color:#4ade80}.ko{color:#f87171}
 .stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin:8px 0 22px}
@@ -29,6 +29,9 @@ table{border-collapse:collapse;width:100%}td,th{padding:6px;border-bottom:1px so
 .stat b{display:block;font-size:26px;margin:2px 0}.stat span{color:#aaa;font-size:13px;display:block}
 .stat.card2{display:flex;gap:12px;align-items:center;grid-column:span 2}
 .stat.card2 img{width:80px;border-radius:4px;filter:drop-shadow(0 0 3px var(--g)) drop-shadow(0 0 10px var(--g))}
+.mk{min-width:0}.mk>select{width:100%;max-width:100%;text-overflow:ellipsis}
+.mk .row{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end}.mk .row label{flex:1 1 130px;min-width:0}.mk .row input,.mk .row select{width:100%;min-width:0;max-width:100%}
+form.f select{max-width:100%;min-width:0}form.f>*{min-width:0}
 </style></head><body>
 <header><h1>🃏 Jeu de cartes</h1><div id="me"></div></header>
 <nav id="nav"></nav><main id="main"></main>
@@ -229,10 +232,10 @@ const CON={adv_attaque:["L'adversaire a attaqué X fois",'coups'],adv_ultime:["L
  adv_pv_bas:["L'adversaire passe sous X % de PV",'seuilpv'],adv_soigne:["L'adversaire se soigne"],proprio_soigne:['Le propriétaire se soigne'],proprio_meurt:['Le propriétaire meurt']};
 let editId=null;
 function mk(el,cat){
-  el.innerHTML=`<select><option value="">— Aucun —</option>${Object.entries(cat).map(([k,v])=>`<option value="${k}">${v[0]}</option>`).join('')}</select><div class="row"></div>`;
+  el.classList.add('mk');el.innerHTML=`<select><option value="">— Aucun —</option>${Object.entries(cat).map(([k,v])=>`<option value="${k}">${v[0]}</option>`).join('')}</select><div class="row"></div>`;
   const s=el.querySelector('select'),d=el.querySelector('.row');
   s.onchange=()=>{d.innerHTML=s.value?cat[s.value].slice(1).map(k=>{const [l,t]=P[k];
-    return `<label><small>${l}</small><br>${t=='n'?`<input data-k="${k}" type="number" step="any" style="width:110px">`:`<select data-k="${k}">${t.map(o=>`<option>${o}</option>`).join('')}</select>`}</label>`}).join(''):''};
+    return `<label><small>${l}</small><br>${t=='n'?`<input data-k="${k}" type="number" step="any">`:`<select data-k="${k}">${t.map(o=>`<option>${o}</option>`).join('')}</select>`}</label>`}).join(''):''};
   return {get(){if(!s.value)return null;const o={type:s.value};
     d.querySelectorAll('[data-k]').forEach(i=>o[i.dataset.k]=i.tagName=='INPUT'?(i.value===''?null:+i.value):i.value);return o},
   set(o){if(!o||!o.type)return;s.value=o.type;if(s.value!==o.type){s.value='';return}s.onchange();
