@@ -56,7 +56,7 @@ async function init(){
   header();show(tab);
 }
 function header(){
-  $('#me').innerHTML=`${esc(joueur.pseudo)} · 💰 ${joueur.monnaie} <button class="sec" id="out">Déconnexion</button>`;
+  $('#me').innerHTML=`${isAdmin?'<small style="opacity:.5;margin-right:8px">site v6d</small>':''}${esc(joueur.pseudo)} · 💰 ${joueur.monnaie} <button class="sec" id="out">Déconnexion</button>`;
   $('#out').onclick=async()=>{await sb.auth.signOut();location.reload()};
 }
 async function refreshJoueur(){joueur=await q(sb.from('joueurs').select('*').eq('id',user.id).single());header()}
@@ -181,10 +181,10 @@ async function vProfil(id=user.id){
 
 /* ---------- Admin ---------- */
 async function vAdmin(){
-  const S={cartes:'Cartes',collections:'Collections',boosters:'Boosters',effets:'Effets',raretes:'Raretés',cadeaux:'Cadeaux'};
+  const S={cartes:'Cartes',collections:'Collections',boosters:'Boosters',effets:'Effets',raretes:'Raretés',cadeaux:'Cadeaux',joueurs:'Joueurs'};
   main.innerHTML=`<div class="row">${Object.entries(S).map(([k,v])=>`<button class="${k==sub?'on':'sec'}" data-s="${k}">${v}</button>`).join('')}</div><div id="sub"></div>`;
   main.querySelectorAll('button[data-s]').forEach(b=>b.onclick=()=>{sub=b.dataset.s;vAdmin()});
-  ({cartes:aCartes,collections:aCollections,boosters:aBoosters,effets:aEffets,raretes:aRaretes,cadeaux:aCadeaux})[sub]();
+  ({cartes:aCartes,collections:aCollections,boosters:aBoosters,effets:aEffets,raretes:aRaretes,cadeaux:aCadeaux,joueurs:aJoueurs})[sub]();
 }
 async function upload(file){
   const path=crypto.randomUUID()+'.'+(file.name.split('.').pop()||'png');
@@ -393,6 +393,35 @@ async function aCadeaux(){
   $('#fg').onsubmit=async e=>{e.preventDefault();const f=e.target;
     const {error}=await sb.rpc('offrir_boosters',{p_joueur:f.j.value||null,p_type_id:+f.t.value,p_quantite:+f.n.value});
     alert(error?error.message:'Boosters offerts !');};
+}
+
+/* ---------- Admin : gérer les cartes et boosters des membres ---------- */
+async function aJoueurs(){
+  const j=await q(sb.from('joueurs').select('id,pseudo,monnaie').order('pseudo'));
+  $('#sub').innerHTML=`<p><small>Gère les cartes et les boosters des membres, par exemple pour nettoyer après les tests. Les suppressions sont définitives. (Il faut avoir lancé 05-admin-joueurs.sql dans Supabase.)</small></p>
+   <div class="f"><select id="jsel"><option value="">— Choisir un joueur —</option>${opts(j,'pseudo')}</select></div>
+   <div id="jbox"></div>
+   <h3>Remise à zéro</h3>
+   <div class="f"><label><input type="checkbox" id="rzb" checked> vider aussi les boosters non ouverts</label>
+    <label>monnaie remise à <input id="rzm" type="number" min="0" style="width:90px" placeholder="inchangée"></label></div>
+   <div class="f"><button class="sec" id="rzj">Vider le joueur choisi</button><button id="rza" style="background:#b91c1c">Vider TOUS les joueurs</button></div>`;
+  const opt=()=>({p_boosters:$('#rzb').checked,p_monnaie:$('#rzm').value===''?null:+$('#rzm').value});
+  const fini=async m=>{collData=[];deck=null;await refreshJoueur();alert(m);aJoueurs()};
+  async function load(){
+    const id=$('#jsel').value;if(!id){$('#jbox').innerHTML='';return}
+    const d=await q(sb.rpc('admin_collection',{p_joueur:id})),p=j.find(x=>x.id==id),tot=d.reduce((s,x)=>s+x.quantite,0);
+    $('#jbox').innerHTML=`<p><b>${esc(p.pseudo)}</b> · 💰 ${p.monnaie} · ${tot} carte(s)</p>`+(d.length?`<table><tr><th>Carte</th><th>Type</th><th>Version</th><th>Qté</th><th></th></tr>${d.map(x=>`<tr><td>${esc(x.carte)}</td><td>${esc(x.type)}</td><td>${esc(x.variante)}</td><td>${x.quantite}</td><td><button class="sec" data-r="${x.variante_id}" data-n="1">−1</button> <button class="sec" data-r="${x.variante_id}">Tout retirer</button></td></tr>`).join('')}</table>`:'<p><small>Aucune carte dans la collection.</small></p>');
+    $('#jbox').querySelectorAll('button[data-r]').forEach(b=>b.onclick=async()=>{
+      if(!b.dataset.n&&!confirm('Retirer toutes les copies de cette carte à ce joueur ?'))return;
+      await q(sb.rpc('admin_retirer_carte',{p_joueur:id,p_variante:b.dataset.r,p_quantite:b.dataset.n?+b.dataset.n:null}));
+      collData=[];deck=null;load()});
+  }
+  $('#jsel').onchange=load;
+  $('#rzj').onclick=async()=>{const id=$('#jsel').value;if(!id)return alert('Choisis d\'abord un joueur.');
+    const p=j.find(x=>x.id==id);if(!confirm('Vider la collection et le deck de '+p.pseudo+($('#rzb').checked?' ainsi que ses boosters non ouverts':'')+' ?\nC\'est définitif.'))return;
+    await q(sb.rpc('admin_vider_joueur',{p_joueur:id,...opt()}));fini('Joueur remis à zéro.')};
+  $('#rza').onclick=async()=>{if(prompt('Cela vide les cartes de TOUS les joueurs, toi compris. Tape VIDER pour confirmer :')!=='VIDER')return;
+    await q(sb.rpc('admin_vider_joueur',{p_joueur:null,...opt()}));fini('Tous les joueurs ont été remis à zéro.')};
 }
 
 sb.auth.onAuthStateChange((ev)=>{if(ev==='SIGNED_IN'&&!user)init()});
