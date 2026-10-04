@@ -55,7 +55,7 @@ canvas.fx.etourdi{box-shadow:inset 0 0 25px 6px rgba(250,204,21,.5)}
 #demo button,#demo select{padding:7px 6px;border:0;border-radius:6px;background:#1f3a2c;color:#e8fff1;cursor:pointer;font-size:12px}
 #demo button:hover{background:#2f6a4a}#demo .big{background:#7c2d12;font-weight:700;width:100%;margin-bottom:4px}
 #dl{font:700 16px system-ui;min-height:40px;text-align:center;color:#fde68a;margin-bottom:6px}
-#reel select{width:100%;margin-bottom:3px}#reel .ri{font-size:11px;opacity:.8;margin-bottom:4px;min-height:44px}
+#reel select{width:100%;margin-bottom:3px}#reel .ri{font-size:11px;opacity:.8;margin-bottom:4px;min-height:44px}#reel .ri small{display:block;margin-top:2px;opacity:.9}
 </style></head><body>
 <div id="scene"><div class="p" id="p0"></div>
 <div id="mid"><div id="tour"></div><div id="ban"></div></div><div class="p" id="p1"></div></div>
@@ -652,33 +652,47 @@ if(DEMO){
  if(TEST){
   const sec=document.createElement('div');sec.id='reel';
   sec.innerHTML=`<h4>Vraies cartes (base de données)</h4><div id="rst" style="font-size:12px;opacity:.85;margin-bottom:4px">Chargement des cartes…</div>
-   <div class="g"><div><select id="ra"></select><div class="ri" id="rai"></div></div><div><select id="rb"></select><div class="ri" id="rbi"></div></div></div>
+   <div class="g"><div><select id="ra"></select><select id="rma"></select><select id="rpa"></select><div class="ri" id="rai"></div></div><div><select id="rb"></select><select id="rmb"></select><select id="rpb"></select><div class="ri" id="rbi"></div></div></div>
+   <label style="font-size:12px;display:block;margin:3px 0"><input type="checkbox" id="rmp" checked> Démo et classement : avec magies et pièges au hasard</label>
    <div class="g"><button class="big" id="rgo" style="margin:0">⚔️ Combattre avec ces cartes</button><button id="rre">↺ Rejouer le même combat</button></div>
    <div class="g" style="margin-top:4px"><button id="rdm" class="big" style="margin:0;background:#1d4ed8">🎬 Démo : enchaîner des combats</button><select id="rn"><option value="3">3 combats</option><option value="5" selected>5 combats</option><option value="10">10 combats</option></select></div>
    <button id="rtt" style="width:100%;margin-top:4px">📊 Tous contre tous (sans animation)</button><div id="rtab" style="font-size:11px;margin-top:4px"></div>`;
   $('#dl').after(sec);
   const LB={evite_mort:'évite la mort une fois',soin_tour:'se soigne chaque tour',renvoi:'renvoie des dégâts',atq_tours:"augmente l'ATQ tous les X tours",pv_tours:'augmente les PV tous les X tours',multi_frappe:'frappe plusieurs fois',reduc_degats:'réduit les dégâts reçus',bonus_frappe:'bonus de dégâts si frappé',etourdir:'étourdit',vol_pct_atq:'vole de la vie',brulure:'brûlure',poison:'poison',esquive:'esquive',degats:'dégâts directs',voler:'vole une carte',detruire:'détruit une carte',equiper:'équipe une carte',soin:'se soigne',vol_vie:'vole de la vie',echange_atq:"échange l'ATQ",annule_attaque:"annule l'attaque",double_degats:'double ses dégâts',echange_atq_def:"échange ATQ et PV de l'adversaire"};
+  Object.assign(LB,{malediction:'malédiction (ATQ en baisse par tour)',enchainement:'enchaîne les frappes tant que ça réussit',poison_effet:'poison',brulure_effet:'brûlure',etourdir_effet:'étourdit',atk_brulure:"attaque de base : brûlure",atk_poison:"attaque de base : poison",atk_etourdir:"attaque de base : étourdissement",esquive_mod:"modifie l'esquive (%)",reset_ultime:"réinitialise l'ultime",atq_mod:"modifie l'ATQ",pv_mod:'modifie les PV max',insensible_piege:'insensible aux pièges',annule_magies:'annule les magies',mort_evitee:'évite la mort (1 PV)',degats_tours:'dégâts différés'});
+  const CL={adv_attaque:"l'adversaire a attaqué X fois",adv_ultime:"l'adversaire utilise son ultime",proprio_pv_sous:'le propriétaire passe sous X % de PV',adv_pv_bas:"l'adversaire passe sous X % de PV",adv_soigne:"l'adversaire se soigne",proprio_soigne:'le propriétaire se soigne',proprio_meurt:'le propriétaire meurt'};
   const KL={val:'valeur',chance:'chance %',apres_tours:'après N tours',degtour:'dégâts par tour',pctpv:'% des PV max',pctatq:'% de l\'ATQ',tours:'tours',frappes:'frappes',coups:'coups',carte:'carte'};
   const fmt=o=>!o||!o.type?'aucun':(LB[o.type]||o.type)+' ('+Object.entries(o).filter(([k,v])=>!['type','utilisations','delai_tours','sur_carte','u'].includes(k)&&v!=null&&v!==false&&v!==0).map(([k,v])=>(KL[k]||k)+' '+v+(k==='val'&&o.u==='pct'?' %':'')).join(', ')+')';
+  const fmtE=e=>!e?'aucun':e.briques?e.briques.map(fmtE).join(' + '):fmt(e);
+  const fmtC=c=>!c||!c.effet?'aucun effet':c.type==='piege'?`Quand ${(c.effet.condition&&CL[c.effet.condition.type])||'?'}${c.effet.condition&&c.effet.condition.coups?' ('+c.effet.condition.coups+')':''}${c.effet.condition&&c.effet.condition.seuilpv?' ('+c.effet.condition.seuilpv+' %)':''} → ${fmtE(c.effet.effet)}`:fmtE(c.effet);
   const info=c=>{if(!c)return'Choix au hasard parmi les cartes chargées';const u=c.ultime;let x=`Passif : ${fmt(c.passif)}<br>Ultime : ${fmt(u)}`;
    if(u&&u.type&&!u.apres_tours&&!u.sur_carte)x+=' <b style="color:#fca5a5">⚠ aucun déclencheur : ne se lancera jamais</b>';
    else if(u&&u.sur_carte&&!u.apres_tours)x+=' <b style="color:#fcd34d">(seulement quand une magie/piège s\'active : pas de magie ni de piège ici)</b>';return x};
-  const REEL={cartes:[]},pick=v=>v===''?REEL.cartes[Math.floor(Math.random()*REEL.cartes.length)]:REEL.cartes.find(c=>String(c.id)===v);
-  const refresh=()=>{$('#rai').innerHTML=info($('#ra').value===''?null:pick($('#ra').value));$('#rbi').innerHTML=info($('#rb').value===''?null:pick($('#rb').value))};
+  const REEL={cartes:[],magies:[],pieges:[]},pick=v=>v===''?REEL.cartes[Math.floor(Math.random()*REEL.cartes.length)]:REEL.cartes.find(c=>String(c.id)===v);
+  const TOUS=()=>[...REEL.cartes,...REEL.magies,...REEL.pieges],rndl=l=>l.length?l[Math.floor(Math.random()*l.length)]:null;
+  // magie / piège : '' = aucun, 'r' = au hasard, sinon id de la carte
+  const pickX=(v,l)=>v===''?null:v==='r'?rndl(l):l.find(c=>String(c.id)===v)||null;
+  const deckOf=(a,m,pi)=>[pick($(a).value),pickX($(m).value,REEL.magies),pickX($(pi).value,REEL.pieges)].filter(Boolean);
+  const randDeck=c=>[c,...($('#rmp').checked?[rndl(REEL.magies),rndl(REEL.pieges)]:[])].filter(Boolean);
+  const infoX=(v,l,t)=>v===''?`${t} : aucune`:v==='r'?`${t} : au hasard`:`<small>${fmtC(l.find(c=>String(c.id)===v))}</small>`;
+  const refresh=()=>{[['a','a'],['b','b']].forEach(([k])=>{$('#r'+(k==='a'?'ai':'bi')).innerHTML=info($('#r'+k).value===''?null:pick($('#r'+k).value))+'<br>'+infoX($('#rm'+k).value,REEL.magies,'Magie')+'<br>'+infoX($('#rp'+k).value,REEL.pieges,'Piège')})};
   const sc=document.createElement('script');sc.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
   sc.onerror=()=>{$('#rst').textContent='Impossible de charger la bibliothèque de connexion (réseau ?).'};
   sc.onload=async()=>{try{
     const sb=supabase.createClient('https://bjsvqikjnvaomyoifiml.supabase.co','sb_publishable_-3cPqDCyE-zhb3z5r6dPhg_DJFKGAI6');
-    const{data,error}=await sb.from('cartes').select('id,nom,type,atq,pv,actif,passif,ultime,variantes_carte(nom,image_path)').eq('type','combattant').order('nom');
+    const{data,error}=await sb.from('cartes').select('id,nom,type,atq,pv,actif,passif,ultime,effet,variantes_carte(nom,image_path)').in('type',['combattant','magie','piege']).order('nom');
     if(error)throw error;
-    REEL.cartes=(data||[]).map(c=>{const vs=c.variantes_carte||[],v=vs.find(x=>x.nom==='Standard')||vs[0]||{};return{id:c.id,type:'combattant',nom:c.nom,atq:c.atq,pv:c.pv,actif:c.actif,passif:c.passif,ultime:c.ultime,image:v.image_path||null}});
+    const all=(data||[]).map(c=>{const vs=c.variantes_carte||[],v=vs.find(x=>x.nom==='Standard')||vs[0]||{};return{id:c.id,type:c.type,nom:c.nom,atq:c.atq,pv:c.pv,actif:c.actif,passif:c.passif,ultime:c.ultime,effet:c.effet,image:v.image_path||null}});
+    REEL.cartes=all.filter(c=>c.type==='combattant');REEL.magies=all.filter(c=>c.type==='magie');REEL.pieges=all.filter(c=>c.type==='piege');
     if(!REEL.cartes.length){$('#rst').innerHTML='Aucun combattant lu. Si tu en as créé, connecte-toi d\'abord sur le site (dans ce même navigateur), puis recharge cette page.';return}
     const o='<option value="">🎲 Au hasard</option>'+REEL.cartes.map(c=>`<option value="${c.id}">${c.nom} — ATQ ${c.atq} · PV ${c.pv}${c.actif?'':' (non publiée)'}</option>`).join('');
-    $('#ra').innerHTML=o;$('#rb').innerHTML=o;$('#rst').textContent=REEL.cartes.length+' combattant(s) chargé(s). Choisis-en deux (toi à gauche, le bot à droite) ou laisse au hasard.';refresh();
+    const lab=c=>`<option value="${c.id}">${c.nom}${c.actif?'':' (non publiée)'}</option>`,om='<option value="">— Aucune magie —</option><option value="r">🎲 Magie au hasard</option>'+REEL.magies.map(lab).join(''),op='<option value="">— Aucun piège —</option><option value="r">🎲 Piège au hasard</option>'+REEL.pieges.map(lab).join('');
+    $('#ra').innerHTML=o;$('#rb').innerHTML=o;$('#rma').innerHTML=om;$('#rmb').innerHTML=om;$('#rpa').innerHTML=op;$('#rpb').innerHTML=op;
+    $('#rst').textContent=REEL.cartes.length+' combattant(s), '+REEL.magies.length+' magie(s), '+REEL.pieges.length+' piège(s) chargé(s). Choisis pour chaque joueur (toi à gauche, le bot à droite) ou laisse au hasard.';refresh();
    }catch(e){$('#rst').innerHTML='Impossible de lire les cartes : '+(e.message||e)+'<br>Connecte-toi d\'abord sur le site (dans ce même navigateur), puis recharge.'}};
   document.head.appendChild(sc);
-  $('#ra').onchange=$('#rb').onchange=refresh;
-  $('#rgo').onclick=()=>{if(enCours||!REEL.cartes.length)return;lancer(undefined,[{pseudo:'Toi',deck:[pick($('#ra').value)]},{pseudo:'Bot',deck:[pick($('#rb').value)]}])};
+  ['ra','rb','rma','rmb','rpa','rpb'].forEach(i=>$('#'+i).onchange=refresh);
+  $('#rgo').onclick=()=>{if(enCours||!REEL.cartes.length)return;lancer(undefined,[{pseudo:'Toi',deck:deckOf('#ra','#rma','#rpa')},{pseudo:'Bot',deck:deckOf('#rb','#rmb','#rpb')}])};
   $('#rre').onclick=()=>{if(!enCours&&dernier)lancer(dernier.seed,dernierDecks)};
   // Démo : plusieurs vrais combats d'affilée entre des cartes tirées au hasard
   let demoOn=false;const rnd=a=>a[Math.floor(Math.random()*a.length)];
@@ -689,17 +703,17 @@ if(DEMO){
     while(enCours&&demoOn)await sleep(200);if(!demoOn)break;
     const A=rnd(REEL.cartes);let B=rnd(REEL.cartes);if(REEL.cartes.length>1)while(B===A)B=rnd(REEL.cartes);
     $('#dl').textContent=`Combat ${i+1}/${n} : ${A.nom} contre ${B.nom}`;
-    lancer(undefined,[{pseudo:'Toi',deck:[A]},{pseudo:'Bot',deck:[B]}]);
+    lancer(undefined,[{pseudo:'Toi',deck:randDeck(A)},{pseudo:'Bot',deck:randDeck(B)}]);
     await sleep(300);while(enCours&&demoOn)await sleep(200);await sleep(800)}
    $('#dl').textContent=demoOn?'Démo terminée':'Démo arrêtée';demoOn=false;$('#rdm').textContent='🎬 Démo : enchaîner des combats'};
   // Tous contre tous : classement rapide pour repérer les cartes trop fortes ou cassées
   $('#rtt').onclick=()=>{const cs=REEL.cartes;if(cs.length<2){$('#rtab').textContent='Il faut au moins deux combattants.';return}
    const N=cs.length>40?8:20,st=cs.map(c=>({c,v:0,d:0,n:0,x:0}));
    for(let i=0;i<cs.length;i++)for(let j=0;j<cs.length;j++){if(i===j)continue;for(let s=0;s<N;s++){
-    const r=Moteur.simuler({pseudo:'A',deck:[cs[i]]},{pseudo:'B',deck:[cs[j]]},{seed:s*7919+i*31+j});st[i].n++;st[j].n++;
+    const mg=$('#rmp').checked,M=REEL.magies,Pg=REEL.pieges,dk=(c,k)=>mg?[c,...(M.length?[M[(s*5+k)%M.length]]:[]),...(Pg.length?[Pg[(s*3+k*2+1)%Pg.length]]:[])]:[c],r=Moteur.simuler({pseudo:'A',deck:dk(cs[i],i+j)},{pseudo:'B',deck:dk(cs[j],j+i+1)},{seed:s*7919+i*31+j});st[i].n++;st[j].n++;
     if(r.gagnant===0){st[i].v++;st[j].d++}else if(r.gagnant===1){st[j].v++;st[i].d++}else{st[i].x++;st[j].x++}}}
    st.sort((a,b)=>b.v/b.n-a.v/a.n);const p=(a,b)=>Math.round(a/b*100)+' %';
-   $('#rtab').innerHTML=`<b>Classement</b> (chaque carte contre toutes les autres, ${N*2} combats par paire, sans magie ni piège)<table style="width:100%;border-collapse:collapse;margin-top:3px"><tr style="opacity:.7"><td>Carte</td><td>ATQ/PV</td><td>Victoires</td><td>Défaites</td><td>Nuls</td></tr>${st.map(s=>`<tr><td>${s.c.nom}</td><td>${s.c.atq}/${s.c.pv}</td><td>${p(s.v,s.n)}</td><td>${p(s.d,s.n)}</td><td>${p(s.x,s.n)}</td></tr>`).join('')}</table>`};
+   $('#rtab').innerHTML=`<b>Classement</b> (chaque carte contre toutes les autres, ${N*2} combats par paire, ${$('#rmp').checked?'avec magies et pièges tirés dans la base':'sans magie ni piège'})<table style="width:100%;border-collapse:collapse;margin-top:3px"><tr style="opacity:.7"><td>Carte</td><td>ATQ/PV</td><td>Victoires</td><td>Défaites</td><td>Nuls</td></tr>${st.map(s=>`<tr><td>${s.c.nom}</td><td>${s.c.atq}/${s.c.pv}</td><td>${p(s.v,s.n)}</td><td>${p(s.d,s.n)}</td><td>${p(s.x,s.n)}</td></tr>`).join('')}</table>`};
  }
  mk();
 }
