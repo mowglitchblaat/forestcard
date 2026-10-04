@@ -195,7 +195,7 @@ async function upload(file){
 // Paramètres réutilisables : [libellé, 'n' (nombre) ou liste de choix]
 const P={val:['Valeur','n'],u:['Unité',['pts','pct']],tours:['Nb de tours','n'],chance:['Chance (%)','n'],frappes:['Nb de frappes','n'],
  coups:['Nb de coups','n'],cible:['Cible',['soi','adversaire']],carte:['Carte',['magie','piege']],seuil:['Seuil','n'],seuilpv:['Seuil (% PV)','n'],
- cond:['Condition',['pv_max','degats_infliges']],pct:['% PV rendus en plus','n'],val2:['2e valeur','n'],pctatq:["% de l'ATQ infligée volé en PV",'n'],pctpv:['% des PV max de la cible perdus par tour','n'],degtour:['Points de dégâts par tour','n']};
+ cond:['Condition',['pv_max','degats_infliges']],pct:['% PV rendus en plus','n'],val2:['2e valeur','n'],pctatq:["% de l'ATQ infligée volé en PV",'n'],pctpv:['% des PV max de la cible perdus par tour','n'],degtour:['Points de dégâts par tour','n'],ciblem:['Cible de la malédiction',['adversaire','soi']],max:['Plafond de frappes en plus','n']};
 // Chaque effet : [libellé, ...paramètres]
 const PAS={evite_mort:['Évite la mort une fois'],soin_tour:['Se soigne de X chaque tour','val','u'],renvoi:['Renvoie X dégâts reçus','val','u'],
  atq_tours:["Augmente l'ATQ tous les X tours",'tours','val','u'],pv_tours:['Augmente les PV tous les X tours','tours','val','u'],
@@ -204,15 +204,19 @@ const PAS={evite_mort:['Évite la mort une fois'],soin_tour:['Se soigne de X cha
  etourdir:["À X % de chances, étourdit la cible (n'attaque pas au prochain tour)",'chance'],
  vol_pct_atq:["À X % de chances, vole X % de l'ATQ infligée (soin)",'chance','pctatq'],
  brulure:["À X % de chances, applique une brûlure (% de PV par tour)",'chance','pctpv','tours'],
- poison:["À X % de chances, applique un poison (points par tour)",'chance','degtour','tours']};
+ poison:["À X % de chances, applique un poison (points par tour)",'chance','degtour','tours'],
+ malediction:["À X % de chances, maudit la cible (son ATQ baisse de X points par tour)",'chance','val','tours'],
+ enchainement:["À X % de chances, frappe une fois de plus, puis retente (s'arrête au 1er échec)",'chance','max']};
 const ULT={degats:["Dégâts directs à l'adversaire",'val'],voler:['Vole une magie/un piège','carte'],detruire:['Détruit une magie/un piège','carte'],
  equiper:['Équipe une autre magie/piège du deck','carte'],soin:['Se soigne','val','u'],vol_vie:['Vole de la vie','val'],echange_atq:["Échange l'attaque avec l'adversaire"],
- annule_attaque:['Annule la prochaine attaque'],double_degats:['Double ses dégâts pendant X tours','tours'],echange_atq_def:["Échange l'ATQ et la défense de l'adversaire"]};
+ annule_attaque:['Annule la prochaine attaque'],double_degats:['Double ses dégâts pendant X tours','tours'],echange_atq_def:["Échange l'ATQ et la défense de l'adversaire"],
+ malediction:["Malédiction : l'ATQ baisse de X points par tour pendant X tours",'ciblem','val','tours']};
 const MAG={atq_mod:["Modifie l'ATQ (négatif = baisse)",'cible','val','u'],pv_mod:['Modifie les PV max (négatif = baisse)','cible','val','u'],
  soin:['Soigne son combattant','val','u'],degats:["Dégâts directs à l'adversaire",'val'],annule_attaque:["Annule la prochaine attaque de l'adversaire"],
  renvoi:['Renvoie une part des dégâts pendant X tours','val','tours'],insensible_piege:['Insensible aux pièges pendant X tours','tours'],
  annule_magies:['Annule les autres magies pendant X tours','tours'],mort_evitee:['Évite la mort si condition (reste à 1 PV, une fois)','cond','seuil','pct'],
- degats_tours:['Inflige X dégâts après X tours','val','tours']};
+ degats_tours:['Inflige X dégâts après X tours','val','tours'],
+ malediction:["Malédiction : l'ATQ baisse de X points par tour pendant X tours",'ciblem','val','tours']};
 const CON={adv_attaque:["L'adversaire a attaqué X fois",'coups'],adv_ultime:["L'adversaire utilise son ultime"],proprio_pv_sous:['Le propriétaire passe sous X % de PV','seuilpv'],
  adv_pv_bas:["L'adversaire passe sous X % de PV",'seuilpv'],adv_soigne:["L'adversaire se soigne"],proprio_soigne:['Le propriétaire se soigne'],proprio_meurt:['Le propriétaire meurt']};
 let editId=null;
@@ -225,6 +229,19 @@ function mk(el,cat){
     d.querySelectorAll('[data-k]').forEach(i=>o[i.dataset.k]=i.tagName=='INPUT'?(i.value===''?null:+i.value):i.value);return o},
   set(o){if(!o||!o.type)return;s.value=o.type;if(s.value!==o.type){s.value='';return}s.onchange();
     d.querySelectorAll('[data-k]').forEach(i=>{if(o[i.dataset.k]!=null)i.value=o[i.dataset.k]})}};
+}
+
+// Multi-effet : plusieurs effets pour une même magie / un même piège (stockés sous forme { briques:[...] })
+function mkMulti(el,cat){
+  el.innerHTML='<div class="mm"></div><button type="button" class="sec mplus">+ Ajouter un effet</button>';
+  const zone=el.querySelector('.mm'),L=[];
+  const add=()=>{const w=document.createElement('div');w.style.cssText='border-left:3px solid #7c3aed;padding-left:8px;margin:6px 0';
+    const inner=document.createElement('div'),x=document.createElement('button');x.type='button';x.className='sec';x.textContent='✕ Retirer cet effet';
+    w.append(inner,x);zone.appendChild(w);const m=mk(inner,cat),it={m,w};L.push(it);
+    x.onclick=()=>{if(L.length<2)return;w.remove();L.splice(L.indexOf(it),1)};return m};
+  el.querySelector('.mplus').onclick=add;add();
+  return {get(){const a=L.map(i=>i.m.get()).filter(Boolean);return !a.length?null:a.length==1?a[0]:{briques:a}},
+   set(o){if(!o)return;const arr=o.briques||[o];while(L.length>1){L.pop().w.remove()}arr.forEach((b,i)=>{(i==0?L[0].m:add()).set(b)})}};
 }
 
 async function aCartes(){
@@ -261,7 +278,7 @@ async function aCartes(){
   <td><button class="sec" data-a="${c.id}" data-v="${c.actif}">${c.actif?'<span class="ok">Oui</span>':'<span class="ko">Non</span>'}</button></td>
   <td><button class="sec" data-edit="${c.id}" title="Modifier cette carte">✏️</button> <button class="sec" data-del="${c.id}" data-nom="${esc(c.nom)}" title="Supprimer cette carte">🗑️</button></td></tr>`).join('')}</table>`;
   const fc=$('#fc');
-  B={ult:mk($('#b-ult'),CAT.ult),pas:mk($('#b-pas'),CAT.pas),mag:mk($('#b-mag'),CAT.mag),con:mk($('#b-con'),CAT.con),pef:mk($('#b-pef'),{...CAT.ult,...CAT.mag})};
+  B={ult:mk($('#b-ult'),CAT.ult),pas:mk($('#b-pas'),CAT.pas),mag:mkMulti($('#b-mag'),CAT.mag),con:mk($('#b-con'),CAT.con),pef:mkMulti($('#b-pef'),{...CAT.ult,...CAT.mag})};
   const toggle=()=>{const t=fc.type.value;
     $('#r-stats').style.display=$('#s-comb').style.display=t=='combattant'?'':'none';
     $('#s-mag').style.display=t=='magie'?'':'none';$('#s-pie').style.display=t=='piege'?'':'none'};
