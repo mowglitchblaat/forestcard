@@ -195,7 +195,7 @@ async function upload(file){
 // Paramètres réutilisables : [libellé, 'n' (nombre) ou liste de choix]
 const P={val:['Valeur','n'],u:['Unité',['pts','pct']],tours:['Nb de tours','n'],chance:['Chance (%)','n'],frappes:['Nb de frappes','n'],
  coups:['Nb de coups','n'],cible:['Cible',['soi','adversaire']],carte:['Carte',['magie','piege']],seuil:['Seuil','n'],seuilpv:['Seuil (% PV)','n'],
- cond:['Condition',['pv_max','degats_infliges']],pct:['% PV rendus en plus','n'],val2:['2e valeur','n'],pctatq:["% de l'ATQ infligée volé en PV",'n'],pctpv:['% des PV max de la cible perdus par tour','n'],degtour:['Points de dégâts par tour','n'],ciblem:['Cible de la malédiction',['adversaire','soi']],max:['Plafond de frappes en plus','n']};
+ cond:['Condition',['pv_max','degats_infliges']],pct:['% PV rendus en plus','n'],val2:['2e valeur','n'],pctatq:["% de l'ATQ infligée volé en PV",'n'],pctpv:['% des PV max de la cible perdus par tour','n'],degtour:['Points de dégâts par tour','n'],ciblem:['Cible (adversaire par défaut)',['adversaire','soi']],max:['Plafond de frappes en plus','n']};
 // Chaque effet : [libellé, ...paramètres]
 const PAS={evite_mort:['Évite la mort une fois'],soin_tour:['Se soigne de X chaque tour','val','u'],renvoi:['Renvoie X dégâts reçus','val','u'],
  atq_tours:["Augmente l'ATQ tous les X tours",'tours','val','u'],pv_tours:['Augmente les PV tous les X tours','tours','val','u'],
@@ -216,7 +216,15 @@ const MAG={atq_mod:["Modifie l'ATQ (négatif = baisse)",'cible','val','u'],pv_mo
  renvoi:['Renvoie une part des dégâts pendant X tours','val','tours'],insensible_piege:['Insensible aux pièges pendant X tours','tours'],
  annule_magies:['Annule les autres magies pendant X tours','tours'],mort_evitee:['Évite la mort si condition (reste à 1 PV, une fois)','cond','seuil','pct'],
  degats_tours:['Inflige X dégâts après X tours','val','tours'],
- malediction:["Malédiction : l'ATQ baisse de X points par tour pendant X tours",'ciblem','val','tours']};
+ malediction:["Malédiction : l'ATQ baisse de X points par tour pendant X tours",'ciblem','val','tours'],
+ poison_effet:["Poison : X points par tour pendant X tours (soi ou adversaire)",'ciblem','degtour','tours'],
+ brulure_effet:["Brûlure : X % des PV max par tour pendant X tours (soi ou adversaire)",'ciblem','pctpv','tours'],
+ etourdir_effet:["Étourdit pendant X tours (soi ou adversaire)",'ciblem','tours'],
+ atk_brulure:["Attaque de base : X % de chances de brûler (X % des PV max par tour, X tours)",'chance','pctpv','tours'],
+ atk_poison:["Attaque de base : X % de chances d'empoisonner (X points par tour, X tours)",'chance','degtour','tours'],
+ atk_etourdir:["Attaque de base : +X % de chances d'étourdir (s'ajoute au passif)",'chance'],
+ esquive_mod:["Modifie le % d'esquive (négatif = baisse)",'cible','val'],
+ reset_ultime:["Réinitialise l'ultime (utilisable à nouveau)",'cible']};
 const CON={adv_attaque:["L'adversaire a attaqué X fois",'coups'],adv_ultime:["L'adversaire utilise son ultime"],proprio_pv_sous:['Le propriétaire passe sous X % de PV','seuilpv'],
  adv_pv_bas:["L'adversaire passe sous X % de PV",'seuilpv'],adv_soigne:["L'adversaire se soigne"],proprio_soigne:['Le propriétaire se soigne'],proprio_meurt:['Le propriétaire meurt']};
 let editId=null;
