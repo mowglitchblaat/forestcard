@@ -56,7 +56,7 @@ async function init(){
   header();show(tab);
 }
 function header(){
-  $('#me').innerHTML=`${isAdmin?'<small style="opacity:.5;margin-right:8px">site v6d</small>':''}${esc(joueur.pseudo)} · 💰 ${joueur.monnaie} <button class="sec" id="out">Déconnexion</button>`;
+  $('#me').innerHTML=`${isAdmin?'<small style="opacity:.5;margin-right:8px">site v8</small>':''}${esc(joueur.pseudo)} · 💰 ${joueur.monnaie} <button class="sec" id="out">Déconnexion</button>`;
   $('#out').onclick=async()=>{await sb.auth.signOut();location.reload()};
 }
 async function refreshJoueur(){joueur=await q(sb.from('joueurs').select('*').eq('id',user.id).single());header()}
