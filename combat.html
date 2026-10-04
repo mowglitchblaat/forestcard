@@ -31,6 +31,7 @@ canvas.fx.malediction{box-shadow:inset 0 0 40px 10px rgba(150,70,230,.7);animati
 .mp{display:flex;justify-content:center;gap:2vw;margin-top:1vh}
 .mw small{display:block;font-size:1.5vh;opacity:.8;margin-top:.4vh}
 .mini{width:6.5vw;aspect-ratio:5/7;border-radius:8px;background:#1b2a22 center/cover;display:flex;align-items:center;justify-content:center;font-size:1.4vh;font-weight:700;padding:3px;box-sizing:border-box;box-shadow:0 0 10px #000}
+.mini.vide{opacity:.3}
 .mini.back{background:linear-gradient(135deg,#7f1d1d,#1e1b4b);border:3px solid #f87171;font-size:4vh}
 .mini.rev{animation:rev .8s;box-shadow:0 0 20px #f87171}
 .mini.act{animation:act 1.6s;box-shadow:0 0 20px #60a5fa}
@@ -44,28 +45,38 @@ canvas.fx.poison{box-shadow:inset 0 0 40px 12px rgba(34,197,94,.75);animation:pg
 #fxs{position:fixed;inset:0;width:100%;height:100%;z-index:7;pointer-events:none}
 @keyframes dodge{0%{transform:none}25%{transform:translateX(calc(var(--dx)*5vw)) rotate(calc(var(--dx)*7deg)) skewX(calc(var(--dx)*-10deg))}100%{transform:none}}
 .card.dodge{animation:dodge .85s cubic-bezier(.2,.8,.3,1)}
-@keyframes tremble{0%{transform:none;filter:none}10%{transform:translate(-2px,1px) rotate(-.3deg)}20%{transform:translate(3px,-1px) rotate(.4deg)}30%{transform:translate(-4px,2px) rotate(-.6deg)}40%{transform:translate(4px,-2px) rotate(.7deg)}50%{transform:translate(-5px,2px) rotate(-.8deg)}60%{transform:translate(5px,-3px) rotate(.9deg)}70%{transform:translate(-6px,3px) rotate(-1deg)}80%{transform:translate(6px,-3px) rotate(1deg)}90%{transform:translate(-7px,3px) rotate(-1.1deg)}100%{transform:translate(7px,-3px) rotate(1.1deg);filter:grayscale(.7) brightness(.65)}}
+@keyframes tremble{0%{transform:none}10%{transform:translate(-2px,1px) rotate(-.3deg)}20%{transform:translate(3px,-1px) rotate(.4deg)}30%{transform:translate(-4px,2px) rotate(-.6deg)}40%{transform:translate(4px,-2px) rotate(.7deg)}50%{transform:translate(-5px,2px) rotate(-.8deg)}60%{transform:translate(5px,-3px) rotate(.9deg)}70%{transform:translate(-6px,3px) rotate(-1deg)}80%{transform:translate(6px,-3px) rotate(1deg)}90%{transform:translate(-7px,3px) rotate(-1.1deg)}100%{transform:translate(7px,-3px) rotate(1.1deg)}}
 .card.tremble{animation:tremble .52s linear forwards}
 canvas.fx.etourdi{box-shadow:inset 0 0 25px 6px rgba(250,204,21,.5)}
+#demo{position:fixed;left:50%;top:3vh;transform:translateX(-50%);width:34vw;max-height:94vh;overflow:auto;background:rgba(0,0,0,.55);border-radius:12px;padding:10px;font:13px system-ui;z-index:9;display:none}
+#demo h4{margin:8px 0 4px;font-size:11px;opacity:.7;text-transform:uppercase;letter-spacing:.08em}
+#demo .g{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+#demo button,#demo select{padding:7px 6px;border:0;border-radius:6px;background:#1f3a2c;color:#e8fff1;cursor:pointer;font-size:12px}
+#demo button:hover{background:#2f6a4a}#demo .big{background:#7c2d12;font-weight:700;width:100%;margin-bottom:4px}
+#dl{font:700 16px system-ui;min-height:40px;text-align:center;color:#fde68a;margin-bottom:6px}
 </style></head><body>
 <div id="scene"><div class="p" id="p0"></div>
 <div id="mid"><div id="tour"></div><div id="ban"></div></div><div class="p" id="p1"></div></div>
 <div id="ctl"><button id="nv">⚔️ Nouveau combat</button><button id="rj">↺ Rejouer le même</button><button id="ts">🔥☠️ Test brûlure + poison</button><button id="tm">💀 Test malédiction / enchaînement / renvoi</button>
 Vitesse <select id="vit"><option value="1.6">Lent</option><option value="1" selected>Normal</option><option value=".5">Rapide</option></select></div>
 <div id="log"></div><canvas id="fxs"></canvas>
+<script>
+if(/demo|test|debug/.test(location.search))addEventListener('error',e=>{let b=document.getElementById('errbox');if(!b){b=document.createElement('div');b.id='errbox';b.style.cssText='position:fixed;left:8px;top:8px;max-width:60vw;background:#7f1d1d;color:#fff;font:12px monospace;padding:6px 10px;border-radius:6px;z-index:99;white-space:pre-wrap';document.body.appendChild(b)}
+ b.textContent+=e.target&&e.target.src?'Fichier introuvable : '+e.target.src.split('/').pop()+'\n':'Erreur : '+e.message+' ('+(e.filename||'').split('/').pop()+':'+e.lineno+')\n'},true);
+</script>
 <script src="moteur-combat.js"></script>
 <script>
 const STORAGE='https://bjsvqikjnvaomyoifiml.supabase.co/storage/v1/object/public/cartes/';
 const $=s=>document.querySelector(s),wait=ms=>new Promise(r=>setTimeout(r,ms*+$('#vit').value));
-const TEST=location.search.includes('test');
-if(!TEST)document.body.classList.add('obs');
+const TEST=location.search.includes('test'),DEMO=location.search.includes('demo');
+if(!TEST&&!DEMO)document.body.classList.add('obs');
 
 // ---------- Affichage d'un journal ----------
 function mini(img,txt){return img?`style="background-image:url('${STORAGE+img}')"`:''}
 function panneau(i,j){$('#p'+i).innerHTML=`<div class="cw"><div class="card" ${j.image?`style="background-image:url('${STORAGE+j.image}')"`:''}>${j.image?'':j.carte}</div></div>
  <div class="nm">${j.pseudo} — ${j.carte}</div><div class="bar"><i></i></div><div class="pv"></div>
- <div class="mp"><div class="mw"><div class="mini" id="m${i}" ${mini(j.magieImg)}>${j.magieImg?'':j.magie}</div><small>Magie</small></div>
- <div class="mw"><div class="mini back" id="g${i}">?</div><small>Piège</small></div></div>`}
+ <div class="mp"><div class="mw"><div class="mini${/^Aucun/.test(j.magie)?' vide':''}" id="m${i}" ${mini(j.magieImg)}>${j.magieImg?'':j.magie}</div><small>Magie</small></div>
+ <div class="mw"><div class="mini back${/^Aucun/.test(j.piege)?' vide':''}" id="g${i}">?</div><small>Piège</small></div></div>`}
 let st={};const fxAll=new Set(),R=(a,b)=>a+Math.random()*(b-a);
 function fxStart(card,k){
  const cv=document.createElement('canvas');cv.className='fx '+k;const d=window.devicePixelRatio||1,W=card.clientWidth,H=card.clientHeight;
@@ -112,6 +123,10 @@ function fxStart(card,k){
 }
 
 function rr(x,a,b,w,h,r){x.beginPath();x.moveTo(a+r,b);x.arcTo(a+w,b,a+w,b+h,r);x.arcTo(a+w,b+h,a,b+h,r);x.arcTo(a,b+h,a,b,r);x.arcTo(a,b,a+w,b,r);x.closePath()}
+function spr(sz,stops){const c=document.createElement('canvas');c.width=c.height=sz;const g=c.getContext('2d'),r=g.createRadialGradient(sz/2,sz/2,0,sz/2,sz/2,sz/2);stops.forEach(([o,col])=>r.addColorStop(o,col));g.fillStyle=r;g.fillRect(0,0,sz,sz);return c}
+const SPR={fumee:spr(96,[[0,'rgba(14,0,6,1)'],[1,'rgba(14,0,6,0)']]),braise:spr(96,[[0,'rgba(200,10,10,1)'],[1,'rgba(120,0,0,0)']]),mote:spr(64,[[0,'rgba(255,215,90,1)'],[1,'rgba(255,180,0,0)']])};
+const STAR=(()=>{const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d'),m=64,r=g.createRadialGradient(m,m,0,m,m,m);r.addColorStop(0,'rgba(255,250,225,1)');r.addColorStop(.35,'rgba(255,200,60,.65)');r.addColorStop(1,'rgba(255,170,0,0)');g.fillStyle=r;g.fillRect(0,0,128,128);
+ g.fillStyle='rgba(255,248,225,1)';g.beginPath();g.moveTo(0,m);g.lineTo(m,m-5);g.lineTo(128,m);g.lineTo(m,m+5);g.closePath();g.fill();g.beginPath();g.moveTo(m,0);g.lineTo(m+5,m);g.lineTo(m,128);g.lineTo(m-5,m);g.closePath();g.fill();return c})();
 function auraRouge(c,o={}){
  const DUR=o.dur||2.4,cw=$('#p'+c+' .cw'),card=cw.querySelector('.card'),W=card.clientWidth,H=card.clientHeight,pad=Math.round(W*.4),top=Math.round(W*.9),d=window.devicePixelRatio||1,CW=W+2*pad,CH=H+top+pad,sc=W/320,ox=pad,oy=top;
  const cv=document.createElement('canvas');cv.className='fx ultfx';cv.width=CW*d;cv.height=CH*d;
@@ -137,30 +152,37 @@ function auraRouge(c,o={}){
 }
 function auraFx(c,o={}){
  if(!o.gold)return auraRouge(c,o);
- const gold=!!o.gold,DUR=o.dur||2.3,cw=$('#p'+c+' .cw'),card=cw.querySelector('.card'),W=card.clientWidth,H=card.clientHeight,pad=Math.round(W*.32),d=window.devicePixelRatio||1,CW=W+2*pad,CH=H+2*pad,sc=W/320;
+ const gold=!!o.gold,DUR=o.dur||(gold?5.2:2.7),cw=$('#p'+c+' .cw'),card=cw.querySelector('.card'),W=card.clientWidth,H=card.clientHeight,pad=Math.round(W*(gold?.32:.55)),d=window.devicePixelRatio||1,CW=W+2*pad,CH=H+2*pad,sc=W/320;
  const cv=document.createElement('canvas');cv.className='fx ultfx';cv.width=CW*d;cv.height=CH*d;
  cv.style.cssText=`position:absolute;left:${-pad}px;top:${-pad}px;width:${CW}px;height:${CH}px;z-index:2;pointer-events:none`;
  cw.appendChild(cv);const x=cv.getContext('2d');x.scale(d,d);
- const C=gold?{h:'255,200,40',e:'255,225,110',a:[255,235,140],b:[255,160,20],z:[150,80,0],sm:null}:{h:'255,15,10',e:'255,40,30',a:[255,90,40],b:[210,10,10],z:[60,0,10],sm:'30,0,8'};
- const mix=(p,q,k)=>p.map((v,i)=>Math.round(v+(q[i]-v)*k)).join(','),fcol=u=>u<.4?mix(C.a,C.b,u/.4):mix(C.b,C.z,(u-.4)/.6);
+ const hc=gold?'255,200,40':'200,10,20',ec=gold?'255,225,110':'255,50,40';
+ const glow=document.createElement('canvas');glow.width=CW*d;glow.height=CH*d;{const g=glow.getContext('2d');g.scale(d,d);g.strokeStyle=`rgba(${ec},.55)`;g.lineWidth=4*sc;
+  [[110,.9],[45,1]].forEach(([bl,al])=>{g.save();g.shadowColor=`rgba(${hc},${al})`;g.shadowBlur=bl*sc*d;rr(g,pad,pad,W,H,12);g.stroke();g.restore()})}
+ const inner=document.createElement('canvas');inner.width=W;inner.height=H;{const g=inner.getContext('2d');rr(g,0,0,W,H,12);g.clip();const ig=g.createRadialGradient(W/2,H/2,H*.28,W/2,H/2,H*.8);ig.addColorStop(0,`rgba(${hc},0)`);ig.addColorStop(1,`rgba(${hc},${gold?.3:.4})`);g.fillStyle=ig;g.fillRect(0,0,W,H)}
  const per=()=>{const s=Math.random()*(2*W+2*H);let px,py,nx=0,ny=0;if(s<W){px=s;py=0;ny=-1}else if(s<W+H){px=W;py=s-W;nx=1}else if(s<2*W+H){px=s-W-H;py=H;ny=1}else{px=0;py=s-2*W-H;nx=-1}return[px+pad,py+pad,nx,ny]};
  const t0=performance.now();let P=[],raf,run=true;
  function frame(){
   if(!run)return;const t=(performance.now()-t0)/1000;
   if(t>DUR){cv._stop();cv.remove();return}
-  const env=t<.35?t/.35:t<DUR-.6?1:Math.max(0,(DUR-t)/.6),pul=gold?1+.15*Math.sin(t*3):1+.3*Math.sin(t*9)+.15*Math.sin(t*23+1);
-  x.clearRect(0,0,CW,CH);
-  if(gold){x.globalCompositeOperation='lighter';for(let i=0;i<10;i++){const a=i*.628+t*.35,L=Math.max(CW,CH)*.7,g=x.createLinearGradient(CW/2,CH/2,CW/2+Math.cos(a)*L,CH/2+Math.sin(a)*L);g.addColorStop(0,`rgba(255,220,100,${.2*env})`);g.addColorStop(1,'rgba(255,200,60,0)');
-   x.fillStyle=g;x.beginPath();x.moveTo(CW/2,CH/2);x.lineTo(CW/2+Math.cos(a-.09)*L,CH/2+Math.sin(a-.09)*L);x.lineTo(CW/2+Math.cos(a+.09)*L,CH/2+Math.sin(a+.09)*L);x.fill()}}
-  x.globalCompositeOperation='lighter';
-  [[170,.5],[85,.75],[34,1]].forEach(([bl,al])=>{x.save();x.shadowColor=`rgba(${C.h},${al*env})`;x.shadowBlur=bl*sc*pul*d;x.strokeStyle=`rgba(${C.e},${.45*env})`;x.lineWidth=3*sc;rr(x,pad,pad,W,H,12);x.stroke();x.restore()});
-  x.save();rr(x,pad,pad,W,H,12);x.clip();const ig=x.createRadialGradient(CW/2,CH/2,H*.3,CW/2,CH/2,H*.8);ig.addColorStop(0,`rgba(${C.h},0)`);ig.addColorStop(1,`rgba(${C.h},${(gold?.3:.4)*env*pul})`);x.fillStyle=ig;x.fillRect(pad,pad,W,H);x.restore();
-  if(t<DUR-.6)for(let i=0;i<(gold?8:16);i++){const[px,py,nx,ny]=per();P.push({x:px,y:py,vx:nx*R(.3,1.5)*sc+R(-.4,.4),vy:ny*R(.4,1.6)*sc-R(2.2,5.2)*sc,s:R(.07,.15)*W*(gold?1:1.15),l:0,d:R(gold?.8:1.1,gold?1.5:2)})}
-  for(const p of P){p.l+=.016/p.d;const u=p.l;if(u>=1)continue;p.x+=p.vx+Math.sin(t*5+p.y*.03)*.6;p.y+=p.vy;const r=p.s*(1-u*.45),a=1-u;
-   x.save();x.translate(p.x,p.y);x.scale(.75,1.9);
-   if(C.sm){x.globalCompositeOperation='source-over';orb(x,0,0,r*1.3,`rgba(${C.sm},${a*.4*env})`,`rgba(${C.sm},0)`);x.globalCompositeOperation='lighter'}
-   orb(x,0,0,r,`rgba(${fcol(u)},${a*.85*env})`,`rgba(${C.z},0)`);x.restore()}
-  P=P.filter(p=>p.l<1);x.globalCompositeOperation='source-over';raf=requestAnimationFrame(frame)}
+  const env=t<.4?t/.4:t<DUR-.7?1:Math.max(0,(DUR-t)/.7),pul=gold?1+.12*Math.sin(t*3):1+.18*Math.sin(t*5)+.08*Math.sin(t*13);
+  x.clearRect(0,0,CW,CH);x.globalCompositeOperation='lighter';
+  x.globalAlpha=cl(env*(.7+.3*pul));x.drawImage(glow,0,0,CW,CH);x.globalAlpha=cl(env*pul);x.drawImage(inner,pad,pad,W,H);
+  if(gold){
+   if(t<DUR-.6){for(let i=0;i<4;i++){const[px,py,nx,ny]=per(),of=R(-.02,.28)*W;P.push({k:'s',x:px+nx*of+R(-8,8),y:py+ny*of+R(-8,8),vx:R(-.15,.15),vy:-R(.1,.5)*sc,s:R(5,16)*sc,l:0,d:R(.5,1.1),ph:Math.random()*9})}
+    for(let i=0;i<2;i++){const[px,py,nx,ny]=per();P.push({k:'m',x:px+nx*R(0,.1)*W,y:py+ny*R(0,.1)*W,vx:R(-.2,.2),vy:-R(.5,1.1)*sc,s:R(.02,.05)*W,l:0,d:R(1.2,2)})}}
+   for(const p of P){p.l+=.016/p.d;const u=p.l;if(u>=1)continue;p.x+=p.vx;p.y+=p.vy;
+    if(p.k==='m'){x.globalAlpha=Math.sin(Math.PI*u)*.5*env;const z=p.s*4;x.drawImage(SPR.mote,p.x-z/2,p.y-z/2,z,z);continue}
+    const a=Math.sin(Math.PI*u)*(.55+.45*Math.sin(t*34+p.ph)),z=p.s*(.6+.4*a)*3.6;x.globalAlpha=cl(a);x.drawImage(STAR,p.x-z/2,p.y-z/2,z,z)}
+  }else{
+   if(t<DUR-.8)for(let i=0;i<3;i++){const[px,py,nx,ny]=per();P.push({x:px+nx*.05*W,y:py+ny*.05*W,vx:nx*R(.2,.9)*sc,vy:ny*R(.2,.9)*sc-R(.5,1.4)*sc,s:R(.14,.26)*W,l:0,d:R(1.8,2.6),ph:Math.random()*6})}
+   for(const p of P){p.l+=.016/p.d;const u=p.l;if(u>=1)continue;
+    p.x+=p.vx+Math.sin(t*1.6+p.y*.015+p.ph)*.9*sc;p.y+=p.vy+Math.cos(t*1.2+p.x*.015+p.ph)*.4*sc;
+    const a=Math.pow(Math.sin(Math.PI*u),.8)*env,r=p.s*(.6+.7*u);
+    x.globalCompositeOperation='source-over';x.globalAlpha=a*.55;x.drawImage(SPR.fumee,p.x-r,p.y-r,r*2,r*2);
+    x.globalCompositeOperation='lighter';x.globalAlpha=a*.25*(1-u*.5);x.drawImage(SPR.braise,p.x-r*.8,p.y-r*.8,r*1.6,r*1.6)}
+  }
+  x.globalAlpha=1;P=P.filter(p=>p.l<1);x.globalCompositeOperation='source-over';raf=requestAnimationFrame(frame)}
  cv._stop=()=>{run=false;cancelAnimationFrame(raf)};fxAll.add(cv._stop);frame();
 }
 const ultFx=c=>auraFx(c);
@@ -292,15 +314,16 @@ function briser(c){const cw=$('#p'+c+' .cw'),card=cw.querySelector('.card'),K=rc
  addFx(.6,(x,t)=>{rr(x,K.x,K.y,K.w,K.h,12);x.clip();const p=cl(t/.5);x.globalCompositeOperation='lighter';x.lineCap='round';x.lineJoin='round';
   for(const ps of[[10,'rgba(255,170,80,.7)',5],[0,'rgba(255,255,255,.95)',2.2]]){x.shadowColor=ps[1];x.shadowBlur=ps[0];x.strokeStyle=ps[1];x.lineWidth=ps[2];
    for(const pts of cr){const n=p*(pts.length-1),w=Math.floor(n);x.beginPath();x.moveTo(pts[0][0],pts[0][1]);for(let i=1;i<=w;i++)x.lineTo(pts[i][0],pts[i][1]);if(w<pts.length-1){const f=n-w;x.lineTo(pts[w][0]+(pts[w+1][0]-pts[w][0])*f,pts[w][1]+(pts[w+1][1]-pts[w][1])*f)}x.stroke()}}});
- setTimeout(()=>{const NX=7,NY=9,pt=[];for(let j=0;j<=NY;j++){pt[j]=[];for(let i=0;i<=NX;i++)pt[j][i]=[i/NX*100+(i&&i<NX?R(-5,5):0),j/NY*100+(j&&j<NY?R(-4,4):0)]}
+ setTimeout(()=>{const NX=5,NY=7,pt=[];for(let j=0;j<=NY;j++){pt[j]=[];for(let i=0;i<=NX;i++)pt[j][i]=[i/NX*100+(i&&i<NX?R(-6,6):0),j/NY*100+(j&&j<NY?R(-5,5):0)]}
   const tris=[];for(let j=0;j<NY;j++)for(let i=0;i<NX;i++){const a=pt[j][i],b=pt[j][i+1],e=pt[j+1][i+1],f=pt[j+1][i];tris.push([a,b,e],[a,e,f])}
-  const T3=(dx,dy,dz,rx,ry,rz)=>`perspective(900px) translate3d(${dx}px,${dy}px,${dz}px) rotateX(${rx}deg) rotateY(${ry}deg) rotateZ(${rz}deg)`;
+  const box=document.createElement('div');Object.assign(box.style,{position:'absolute',left:'0',top:'0',width:'100%',height:'100%',zIndex:'1',pointerEvents:'none'});cw.appendChild(box);
   for(const tri of tris){const s=card.cloneNode(true);s.querySelectorAll('canvas').forEach(n=>n.remove());s.className='card';
-   Object.assign(s.style,{position:'absolute',left:'0',top:'0',width:'100%',height:'100%',aspectRatio:'auto',zIndex:'1',animation:'none',filter:'grayscale(.7) brightness(.65)',clipPath:`polygon(${tri.map(p=>p[0]+'% '+p[1]+'%').join(',')})`});cw.appendChild(s);
-   const vx=((tri[0][0]+tri[1][0]+tri[2][0])/3-50)/50,vy=((tri[0][1]+tri[1][1]+tri[2][1])/3-50)/50,dx=vx*K.w*R(.6,1.2)+R(-.1,.1)*K.w,up=-K.h*R(.05,.3)*(vy<0?1.4:.6),dn=K.h*R(.6,1.3),rx=R(-200,200),ry=R(-200,200),rz=R(-240,240);
-   s.animate([{transform:T3(0,0,0,0,0,0),opacity:1,easing:'cubic-bezier(.1,.7,.3,1)'},{offset:.3,transform:T3(dx*.55,up,R(0,150),rx*.5,ry*.5,rz*.5),opacity:1,easing:'cubic-bezier(.5,0,.9,.6)'},{transform:T3(dx,dn,R(-100,200),rx,ry,rz),opacity:0}],{duration:R(1300,2000),delay:Math.hypot(vx,vy)*120,fill:'forwards'}).onfinish=()=>s.remove()}
+   Object.assign(s.style,{position:'absolute',left:'0',top:'0',width:'100%',height:'100%',aspectRatio:'auto',animation:'none',transition:'none',willChange:'transform,opacity',clipPath:`polygon(${tri.map(p=>p[0]+'% '+p[1]+'%').join(',')})`});box.appendChild(s);
+   const vx=((tri[0][0]+tri[1][0]+tri[2][0])/3-50)/50,vy=((tri[0][1]+tri[1][1]+tri[2][1])/3-50)/50,dx=vx*K.w*R(.6,1.2)+R(-.1,.1)*K.w,up=-K.h*R(.05,.3)*(vy<0?1.4:.6),dn=K.h*R(.6,1.3),rz=R(-240,240);
+   s.animate([{transform:'translate(0,0) rotate(0deg)',opacity:1,easing:'cubic-bezier(.1,.7,.3,1)'},{offset:.3,transform:`translate(${dx*.55}px,${up}px) rotate(${rz*.5}deg)`,opacity:1,easing:'cubic-bezier(.5,0,.9,.6)'},{transform:`translate(${dx}px,${dn}px) rotate(${rz}deg)`,opacity:0}],{duration:R(1200,1800),delay:Math.hypot(vx,vy)*100,fill:'forwards'})}
+  setTimeout(()=>box.remove(),2300);
   card.classList.remove('tremble');card.style.visibility='hidden';
-  const deb=[],smo=[];for(let i=0;i<34;i++)deb.push({a:Math.random()*6.28,v:R(200,700)*K.w/420,w:R(3,10)*K.w/420,r:Math.random()*6,g:R(.45,.8)});for(let i=0;i<12;i++)smo.push({vx:R(-.9,.9),vy:R(-.7,.5),d:R(0,.25)});
+  const deb=[],smo=[];for(let i=0;i<18;i++)deb.push({a:Math.random()*6.28,v:R(200,700)*K.w/420,w:R(3,10)*K.w/420,r:Math.random()*6,g:R(.45,.8)});for(let i=0;i<6;i++)smo.push({vx:R(-.9,.9),vy:R(-.7,.5),d:R(0,.25)});
   addFx(1.6,(x,t)=>{x.globalCompositeOperation='lighter';const fu=cl(1-t/.3);if(fu>0)orb(x,K.cx,K.cy,K.w*(.5+t),`rgba(255,255,255,${fu*.9})`,'rgba(255,255,255,0)');
    if(t<.5){const r=K.w*(.2+1.1*cl(t/.5));x.strokeStyle=`rgba(255,235,200,${1-t/.5})`;x.lineWidth=6*(1-t/.5)+1;x.beginPath();x.ellipse(K.cx,K.cy,r,r*1.2,0,0,7);x.stroke()}
    x.globalCompositeOperation='source-over';
@@ -405,6 +428,51 @@ if(TEST){$('#ctl').style.display='flex';$('#log').style.display='block';
   dernier=Moteur.simuler({pseudo:'Toi',deck:[A,...m]},{pseudo:'Bot',deck:[B,...m]},{});jouer(dernier)};
  $('#rj').onclick=()=>{if(!enCours&&dernier)lancer(dernier.seed)};setTimeout(()=>lancer(),500)}
 
+
+// ---------- Mode démo : tous les effets, un bouton chacun (combat.html?demo) ----------
+if(DEMO){
+ const dm=document.createElement('div');dm.id='demo';document.body.appendChild(dm);dm.style.display='block';$('#mid').style.visibility='hidden';document.body.style.background='#0b1410';
+ const J=i=>({pseudo:i?'Bot':'Toi',carte:i?'Spectre':'Chasseur',magie:'Rage',piege:'Riposte'});
+ const mk=()=>{fxAll.forEach(s=>s());fxAll.clear();fxL.length=0;st={};document.getAnimations().forEach(a=>a.cancel());document.querySelectorAll('canvas.fx').forEach(k=>k.remove());[0,1].forEach(i=>panneau(i,J(i)));maj({pv:[70,70],max:[70,70],atq:[12,12]});$('#scene').classList.add('on')};
+ const cardOf=c=>$('#p'+c+' .card'),has=(c,k)=>!!cardOf(c).querySelector('canvas.fx.'+k);
+ const S=[
+  ['Défense','Esquive',c=>{flot(c,'Esquive !','#e5e7eb');vent(c)},1700],
+  ['Défense','Blocage (bouclier)',c=>bouclier(c),1600],
+  ['Défense','Renvoi de dégâts (miroir)',c=>miroir(c,1-c),2100],
+  ['Défense','Évite la mort (ailes)',c=>ailes(c),2400],
+  ['Défense','Réanimation (auréole)',c=>{flot(c,'+20','#4ade80');soin(c);aureole(c)},2000],
+  ['Soin et stats','Soin',c=>{flot(c,'+15','#4ade80');soin(c)},1600],
+  ['Soin et stats','Hausse d\'ATQ',c=>fleches(c,'ATQ',4),1700],
+  ['Soin et stats','Baisse de PV max',c=>fleches(c,'PV max',-6),1700],
+  ['Échanges','Échange d\'ATQ (bleu)',()=>echangeLien(0,1,'bleu'),2000],
+  ['Échanges','Échange de PV (rouge)',()=>echangeLien(0,1,'rouge'),2000],
+  ['Échanges','Échange ATQ + PV (mixte)',()=>echangeLien(0,1,'mixte'),2000],
+  ['Échanges','Tourbillon (une seule carte)',c=>echange(c),2000],
+  ['Statuts','Brûlure',c=>statut(c,'brulure',true),2800,c=>statut(c,'brulure',false),'brulure'],
+  ['Statuts','Poison',c=>statut(c,'poison',true),2800,c=>statut(c,'poison',false),'poison'],
+  ['Statuts','Étourdissement',c=>statut(c,'etourdi',true),2800,c=>statut(c,'etourdi',false),'etourdi'],
+  ['Statuts','Malédiction (crânes)',c=>{statut(c,'malediction',true);cranes(c)},2800,c=>statut(c,'malediction',false),'malediction'],
+  ['Combat','Ultime (aura démoniaque)',c=>{const k=cardOf(c);k.classList.add('ult');auraFx(c);setTimeout(()=>k.classList.remove('ult'),2800)},2900],
+  ['Combat','Dégâts',c=>{const k=cardOf(c);k.classList.add('hit');flot(c,'-12','#f87171');setTimeout(()=>k.classList.remove('hit'),450)},1100],
+  ['Combat','Gros dégâts (rouge vif)',c=>{const k=cardOf(c);k.classList.add('hit');flot(c,'-34','#ff1111','big');setTimeout(()=>k.classList.remove('hit'),450)},1500],
+  ['Combat','Dégâts de poison (vert)',c=>flot(c,'-3','#22ff55'),1500],
+  ['Combat','Dégâts de feu (orange)',c=>flot(c,'-4','#ff8a00'),1500],
+  ['Combat','Magie activée',c=>{const m=$('#m'+c);m.classList.add('act');setTimeout(()=>m.classList.remove('act'),1700)},1800],
+  ['Combat','Piège déclenché',c=>{const g=$('#g'+c);g.classList.remove('back');g.classList.add('rev');g.textContent='Riposte'},2000],
+  ['Fin','Défaite + victoire dorée',c=>{briser(1-c);auraFx(c,{gold:1})},5400,null,null,true]];
+ const tg=()=>+$('#dc').value,dw=ms=>new Promise(r=>setTimeout(r,ms*(location.search.includes('fast')?.12:1)));
+ const lab=(s,c)=>{$('#dl').textContent=s[1]+(s[0]==='Échanges'?'':' — '+(c?'Bot':'Toi'))};
+ const run=(s,c)=>{lab(s,c);if(s[4]&&has(c,s[5])){s[4](c);return}s[3+0]&&s[2](c);if(s[6])setTimeout(mk,s[3]+1500)};
+ let html='<div style="font-size:10px;opacity:.5;text-align:right">combat.html v6b — démo</div><div id="dl">Choisis un effet ↓</div><button class="big" id="dseq">▶ Tout enchaîner</button><div style="display:flex;gap:6px;margin-bottom:4px"><select id="dc"><option value="0">Cible : Toi (gauche)</option><option value="1">Cible : Bot (droite)</option></select><button id="drs">↺ Réinitialiser</button></div>',g='';
+ S.forEach((s,i)=>{if(s[0]!==g){if(g)html+='</div>';html+=`<h4>${s[0]}</h4><div class="g">`;g=s[0]}html+=`<button data-i="${i}">${s[1]}</button>`});html+='</div>';dm.innerHTML=html;
+ dm.querySelectorAll('button[data-i]').forEach(b=>b.onclick=()=>run(S[+b.dataset.i],tg()));
+ $('#drs').onclick=mk;let seq=false;
+ $('#dseq').onclick=async()=>{if(seq)return;seq=true;mk();await dw(800);
+  for(let i=0;i<S.length;i++){const s=S[i],c=i%2;lab(s,c);s[2](c);await dw(s[3]);if(s[4])s[4](c)}
+  $('#dl').textContent='Fin de la démo';await dw(1500);mk();seq=false};
+ mk();
+}
+
 // ---------- Mode live : reçoit le journal par WebSocket (Streamer.bot) ----------
 function extraire(d){for(let k=0;k<4;k++){if(typeof d==='string'){try{d=JSON.parse(d)}catch(x){return null}}
  if(Array.isArray(d))d=d[0];if(d&&d.journal)return d;if(d&&d.data)d=d.data;else return null}return null}
@@ -412,5 +480,5 @@ function connect(){const ws=new WebSocket('ws://127.0.0.1:8080/');
  ws.onopen=()=>ws.send(JSON.stringify({request:'Subscribe',id:'sub-combat',events:{General:['Custom']}}));
  ws.onmessage=e=>{const r=extraire(e.data);if(r)jouer(r)};
  ws.onclose=()=>setTimeout(connect,3000);ws.onerror=()=>ws.close()}
-if(!TEST)connect();
+if(!TEST&&!DEMO)connect();
 </script></body></html>
