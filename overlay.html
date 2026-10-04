@@ -32,15 +32,16 @@ const STORAGE='https://bjsvqikjnvaomyoifiml.supabase.co/storage/v1/object/public
 const box=document.getElementById('box'),titre=document.getElementById('titre'),zone=document.getElementById('cartes');
 const SB='https://bjsvqikjnvaomyoifiml.supabase.co',KEY='sb_publishable_-3cPqDCyE-zhb3z5r6dPhg_DJFKGAI6';
 const packwrap=document.getElementById('packwrap'),pack=document.getElementById('pack'),rays=document.getElementById('rays'),flash=document.getElementById('flash');
-const imgCache={};
+const imgCache={};let imgErr='';
 // Image du booster : celle envoyée par Streamer.bot (image_path) sinon lue dans la base d'après le nom du booster
 async function boosterImg(d){
   let p=d.image_path||d.booster_image||d.image_booster||null;
   if(!p&&d.booster){
     if(d.booster in imgCache)p=imgCache[d.booster];
     else{try{const c=new AbortController();setTimeout(()=>c.abort(),2500);
-      const r=await fetch(SB+'/rest/v1/types_boosters?select=image_path&nom=eq.'+encodeURIComponent(d.booster)+'&limit=1',{headers:{apikey:KEY},signal:c.signal});
-      const j=await r.json();p=(Array.isArray(j)&&j[0]&&j[0].image_path)||null}catch(x){p=null}
+      const r=await fetch(SB+'/rest/v1/types_boosters?select=image_path&nom=ilike.'+encodeURIComponent(d.booster)+'&limit=1',{headers:{apikey:KEY},signal:c.signal});
+      const j=await r.json();p=(Array.isArray(j)&&j[0]&&j[0].image_path)||null;
+      imgErr=!r.ok?'erreur '+r.status+' : '+((j&&j.message)||''):!j.length?'aucun booster lisible nommé « '+d.booster+' » (nom différent, ou table non lisible sans connexion)':!p?'ce booster n\'a pas d\'image enregistrée':''}catch(x){p=null;imgErr='lecture impossible : '+x}
       imgCache[d.booster]=p}}
   if(!p)return null;
   const url=/^https?:/.test(p)?p:STORAGE+p;
@@ -50,7 +51,7 @@ async function boosterImg(d){
 // Animation d'ouverture : le paquet tombe, tremble, une lumière jaillit, le haut s'arrache puis les cartes apparaissent
 async function ouverture(d){
   const url=await boosterImg(d);
-  if(DEBUG){dbgMsg+='\nImage du booster : '+(url||'aucune (paquet générique)');majDbg()}
+  if(DEBUG){dbgMsg+='\nImage du booster : '+(url||'aucune (paquet générique) — '+imgErr);majDbg()}
   const mkl=cl=>{let e;if(url){e=new Image();e.src=url}else{e=document.createElement('div');e.className='fb';e.textContent=d.booster||'Booster'}e.classList.add('lay',cl);return e};
   pack.querySelectorAll('.lay').forEach(e=>e.remove());rays.getAnimations().forEach(a=>a.cancel());pack.getAnimations().forEach(a=>a.cancel());
   const bot=mkl('bot'),top=mkl('top');pack.append(bot,top);
