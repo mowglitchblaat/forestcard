@@ -503,6 +503,8 @@ const DECK=[
  {type:'combattant',nom:'Spectre',atq:9,pv:55,passif:{type:'brulure',chance:40,pctpv:6,tours:3},ultime:{type:'echange_atq',sur_carte:true,utilisations:1}},
  {type:'combattant',nom:'Goule',atq:8,pv:80,passif:{type:'multi_frappe',chance:35,frappes:2},ultime:{type:'vol_vie',val:12,apres_tours:5,utilisations:1}},
  {type:'magie',nom:'Rage',effet:{type:'atq_mod',cible:'soi',val:20,u:'pct'}},
+ {type:'magie',nom:'Affaiblissement',effet:{type:'atq_mod',cible:'adversaire',val:-25,u:'pct'}},
+ {type:'magie',nom:'Vitalité',effet:{type:'pv_mod',cible:'soi',val:15,u:'pct'}},
  {type:'magie',nom:'Malédiction',effet:{type:'pv_mod',cible:'adversaire',val:-10,u:'pct'}},
  {type:'magie',nom:'Bouclier de ronces',effet:{type:'renvoi',val:25,tours:3}},
  {type:'piege',nom:'Riposte',effet:{condition:{type:'adv_attaque',coups:2},effet:{type:'degats',val:8},declenchements:1}},
@@ -530,6 +532,8 @@ if(DEMO){
   ['Défense','Réanimation (auréole)',c=>{flot(c,'+20','#4ade80');soin(c);aureole(c)},2000],
   ['Soin et stats','Soin',c=>{flot(c,'+15','#4ade80');soin(c)},1600],
   ['Soin et stats','Hausse d\'ATQ',c=>fleches(c,'ATQ',4),1700],
+  ['Soin et stats','Baisse d\'ATQ',c=>fleches(c,'ATQ',-4),1700],
+  ['Soin et stats','Hausse de PV max',c=>fleches(c,'PV max',6),1700],
   ['Soin et stats','Baisse de PV max',c=>fleches(c,'PV max',-6),1700],
   ['Échanges','Échange d\'ATQ (bleu)',()=>echangeLien(0,1,'bleu'),2000],
   ['Échanges','Échange de PV (rouge)',()=>echangeLien(0,1,'rouge'),2000],
@@ -550,7 +554,7 @@ if(DEMO){
  const tg=()=>+$('#dc').value,dw=ms=>new Promise(r=>setTimeout(r,ms*(location.search.includes('fast')?.12:1)));
  const lab=(s,c)=>{$('#dl').textContent=s[1]+(s[0]==='Échanges'?'':' — '+(c?'Bot':'Toi'))};
  const run=(s,c)=>{lab(s,c);if(s[4]&&has(c,s[5])){s[4](c);return}s[3+0]&&s[2](c);if(s[6])setTimeout(mk,s[3]+1500)};
- let html='<div style="font-size:10px;opacity:.5;text-align:right">combat.html v6d — test des effets</div><div id="dl">Choisis un effet ↓</div><button class="big" id="dseq">▶ Tout enchaîner</button><div style="display:flex;gap:6px;margin-bottom:4px"><select id="dc"><option value="0">Cible : Toi (gauche)</option><option value="1">Cible : Bot (droite)</option></select><button id="drs">↺ Réinitialiser</button></div>',g='';
+ let html='<div style="font-size:10px;opacity:.5;text-align:right">combat.html v8 — test des effets</div><div id="dl">Choisis un effet ↓</div><button class="big" id="dseq">▶ Tout enchaîner</button><div style="display:flex;gap:6px;margin-bottom:4px"><select id="dc"><option value="0">Cible : Toi (gauche)</option><option value="1">Cible : Bot (droite)</option></select><button id="drs">↺ Réinitialiser</button></div>',g='';
  S.forEach((s,i)=>{if(s[0]!==g){if(g)html+='</div>';html+=`<h4>${s[0]}</h4><div class="g">`;g=s[0]}html+=`<button data-i="${i}">${s[1]}</button>`});html+='</div>';dm.innerHTML=html;
  dm.querySelectorAll('button[data-i]').forEach(b=>b.onclick=()=>run(S[+b.dataset.i],tg()));
  $('#drs').onclick=mk;let seq=false;
