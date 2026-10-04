@@ -52,6 +52,7 @@ canvas.fx.etourdi{box-shadow:inset 0 0 25px 6px rgba(250,204,21,.5)}
 #demo button,#demo select{padding:7px 6px;border:0;border-radius:6px;background:#1f3a2c;color:#e8fff1;cursor:pointer;font-size:12px}
 #demo button:hover{background:#2f6a4a}#demo .big{background:#7c2d12;font-weight:700;width:100%;margin-bottom:4px}
 #dl{font:700 16px system-ui;min-height:40px;text-align:center;color:#fde68a;margin-bottom:6px}
+#reel select{width:100%;margin-bottom:3px}#reel .ri{font-size:11px;opacity:.8;margin-bottom:4px;min-height:44px}
 </style></head><body>
 <div id="scene"><div class="p" id="p0"></div>
 <div id="mid"><div id="tour"></div><div id="ban"></div></div><div class="p" id="p1"></div></div>
@@ -157,7 +158,7 @@ function simuler(pA,pB,opt={}){
   const d=adv(a),ia=id(a),idd=id(d);
   if(a.st.stun){a.st.stun=0;L('statut',`${nom(a)} est étourdi, il n'attaque pas`,{c:ia,k:'etourdi_fin'});return}
   if(a.st.skip){a.st.skip=0;L('bloque',`L'attaque de ${nom(a)} est annulée`,{c:id(adv(a))});return}
-  const multi=a.pas.type==='multi_frappe'&&roll(a.pas.chance)?a.pas.frappes:1;
+  const multi=a.pas.type==='multi_frappe'&&roll(a.pas.chance)?(a.pas.frappes||1):1;
   a.coups++;L('attaque',`${nom(a)} attaque${multi>1?` (${multi} frappes)`:''}`,{c:ia});
   for(let k=0;k<multi&&d.pv>0;k++){
    if(d.pas.type==='esquive'&&roll(Math.min(reg.plafondEsquive,d.pas.chance))){L('esquive',`${nom(d)} esquive !`,{c:idd});continue} // l'esquive annule aussi les effets associés
@@ -170,8 +171,8 @@ function simuler(pA,pB,opt={}){
    if(n>0&&d.pv>0){
     if(p.type==='vol_pct_atq'&&roll(p.chance))heal(a,rd(n*p.pctatq/100));
     if(p.type==='etourdir'&&roll(p.chance)){d.st.stun=1;L('statut',`${nom(d)} est étourdi !`,{c:idd,k:'etourdi'})}
-    if(p.type==='brulure'&&roll(p.chance)){d.st.dots.push({k:'brûlure',n:rd(d.max*p.pctpv/100),t:p.tours});L('statut',`${nom(d)} brûle !`,{c:idd,k:'brulure'})}
-    if(p.type==='poison'&&roll(p.chance)){d.st.dots.push({k:'poison',n:p.degtour,t:p.tours});L('statut',`${nom(d)} est empoisonné !`,{c:idd,k:'poison'})}
+    if(p.type==='brulure'&&roll(p.chance)){d.st.dots.push({k:'brûlure',n:rd(d.max*p.pctpv/100),t:p.tours||1});L('statut',`${nom(d)} brûle !`,{c:idd,k:'brulure'})}
+    if(p.type==='poison'&&roll(p.chance)){d.st.dots.push({k:'poison',n:p.degtour||0,t:p.tours||1});L('statut',`${nom(d)} est empoisonné !`,{c:idd,k:'poison'})}
    }
    if(over())return;
   }
@@ -183,7 +184,7 @@ function simuler(pA,pB,opt={}){
    if(s.pas.type==='soin_tour')heal(s,amt(s.pas,s.max));
    if(s.pas.type==='atq_tours'&&tour%s.pas.tours===0){const dd=amt(s.pas,s.atq);s.atq+=dd;L('stat',`ATQ de ${nom(s)} +${dd}`,{c:id(s),k:'mod',s:'ATQ',d:dd})}
    if(s.pas.type==='pv_tours'&&tour%s.pas.tours===0){const d=amt(s.pas,s.max);s.max+=d;s.pv+=d;L('stat',`PV max de ${nom(s)} +${d}`,{c:id(s),k:'mod',s:'PV max',d})}
-   if(s.pas.type==='bonus_frappe'&&s.rt>=s.pas.coups){s.st.bonus=amt(s.pas,s.atq);L('statut',`${nom(s)} prépare une contre-attaque renforcée`,{c:id(s)})}
+   if(s.pas.type==='bonus_frappe'&&s.rt>=(s.pas.coups||1)){s.st.bonus=amt(s.pas,s.atq);L('statut',`${nom(s)} prépare une contre-attaque renforcée`,{c:id(s)})}
    s.st.prog=s.st.prog.filter(p=>{if(--p.t>0)return true;const n=dmg(p.src,s,p.n);L('degats',`${nom(s)} subit ${n} (dégâts différés)`,{c:id(s),n});return false});
    s.st.ren=s.st.ren.filter(R=>--R.t>0);if(s.st.insens>0)s.st.insens--;if(s.st.dbl>0)s.st.dbl--;
   });
@@ -511,11 +512,12 @@ const DECK=[
  {type:'piege',nom:'Dernier souffle',effet:{condition:{type:'proprio_meurt'},effet:{type:'soin',val:30,u:'pct'},declenchements:1}},
  {type:'piege',nom:'Sang froid',effet:{condition:{type:'proprio_pv_sous',seuilpv:40},effet:{type:'soin',val:15,u:'pct'},declenchements:1}}];
 let dernier=null;
-function lancer(seed){dernier=Moteur.simuler({pseudo:'Toi',deck:DECK},{pseudo:'Bot',deck:DECK},{seed});jouer(dernier)}
+let dernierDecks=null;
+function lancer(seed,decks){dernierDecks=decks||null;dernier=Moteur.simuler(decks?decks[0]:{pseudo:'Toi',deck:DECK},decks?decks[1]:{pseudo:'Bot',deck:DECK},{seed});jouer(dernier)}
 if(TEST){$('#ctl').style.display='flex';$('#log').style.display='block';
  $('#nv').onclick=()=>{if(!enCours)lancer()};$('#ts').onclick=()=>{if(enCours)return;const f=n=>DECK.find(c=>c.nom===n),A={...f('Loup-garou'),passif:{type:'poison',chance:100,degtour:3,tours:3}},B={...f('Spectre'),passif:{type:'brulure',chance:100,pctpv:6,tours:3}},ult={...f('Chasseur'),passif:null,ultime:{type:'degats',val:10,apres_tours:2,utilisations:1}};
   const m=DECK.filter(c=>c.type!=='combattant');dernier=Moteur.simuler({pseudo:'Toi',deck:[A,...m]},{pseudo:'Bot',deck:[B,...m]},{seed:7});jouer(dernier)};
- $('#rj').onclick=()=>{if(!enCours&&dernier)lancer(dernier.seed)}}
+ $('#rj').onclick=()=>{if(!enCours&&dernier)lancer(dernier.seed,dernierDecks)}}
 
 
 // ---------- Mode démo : tous les effets, un bouton chacun (combat.html?demo) ----------
@@ -561,6 +563,39 @@ if(DEMO){
  $('#dseq').onclick=async()=>{if(seq)return;seq=true;mk();await dw(800);
   for(let i=0;i<S.length;i++){const s=S[i],c=i%2;lab(s,c);s[2](c);await dw(s[3]);if(s[4])s[4](c)}
   $('#dl').textContent='Fin de la démo';await dw(1500);mk();seq=false};
+ $('#dl').textContent='Choisis un effet ↓';
+
+ // ----- Vraies cartes (combattants enregistrés dans la base, sans magie ni piège pour l'instant) -----
+ if(TEST){
+  const sec=document.createElement('div');sec.id='reel';
+  sec.innerHTML=`<h4>Vraies cartes (base de données)</h4><div id="rst" style="font-size:12px;opacity:.85;margin-bottom:4px">Chargement des cartes…</div>
+   <div class="g"><div><select id="ra"></select><div class="ri" id="rai"></div></div><div><select id="rb"></select><div class="ri" id="rbi"></div></div></div>
+   <div class="g"><button class="big" id="rgo" style="margin:0">⚔️ Combattre avec ces cartes</button><button id="rre">↺ Rejouer le même combat</button></div>`;
+  $('#dl').after(sec);
+  const LB={evite_mort:'évite la mort une fois',soin_tour:'se soigne chaque tour',renvoi:'renvoie des dégâts',atq_tours:"augmente l'ATQ tous les X tours",pv_tours:'augmente les PV tous les X tours',multi_frappe:'frappe plusieurs fois',reduc_degats:'réduit les dégâts reçus',bonus_frappe:'bonus de dégâts si frappé',etourdir:'étourdit',vol_pct_atq:'vole de la vie',brulure:'brûlure',poison:'poison',esquive:'esquive',degats:'dégâts directs',voler:'vole une carte',detruire:'détruit une carte',equiper:'équipe une carte',soin:'se soigne',vol_vie:'vole de la vie',echange_atq:"échange l'ATQ",annule_attaque:"annule l'attaque",double_degats:'double ses dégâts',echange_atq_def:"échange ATQ et PV de l'adversaire"};
+  const KL={val:'valeur',chance:'chance %',apres_tours:'après N tours',degtour:'dégâts par tour',pctpv:'% des PV max',pctatq:'% de l\'ATQ',tours:'tours',frappes:'frappes',coups:'coups',carte:'carte'};
+  const fmt=o=>!o||!o.type?'aucun':(LB[o.type]||o.type)+' ('+Object.entries(o).filter(([k,v])=>!['type','utilisations','delai_tours','sur_carte','u'].includes(k)&&v!=null&&v!==false&&v!==0).map(([k,v])=>(KL[k]||k)+' '+v+(k==='val'&&o.u==='pct'?' %':'')).join(', ')+')';
+  const info=c=>{if(!c)return'Choix au hasard parmi les cartes chargées';const u=c.ultime;let x=`Passif : ${fmt(c.passif)}<br>Ultime : ${fmt(u)}`;
+   if(u&&u.type&&!u.apres_tours&&!u.sur_carte)x+=' <b style="color:#fca5a5">⚠ aucun déclencheur : ne se lancera jamais</b>';
+   else if(u&&u.sur_carte&&!u.apres_tours)x+=' <b style="color:#fcd34d">(seulement quand une magie/piège s\'active : pas de magie ni de piège ici)</b>';return x};
+  const REEL={cartes:[]},pick=v=>v===''?REEL.cartes[Math.floor(Math.random()*REEL.cartes.length)]:REEL.cartes.find(c=>String(c.id)===v);
+  const refresh=()=>{$('#rai').innerHTML=info($('#ra').value===''?null:pick($('#ra').value));$('#rbi').innerHTML=info($('#rb').value===''?null:pick($('#rb').value))};
+  const sc=document.createElement('script');sc.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+  sc.onerror=()=>{$('#rst').textContent='Impossible de charger la bibliothèque de connexion (réseau ?).'};
+  sc.onload=async()=>{try{
+    const sb=supabase.createClient('https://bjsvqikjnvaomyoifiml.supabase.co','sb_publishable_-3cPqDCyE-zhb3z5r6dPhg_DJFKGAI6');
+    const{data,error}=await sb.from('cartes').select('id,nom,type,atq,pv,actif,passif,ultime,variantes_carte(nom,image_path)').eq('type','combattant').order('nom');
+    if(error)throw error;
+    REEL.cartes=(data||[]).map(c=>{const vs=c.variantes_carte||[],v=vs.find(x=>x.nom==='Standard')||vs[0]||{};return{id:c.id,type:'combattant',nom:c.nom,atq:c.atq,pv:c.pv,actif:c.actif,passif:c.passif,ultime:c.ultime,image:v.image_path||null}});
+    if(!REEL.cartes.length){$('#rst').innerHTML='Aucun combattant lu. Si tu en as créé, connecte-toi d\'abord sur le site (dans ce même navigateur), puis recharge cette page.';return}
+    const o='<option value="">🎲 Au hasard</option>'+REEL.cartes.map(c=>`<option value="${c.id}">${c.nom} — ATQ ${c.atq} · PV ${c.pv}${c.actif?'':' (non publiée)'}</option>`).join('');
+    $('#ra').innerHTML=o;$('#rb').innerHTML=o;$('#rst').textContent=REEL.cartes.length+' combattant(s) chargé(s). Choisis-en deux (toi à gauche, le bot à droite) ou laisse au hasard.';refresh();
+   }catch(e){$('#rst').innerHTML='Impossible de lire les cartes : '+(e.message||e)+'<br>Connecte-toi d\'abord sur le site (dans ce même navigateur), puis recharge.'}};
+  document.head.appendChild(sc);
+  $('#ra').onchange=$('#rb').onchange=refresh;
+  $('#rgo').onclick=()=>{if(enCours||!REEL.cartes.length)return;lancer(undefined,[{pseudo:'Toi',deck:[pick($('#ra').value)]},{pseudo:'Bot',deck:[pick($('#rb').value)]}])};
+  $('#rre').onclick=()=>{if(!enCours&&dernier)lancer(dernier.seed,dernierDecks)};
+ }
  mk();
 }
 
