@@ -49,6 +49,13 @@ canvas.fx.poison{box-shadow:inset 0 0 40px 12px rgba(34,197,94,.75);animation:pg
 @keyframes tremble{0%{transform:none}10%{transform:translate(-2px,1px) rotate(-.3deg)}20%{transform:translate(3px,-1px) rotate(.4deg)}30%{transform:translate(-4px,2px) rotate(-.6deg)}40%{transform:translate(4px,-2px) rotate(.7deg)}50%{transform:translate(-5px,2px) rotate(-.8deg)}60%{transform:translate(5px,-3px) rotate(.9deg)}70%{transform:translate(-6px,3px) rotate(-1deg)}80%{transform:translate(6px,-3px) rotate(1deg)}90%{transform:translate(-7px,3px) rotate(-1.1deg)}100%{transform:translate(7px,-3px) rotate(1.1deg)}}
 .card.tremble{animation:tremble .52s linear forwards}
 canvas.fx.etourdi{box-shadow:inset 0 0 25px 6px rgba(250,204,21,.5)}
+canvas.fx.saignement{box-shadow:inset 0 0 38px 10px rgba(170,10,20,.75);animation:sg 1.4s infinite alternate}
+@keyframes sg{to{box-shadow:inset 0 0 55px 16px rgba(200,15,25,.85)}}
+canvas.fx.gel{box-shadow:inset 0 0 40px 12px rgba(150,220,255,.8)}
+/* téléphone : menus de test et barre de boutons déplaçables au doigt (n'affecte pas l'écran d'ordinateur) */
+#demo,#ctl{-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+#demo{touch-action:pan-y}
+@media(max-width:800px){#demo{width:94vw;max-height:72vh;top:2vh}#ctl{flex-wrap:nowrap;overflow-x:auto;max-width:96vw;touch-action:pan-x}#ctl>*{flex:none;white-space:nowrap}}
 #demo{position:fixed;left:50%;top:3vh;transform:translateX(-50%);width:34vw;max-height:94vh;overflow:auto;background:rgba(0,0,0,.55);border-radius:12px;padding:10px;font:13px system-ui;z-index:9;display:none}
 #demo h4{margin:8px 0 4px;font-size:11px;opacity:.7;text-transform:uppercase;letter-spacing:.08em}
 #demo .g{display:grid;grid-template-columns:1fr 1fr;gap:4px}
@@ -84,7 +91,7 @@ function simuler(pA,pB,opt={}){
  const tire=(deck,t)=>{const l=deck.filter(c=>c.type===t);return l[Math.floor(r()*l.length)]};
  const nw=p=>{const c=tire(p.deck,'combattant');if(!c)throw new Error(p.pseudo+" n'a aucun combattant dans son deck");const pa=c.passif||{};
   return{pseudo:p.pseudo,deck:p.deck,card:c,mag:tire(p.deck,'magie')||VM,pie:tire(p.deck,'piege')||VP,atq:c.atq,pv:c.pv,max:c.pv,pas:pa,ult:c.ultime,
-   magOn:1,pieOn:1,decl:0,mdelta:[],st:{stun:0,skip:0,dbl:0,dots:[],curses:[],atkfx:[],esqb:0,ren:[],insens:0,prog:[],evite:pa.type==='evite_mort',mortUsed:0,bonus:0},
+   uh:[{u:c.ultime,uses:0,last:-99}],magOn:1,pieOn:1,decl:0,mdelta:[],st:{bleeds:[],frost:[],fract:[],stun:0,skip:0,dbl:0,dots:[],curses:[],atkfx:[],esqb:0,ren:[],insens:0,prog:[],evite:pa.type==='evite_mort',mortUsed:0,bonus:0},
    cum:0,coups:0,rt:0,uses:0,last:-99,pend:0}};
  const S=[nw(pA),nw(pB)],id=s=>S.indexOf(s),adv=s=>S[1-id(s)],nom=s=>s.card.nom;
  S.forEach(s=>{if(s.mag.vide)s.magOn=0;if(s.pie.vide)s.pieOn=0});
@@ -93,7 +100,7 @@ function simuler(pA,pB,opt={}){
  const amt=(e,b)=>e.u==='pct'?rd(b*e.val/100):(e.val||0);
  const over=()=>S.some(s=>s.pv<=0);
 
- function heal(s,n,k){n=Math.min(n,s.max-s.pv);if(n<=0)return;s.pv+=n;L('soin',`${nom(s)} récupère ${n} PV`,{c:id(s),n,k:k||(rv?'revive':undefined)});scan({t:'soin',who:id(s)})}
+ function heal(s,n,k){const rb=Math.min(100,s.st.bleeds.reduce((a,b)=>a+(b.r||0),0));if(rb)n=rd(n*(100-rb)/100);n=Math.min(n,s.max-s.pv);if(n<=0)return;s.pv+=n;L('soin',`${nom(s)} récupère ${n} PV`,{c:id(s),n,k:k||(rv?'revive':undefined)});scan({t:'soin',who:id(s)})}
  function dmg(src,dst,n){
   n=Math.max(0,rd(n));
   if(n>=dst.pv)scan({t:'mort',who:id(dst)});               // piège « le propriétaire meurt » : juste avant la mort
@@ -140,13 +147,17 @@ function simuler(pA,pB,opt={}){
    case'echange_pv':[o.pv,x.pv]=[x.pv,o.pv];[o.max,x.max]=[x.max,o.max];L('stat',`${nom(o)} et ${nom(x)} échangent leurs PV`,{k:'echange',cs:[id(o),id(x)],col:'rouge'});break;
    case'echange_tout':[o.atq,x.atq]=[x.atq,o.atq];[o.pv,x.pv]=[x.pv,o.pv];[o.max,x.max]=[x.max,o.max];L('stat',`${nom(o)} et ${nom(x)} échangent ATQ et PV`,{k:'echange',cs:[id(o),id(x)],col:'mixte'});break;
    case'malediction':maudire((e.ciblem||e.cible)==='soi'?o:x,e.val||0,e.tours||1);break;
+   case'saignement':saigner((e.ciblem||e.cible)==='soi'?o:x,e.pctpv||0,e.reducsoin||0,e.tours||1);break;
+   case'gel':geler((e.ciblem||e.cible)==='soi'?o:x,e.annul||0,e.stunch||0,e.tours||1);break;
+   case'fracture':fracturer((e.ciblem||e.cible)==='soi'?o:x,e.fchance||0,e.degfrac||0,e.tours||1);break;
+   case'vol_ultime':{const h=x.uh.find(z=>z.u&&z.u.type);if(h){x.uh=x.uh.filter(z=>z!==h);o.uh.push({u:h.u,uses:0,last:-99});L('vol',`${o.pseudo} vole l'ultime de ${x.pseudo}`,{k:'vol_ultime',from:id(x),c:id(o)})}else L('statut',`${x.pseudo} n'a aucun ultime à voler`)}break;
    case'poison_effet':{const M=(e.ciblem||e.cible)==='soi'?o:x;M.st.dots.push({k:'poison',n:e.degtour||0,t:e.tours||1});L('statut',`${nom(M)} est empoisonné !`,{c:id(M),k:'poison'});break}
    case'brulure_effet':{const M=(e.ciblem||e.cible)==='soi'?o:x;M.st.dots.push({k:'brûlure',n:rd(M.max*(e.pctpv||0)/100),t:e.tours||1});L('statut',`${nom(M)} brûle !`,{c:id(M),k:'brulure'});break}
    case'etourdir_effet':{const M=(e.ciblem||e.cible)==='soi'?o:x;M.st.stun=Math.max(M.st.stun,e.tours||1);L('statut',`${nom(M)} est étourdi (${e.tours||1} tour${(e.tours||1)>1?'s':''}) !`,{c:id(M),k:'etourdi'});break}
    case'atk_brulure':case'atk_poison':case'atk_etourdir':{const q={...e,type:e.type.slice(4)};o.st.atkfx.push(q);if(mg)o.mdelta.push({undo:()=>{o.st.atkfx=o.st.atkfx.filter(z=>z!==q)}});
     L('statut',`L'attaque de ${nom(o)} peut maintenant ${q.type==='brulure'?'brûler':q.type==='poison'?'empoisonner':'étourdir'} (${q.chance} %)`);break}
    case'esquive_mod':{const d=e.val||0;T.st.esqb+=d;if(mg)o.mdelta.push({undo:()=>{T.st.esqb-=d}});L('stat',`Esquive de ${nom(T)} ${d>=0?'+':''}${d} %`,{c:id(T),k:'esq',d});break}
-   case'reset_ultime':T.uses=0;T.last=-99;L('statut',`L'ultime de ${nom(T)} est réinitialisé !`,{c:id(T)});break;
+   case'reset_ultime':T.uh.forEach(h=>{h.uses=0;h.last=-99});L('statut',`L'ultime de ${nom(T)} est réinitialisé !`,{c:id(T)});break;
    case'mort_evitee':break;                                    // lue directement dans dmg()
    case'detruire':case'voler':{
     if(e.carte==='magie'&&x.magOn){x.magOn=0;undo(x);if(e.type==='voler'){fx(x.mag.effet,o,x,true);L('vol',`${o.pseudo} vole la magie de ${x.pseudo}`)}else L('vol',`La magie de ${x.pseudo} est détruite`)}
@@ -158,21 +169,30 @@ function simuler(pA,pB,opt={}){
  }
  // Malédiction : l'ATQ de la cible baisse de n points à chaque fin de tour pendant t tours (se cumule)
  function maudire(dst,n,t){dst.st.curses.push({n,t});L('statut',`${nom(dst)} est maudit (ATQ −${n} par tour, ${t} tour${t>1?'s':''}) !`,{c:id(dst),k:'malediction'})}
+ function saigner(d,pct,r,t){d.st.bleeds.push({pct,r,t});L('statut',`${nom(d)} saigne (${pct} % des PV max par tour, soins −${r} %, ${t} tour${t>1?'s':''}) !`,{c:id(d),k:'saignement'})}
+ function geler(d,ann,sn,t){d.st.frost.push({ann,sn,t});L('statut',`${nom(d)} est gelé (${ann} % d'attaque annulée, ${sn} % d'être étourdi, ${t} tour${t>1?'s':''}) !`,{c:id(d),k:'gel'})}
+ function fracturer(d,fc,dg,t){d.st.fract.push({fc,dg,t});L('statut',`${nom(d)} est fracturé (${fc} % de se blesser en attaquant, −${dg} PV, ${t} tour${t>1?'s':''}) !`,{c:id(d),k:'fracture'})}
  function undo(s){s.mdelta.forEach(d=>{if(d.undo){d.undo();return}d.s[d.k]-=d.d;if(d.k==='max')d.s.pv=Math.min(d.s.pv,d.s.max)});s.mdelta=[]}
 
  function ultime(s){
-  const u=s.ult;if(!u||!u.type||s.pv<=0)return;
-  if(u.utilisations>0&&s.uses>=u.utilisations)return;
-  if(tour-s.last<(u.delai_tours||0))return;
-  if(!((u.apres_tours&&tour>=u.apres_tours)||(u.sur_carte&&s.pend)))return;
-  s.uses++;s.last=tour;s.pend=0;L('ultime',`ULTIME de ${nom(s)} !`,{c:id(s)});fx(u,s,adv(s));scan({t:'ultime',by:id(s)});
+  if(s.pv<=0)return;
+  for(const h of s.uh.slice()){const u=h.u;if(!u||!u.type)continue;
+   if(u.utilisations>0&&h.uses>=u.utilisations)continue;
+   if(tour-h.last<(u.delai_tours||0))continue;
+   if(!((u.apres_tours&&tour>=u.apres_tours)||(u.sur_carte&&s.pend)))continue;
+   h.uses++;h.last=tour;s.pend=0;L('ultime',`ULTIME de ${nom(s)} !`,{c:id(s)});fx(u,s,adv(s));scan({t:'ultime',by:id(s)});if(over())break}
  }
  function attaque(a){
   const d=adv(a),ia=id(a),idd=id(d);
   if(a.st.stun){a.st.stun--;L('statut',`${nom(a)} est étourdi, il n'attaque pas`,{c:ia,k:a.st.stun>0?'etourdi_tour':'etourdi_fin'});return}
   if(a.st.skip){a.st.skip=0;L('bloque',`L'attaque de ${nom(a)} est annulée`,{c:id(adv(a))});return}
+  if(a.st.frost.length){const fa=Math.min(100,a.st.frost.reduce((q,f)=>q+f.ann,0)),fs=Math.min(100,a.st.frost.reduce((q,f)=>q+f.sn,0));
+   if(roll(fa)){L('statut',`${nom(a)} est gelé : son attaque est annulée !`,{c:ia,k:'gel_bloque'});return}
+   if(roll(fs)){L('statut',`${nom(a)} est paralysé par le givre : il n'attaque pas !`,{c:ia,k:'gel_bloque'});return}}
   let multi=a.pas.type==='multi_frappe'&&roll(a.pas.chance)?(a.pas.frappes||1):1;
   a.coups++;L('attaque',`${nom(a)} attaque${multi>1?` (${multi} frappes)`:''}`,{c:ia});
+  for(const f of a.st.fract){if(roll(f.fc)){const n=dmg(d,a,f.dg);L('degats',`${nom(a)} se blesse en attaquant (fracture) : ${n} dégâts`,{c:ia,n,k:'fracture'})}}
+  if(over())return;
   // Enchaînement : après chaque frappe on retente la chance ; au 1er échec on s'arrête (max = plafond de frappes en plus, 10 par défaut)
   const ench=a.pas.type==='enchainement',cap=a.pas.max>0?a.pas.max:10;
   for(let k=0;k<multi&&d.pv>0;k++,ench&&d.pv>0&&k<=cap&&roll(a.pas.chance)&&multi++){
@@ -191,6 +211,9 @@ function simuler(pA,pB,opt={}){
     if(p.type==='brulure'&&roll(p.chance)){d.st.dots.push({k:'brûlure',n:rd(d.max*p.pctpv/100),t:p.tours||1});L('statut',`${nom(d)} brûle !`,{c:idd,k:'brulure'})}
     if(p.type==='poison'&&roll(p.chance)){d.st.dots.push({k:'poison',n:p.degtour||0,t:p.tours||1});L('statut',`${nom(d)} est empoisonné !`,{c:idd,k:'poison'})}
     if(p.type==='malediction'&&roll(p.chance))maudire(d,p.val,p.tours);
+    if(p.type==='saignement'&&roll(p.chance))saigner(d,p.pctpv||0,p.reducsoin||0,p.tours||1);
+    if(p.type==='gel'&&roll(p.chance))geler(d,p.annul||0,p.stunch||0,p.tours||1);
+    if(p.type==='fracture'&&roll(p.chance))fracturer(d,p.fchance||0,p.degfrac||0,p.tours||1);
     for(const q of a.st.atkfx){   // effets donnés à l'attaque de base par une magie
      if(q.type==='brulure'&&roll(q.chance)){d.st.dots.push({k:'brûlure',n:rd(d.max*(q.pctpv||0)/100),t:q.tours||1});L('statut',`${nom(d)} brûle !`,{c:idd,k:'brulure'})}
      if(q.type==='poison'&&roll(q.chance)){d.st.dots.push({k:'poison',n:q.degtour||0,t:q.tours||1});L('statut',`${nom(d)} est empoisonné !`,{c:idd,k:'poison'})}}
@@ -203,6 +226,9 @@ function simuler(pA,pB,opt={}){
   S.forEach(s=>{if(s.pv<=0)return;const x=adv(s);
    s.st.dots=s.st.dots.filter(d=>{const n=dmg(x,s,d.n);L('degats',`${nom(s)} subit ${n} (${d.k})`,{c:id(s),n,k:d.k});if(--d.t>0)return true;L('finstatut',`${d.k} de ${nom(s)} se termine`,{c:id(s),k:d.k==='poison'?'poison':'brulure'});return false});
    s.st.curses=s.st.curses.filter(c=>{const q=Math.min(c.n,s.atq);s.atq-=q;if(q>0)L('stat',`ATQ de ${nom(s)} −${q} (malédiction)`,{c:id(s),k:'malediction_tick',s:'ATQ',d:-q});if(--c.t>0)return true;L('finstatut',`La malédiction de ${nom(s)} se termine`,{c:id(s),k:'malediction'});return false});
+   s.st.bleeds=s.st.bleeds.filter(b=>{const n=dmg(x,s,rd(s.max*b.pct/100));L('degats',`${nom(s)} subit ${n} (saignement)`,{c:id(s),n,k:'saignement'});if(--b.t>0)return true;L('finstatut',`Le saignement de ${nom(s)} s'arrête`,{c:id(s),k:'saignement'});return false});
+   s.st.frost=s.st.frost.filter(f=>{if(--f.t>0)return true;L('finstatut',`${nom(s)} n'est plus gelé`,{c:id(s),k:'gel'});return false});
+   s.st.fract=s.st.fract.filter(f=>{if(--f.t>0)return true;L('finstatut',`La fracture de ${nom(s)} guérit`,{c:id(s),k:'fracture'});return false});
    if(s.pas.type==='soin_tour')heal(s,amt(s.pas,s.max));
    if(s.pas.type==='atq_tours'&&tour%s.pas.tours===0){const dd=amt(s.pas,s.atq);s.atq+=dd;L('stat',`ATQ de ${nom(s)} +${dd}`,{c:id(s),k:'mod',s:'ATQ',d:dd})}
    if(s.pas.type==='pv_tours'&&tour%s.pas.tours===0){const d=amt(s.pas,s.max);s.max+=d;s.pv+=d;L('stat',`PV max de ${nom(s)} +${d}`,{c:id(s),k:'mod',s:'PV max',d})}
@@ -285,7 +311,23 @@ function fxStart(card,k){
   for(let a=0;a<=18.85;a+=.12){const rad=r0*a/18.85,ang=a-t*5,px=cx+Math.cos(ang)*rad,py=cy+Math.sin(ang)*rad;if(a)x.lineTo(px,py);else x.moveTo(px,py)}x.stroke();x.restore();
   for(let i=0;i<3;i++){const ang=t*3+i*2.094,px=cx+Math.cos(ang)*r0*1.5,py=cy-r0*1.1+Math.sin(ang)*r0*.35,sr=W*.04;x.fillStyle='rgba(255,225,70,.95)';x.beginPath();
    for(let j=0;j<10;j++){const rr0=j%2?sr*.45:sr,aa=-1.571+j*.628;x.lineTo(px+Math.cos(aa)*rr0,py+Math.sin(aa)*rr0)}x.closePath();x.fill()}}
- function loop(){if(!run)return;const nw=performance.now();if(nw-(loop.l||0)<14){raf=requestAnimationFrame(loop);return}loop.l=nw;t+=.016;(k==='brulure'?feu:k==='etourdi'?etd:k==='malediction'?mal:gaz)();P=P.filter(p=>p.l<1);raf=requestAnimationFrame(loop)}
+ function sang(){
+  if(Math.random()<.13)P.push({x:R(.05,.95)*W,y:R(-.05,.15)*H,vy:R(.35,1)*H/650,w:R(.02,.045)*W,l:0,d:R(2.8,4.2),len:0});
+  x.clearRect(0,0,W,H);const g=x.createRadialGradient(W/2,H/2,H*.22,W/2,H/2,H*.78);g.addColorStop(0,'rgba(120,0,0,0)');g.addColorStop(1,'rgba(150,0,10,.45)');x.fillStyle=g;x.fillRect(0,0,W,H);
+  for(const p of P){p.l+=.016/p.d;if(p.l>=1)continue;p.vy*=1.004;p.y+=p.vy;p.len+=p.vy;const a=Math.min(1,(1-p.l)*2.4),tl=Math.min(p.len,H*.6);
+   const gr=x.createLinearGradient(0,p.y-tl,0,p.y);gr.addColorStop(0,'rgba(120,0,6,0)');gr.addColorStop(.35,`rgba(140,4,10,${a*.9})`);gr.addColorStop(1,`rgba(185,10,20,${a})`);
+   x.fillStyle=gr;x.beginPath();x.rect(p.x-p.w*.34,p.y-tl,p.w*.68,tl);x.fill();
+   x.fillStyle=`rgba(190,10,20,${a})`;x.beginPath();x.moveTo(p.x,p.y-p.w*1.1);x.quadraticCurveTo(p.x+p.w*.85,p.y+p.w*.3,p.x,p.y+p.w*.85);x.quadraticCurveTo(p.x-p.w*.85,p.y+p.w*.3,p.x,p.y-p.w*1.1);x.fill();
+   x.fillStyle=`rgba(255,170,170,${a*.55})`;x.beginPath();x.ellipse(p.x-p.w*.25,p.y,p.w*.14,p.w*.28,0,0,7);x.fill()}}
+ function givre(){
+  if(Math.random()<.22)P.push({x:R(0,W),y:-4,vy:R(.35,.9)*H/500,s:R(.006,.016)*W,l:0,d:R(3.2,5),ph:R(0,6)});
+  x.clearRect(0,0,W,H);const g=x.createRadialGradient(W/2,H/2,H*.2,W/2,H/2,H*.78);g.addColorStop(0,'rgba(190,235,255,.1)');g.addColorStop(1,'rgba(140,210,255,.55)');x.fillStyle=g;x.fillRect(0,0,W,H);
+  const sp=(px,py,ang,len,wd,tw)=>{x.save();x.translate(px,py);x.rotate(ang);x.fillStyle=`rgba(225,248,255,${.78*tw})`;x.strokeStyle=`rgba(255,255,255,${.95*tw})`;x.lineWidth=1;x.beginPath();x.moveTo(0,-wd/2);x.lineTo(len,0);x.lineTo(0,wd/2);x.closePath();x.fill();x.stroke();x.restore()};
+  for(let i=0;i<13;i++){const f=i/12,h=(.04+.06*Math.abs(Math.sin(i*12.9)))*H,w=(.05+.04*Math.abs(Math.sin(i*7.1)))*W,tw=.75+.25*Math.sin(t*4+i);
+   sp(f*W,H,-1.571,h,w,tw);sp(f*W,0,1.571,h*.8,w,tw);sp(0,f*H,0,h*.55,w*1.3,tw);sp(W,f*H,3.1416,h*.55,w*1.3,tw)}
+  for(const p of P){p.l+=.016/p.d;if(p.l>=1)continue;p.y+=p.vy;const a=Math.sin(Math.PI*p.l),px=p.x+Math.sin(t*2+p.ph)*W*.03;x.strokeStyle=`rgba(255,255,255,${a*.9})`;x.lineWidth=1.3;
+   for(let j=0;j<3;j++){const an=j*1.047;x.beginPath();x.moveTo(px-Math.cos(an)*p.s,p.y-Math.sin(an)*p.s);x.lineTo(px+Math.cos(an)*p.s,p.y+Math.sin(an)*p.s);x.stroke()}}}
+ function loop(){if(!run)return;const nw=performance.now();if(nw-(loop.l||0)<14){raf=requestAnimationFrame(loop);return}loop.l=nw;t+=.016;(k==='brulure'?feu:k==='etourdi'?etd:k==='malediction'?mal:k==='saignement'?sang:k==='gel'?givre:gaz)();P=P.filter(p=>p.l<1);raf=requestAnimationFrame(loop)}
  cv._stop=()=>{run=false;cancelAnimationFrame(raf)};fxAll.add(cv._stop);loop();
 }
 
@@ -505,19 +547,53 @@ function echangeLien(a,b,col){const A=rc(a),B=rc(b),cols={bleu:[[80,160,255]],ro
     if(arr>0&&arr<1){orb(x,T.cx,T.cy,T.w*(.3+.5*arr),`rgba(${cc},${(1-arr)*.9})`,`rgba(${cc},0)`);x.strokeStyle=`rgba(${cc},${1-arr})`;x.lineWidth=4;x.beginPath();x.arc(T.cx,T.cy,T.w*.55*arr,0,7);x.stroke()}})});
   if(arr>0&&arr<1){orb(x,A.cx,A.cy,A.w*.6,`rgba(255,255,255,${(1-arr)*.35})`,'rgba(255,255,255,0)');orb(x,B.cx,B.cy,B.w*.6,`rgba(255,255,255,${(1-arr)*.35})`,'rgba(255,255,255,0)')}})}
 
-// ÉVITE LA MORT : ailes d'ange gardien
-function ailes(c){const K=rc(c),W=K.w,DUR=2.4,rows=[{n:8,L:.8,w:.1,c:'255,255,255'},{n:8,L:.56,w:.12,c:'255,250,235'},{n:7,L:.34,w:.14,c:'255,244,215'}],
- bits=Array.from({length:14},()=>({x:R(0,1),d:R(.5,1.6),s:R(.012,.026),ph:R(0,6),sd:Math.random()<.5?-1:1}));
- function plume(x,L,w,col,a){x.beginPath();x.moveTo(0,0);x.bezierCurveTo(L*.2,-w*1.15,L*.78,-w*1.1,L,0);x.bezierCurveTo(L*.78,w*.95,L*.2,w*1.1,0,0);
-  const g=x.createLinearGradient(0,0,L,0);g.addColorStop(0,`rgba(${col},${a})`);g.addColorStop(.8,`rgba(255,250,235,${a})`);g.addColorStop(1,`rgba(255,228,160,${a*.9})`);x.fillStyle=g;x.fill();
-  x.shadowBlur=0;x.strokeStyle=`rgba(225,195,110,${.4*a})`;x.lineWidth=1;x.stroke();x.beginPath();x.moveTo(L*.05,0);x.lineTo(L*.92,0);x.strokeStyle=`rgba(210,185,120,${.45*a})`;x.stroke()}
- addFx(DUR,(x,t)=>{const op=ez(cl(t/.8)),fl=Math.sin(t*6.5)*cl((t-.8)/.3),al=cl((DUR-t)/.55)*cl(t/.2);
-  x.globalCompositeOperation='lighter';orb(x,K.cx,K.cy,K.h*.75,`rgba(255,240,190,${.34*al})`,'rgba(255,220,120,0)');x.globalCompositeOperation='source-over';
-  for(const sd of[-1,1]){x.save();x.translate(K.cx+sd*W*.5,K.cy-K.h*.1);x.scale(sd,1);
-   rows.forEach((rw,ri)=>{for(let i=0;i<rw.n;i++){const f=i/(rw.n-1),ad=-78+112*f+ri*3,ang=(-100+(ad+100)*op+fl*(4+f*5))*Math.PI/180,len=W*rw.L*(.5+.5*Math.sin(Math.PI*(.12+.76*f)))*(.3+.7*op);
-    x.save();x.rotate(ang);x.translate(ri*W*.012,0);x.shadowColor='rgba(255,225,140,.8)';x.shadowBlur=ri?0:14;plume(x,len,len*rw.w*1.9,rw.c,.95*al);x.restore()}});x.restore()}
-  for(const b of bits){const q=cl((t-.6)/1.6*b.d);if(q<=0||q>=1)continue;const px=K.cx+b.sd*W*(.55+b.x*.7),py=K.cy-K.h*.2+q*K.h*.7;
-   x.save();x.translate(px+Math.sin(t*3+b.ph)*W*.04,py);x.rotate(Math.sin(t*3+b.ph)*.8);x.fillStyle=`rgba(255,255,250,${.8*(1-q)*al})`;x.beginPath();x.ellipse(0,0,W*b.s*2.4,W*b.s*.8,0,0,7);x.fill();x.restore()}})}
+// ÉVITE LA MORT : ailes d'ange gardien (deux ailes articulées, trois rangées de plumes qui se déploient et battent)
+function ailes(c){const K=rc(c),W=K.w,H=K.h,DUR=2.7,
+ rows=[{n:11,s:1,wd:.15,col:'250,246,232'},{n:10,s:.64,wd:.17,col:'255,255,255'},{n:9,s:.36,wd:.2,col:'255,250,228'}],
+ bits=Array.from({length:16},()=>({x:R(0,1),d:R(.4,1.5),s:R(.05,.09),ph:R(0,6),sd:Math.random()<.5?-1:1}));
+ function plume(x,L,w,col,a){x.beginPath();x.moveTo(0,0);x.bezierCurveTo(L*.2,-w*.8,L*.7,-w*1.1,L*.95,-w*.5);x.quadraticCurveTo(L*1.03,0,L*.95,w*.5);x.bezierCurveTo(L*.7,w*1.1,L*.2,w*.8,0,0);
+  const g=x.createLinearGradient(0,0,L,0);g.addColorStop(0,`rgba(${col},${a})`);g.addColorStop(.7,`rgba(255,255,255,${a})`);g.addColorStop(1,`rgba(255,232,170,${a*.95})`);x.fillStyle=g;x.fill();
+  x.strokeStyle=`rgba(205,175,100,${.38*a})`;x.lineWidth=1;x.stroke();x.beginPath();x.moveTo(L*.04,0);x.lineTo(L*.9,0);x.strokeStyle=`rgba(200,175,115,${.5*a})`;x.stroke()}
+ addFx(DUR,(x,t)=>{const op=ez(cl(t/1)),fl=Math.sin(t*6)*cl((t-1)/.3),al=cl((DUR-t)/.6)*cl(t/.18);
+  x.globalCompositeOperation='lighter';orb(x,K.cx,K.cy-H*.1,H*.85,`rgba(255,238,190,${.3*al})`,'rgba(255,220,120,0)');x.globalCompositeOperation='source-over';
+  const arm=f=>({x:W*.7*op*f,y:-H*.36*op*Math.sin(f*1.571)+fl*H*.012*f});
+  for(const sd of[-1,1]){x.save();x.translate(K.cx+sd*W*.4,K.cy-H*.05);x.scale(sd,1);
+   rows.forEach((rw,ri)=>{for(let i=0;i<rw.n;i++){const fb=.06+.94*i/(rw.n-1),bp=arm(fb),th=(96+((88-50*fb)-96)*op+fl*3*(.4+fb))*Math.PI/180,
+     L=H*.36*rw.s*(.5+.62*Math.pow(fb,.7))*(.28+.72*op);x.save();x.translate(bp.x,bp.y+ri*H*.022*op);x.rotate(th);x.shadowColor='rgba(255,225,140,.7)';x.shadowBlur=ri?0:12;plume(x,L,L*rw.wd,rw.col,.97*al);x.restore()}});
+   x.beginPath();for(let f=0;f<=1.001;f+=.05){const p=arm(f);f?x.lineTo(p.x,p.y):x.moveTo(p.x,p.y)}x.strokeStyle=`rgba(255,246,215,${.9*al})`;x.lineWidth=Math.max(3,W*.022);x.lineCap='round';x.shadowColor='rgba(255,220,120,.9)';x.shadowBlur=12;x.stroke();x.restore()}
+  for(const b of bits){const q=cl((t-.7)/1.7*b.d);if(q<=0||q>=1)continue;x.save();x.translate(K.cx+b.sd*W*(.5+b.x*.8)+Math.sin(t*3+b.ph)*W*.04,K.cy-H*.25+q*H*.8);x.rotate(1.2+Math.sin(t*3+b.ph)*.7);plume(x,W*b.s,W*b.s*.2,'255,255,250',.85*(1-q)*al);x.restore()}})}
+
+// GEL : l'attaque est bloquée par un éclat de glace (étoile de givre qui s'étend, éclats)
+function givreCoup(c){const K=rc(c),Sh=Array.from({length:12},(_,i)=>({a:i*.524+R(-.2,.2),v:R(.5,1.1),s:R(.03,.06)}));
+ addFx(1.4,(x,t,u)=>{const e=ez(cl(t/.35)),al=1-cl((t-.7)/.7);x.globalCompositeOperation='lighter';orb(x,K.cx,K.cy,K.w*(.3+.7*e),`rgba(190,235,255,${.55*(1-u)})`,'rgba(150,215,255,0)');x.globalCompositeOperation='source-over';
+  x.save();x.translate(K.cx,K.cy);x.shadowColor='rgba(170,225,255,1)';x.shadowBlur=18;x.strokeStyle=`rgba(235,250,255,${al})`;x.lineCap='round';x.lineWidth=Math.max(2,K.w*.018);
+  for(let i=0;i<6;i++){x.save();x.rotate(i*1.047+u*.3);const L=K.w*.55*e;x.beginPath();x.moveTo(0,0);x.lineTo(L,0);for(const f of[.45,.72]){x.moveTo(L*f,0);x.lineTo(L*f+L*.18,-L*.2);x.moveTo(L*f,0);x.lineTo(L*f+L*.18,L*.2)}x.stroke();x.restore()}x.restore();
+  for(const q of Sh){const d=ez(cl((t-.12)/.8))*K.w*q.v,py=K.cy+Math.sin(q.a)*d+u*u*K.h*.25;x.save();x.translate(K.cx+Math.cos(q.a)*d,py);x.rotate(q.a+u*4);x.fillStyle=`rgba(215,245,255,${al})`;x.beginPath();x.moveTo(0,-q.s*K.w*.5);x.lineTo(q.s*K.w,0);x.lineTo(0,q.s*K.w*.5);x.closePath();x.fill();x.restore()}})}
+
+// FRACTURE : un os se tend, tremble, puis se brise en deux
+function os(c){const K=rc(c),L=K.w*.62,r=K.w*.075,Sh=Array.from({length:8},()=>({a:R(0,6.28),v:R(.4,1),s:R(.012,.03)}));
+ function demi(x,sd,off,rot,dy,a){x.save();x.translate(K.cx+sd*off,K.cy+dy);x.rotate(rot*sd);x.globalAlpha=a;const e=sd*L/2;
+  x.fillStyle='#f4ecd6';x.strokeStyle='#8c7b55';x.lineWidth=Math.max(2,K.w*.012);x.shadowColor='rgba(0,0,0,.55)';x.shadowBlur=8;
+  for(const q of[-1,1]){x.beginPath();x.arc(e,q*r*.55,r*.62,0,7);x.fill();x.stroke()}
+  x.beginPath();x.moveTo(0,-r*.5);x.lineTo(sd*r*.38,-r*.18);x.lineTo(sd*r*.06,r*.08);x.lineTo(sd*r*.42,r*.5);x.lineTo(e,r*.5);x.lineTo(e,-r*.5);x.closePath();x.fill();
+  x.shadowBlur=0;x.beginPath();x.moveTo(e,-r*.5);x.lineTo(0,-r*.5);x.lineTo(sd*r*.38,-r*.18);x.lineTo(sd*r*.06,r*.08);x.lineTo(sd*r*.42,r*.5);x.lineTo(e,r*.5);x.stroke();x.restore()}
+ addFx(1.7,(x,t)=>{const al=cl(t/.12)*(1-cl((t-1.2)/.45));
+  if(t<.6){const j=cl(t/.6)*K.w*.012,tn=Math.sin(t*60);x.save();x.translate(tn*j,Math.cos(t*47)*j);demi(x,-1,0,0,0,al);demi(x,1,0,0,0,al);x.restore();
+   x.strokeStyle=`rgba(255,255,255,${.7*cl(t/.6)})`;x.lineWidth=2;x.beginPath();x.moveTo(K.cx-r*.2,K.cy-r*.7);x.lineTo(K.cx+r*.1,K.cy+r*.1);x.stroke()}
+  else{const q=cl((t-.6)/.55),e=ez(q);
+   x.globalCompositeOperation='lighter';orb(x,K.cx,K.cy,K.w*.5,`rgba(255,255,255,${.7*(1-cl((t-.6)/.25))})`,'rgba(255,255,255,0)');x.globalCompositeOperation='source-over';
+   demi(x,-1,e*K.w*.1,e*.55,q*q*K.h*.12,al);demi(x,1,e*K.w*.1,e*.55,q*q*K.h*.12,al);
+   x.strokeStyle=`rgba(255,255,255,${.8*(1-q)})`;x.lineWidth=2.5;for(let i=0;i<8;i++){const an=i*.785+.2,r0=K.w*.08+e*K.w*.1;x.beginPath();x.moveTo(K.cx+Math.cos(an)*r0,K.cy+Math.sin(an)*r0);x.lineTo(K.cx+Math.cos(an)*(r0+K.w*.09),K.cy+Math.sin(an)*(r0+K.w*.09));x.stroke()}
+   for(const z of Sh){const d=e*K.w*.4*z.v;x.save();x.translate(K.cx+Math.cos(z.a)*d,K.cy+Math.sin(z.a)*d+q*q*K.h*.1);x.rotate(z.a+q*5);x.fillStyle=`rgba(244,236,214,${al})`;x.beginPath();x.moveTo(0,-z.s*K.w);x.lineTo(z.s*K.w*1.3,z.s*K.w);x.lineTo(-z.s*K.w,z.s*K.w*.6);x.closePath();x.fill();x.restore()}}})}
+
+// VOL D'ULTIME : l'aura rouge et noire quitte la carte de la victime et file vers celle du voleur
+function volUlt(a,b){const A=rc(a),B=rc(b);
+ addFx(1.8,(x,t)=>{const m=ez(cl((t-.3)/1)),pt=f=>({x:A.cx+(B.cx-A.cx)*f,y:A.cy+(B.cy-A.cy)*f-Math.sin(Math.PI*f)*A.h*.3}),dr=cl(t/.3)*cl(1-(t-.3)/.7);
+  x.globalCompositeOperation='lighter';orb(x,A.cx,A.cy,A.w*.9,`rgba(255,40,20,${.5*dr})`,'rgba(120,0,0,0)');
+  for(let k=22;k>=0;k--){const p=pt(Math.max(0,m-k*.026)),al=(1-k/23)*(m>0&&m<1?1:cl(1-(t-1.3)/.3)),r=A.w*(.3-.0125*k)*(1+.15*Math.sin(t*30+k));
+   if(al<=0||r<=0||t<.3)continue;x.globalCompositeOperation='source-over';orb(x,p.x+Math.sin(k+t*20)*A.w*.03,p.y,r,`rgba(25,0,8,${.55*al})`,'rgba(25,0,8,0)');
+   x.globalCompositeOperation='lighter';orb(x,p.x,p.y,r*.85,`rgba(255,${50+k*6},20,${.6*al})`,'rgba(255,40,10,0)')}
+  if(t>1.2){const q=cl((t-1.2)/.6);orb(x,B.cx,B.cy,B.w*(.5+.6*q),`rgba(255,50,25,${.7*(1-q)})`,'rgba(150,0,0,0)');x.strokeStyle=`rgba(255,80,40,${1-q})`;x.lineWidth=5;x.beginPath();x.arc(B.cx,B.cy,B.w*.6*q,0,7);x.stroke()}})}
 
 // RÉANIMATION : auréole d'ange qui brille + symbole de soin (en plus de la lueur de soin)
 function aureole(c){const K=rc(c),W=K.w,cx=K.cx;
@@ -528,7 +604,7 @@ function aureole(c){const K=rc(c),W=K.w,cx=K.cx;
   x.lineWidth=W*.012;x.strokeStyle=`rgba(255,255,255,${env})`;x.stroke();x.restore();
   const cs=W*.16*(.9+.1*Math.sin(t*8)),tt=cs*.32;x.save();x.shadowColor=`rgba(80,255,160,${env})`;x.shadowBlur=25;x.fillStyle=`rgba(210,255,225,${env})`;x.fillRect(cx-tt/2,K.cy-cs,tt,cs*2);x.fillRect(cx-cs,K.cy-tt/2,cs*2,tt);x.restore()})}
 
-function statut(c,k,on){const key=c+k;st[key]=Math.max(0,(st[key]||0)+(on?1:-1));const card=$('#p'+c+' .card'),f=card.querySelector('canvas.fx.'+k);
+function statut(c,k,on){if(k==='fracture')return;const key=c+k;st[key]=Math.max(0,(st[key]||0)+(on?1:-1));const card=$('#p'+c+' .card'),f=card.querySelector('canvas.fx.'+k);
  if(st[key]>0&&!f)fxStart(card,k);else if(!st[key]&&f){f._stop();f.remove()}}
 function maj(e){[0,1].forEach(i=>{const p=$('#p'+i);p.querySelector('i').style.width=Math.max(0,e.pv[i]/e.max[i]*100)+'%';
  p.querySelector('.pv').textContent=`${Math.max(0,e.pv[i])} / ${e.max[i]} PV · ATQ ${e.atq[i]}`})}
@@ -546,11 +622,14 @@ async function jouer(res){
    if(e.k==='echange'){if(e.cs&&e.cs.length===2){echangeLien(e.cs[0],e.cs[1],e.col||'bleu');await sleep(1250)}else{(e.cs||[e.c]).forEach(echange);await sleep(1050)}maj(e);await wait(900);continue}
    if(e.t==='degats'&&e.k==='renvoi')await renvoiFx(e.from,e.c);
    maj(e);
-   if(e.t==='degats'){card.classList.add('hit');const gros=e.n/e.max[e.c]>=.2&&e.k!=='poison'&&e.k!=='brûlure';flot(e.c,'-'+e.n,e.k==='poison'?'#22ff55':e.k==='brûlure'?'#ff8a00':gros?'#ff1111':'#ff6a6a',gros?'big':'');setTimeout(()=>card.classList.remove('hit'),450)}
+   if(e.t==='degats'){card.classList.add('hit');if(e.k==='fracture')os(e.c);const gros=e.n/e.max[e.c]>=.2&&e.k!=='poison'&&e.k!=='brûlure'&&e.k!=='saignement';flot(e.c,'-'+e.n,e.k==='poison'?'#22ff55':e.k==='brûlure'?'#ff8a00':e.k==='saignement'?'#c4121e':e.k==='fracture'?'#fde68a':gros?'#ff1111':'#ff6a6a',gros?'big':'');setTimeout(()=>card.classList.remove('hit'),450)}
    else if(e.t==='soin'){flot(e.c,'+'+e.n,'#4ade80');soin(e.c);if(e.k==='revive')aureole(e.c)}
    else if(e.t==='esquive'){flot(e.c,'Esquive !','#e5e7eb');vent(e.c)}
    else if(e.t==='bloque')bouclier(e.c);
    else if(e.t==='protege')ailes(e.c);
+   else if(e.t==='statut'&&e.k==='gel_bloque'){givreCoup(e.c);flot(e.c,'Gelé !','#bae6fd');await wait(500)}
+   else if(e.t==='statut'&&e.k==='fracture'){statut(e.c,'fracture',true);os(e.c)}
+   else if(e.t==='vol'&&e.k==='vol_ultime'){volUlt(e.from,e.c);await wait(1300);card.classList.add('ult');auraFx(e.c);setTimeout(()=>card.classList.remove('ult'),2200)}
    else if(e.t==='statut'&&e.k==='etourdi'){if(!st[e.c+'etourdi'])statut(e.c,'etourdi',true)}
    else if(e.t==='statut'&&e.k==='etourdi_fin')statut(e.c,'etourdi',false);
    else if(e.t==='statut'&&e.k==='etourdi_tour'){}
@@ -562,7 +641,7 @@ async function jouer(res){
    else if(e.t==='ultime'){card.classList.add('ult');ultFx(e.c);setTimeout(()=>card.classList.remove('ult'),2400)}
    else if(e.t==='magie'){const m=$('#m'+e.c);m.classList.add('act');setTimeout(()=>m.classList.remove('act'),1700)}
    else if(e.t==='piege'){const g=$('#g'+e.c);g.classList.remove('back');g.classList.add('rev');g.textContent=e.img?'':e.carte;g.style.backgroundImage=e.img?`url('${STORAGE+e.img}')`:''}
-   const ms={magie:1800,piege:2000,ultime:2200,fin:5000,degats:900,soin:1300,esquive:1100,bloque:1500,statut:1100,stat:1500,vol:1500,protege:2300,finstatut:250}[e.t]||900;
+   const ms={magie:1800,piege:2000,ultime:2200,fin:5000,degats:900,soin:1300,esquive:1100,bloque:1500,statut:1100,stat:1500,vol:1500,protege:2700,finstatut:250}[e.t]||900;
    if(e.t==='fin'){fxAll.forEach(s=>s());fxAll.clear();document.querySelectorAll('canvas.fx').forEach(k=>k.remove());$('#ban').textContent=e.txt+` (+${e.recompenses[e.gagnant??0]})`;if(e.gagnant!=null){briser(1-e.gagnant);auraFx(e.gagnant,{gold:1,dur:5.2})}}
    await wait(ms);
   }
@@ -626,6 +705,11 @@ if(DEMO){
   ['Statuts','Poison',c=>statut(c,'poison',true),2800,c=>statut(c,'poison',false),'poison'],
   ['Statuts','Étourdissement',c=>statut(c,'etourdi',true),2800,c=>statut(c,'etourdi',false),'etourdi'],
   ['Statuts','Malédiction (crânes)',c=>{statut(c,'malediction',true);cranes(c)},2800,c=>statut(c,'malediction',false),'malediction'],
+  ['Statuts','Saignement (sang qui coule)',c=>statut(c,'saignement',true),3000,c=>statut(c,'saignement',false),'saignement'],
+  ['Statuts','Gel (givre)',c=>statut(c,'gel',true),3000,c=>statut(c,'gel',false),'gel'],
+  ['Statuts','Gel : attaque bloquée',c=>{flot(c,'Gelé !','#bae6fd');givreCoup(c)},1500],
+  ['Statuts','Fracture (os qui se brise)',c=>{flot(c,'-4','#fde68a');os(c)},1800],
+  ['Statuts','Vol d\'ultime (aura qui passe)',c=>{volUlt(1-c,c);setTimeout(()=>{const k=cardOf(c);k.classList.add('ult');auraFx(c);setTimeout(()=>k.classList.remove('ult'),2200)},1300)},3600],
   ['Combat','Ultime (aura démoniaque)',c=>{const k=cardOf(c);k.classList.add('ult');auraFx(c);setTimeout(()=>k.classList.remove('ult'),2800)},2900],
   ['Combat','Ultime — ESSAI flammes rouge/noir scintillantes',c=>{const k=cardOf(c);k.classList.add('ult');auraFlammes(c);setTimeout(()=>k.classList.remove('ult'),2800)},2900],
   ['Combat','Dégâts',c=>{const k=cardOf(c);k.classList.add('hit');flot(c,'-12','#f87171');setTimeout(()=>k.classList.remove('hit'),450)},1100],
@@ -659,9 +743,9 @@ if(DEMO){
    <button id="rtt" style="width:100%;margin-top:4px">📊 Tous contre tous (sans animation)</button><div id="rtab" style="font-size:11px;margin-top:4px"></div>`;
   $('#dl').after(sec);
   const LB={evite_mort:'évite la mort une fois',soin_tour:'se soigne chaque tour',renvoi:'renvoie des dégâts',atq_tours:"augmente l'ATQ tous les X tours",pv_tours:'augmente les PV tous les X tours',multi_frappe:'frappe plusieurs fois',reduc_degats:'réduit les dégâts reçus',bonus_frappe:'bonus de dégâts si frappé',etourdir:'étourdit',vol_pct_atq:'vole de la vie',brulure:'brûlure',poison:'poison',esquive:'esquive',degats:'dégâts directs',voler:'vole une carte',detruire:'détruit une carte',equiper:'équipe une carte',soin:'se soigne',vol_vie:'vole de la vie',echange_atq:"échange l'ATQ",annule_attaque:"annule l'attaque",double_degats:'double ses dégâts',echange_atq_def:"échange ATQ et PV de l'adversaire"};
-  Object.assign(LB,{malediction:'malédiction (ATQ en baisse par tour)',enchainement:'enchaîne les frappes tant que ça réussit',poison_effet:'poison',brulure_effet:'brûlure',etourdir_effet:'étourdit',atk_brulure:"attaque de base : brûlure",atk_poison:"attaque de base : poison",atk_etourdir:"attaque de base : étourdissement",esquive_mod:"modifie l'esquive (%)",reset_ultime:"réinitialise l'ultime",atq_mod:"modifie l'ATQ",pv_mod:'modifie les PV max',insensible_piege:'insensible aux pièges',annule_magies:'annule les magies',mort_evitee:'évite la mort (1 PV)',degats_tours:'dégâts différés'});
+  Object.assign(LB,{saignement:'saignement (dégâts sur la durée, soins réduits)',gel:'gel (attaque annulée ou étourdi)',fracture:'fracture (se blesse en attaquant)',vol_ultime:"vole l'ultime",malediction:'malédiction (ATQ en baisse par tour)',enchainement:'enchaîne les frappes tant que ça réussit',poison_effet:'poison',brulure_effet:'brûlure',etourdir_effet:'étourdit',atk_brulure:"attaque de base : brûlure",atk_poison:"attaque de base : poison",atk_etourdir:"attaque de base : étourdissement",esquive_mod:"modifie l'esquive (%)",reset_ultime:"réinitialise l'ultime",atq_mod:"modifie l'ATQ",pv_mod:'modifie les PV max',insensible_piege:'insensible aux pièges',annule_magies:'annule les magies',mort_evitee:'évite la mort (1 PV)',degats_tours:'dégâts différés'});
   const CL={adv_attaque:"l'adversaire a attaqué X fois",adv_ultime:"l'adversaire utilise son ultime",proprio_pv_sous:'le propriétaire passe sous X % de PV',adv_pv_bas:"l'adversaire passe sous X % de PV",adv_soigne:"l'adversaire se soigne",proprio_soigne:'le propriétaire se soigne',proprio_meurt:'le propriétaire meurt'};
-  const KL={val:'valeur',chance:'chance %',apres_tours:'après N tours',degtour:'dégâts par tour',pctpv:'% des PV max',pctatq:'% de l\'ATQ',tours:'tours',frappes:'frappes',coups:'coups',carte:'carte'};
+  const KL={reducsoin:'soins en moins %',annul:'attaque annulée %',stunch:'étourdi %',fchance:'se blesse %',degfrac:'dégâts en attaquant',val:'valeur',chance:'chance %',apres_tours:'après N tours',degtour:'dégâts par tour',pctpv:'% des PV max',pctatq:'% de l\'ATQ',tours:'tours',frappes:'frappes',coups:'coups',carte:'carte'};
   const fmt=o=>!o||!o.type?'aucun':(LB[o.type]||o.type)+' ('+Object.entries(o).filter(([k,v])=>!['type','utilisations','delai_tours','sur_carte','u'].includes(k)&&v!=null&&v!==false&&v!==0).map(([k,v])=>(KL[k]||k)+' '+v+(k==='val'&&o.u==='pct'?' %':'')).join(', ')+')';
   const fmtE=e=>!e?'aucun':e.briques?e.briques.map(fmtE).join(' + '):fmt(e);
   const fmtC=c=>!c||!c.effet?'aucun effet':c.type==='piege'?`Quand ${(c.effet.condition&&CL[c.effet.condition.type])||'?'}${c.effet.condition&&c.effet.condition.coups?' ('+c.effet.condition.coups+')':''}${c.effet.condition&&c.effet.condition.seuilpv?' ('+c.effet.condition.seuilpv+' %)':''} → ${fmtE(c.effet.effet)}`:fmtE(c.effet);
