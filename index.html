@@ -198,8 +198,8 @@ async function upload(file){
 /* ---------- Catalogue d'effets (pour ajouter un effet : une ligne ici) ---------- */
 // Paramètres réutilisables : [libellé, 'n' (nombre) ou liste de choix]
 const P={val:['Valeur','n'],u:['Unité',['pts','pct']],tours:['Nb de tours','n'],chance:['Chance (%)','n'],frappes:['Nb de frappes','n'],
- coups:['Nb de coups','n'],cible:['Cible',['soi','adversaire']],carte:['Carte',['magie','piege']],seuil:['Seuil','n'],seuilpv:['Seuil (% PV)','n'],
- cond:['Condition',['pv_max','degats_infliges']],pct:['% PV rendus en plus','n'],val2:['2e valeur','n'],pctatq:["% de l'ATQ infligée volé en PV",'n'],pctpv:['% des PV max de la cible perdus par tour','n'],degtour:['Points de dégâts par tour','n'],ciblem:['Cible (adversaire par défaut)',['adversaire','soi']],max:['Plafond de frappes en plus','n'],reducsoin:['% de soins en moins','n'],annul:["Chance d'annuler l'attaque (%)",'n'],stunch:["Chance d'être étourdi avant l'attaque (%)",'n'],fchance:['Chance de se blesser en attaquant (%)','n'],degfrac:['Dégâts subis en attaquant','n']};
+ coups:['Nb de coups','n'],cible:['Cible',['soi','adversaire']],carte:['Carte',['magie','piege']],seuil:['Seuil (ignoré si aucune condition)','n'],seuilpv:['Seuil (% PV)','n'],
+ cond:['Condition pour éviter la mort',['aucune','pv_max','degats_infliges']],pct:['% PV rendus en plus','n'],val2:['2e valeur','n'],pctatq:["% de l'ATQ infligée volé en PV",'n'],pctpv:['% des PV max de la cible perdus par tour','n'],degtour:['Points de dégâts par tour','n'],ciblem:['Cible (adversaire par défaut)',['adversaire','soi']],max:['Plafond de frappes en plus','n'],reducsoin:['% de soins en moins','n'],annul:["Chance d'annuler l'attaque (%)",'n'],stunch:["Chance d'être étourdi avant l'attaque (%)",'n'],fchance:['Chance de se blesser en attaquant (%)','n'],degfrac:['Dégâts subis en attaquant','n']};
 // Chaque effet : [libellé, ...paramètres]
 const PAS={evite_mort:['Évite la mort une fois'],soin_tour:['Se soigne de X chaque tour','val','u'],renvoi:['Renvoie X dégâts reçus','val','u'],
  atq_tours:["Augmente l'ATQ tous les X tours",'tours','val','u'],pv_tours:['Augmente les PV tous les X tours','tours','val','u'],
@@ -235,6 +235,10 @@ const MAG={atq_mod:["Modifie l'ATQ (négatif = baisse)",'cible','val','u'],pv_mo
  atk_poison:["Attaque de base : X % de chances d'empoisonner (X points par tour, X tours)",'chance','degtour','tours'],
  atk_etourdir:["Attaque de base : +X % de chances d'étourdir (s'ajoute au passif)",'chance'],
  esquive_mod:["Modifie le % d'esquive (négatif = baisse)",'cible','val'],
+ atk_saignement:["Attaque de base : X % de chances de faire saigner (X % des PV max par tour, soins réduits, X tours)",'chance','pctpv','reducsoin','tours'],
+ atk_malediction:["Attaque de base : X % de chances de maudire (ATQ −X par tour, X tours)",'chance','val','tours'],
+ atk_fracture:["Attaque de base : X % de chances de fracturer (X % de se blesser, X dégâts, X tours)",'chance','fchance','degfrac','tours'],
+ atk_gel:["Attaque de base : X % de chances de geler (X % d'attaque annulée, X % d'étourdi, X tours)",'chance','annul','stunch','tours'],
  reset_ultime:["Réinitialise l'ultime (utilisable à nouveau)",'cible'],
  saignement:["Saignement : X % des PV max par tour + soins réduits, pendant X tours",'ciblem','pctpv','reducsoin','tours'],
  gel:["Gel : chance d'annuler l'attaque / d'être étourdi, pendant X tours",'ciblem','annul','stunch','tours'],
@@ -243,11 +247,12 @@ const MAG={atq_mod:["Modifie l'ATQ (négatif = baisse)",'cible','val','u'],pv_mo
 const CON={adv_attaque:["L'adversaire a attaqué X fois",'coups'],adv_ultime:["L'adversaire utilise son ultime"],proprio_pv_sous:['Le propriétaire passe sous X % de PV','seuilpv'],
  adv_pv_bas:["L'adversaire passe sous X % de PV",'seuilpv'],adv_soigne:["L'adversaire se soigne"],proprio_soigne:['Le propriétaire se soigne'],proprio_meurt:['Le propriétaire meurt']};
 let editId=null;
+const OL={aucune:'Aucune condition : évite la mort une fois',pv_max:'Ses PV max sont au moins égaux au seuil',degats_infliges:'Il a déjà infligé au moins le seuil en dégâts (total)'};
 function mk(el,cat){
   el.classList.add('mk');el.innerHTML=`<select><option value="">— Aucun —</option>${Object.entries(cat).map(([k,v])=>`<option value="${k}">${v[0]}</option>`).join('')}</select><div class="row"></div>`;
   const s=el.querySelector('select'),d=el.querySelector('.row');
   s.onchange=()=>{d.innerHTML=s.value?cat[s.value].slice(1).map(k=>{const [l,t]=P[k];
-    return `<label><small>${l}</small><br>${t=='n'?`<input data-k="${k}" type="number" step="any">`:`<select data-k="${k}">${t.map(o=>`<option>${o}</option>`).join('')}</select>`}</label>`}).join(''):''};
+    return `<label><small>${l}</small><br>${t=='n'?`<input data-k="${k}" type="number" step="any">`:`<select data-k="${k}">${t.map(o=>`<option value="${o}">${OL[o]||o}</option>`).join('')}</select>`}</label>`}).join(''):''};
   return {get(){if(!s.value)return null;const o={type:s.value};
     d.querySelectorAll('[data-k]').forEach(i=>o[i.dataset.k]=i.tagName=='INPUT'?(i.value===''?null:+i.value):i.value);return o},
   set(o){if(!o||!o.type)return;s.value=o.type;if(s.value!==o.type){s.value='';return}s.onchange();
