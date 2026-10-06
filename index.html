@@ -221,7 +221,10 @@ const ULT={degats:["Dégâts directs à l'adversaire",'val'],voler:['Vole une ma
  saignement:["Saignement : X % des PV max par tour + soins réduits, pendant X tours",'ciblem','pctpv','reducsoin','tours'],
  gel:["Gel : chance d'annuler l'attaque / d'être étourdi, pendant X tours",'ciblem','annul','stunch','tours'],
  fracture:["Fracture : chance de se blesser en attaquant, pendant X tours",'ciblem','fchance','degfrac','tours'],
- vol_ultime:["Vole l'ultime de l'adversaire"]};
+ vol_ultime:["Vole l'ultime de l'adversaire"],
+ soin_tours:["Régénération : soigne de X PV par tour pendant X tours",'val','u','tours'],
+ purification:["Purification : retire les statuts négatifs (poison, brûlure, gel, saignement, fracture, malédiction, étourdissement…) et rend l'ATQ perdu",'cible'],
+ atk_enchainement:["Enchaînement : X % de chances de frapper une fois de plus, puis retente (s'arrête au 1er échec)",'chance','max']};
 const MAG={atq_mod:["Modifie l'ATQ (négatif = baisse)",'cible','val','u'],pv_mod:['Modifie les PV max (négatif = baisse)','cible','val','u'],
  soin:['Soigne son combattant','val','u'],degats:["Dégâts directs à l'adversaire",'val'],annule_attaque:["Annule la prochaine attaque de l'adversaire"],
  renvoi:['Renvoie une part des dégâts pendant X tours','val','tours'],insensible_piege:['Insensible aux pièges pendant X tours','tours'],
@@ -235,6 +238,9 @@ const MAG={atq_mod:["Modifie l'ATQ (négatif = baisse)",'cible','val','u'],pv_mo
  atk_poison:["Attaque de base : X % de chances d'empoisonner (X points par tour, X tours)",'chance','degtour','tours'],
  atk_etourdir:["Attaque de base : +X % de chances d'étourdir (s'ajoute au passif)",'chance'],
  esquive_mod:["Modifie le % d'esquive (négatif = baisse)",'cible','val'],
+ soin_tours:["Régénération : soigne de X PV par tour pendant X tours",'val','u','tours'],
+ purification:["Purification : retire les statuts négatifs (poison, brûlure, gel, saignement, fracture, malédiction, étourdissement…) et rend l'ATQ perdu",'cible'],
+ atk_enchainement:["Attaque de base : X % de chances de frapper une fois de plus, puis retente (s'arrête au 1er échec)",'chance','max'],
  atk_saignement:["Attaque de base : X % de chances de faire saigner (X % des PV max par tour, soins réduits, X tours)",'chance','pctpv','reducsoin','tours'],
  atk_malediction:["Attaque de base : X % de chances de maudire (ATQ −X par tour, X tours)",'chance','val','tours'],
  atk_fracture:["Attaque de base : X % de chances de fracturer (X % de se blesser, X dégâts, X tours)",'chance','fchance','degfrac','tours'],
@@ -260,11 +266,11 @@ function mk(el,cat){
 }
 
 // Multi-effet : plusieurs effets pour une même magie / un même piège (stockés sous forme { briques:[...] })
-function mkMulti(el,cat){
-  el.innerHTML='<div class="mm"></div><button type="button" class="sec mplus">+ Ajouter un effet</button>';
+function mkMulti(el,cat,lab,rem){
+  el.innerHTML='<div class="mm"></div><button type="button" class="sec mplus">'+(lab||'+ Ajouter un effet')+'</button>';
   const zone=el.querySelector('.mm'),L=[];
   const add=()=>{const w=document.createElement('div');w.style.cssText='border-left:3px solid #7c3aed;padding-left:8px;margin:6px 0';
-    const inner=document.createElement('div'),x=document.createElement('button');x.type='button';x.className='sec';x.textContent='✕ Retirer cet effet';
+    const inner=document.createElement('div'),x=document.createElement('button');x.type='button';x.className='sec';x.textContent=rem||'✕ Retirer cet effet';
     w.append(inner,x);zone.appendChild(w);const m=mk(inner,cat),it={m,w};L.push(it);
     x.onclick=()=>{if(L.length<2)return;w.remove();L.splice(L.indexOf(it),1)};return m};
   el.querySelector('.mplus').onclick=add;add();
@@ -293,7 +299,7 @@ async function aCartes(){
     <label><input type="checkbox" name="ucarte"> ou quand une magie/piège s'active</label></div>
     <div class="row"><label><small>Utilisations max (0 = illimité)</small><br><input name="uuses" type="number" min="0" value="1" style="width:90px"></label>
     <label><small>Délai entre 2 utilisations (tours)</small><br><input name="ucd" type="number" min="0" value="0" style="width:90px"></label></div>
-    <b>Passif</b><div id="b-pas"></div></div>
+    <b>Passifs</b> <small>(tu peux en cumuler plusieurs)</small><div id="b-pas"></div></div>
    <div id="s-mag" style="display:none"><b>Effet de la magie</b><div id="b-mag"></div></div>
    <div id="s-pie" style="display:none"><b>Condition du piège</b><div id="b-con"></div><b>Effet du piège</b><div id="b-pef"></div>
     <label><small>Déclenchements max</small><br><input name="decl" type="number" min="1" value="1" style="width:90px"></label></div>
@@ -301,13 +307,13 @@ async function aCartes(){
    <div class="row"><button id="fbtn">Créer la carte</button><button type="button" class="sec" id="fcancel" style="display:none">Annuler la modification</button></div></form>
   <h3>Ajouter une version alternative</h3>
   <form class="f" id="fv"><select name="carte">${opts(cartes)}</select><input name="nom" placeholder="Nom (ex : Alt 1)" required>
-   <input name="poids" type="number" value="10" title="Taux d'apparition (Standard = 100)"><input name="file" type="file" accept="image/*" required><label><small>Image combat sans chiffres (facultatif)</small><br><input name="filec" type="file" accept="image/*"></label><button>Ajouter la version</button></form>
+   <input name="poids" type="number" step="any" min="0" value="10" title="Taux d'apparition (Standard = 100)"><input name="file" type="file" accept="image/*" required><label><small>Image combat sans chiffres (facultatif)</small><br><input name="filec" type="file" accept="image/*"></label><button>Ajouter la version</button></form>
   <h3>Cartes (${cartes.length})</h3><div class="row"><select id="fcolad"><option value="">Toutes les collections</option>${col.map(c=>`<option>${esc(c.nom)}</option>`).join('')}<option>Commune</option></select></div><table><tr><th>Nom</th><th>Type</th><th>Rareté</th><th>Collection</th><th>Versions</th><th>Publiée</th><th></th></tr>
   ${cartes.map(c=>`<tr data-col="${esc(c.collections?.nom||'Commune')}"><td>${esc(c.nom)}</td><td>${c.type}</td><td>${esc(c.raretes.nom)}</td><td>${esc(c.collections?.nom||'Commune')}</td><td>${c.variantes_carte.length}</td>
   <td><button class="sec" data-a="${c.id}" data-v="${c.actif}">${c.actif?'<span class="ok">Oui</span>':'<span class="ko">Non</span>'}</button></td>
   <td><button class="sec" data-edit="${c.id}" title="Modifier cette carte">✏️</button> <button class="sec" data-del="${c.id}" data-nom="${esc(c.nom)}" title="Supprimer cette carte">🗑️</button></td></tr>`).join('')}</table>`;
   const fc=$('#fc');
-  B={ult:mk($('#b-ult'),CAT.ult),pas:mk($('#b-pas'),CAT.pas),mag:mkMulti($('#b-mag'),CAT.mag),con:mk($('#b-con'),CAT.con),pef:mkMulti($('#b-pef'),{...CAT.ult,...CAT.mag})};
+  B={ult:mk($('#b-ult'),CAT.ult),pas:mkMulti($('#b-pas'),CAT.pas,'+ Ajouter un passif','✕ Retirer ce passif'),mag:mkMulti($('#b-mag'),CAT.mag),con:mk($('#b-con'),CAT.con),pef:mkMulti($('#b-pef'),{...CAT.ult,...CAT.mag})};
   const toggle=()=>{const t=fc.type.value;
     $('#r-stats').style.display=$('#s-comb').style.display=t=='combattant'?'':'none';
     $('#s-mag').style.display=t=='magie'?'':'none';$('#s-pie').style.display=t=='piege'?'':'none'};
@@ -382,7 +388,7 @@ async function aBoosters(){
     <small>Collections présentes (les cartes communes sont toujours incluses)</small>
     <div class="row">${col.map(c=>`<label><input type="checkbox" name="c${c.id}" ${cs.has(c.id)?'checked':''}> ${esc(c.nom)}</label>`).join('')||'<small>Aucune collection</small>'}</div>
     <small>Modificateur de drop : s'ajoute au poids de la rareté pour ce booster (négatif possible)</small>
-    <div class="row">${rar.map(r=>`<label><small>${esc(r.nom)} (poids ${r.poids})</small><br><input name="m${r.id}" type="number" value="${ms[r.id]||0}" style="width:90px"></label>`).join('')}</div>
+    <div class="row">${rar.map(r=>`<label><small>${esc(r.nom)} (poids ${r.poids})</small><br><input name="m${r.id}" type="number" step="any" value="${ms[r.id]||0}" style="width:90px"></label>`).join('')}</div>
     <div class="row"><button>${x?'Enregistrer':'Créer le booster'}</button>${x?`<button type="button" class="sec" data-del="${x.id}" data-nom="${esc(x.nom)}">🗑️ Supprimer</button>`:''}</div></form>`};
   $('#sub').innerHTML=form(null)+'<h3>Boosters existants ('+b.length+')</h3>'+b.map(form).join('');
   $('#sub').querySelectorAll('form').forEach(f=>f.onsubmit=async e=>{e.preventDefault();
@@ -424,7 +430,7 @@ async function aRaretes(){
   const r=await q(sb.from('raretes').select('*').order('ordre'));
   $('#sub').innerHTML=`<p><small>Poids : plus il est grand, plus la rareté sort souvent (ex : 70 / 25 / 5).</small></p>
   <table><tr><th>Nom</th><th>Couleur</th><th>Poids</th><th>Ordre</th><th></th></tr>
-  ${r.map(x=>`<tr data-id="${x.id}"><td><input value="${esc(x.nom)}"></td><td><input type="color" value="${esc(x.couleur)}"></td><td><input type="number" value="${x.poids}" style="width:80px"></td><td><input type="number" value="${x.ordre}" style="width:70px"></td><td><button>Enregistrer</button></td></tr>`).join('')}
+  ${r.map(x=>`<tr data-id="${x.id}"><td><input value="${esc(x.nom)}"></td><td><input type="color" value="${esc(x.couleur)}"></td><td><input type="number" step="any" min="0" value="${x.poids}" style="width:80px"></td><td><input type="number" value="${x.ordre}" style="width:70px"></td><td><button>Enregistrer</button></td></tr>`).join('')}
   <tr data-id="new"><td><input placeholder="Nouvelle rareté"></td><td><input type="color" value="#a855f7"></td><td><input type="number" value="10" style="width:80px"></td><td><input type="number" value="${r.length+1}" style="width:70px"></td><td><button>Ajouter</button></td></tr></table>`;
   $('#sub').querySelectorAll('tr[data-id]').forEach(tr=>tr.querySelector('button').onclick=async()=>{
     const i=tr.querySelectorAll('input'),row={nom:i[0].value,couleur:i[1].value,poids:+i[2].value,ordre:+i[3].value};
