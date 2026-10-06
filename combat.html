@@ -11,7 +11,12 @@ body.obs{background:transparent}
 @keyframes hit{25%{transform:translateX(-12px)}75%{transform:translateX(12px)}}
 .nm{margin:1vh 0 .5vh;font-size:2.4vh;font-weight:700;text-shadow:0 0 6px #000}
 .bar{height:2.4vh;background:#400;border-radius:8px;overflow:hidden}.bar i{display:block;height:100%;width:100%;background:#22c55e;transition:width .5s}
-.pv{font-size:2vh;text-shadow:0 0 4px #000}.sub{font-size:1.7vh;opacity:.8}
+.pv{font-size:2vh;text-shadow:0 0 4px #000}
+/* ATQ (rouge) et PV (bleu) en direct sur la carte — seulement si la carte a une « image pour le combat » (sans chiffres).
+   Réglages : --sl / --sr = distance du bord gauche / droit, --sb = distance du bas, --ss = taille des chiffres */
+.sv{--sl:5%;--sr:5%;--sb:1.5%;--ss:3.6vw;position:absolute;bottom:var(--sb);font-size:var(--ss);font-weight:900;line-height:1;pointer-events:none;text-shadow:0 0 .35vw #fff,0 0 .35vw #fff,0 0 .15vw #fff}
+.sv::before{content:attr(data-v)}.sva{left:var(--sl);color:#e0303c}.svp{right:var(--sr);color:#4747d6}
+.sv.pls{animation:svp .5s}@keyframes svp{40%{transform:scale(1.4)}}.sub{font-size:1.7vh;opacity:.8}
 /* chiffres flottants : au-dessus des cartes et des effets */
 .fl{position:absolute;left:50%;top:34%;z-index:12;font-size:10vh;font-weight:900;white-space:nowrap;text-shadow:-.35vh -.35vh 0 #000,.35vh -.35vh 0 #000,-.35vh .35vh 0 #000,.35vh .35vh 0 #000,0 .6vh 1.6vh #000;animation:fl 1.5s ease-out forwards;pointer-events:none}
 @keyframes mg{to{box-shadow:inset 0 0 60px 18px rgba(190,110,255,.8)}}
@@ -244,7 +249,7 @@ function simuler(pA,pB,opt={}){
 
  // ---- Déroulé ----
  const first=r()<.5?0:1,ordre=[S[first],S[1-first]];
- L('debut','Le combat commence !',{joueurs:S.map(s=>({pseudo:s.pseudo,carte:s.card.nom,image:s.card.image||null,magie:s.mag.nom,piege:s.pie.nom,magieImg:s.mag.image||null,piegeImg:s.pie.image||null})),premier:first});
+ L('debut','Le combat commence !',{joueurs:S.map(s=>({pseudo:s.pseudo,carte:s.card.nom,image:s.card.image||null,imageCombat:s.card.imageCombat||null,magie:s.mag.nom,piege:s.pie.nom,magieImg:s.mag.image||null,piegeImg:s.pie.image||null})),premier:first});
  ordre.forEach(s=>{if(s.mag.effet){L('magie',`Magie de ${s.pseudo} : ${s.mag.nom}`,{c:id(s),carte:s.mag.nom,img:s.mag.image||null});fx(s.mag.effet,s,adv(s),true);S.forEach(k=>k.pend=1)}});
  for(tour=1;tour<=reg.maxTours&&!over();tour++){
   L('tour',`Tour ${tour}`);S.forEach(s=>s.rt=0);
@@ -270,7 +275,7 @@ if(!TEST&&!DEMO)document.body.classList.add('obs');
 
 // ---------- Affichage d'un journal ----------
 function mini(img,txt){return img?`style="background-image:url('${STORAGE+img}')"`:''}
-function panneau(i,j){$('#p'+i).innerHTML=`<div class="cw"><div class="card" ${j.image?`style="background-image:url('${STORAGE+j.image}')"`:''}>${j.image?'':j.carte}</div></div>
+function panneau(i,j){const im=j.imageCombat||j.image;$('#p'+i).innerHTML=`<div class="cw"><div class="card" ${im?`style="background-image:url('${STORAGE+im}')"`:''}>${im?'':j.carte}${j.imageCombat?'<span class="sv sva" data-v=""></span><span class="sv svp" data-v=""></span>':''}</div></div>
  <div class="nm">${j.pseudo} — ${j.carte}</div><div class="bar"><i></i></div><div class="pv"></div>
  <div class="mp"><div class="mw"><div class="mini${/^Aucun/.test(j.magie)?' vide':''}" id="m${i}" ${mini(j.magieImg)}>${j.magieImg?'':j.magie}</div><small>Magie</small></div>
  <div class="mw"><div class="mini back${/^Aucun/.test(j.piege)?' vide':''}" id="g${i}">?</div><small>Piège</small></div></div>`}
@@ -611,7 +616,8 @@ function aureole(c){const K=rc(c),W=K.w,cx=K.cx;
 function statut(c,k,on){if(k==='fracture')return;const key=c+k;st[key]=Math.max(0,(st[key]||0)+(on?1:-1));const card=$('#p'+c+' .card'),f=card.querySelector('canvas.fx.'+k);
  if(st[key]>0&&!f)fxStart(card,k);else if(!st[key]&&f){f._stop();f.remove()}}
 function maj(e){[0,1].forEach(i=>{const p=$('#p'+i);p.querySelector('i').style.width=Math.max(0,e.pv[i]/e.max[i]*100)+'%';
- p.querySelector('.pv').textContent=`${Math.max(0,e.pv[i])} / ${e.max[i]} PV · ATQ ${e.atq[i]}`})}
+ p.querySelector('.pv').textContent=`${Math.max(0,e.pv[i])} / ${e.max[i]} PV · ATQ ${e.atq[i]}`;
+ [['.sva',e.atq[i]],['.svp',Math.max(0,e.pv[i])]].forEach(([k,v])=>{const n=p.querySelector(k);if(!n)return;const t=String(v);if(n.dataset.v!==t){const nv=n.dataset.v!=='';n.dataset.v=t;if(nv){n.classList.remove('pls');void n.offsetWidth;n.classList.add('pls')}}})})}
 function flot(i,txt,col,cls){const d=document.createElement('div');d.className='fl'+(cls?' '+cls:'');d.textContent=txt;d.style.color=col;$('#p'+i).appendChild(d);setTimeout(()=>d.remove(),1300)}
 let enCours=false;const file=[];
 async function jouer(res){
@@ -740,7 +746,7 @@ if(DEMO){
  if(TEST){
   const sec=document.createElement('div');sec.id='reel';
   sec.innerHTML=`<h4>Vraies cartes (base de données)</h4><div id="rst" style="font-size:12px;opacity:.85;margin-bottom:4px">Chargement des cartes…</div>
-   <div class="g"><div><select id="ra"></select><select id="rma"></select><select id="rpa"></select><div class="ri" id="rai"></div></div><div><select id="rb"></select><select id="rmb"></select><select id="rpb"></select><div class="ri" id="rbi"></div></div></div>
+   <div class="g"><div><select id="ra"><option value="">⏳ Chargement des cartes…</option></select><select id="rma"><option value="">⏳ Chargement des cartes…</option></select><select id="rpa"><option value="">⏳ Chargement des cartes…</option></select><div class="ri" id="rai"></div></div><div><select id="rb"><option value="">⏳ Chargement des cartes…</option></select><select id="rmb"><option value="">⏳ Chargement des cartes…</option></select><select id="rpb"><option value="">⏳ Chargement des cartes…</option></select><div class="ri" id="rbi"></div></div></div>
    <label style="font-size:12px;display:block;margin:3px 0"><input type="checkbox" id="rmp" checked> Démo et classement : avec magies et pièges au hasard</label>
    <div class="g"><button class="big" id="rgo" style="margin:0">⚔️ Combattre avec ces cartes</button><button id="rre">↺ Rejouer le même combat</button></div>
    <div class="g" style="margin-top:4px"><button id="rdm" class="big" style="margin:0;background:#1d4ed8">🎬 Démo : enchaîner des combats</button><select id="rn"><option value="3">3 combats</option><option value="5" selected>5 combats</option><option value="10">10 combats</option></select></div>
@@ -764,20 +770,24 @@ if(DEMO){
   const randDeck=c=>[c,...($('#rmp').checked?[rndl(REEL.magies),rndl(REEL.pieges)]:[])].filter(Boolean);
   const infoX=(v,l,t)=>v===''?`${t} : aucune`:v==='r'?`${t} : au hasard`:`<small>${fmtC(l.find(c=>String(c.id)===v))}</small>`;
   const refresh=()=>{[['a','a'],['b','b']].forEach(([k])=>{$('#r'+(k==='a'?'ai':'bi')).innerHTML=info($('#r'+k).value===''?null:pick($('#r'+k).value))+'<br>'+infoX($('#rm'+k).value,REEL.magies,'Magie')+'<br>'+infoX($('#rp'+k).value,REEL.pieges,'Piège')})};
+  const vide=m=>['ra','rma','rpa','rb','rmb','rpb'].forEach(k=>{$('#'+k).innerHTML='<option value="">⚠ '+m+'</option>'});
+  const RB=' <button onclick="location.reload()" style="padding:3px 8px">↻ Recharger</button>',IOS='<br>Ouvre cette page dans le <b>même navigateur</b> que celui où tu es connecté au site (Safari et Chrome ne partagent pas la connexion), puis recharge.';
   const sc=document.createElement('script');sc.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
-  sc.onerror=()=>{$('#rst').textContent='Impossible de charger la bibliothèque de connexion (réseau ?).'};
+  sc.onerror=()=>{vide('Cartes non chargées');$('#rst').innerHTML='Impossible de charger la bibliothèque de connexion (réseau, bloqueur de contenu ?).'+RB};
   sc.onload=async()=>{try{
     const sb=supabase.createClient('https://bjsvqikjnvaomyoifiml.supabase.co','sb_publishable_-3cPqDCyE-zhb3z5r6dPhg_DJFKGAI6');
-    const{data,error}=await sb.from('cartes').select('id,nom,type,atq,pv,actif,passif,ultime,effet,variantes_carte(nom,image_path)').in('type',['combattant','magie','piege']).order('nom');
+    const sel=v=>sb.from('cartes').select('id,nom,type,atq,pv,actif,passif,ultime,effet,variantes_carte(nom,image_path'+v+')').in('type',['combattant','magie','piege']).order('nom');
+    let{data,error}=await sel(',image_combat');
+    if(error&&/image_combat/.test(error.message||''))({data,error}=await sel(''));
     if(error)throw error;
-    const all=(data||[]).map(c=>{const vs=c.variantes_carte||[],v=vs.find(x=>x.nom==='Standard')||vs[0]||{};return{id:c.id,type:c.type,nom:c.nom,atq:c.atq,pv:c.pv,actif:c.actif,passif:c.passif,ultime:c.ultime,effet:c.effet,image:v.image_path||null}});
+    const all=(data||[]).map(c=>{const vs=c.variantes_carte||[],v=vs.find(x=>x.nom==='Standard')||vs[0]||{};return{id:c.id,type:c.type,nom:c.nom,atq:c.atq,pv:c.pv,actif:c.actif,passif:c.passif,ultime:c.ultime,effet:c.effet,image:v.image_path||null,imageCombat:v.image_combat||null}});
     REEL.cartes=all.filter(c=>c.type==='combattant');REEL.magies=all.filter(c=>c.type==='magie');REEL.pieges=all.filter(c=>c.type==='piege');
-    if(!REEL.cartes.length){$('#rst').innerHTML='Aucun combattant lu. Si tu en as créé, connecte-toi d\'abord sur le site (dans ce même navigateur), puis recharge cette page.';return}
+    if(!REEL.cartes.length){vide('Aucune carte lue (non connecté ?)');$('#rst').innerHTML='Aucun combattant lu. Si tu en as créé, il faut être connecté sur le site.'+IOS+RB;return}
     const o='<option value="">🎲 Au hasard</option>'+REEL.cartes.map(c=>`<option value="${c.id}">${c.nom} — ATQ ${c.atq} · PV ${c.pv}${c.actif?'':' (non publiée)'}</option>`).join('');
     const lab=c=>`<option value="${c.id}">${c.nom}${c.actif?'':' (non publiée)'}</option>`,om='<option value="">— Aucune magie —</option><option value="r">🎲 Magie au hasard</option>'+REEL.magies.map(lab).join(''),op='<option value="">— Aucun piège —</option><option value="r">🎲 Piège au hasard</option>'+REEL.pieges.map(lab).join('');
     $('#ra').innerHTML=o;$('#rb').innerHTML=o;$('#rma').innerHTML=om;$('#rmb').innerHTML=om;$('#rpa').innerHTML=op;$('#rpb').innerHTML=op;
     $('#rst').textContent=REEL.cartes.length+' combattant(s), '+REEL.magies.length+' magie(s), '+REEL.pieges.length+' piège(s) chargé(s). Choisis pour chaque joueur (toi à gauche, le bot à droite) ou laisse au hasard.';refresh();
-   }catch(e){$('#rst').innerHTML='Impossible de lire les cartes : '+(e.message||e)+'<br>Connecte-toi d\'abord sur le site (dans ce même navigateur), puis recharge.'}};
+   }catch(e){vide('Cartes non chargées');$('#rst').innerHTML='Impossible de lire les cartes : '+(e.message||e)+IOS+RB}};
   document.head.appendChild(sc);
   ['ra','rb','rma','rmb','rpa','rpb'].forEach(i=>$('#'+i).onchange=refresh);
   $('#rgo').onclick=()=>{if(enCours||!REEL.cartes.length)return;lancer(undefined,[{pseudo:'Toi',deck:deckOf('#ra','#rma','#rpa')},{pseudo:'Bot',deck:deckOf('#rb','#rmb','#rpb')}])};
