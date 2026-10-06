@@ -97,7 +97,7 @@ function simuler(pA,pB,opt={}){
  const normPas=p=>!p?[]:p.briques?p.briques.filter(b=>b&&b.type):(p.type?[p]:[]);   // passif unique (ancien format) ou plusieurs passifs { briques:[…] }
  const nw=p=>{const c=tire(p.deck,'combattant');if(!c)throw new Error(p.pseudo+" n'a aucun combattant dans son deck");const pl=normPas(c.passif);
   return{pseudo:p.pseudo,deck:p.deck,card:c,mag:tire(p.deck,'magie')||VM,pie:tire(p.deck,'piege')||VP,atq:c.atq,pv:c.pv,max:c.pv,pl:pl,ult:c.ultime,
-   uh:[{u:c.ultime,uses:0,last:-99}],magOn:1,pieOn:1,decl:0,mdelta:[],st:{hots:[],cl:0,bleeds:[],frost:[],fract:[],stun:0,skip:0,dbl:0,dots:[],curses:[],atkfx:[],esqb:0,ren:[],insens:0,prog:[],evite:pl.some(p=>p.type==='evite_mort'),mortUsed:0,bonus:0},
+   uh:[{u:c.ultime,uses:0,last:-99}],magOn:1,pieOn:1,decl:0,mdelta:[],st:{purs:[],hots:[],cl:0,bleeds:[],frost:[],fract:[],stun:0,skip:0,dbl:0,dots:[],curses:[],atkfx:[],esqb:0,ren:[],insens:0,prog:[],evite:pl.some(p=>p.type==='evite_mort'),mortUsed:0,bonus:0},
    cum:0,coups:0,rt:0,uses:0,last:-99,pend:0}};
  const S=[nw(pA),nw(pB)],id=s=>S.indexOf(s),adv=s=>S[1-id(s)],nom=s=>s.card.nom;
  S.forEach(s=>{if(s.mag.vide)s.magOn=0;if(s.pie.vide)s.pieOn=0});
@@ -141,12 +141,8 @@ function simuler(pA,pB,opt={}){
    case'pv_mod':{const d=amt(e,T.max);T.max=Math.max(1,T.max+d);T.pv=Math.max(1,Math.min(T.max,T.pv+d));delta(T,'max',d);L('stat',`PV max de ${nom(T)} ${d>=0?'+':''}${d}`,{c:id(T),k:'mod',s:'PV max',d});break}
    case'soin':heal(o,amt(e,o.max));break;
    case'soin_tours':{const n=amt(e,o.max),t=e.tours||1,h={n,t};o.st.hots.push(h);if(mg)o.mdelta.push({undo:()=>{o.st.hots=o.st.hots.filter(z=>z!==h)}});L('statut',`${nom(o)} se régénère (+${n} PV par tour, ${t} tour${t>1?'s':''})`,{c:id(o),k:'regen'});break}
-   case'purification':{const t=e.cible==='adversaire'?x:o,z=t.st,pk=[];
-    if(z.dots.some(d=>d.k==='poison'))pk.push('poison');if(z.dots.some(d=>d.k==='brûlure'))pk.push('brulure');if(z.curses.length)pk.push('malediction');if(z.bleeds.length)pk.push('saignement');if(z.frost.length)pk.push('gel');if(z.fract.length)pk.push('fracture');
-    const etd=z.stun>0||z.skip>0,rest=z.cl;z.dots=[];z.curses=[];z.bleeds=[];z.frost=[];z.fract=[];z.stun=0;z.skip=0;z.cl=0;
-    L('statut',`${nom(t)} est purifié${pk.length||etd||rest?'':' (rien à retirer)'} !`,{c:id(t),k:'purif'});
-    if(rest>0){t.atq+=rest;L('stat',`ATQ de ${nom(t)} +${rest} (malédiction levée)`,{c:id(t),k:'mod',s:'ATQ',d:rest})}
-    pk.forEach(k=>L('finstatut',`${k} dissipé`,{c:id(t),k}));if(etd)L('statut',`${nom(t)} n'est plus étourdi`,{c:id(t),k:'etourdi_fin'});break}
+   case'purification':{const t=e.cible==='adversaire'?x:o;purifier(t);const n=Math.max(0,(e.fois||1)-1);   // 1re purification tout de suite, puis « fois − 1 » autres, une tous les « every » tours
+    if(n>0){const h={t,every:Math.max(1,e.every||1),left:n,c:0};o.st.purs.push(h);if(mg)o.mdelta.push({undo:()=>{o.st.purs=o.st.purs.filter(z=>z!==h)}})}break}
    case'degats':{const n=dmg(o,x,e.val);L('degats',`${nom(x)} subit ${n} dégâts directs`,{c:id(x),n});break}
    case'vol_vie':{const n=dmg(o,x,e.val);L('degats',`${nom(x)} subit ${n} dégâts`,{c:id(x),n});heal(o,n);break}
    case'annule_attaque':x.st.skip=1;L('statut',`La prochaine attaque de ${nom(x)} est annulée`,{c:id(x)});break;
@@ -185,6 +181,13 @@ function simuler(pA,pB,opt={}){
  function saigner(d,pct,r,t){d.st.bleeds.push({pct,r,t});L('statut',`${nom(d)} saigne (${pct} % des PV max par tour, soins −${r} %, ${t} tour${t>1?'s':''}) !`,{c:id(d),k:'saignement'})}
  function geler(d,ann,sn,t){d.st.frost.push({ann,sn,t});L('statut',`${nom(d)} est gelé (${ann} % d'attaque annulée, ${sn} % d'être étourdi, ${t} tour${t>1?'s':''}) !`,{c:id(d),k:'gel'})}
  function fracturer(d,fc,dg,t){d.st.fract.push({fc,dg,t});L('statut',`${nom(d)} est fracturé (${fc} % de se blesser en attaquant, −${dg} PV, ${t} tour${t>1?'s':''}) !`,{c:id(d),k:'fracture'})}
+// Purification : retire les statuts négatifs de t et lui rend l'ATQ perdu par malédiction
+ function purifier(t){const z=t.st,pk=[];
+  if(z.dots.some(d=>d.k==='poison'))pk.push('poison');if(z.dots.some(d=>d.k==='brûlure'))pk.push('brulure');if(z.curses.length)pk.push('malediction');if(z.bleeds.length)pk.push('saignement');if(z.frost.length)pk.push('gel');if(z.fract.length)pk.push('fracture');
+  const etd=z.stun>0||z.skip>0,rest=z.cl;z.dots=[];z.curses=[];z.bleeds=[];z.frost=[];z.fract=[];z.stun=0;z.skip=0;z.cl=0;
+  L('statut',`${nom(t)} est purifié${pk.length||etd||rest?'':' (rien à retirer)'} !`,{c:id(t),k:'purif'});
+  if(rest>0){t.atq+=rest;L('stat',`ATQ de ${nom(t)} +${rest} (malédiction levée)`,{c:id(t),k:'mod',s:'ATQ',d:rest})}
+  pk.forEach(k=>L('finstatut',`${k} dissipé`,{c:id(t),k}));if(etd)L('statut',`${nom(t)} n'est plus étourdi`,{c:id(t),k:'etourdi_fin'})}
  function undo(s){s.mdelta.forEach(d=>{if(d.undo){d.undo();return}d.s[d.k]-=d.d;if(d.k==='max')d.s.pv=Math.min(d.s.pv,d.s.max)});s.mdelta=[]}
 
  function ultime(s){
@@ -240,6 +243,7 @@ function simuler(pA,pB,opt={}){
    s.st.bleeds=s.st.bleeds.filter(b=>{const n=dmg(x,s,rd(s.max*b.pct/100));L('degats',`${nom(s)} subit ${n} (saignement)`,{c:id(s),n,k:'saignement'});if(--b.t>0)return true;L('finstatut',`Le saignement de ${nom(s)} s'arrête`,{c:id(s),k:'saignement'});return false});
    s.st.frost=s.st.frost.filter(f=>{if(--f.t>0)return true;L('finstatut',`${nom(s)} n'est plus gelé`,{c:id(s),k:'gel'});return false});
    s.st.fract=s.st.fract.filter(f=>{if(--f.t>0)return true;L('finstatut',`La fracture de ${nom(s)} guérit`,{c:id(s),k:'fracture'});return false});
+   s.st.purs=s.st.purs.filter(h=>{if(h.t.pv<=0)return false;if(++h.c<h.every)return true;h.c=0;purifier(h.t);return --h.left>0});
    s.st.hots=s.st.hots.filter(h=>{heal(s,h.n);if(--h.t>0)return true;L('statut',`La régénération de ${nom(s)} se termine`);return false});
    s.pl.forEach(p=>{
    if(p.type==='soin_tour')heal(s,amt(p,s.max));
@@ -774,7 +778,7 @@ if(DEMO){
   const LB={evite_mort:'évite la mort une fois',soin_tour:'se soigne chaque tour',renvoi:'renvoie des dégâts',atq_tours:"augmente l'ATQ tous les X tours",pv_tours:'augmente les PV tous les X tours',multi_frappe:'frappe plusieurs fois',reduc_degats:'réduit les dégâts reçus',bonus_frappe:'bonus de dégâts si frappé',etourdir:'étourdit',vol_pct_atq:'vole de la vie',brulure:'brûlure',poison:'poison',esquive:'esquive',degats:'dégâts directs',voler:'vole une carte',detruire:'détruit une carte',equiper:'équipe une carte',soin:'se soigne',vol_vie:'vole de la vie',echange_atq:"échange l'ATQ",annule_attaque:"annule l'attaque",double_degats:'double ses dégâts',echange_atq_def:"échange ATQ et PV de l'adversaire"};
   Object.assign(LB,{soin_tours:'régénération (soigne chaque tour)',purification:'purification (retire les statuts négatifs)',atk_enchainement:'attaque de base : enchaînement',atk_saignement:'attaque de base : saignement',atk_malediction:'attaque de base : malédiction',atk_fracture:'attaque de base : fracture',atk_gel:'attaque de base : gel',saignement:'saignement (dégâts sur la durée, soins réduits)',gel:'gel (attaque annulée ou étourdi)',fracture:'fracture (se blesse en attaquant)',vol_ultime:"vole l'ultime",malediction:'malédiction (ATQ en baisse par tour)',enchainement:'enchaîne les frappes tant que ça réussit',poison_effet:'poison',brulure_effet:'brûlure',etourdir_effet:'étourdit',atk_brulure:"attaque de base : brûlure",atk_poison:"attaque de base : poison",atk_etourdir:"attaque de base : étourdissement",esquive_mod:"modifie l'esquive (%)",reset_ultime:"réinitialise l'ultime",atq_mod:"modifie l'ATQ",pv_mod:'modifie les PV max',insensible_piege:'insensible aux pièges',annule_magies:'annule les magies',mort_evitee:'évite la mort (1 PV)',degats_tours:'dégâts différés'});
   const CL={adv_attaque:"l'adversaire a attaqué X fois",adv_ultime:"l'adversaire utilise son ultime",proprio_pv_sous:'le propriétaire passe sous X % de PV',adv_pv_bas:"l'adversaire passe sous X % de PV",adv_soigne:"l'adversaire se soigne",proprio_soigne:'le propriétaire se soigne',proprio_meurt:'le propriétaire meurt'};
-  const KL={reducsoin:'soins en moins %',annul:'attaque annulée %',stunch:'étourdi %',fchance:'se blesse %',degfrac:'dégâts en attaquant',val:'valeur',chance:'chance %',apres_tours:'après N tours',degtour:'dégâts par tour',pctpv:'% des PV max',pctatq:'% de l\'ATQ',tours:'tours',frappes:'frappes',coups:'coups',carte:'carte'};
+  const KL={every:'tous les X tours',fois:'nombre de fois',reducsoin:'soins en moins %',annul:'attaque annulée %',stunch:'étourdi %',fchance:'se blesse %',degfrac:'dégâts en attaquant',val:'valeur',chance:'chance %',apres_tours:'après N tours',degtour:'dégâts par tour',pctpv:'% des PV max',pctatq:'% de l\'ATQ',tours:'tours',frappes:'frappes',coups:'coups',carte:'carte'};
   const fmt=o=>!o||!o.type?'aucun':(LB[o.type]||o.type)+' ('+Object.entries(o).filter(([k,v])=>!['type','utilisations','delai_tours','sur_carte','u'].includes(k)&&v!=null&&v!==false&&v!==0).map(([k,v])=>(KL[k]||k)+' '+v+(k==='val'&&o.u==='pct'?' %':'')).join(', ')+')';
   const fmtE=e=>!e?'aucun':e.briques?e.briques.map(fmtE).join(' + '):fmt(e);
   const fmtC=c=>!c||!c.effet?'aucun effet':c.type==='piege'?`Quand ${(c.effet.condition&&CL[c.effet.condition.type])||'?'}${c.effet.condition&&c.effet.condition.coups?' ('+c.effet.condition.coups+')':''}${c.effet.condition&&c.effet.condition.seuilpv?' ('+c.effet.condition.seuilpv+' %)':''} → ${fmtE(c.effet.effet)}`:fmtE(c.effet);
