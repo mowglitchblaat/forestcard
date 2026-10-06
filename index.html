@@ -199,9 +199,9 @@ async function upload(file){
 // Paramètres réutilisables : [libellé, 'n' (nombre) ou liste de choix]
 const P={val:['Valeur','n'],u:['Unité',['pts','pct']],tours:['Nb de tours','n'],chance:['Chance (%)','n'],frappes:['Nb de frappes','n'],
  coups:['Nb de coups','n'],cible:['Cible',['soi','adversaire']],carte:['Carte',['magie','piege']],seuil:['Seuil (ignoré si aucune condition)','n'],seuilpv:['Seuil (% PV)','n'],
- cond:['Condition pour éviter la mort',['aucune','pv_max','degats_infliges']],pct:['% PV rendus en plus','n'],val2:['2e valeur','n'],pctatq:["% de l'ATQ infligée volé en PV",'n'],pctpv:['% des PV max de la cible perdus par tour','n'],degtour:['Points de dégâts par tour','n'],ciblem:['Cible (adversaire par défaut)',['adversaire','soi']],max:['Plafond de frappes en plus','n'],reducsoin:['% de soins en moins','n'],every:['Agit tous les X tours','n'],fois:['Nombre de fois (1 = une seule)','n'],annul:["Chance d'annuler l'attaque (%)",'n'],stunch:["Chance d'être étourdi avant l'attaque (%)",'n'],fchance:['Chance de se blesser en attaquant (%)','n'],degfrac:['Dégâts subis en attaquant','n']};
+ cond:['Condition pour éviter la mort',['aucune','pv_max','degats_infliges']],pct:['% PV rendus en plus','n'],pctrev:['% des PV max au retour','n'],val2:['2e valeur','n'],pctatq:["% de l'ATQ infligée volé en PV",'n'],pctpv:['% des PV max de la cible perdus par tour','n'],degtour:['Points de dégâts par tour','n'],ciblem:['Cible (adversaire par défaut)',['adversaire','soi']],max:['Plafond de frappes en plus','n'],reducsoin:['% de soins en moins','n'],every:['Agit tous les X tours','n'],fois:['Nombre de fois (1 = une seule)','n'],annul:["Chance d'annuler l'attaque (%)",'n'],stunch:["Chance d'être étourdi avant l'attaque (%)",'n'],fchance:['Chance de se blesser en attaquant (%)','n'],degfrac:['Dégâts subis en attaquant','n']};
 // Chaque effet : [libellé, ...paramètres]
-const PAS={evite_mort:['Évite la mort une fois'],soin_tour:['Se soigne de X chaque tour','val','u'],renvoi:['Renvoie X dégâts reçus','val','u'],
+const PAS={evite_mort:['Évite la mort une fois (reste à 1 PV et retire les statuts négatifs)'],reanimation:['Réanimation : la carte est détruite puis revient avec X % de ses PV max (une fois)','pctrev'],soin_tour:['Se soigne de X chaque tour','val','u'],renvoi:['Renvoie X dégâts reçus','val','u'],
  atq_tours:["Augmente l'ATQ tous les X tours",'tours','val','u'],pv_tours:['Augmente les PV tous les X tours','tours','val','u'],
  multi_frappe:['À X % de chances, frappe X fois par tour','chance','frappes'],reduc_degats:['À X % de chances, réduit les dégâts reçus de X','chance','val','u'],
  bonus_frappe:["Si frappé X fois par tour, bonus à la prochaine attaque",'coups','val','u'],
@@ -224,11 +224,12 @@ const ULT={degats:["Dégâts directs à l'adversaire",'val'],voler:['Vole une ma
  vol_ultime:["Vole l'ultime de l'adversaire"],
  soin_tours:["Régénération : soigne de X PV par tour pendant X tours",'val','u','tours'],
  purification:["Purification : retire les statuts négatifs (poison, brûlure, gel, saignement, fracture, malédiction, étourdissement…) et rend l'ATQ perdu. 1re purification tout de suite, puis une tous les X tours, X fois au total",'cible','every','fois'],
+ reanimation:['Réanimation : la carte est détruite puis revient avec X % de ses PV max (une fois)','pctrev'],
  atk_enchainement:["Enchaînement : X % de chances de frapper une fois de plus, puis retente (s'arrête au 1er échec)",'chance','max']};
 const MAG={atq_mod:["Modifie l'ATQ (négatif = baisse)",'cible','val','u'],pv_mod:['Modifie les PV max (négatif = baisse)','cible','val','u'],
  soin:['Soigne son combattant','val','u'],degats:["Dégâts directs à l'adversaire",'val'],annule_attaque:["Annule la prochaine attaque de l'adversaire"],
  renvoi:['Renvoie une part des dégâts pendant X tours','val','tours'],insensible_piege:['Insensible aux pièges pendant X tours','tours'],
- annule_magies:['Annule les autres magies pendant X tours','tours'],mort_evitee:['Évite la mort si condition (reste à 1 PV, une fois)','cond','seuil','pct'],
+ annule_magies:['Annule les autres magies pendant X tours','tours'],mort_evitee:['Évite la mort si condition (reste à 1 PV, retire les statuts négatifs, une fois)','cond','seuil'],reanimation:['Réanimation : la carte est détruite puis revient avec X % de ses PV max (une fois)','pctrev'],
  degats_tours:['Inflige X dégâts après X tours','val','tours'],
  malediction:["Malédiction : l'ATQ baisse de X points par tour pendant X tours",'ciblem','val','tours'],
  poison_effet:["Poison : X points par tour pendant X tours (soi ou adversaire)",'ciblem','degtour','tours'],
