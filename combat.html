@@ -56,6 +56,9 @@ canvas.fx.poison{box-shadow:inset 0 0 40px 12px rgba(34,197,94,.75);animation:pg
 canvas.fx.etourdi{box-shadow:inset 0 0 25px 6px rgba(250,204,21,.5)}
 canvas.fx.saignement{box-shadow:inset 0 0 38px 10px rgba(170,10,20,.75);animation:sg 1.4s infinite alternate}
 @keyframes sg{to{box-shadow:inset 0 0 55px 16px rgba(200,15,25,.85)}}
+canvas.fx.rage{box-shadow:inset 0 0 38px 10px rgba(230,20,30,.8);animation:rg .5s infinite alternate}
+@keyframes rg{to{box-shadow:inset 0 0 55px 16px rgba(255,60,20,.95)}}
+canvas.fx.fatigue{box-shadow:inset 0 0 40px 10px rgba(70,90,130,.7)}
 canvas.fx.gel{box-shadow:inset 0 0 40px 12px rgba(150,220,255,.8)}
 /* téléphone : menus de test et barre de boutons déplaçables au doigt (n'affecte pas l'écran d'ordinateur) */
 #demo,#ctl{-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
@@ -97,7 +100,7 @@ function simuler(pA,pB,opt={}){
  const normPas=p=>!p?[]:p.briques?p.briques.filter(b=>b&&b.type):(p.type?[p]:[]);   // passif unique (ancien format) ou plusieurs passifs { briques:[…] }
  const nw=p=>{const c=tire(p.deck,'combattant');if(!c)throw new Error(p.pseudo+" n'a aucun combattant dans son deck");const pl=normPas(c.passif);
   return{pseudo:p.pseudo,deck:p.deck,card:c,mag:tire(p.deck,'magie')||VM,pie:tire(p.deck,'piege')||VP,atq:c.atq,pv:c.pv,max:c.pv,pl:pl,ult:c.ultime,
-   uh:[{u:c.ultime,uses:0,last:-99}],magOn:1,pieOn:1,decl:0,mdelta:[],st:{pcnt:[],rUsed:[],reanL:[],purs:[],hots:[],cl:0,bleeds:[],frost:[],fract:[],stun:0,skip:0,dbl:0,dots:[],curses:[],atkfx:[],esqb:0,ren:[],insens:0,prog:[],evite:pl.some(p=>p.type==='evite_mort'),mortUsed:0,bonus:0},
+   uh:[{u:c.ultime,uses:0,last:-99}],magOn:1,pieOn:1,decl:0,mdelta:[],st:{rage:[],fat:[],pcnt:[],rUsed:[],reanL:[],purs:[],hots:[],cl:0,bleeds:[],frost:[],fract:[],stun:0,skip:0,dbl:0,dots:[],curses:[],atkfx:[],esqb:0,ren:[],insens:0,prog:[],evite:pl.some(p=>p.type==='evite_mort'),mortUsed:0,bonus:0},
    cum:0,coups:0,rt:0,uses:0,last:-99,pend:0}};
  const S=[nw(pA),nw(pB)],id=s=>S.indexOf(s),adv=s=>S[1-id(s)],nom=s=>s.card.nom;
  S.forEach(s=>{if(s.mag.vide)s.magOn=0;if(s.pie.vide)s.pieOn=0});
@@ -107,9 +110,10 @@ function simuler(pA,pB,opt={}){
  const amt=(e,b)=>e.u==='pct'?rd(b*e.val/100):(e.val||0);
  const over=()=>{flush();return S.some(s=>s.pv<=0)};
 
- function heal(s,n,k){const rb=Math.min(100,s.st.bleeds.reduce((a,b)=>a+(b.r||0),0));if(rb)n=rd(n*(100-rb)/100);n=Math.min(n,s.max-s.pv);if(n<=0)return;s.pv+=n;L('soin',`${nom(s)} récupère ${n} PV`,{c:id(s),n,k:k||(rv?'revive':undefined)});scan({t:'soin',who:id(s)})}
+ function heal(s,n,k){if(s.pv<=0)return;const rb=Math.min(100,s.st.bleeds.reduce((a,b)=>a+(b.r||0),0));if(rb)n=rd(n*(100-rb)/100);n=Math.min(n,s.max-s.pv);if(n<=0)return;s.pv+=n;L('soin',`${nom(s)} récupère ${n} PV`,{c:id(s),n,k:k||(rv?'revive':undefined)});scan({t:'soin',who:id(s)})}
  function dmg(src,dst,n){
   n=Math.max(0,rd(n));
+  if(dst.pv<=0)return 0;   // déjà à terre : ni nouveaux dégâts, ni « évite la mort » rejoué
   if(n>=dst.pv)scan({t:'mort',who:id(dst)});               // piège « le propriétaire meurt » : juste avant la mort
   let after=null;
   if(n>=dst.pv){
@@ -153,6 +157,9 @@ function simuler(pA,pB,opt={}){
    case'pv_mod':{const d=amt(e,T.max);T.max=Math.max(1,T.max+d);T.pv=Math.max(1,Math.min(T.max,T.pv+d));delta(T,'max',d);L('stat',`PV max de ${nom(T)} ${d>=0?'+':''}${d}`,{c:id(T),k:'mod',s:'PV max',d});break}
    case'soin':heal(o,amt(e,o.max));break;
    case'reanimation':if(!mg){o.st.reanL.push({pctrev:e.pctrev||0});L('statut',`${nom(o)} sera réanimé s'il meurt (${e.pctrev||0} % des PV max)`,{c:id(o)})}break;
+   case'rage':{const n=amt({u:e.u,val:e.ragev||0},o.atq),t=e.ragetours||1;o.st.rage.push({n,t,fv:e.fatval||0,fu:e.u,ft:e.fattours||0});L('statut',`${nom(o)} entre en rage ! (+${n} dégâts par coup, ${t} tour${t>1?'s':''})`,{c:id(o),k:'rage'});break}
+   case'fatigue':fatiguer((e.ciblem||e.cible)==='soi'?o:x,e.fatval||0,e.u,e.fattours||1);break;
+   case'aleatoire':{const k=Math.max(1,e.nbalea||e.fois||1);for(let i=0;i<k&&!over();i++)effetAlea(o,x);break}
    case'soin_tours':{const n=amt(e,o.max),t=e.tours||1,h={n,t};o.st.hots.push(h);if(mg)o.mdelta.push({undo:()=>{o.st.hots=o.st.hots.filter(z=>z!==h)}});L('statut',`${nom(o)} se régénère (+${n} PV par tour, ${t} tour${t>1?'s':''})`,{c:id(o),k:'regen'});break}
    case'purification':{const t=e.cible==='adversaire'?x:o;purifier(t);const n=Math.max(0,(e.fois||1)-1);   // 1re purification tout de suite, puis « fois − 1 » autres, une tous les « every » tours
     if(n>0){const h={t,every:Math.max(1,e.every||1),left:n,c:0};o.st.purs.push(h);if(mg)o.mdelta.push({undo:()=>{o.st.purs=o.st.purs.filter(z=>z!==h)}})}break}
@@ -176,8 +183,8 @@ function simuler(pA,pB,opt={}){
    case'poison_effet':{const M=(e.ciblem||e.cible)==='soi'?o:x;M.st.dots.push({k:'poison',n:e.degtour||0,t:e.tours||1});L('statut',`${nom(M)} est empoisonné !`,{c:id(M),k:'poison'});break}
    case'brulure_effet':{const M=(e.ciblem||e.cible)==='soi'?o:x;M.st.dots.push({k:'brûlure',n:rd(M.max*(e.pctpv||0)/100),t:e.tours||1});L('statut',`${nom(M)} brûle !`,{c:id(M),k:'brulure'});break}
    case'etourdir_effet':{const M=(e.ciblem||e.cible)==='soi'?o:x;M.st.stun=Math.max(M.st.stun,e.tours||1);L('statut',`${nom(M)} est étourdi (${e.tours||1} tour${(e.tours||1)>1?'s':''}) !`,{c:id(M),k:'etourdi'});break}
-   case'atk_enchainement':case'atk_brulure':case'atk_poison':case'atk_etourdir':case'atk_saignement':case'atk_malediction':case'atk_fracture':case'atk_gel':{const q={...e,type:e.type.slice(4)};o.st.atkfx.push(q);if(mg)o.mdelta.push({undo:()=>{o.st.atkfx=o.st.atkfx.filter(z=>z!==q)}});
-    L('statut',`L'attaque de ${nom(o)} peut maintenant ${{enchainement:'enchaîner les frappes',brulure:'brûler',poison:'empoisonner',etourdir:'étourdir',saignement:'faire saigner',malediction:'maudire',fracture:'fracturer',gel:'geler'}[q.type]} (${q.chance} %)`);break}
+   case'atk_fatigue':case'atk_enchainement':case'atk_brulure':case'atk_poison':case'atk_etourdir':case'atk_saignement':case'atk_malediction':case'atk_fracture':case'atk_gel':{const q={...e,type:e.type.slice(4)};o.st.atkfx.push(q);if(mg)o.mdelta.push({undo:()=>{o.st.atkfx=o.st.atkfx.filter(z=>z!==q)}});
+    L('statut',`L'attaque de ${nom(o)} peut maintenant ${{fatigue:'fatiguer',enchainement:'enchaîner les frappes',brulure:'brûler',poison:'empoisonner',etourdir:'étourdir',saignement:'faire saigner',malediction:'maudire',fracture:'fracturer',gel:'geler'}[q.type]} (${q.chance} %)`);break}
    case'esquive_mod':{const d=e.val||0;T.st.esqb+=d;if(mg)o.mdelta.push({undo:()=>{T.st.esqb-=d}});L('stat',`Esquive de ${nom(T)} ${d>=0?'+':''}${d} %`,{c:id(T),k:'esq',d});break}
    case'reset_ultime':T.uh.forEach(h=>{h.uses=0;h.last=-99});L('statut',`L'ultime de ${nom(T)} est réinitialisé !`,{c:id(T)});break;
    case'mort_evitee':if(!mg&&!o.st.mortUsed){o.st.evite=1;L('statut',`${nom(o)} est protégé : il évitera la mort une fois`,{c:id(o)})}break;   // en magie : lue directement dans dmg() ; en ultime / piège : protection posée à l'activation
@@ -192,12 +199,61 @@ function simuler(pA,pB,opt={}){
  // Malédiction : l'ATQ de la cible baisse de n points à chaque fin de tour pendant t tours (se cumule)
  function maudire(dst,n,t){dst.st.curses.push({n,t});L('statut',`${nom(dst)} est maudit (ATQ −${n} par tour, ${t} tour${t>1?'s':''}) !`,{c:id(dst),k:'malediction'})}
  function saigner(d,pct,r,t){d.st.bleeds.push({pct,r,t});L('statut',`${nom(d)} saigne (${pct} % des PV max par tour, soins −${r} %, ${t} tour${t>1?'s':''}) !`,{c:id(d),k:'saignement'})}
+ function fatiguer(d,n,u,t,apresRage){const v=u==='pct'?rd(d.atq*n/100):n;t=t||1;d.st.fat.push({n:v,t});L('statut',`${nom(d)} est fatigué (dégâts −${v} par coup, ${t} tour${t>1?'s':''})${apresRage?' après la rage':''} !`,{c:id(d),k:'fatigue'})}
+
+ // Effet aléatoire : tire au hasard (graine du combat) un effet parmi tous ceux du jeu, avec des valeurs adaptées aux stats des cartes
+ function effetAlea(o,x){
+  const ri=(a,b)=>a+Math.floor(r()*(b-a+1)),pv=(b,a,z)=>Math.max(1,rd(b*ri(a,z)/100));
+  const POOL=[
+   ['ATQ en hausse',()=>({type:'atq_mod',cible:'soi',val:ri(15,40),u:'pct'})],
+   ["ATQ adverse en baisse",()=>({type:'atq_mod',cible:'adversaire',val:-ri(15,40),u:'pct'})],
+   ['PV max en hausse',()=>({type:'pv_mod',cible:'soi',val:ri(10,30),u:'pct'})],
+   ["PV max adverse en baisse",()=>({type:'pv_mod',cible:'adversaire',val:-ri(10,30),u:'pct'})],
+   ['Soin',()=>({type:'soin',val:ri(15,35),u:'pct'})],
+   ['Dégâts directs',()=>({type:'degats',val:pv(x.max,8,20)})],
+   ['Vol de vie',()=>({type:'vol_vie',val:pv(x.max,6,15)})],
+   ['Attaque adverse annulée',()=>({type:'annule_attaque'})],
+   ['Dégâts doublés',()=>({type:'double_degats',tours:ri(1,2)})],
+   ['Renvoi de dégâts',()=>({type:'renvoi',val:ri(30,70),tours:ri(1,3)})],
+   ['Insensible aux pièges',()=>({type:'insensible_piege',tours:ri(1,3)})],
+   ['Dégâts différés',()=>({type:'degats_tours',val:pv(x.max,15,30),tours:ri(2,3)})],
+   ['Échange des ATQ',()=>({type:'echange_atq'})],
+   ['Échange des PV',()=>({type:'echange_pv'})],
+   ['Échange ATQ et PV',()=>({type:'echange_tout'})],
+   ["ATQ et défense adverses échangés",()=>({type:'echange_atq_def',ciblem:'adversaire'})],
+   ['Poison',()=>({type:'poison_effet',ciblem:'adversaire',degtour:pv(x.max,3,6),tours:ri(2,4)})],
+   ['Brûlure',()=>({type:'brulure_effet',ciblem:'adversaire',pctpv:ri(3,8),tours:ri(2,4)})],
+   ['Étourdissement',()=>({type:'etourdir_effet',ciblem:'adversaire',tours:ri(1,2)})],
+   ['Malédiction',()=>({type:'malediction',ciblem:'adversaire',val:pv(o.atq,10,25),tours:ri(2,4)})],
+   ['Saignement',()=>({type:'saignement',ciblem:'adversaire',pctpv:ri(3,7),reducsoin:ri(30,60),tours:ri(2,4)})],
+   ['Gel',()=>({type:'gel',ciblem:'adversaire',annul:ri(30,60),stunch:ri(10,30),tours:ri(2,3)})],
+   ['Fracture',()=>({type:'fracture',ciblem:'adversaire',fchance:ri(40,70),degfrac:pv(o.max,3,8),tours:ri(2,3)})],
+   ['Fatigue adverse',()=>({type:'fatigue',ciblem:'adversaire',fatval:ri(15,35),u:'pct',fattours:ri(2,3)})],
+   ['Rage',()=>({type:'rage',ragev:ri(20,50),u:'pct',ragetours:ri(2,3),fatval:ri(15,30),fattours:ri(1,2)})],
+   ['Purification',()=>({type:'purification',cible:'soi'})],
+   ['Régénération',()=>({type:'soin_tours',val:ri(5,12),u:'pct',tours:ri(2,4)})],
+   ['Esquive en hausse',()=>({type:'esquive_mod',cible:'soi',val:ri(15,30)})],
+   ["Vol de l'ultime adverse",()=>({type:'vol_ultime'})],
+   ['Ultime rechargé',()=>({type:'reset_ultime'})],
+   ['Magie adverse annulée',()=>({type:'annule_magies'})],
+   ['Magie adverse détruite',()=>({type:'detruire',carte:'magie'})],
+   ['Piège adverse détruit',()=>({type:'detruire',carte:'piege'})],
+   ['Magie adverse volée',()=>({type:'voler',carte:'magie'})],
+   ['Piège adverse volé',()=>({type:'voler',carte:'piege'})],
+   ['Réanimation',()=>({type:'reanimation',pctrev:ri(30,60)})],
+   ['Attaque de base : saignement',()=>({type:'atk_saignement',chance:ri(30,60),pctpv:ri(3,6),reducsoin:ri(30,50),tours:ri(2,3)})],
+   ['Attaque de base : gel',()=>({type:'atk_gel',chance:ri(25,50),annul:ri(30,50),stunch:ri(10,25),tours:2})],
+   ['Attaque de base : enchaînement',()=>({type:'atk_enchainement',chance:ri(30,50),max:3})]
+  ];
+  const[lab,mk]=POOL[Math.floor(r()*POOL.length)],e=mk();
+  L('statut',`Effet aléatoire de ${nom(o)} : ${lab} !`,{c:id(o),k:'alea'});
+  fx(e,o,x,false)}
  function geler(d,ann,sn,t){d.st.frost.push({ann,sn,t});L('statut',`${nom(d)} est gelé (${ann} % d'attaque annulée, ${sn} % d'être étourdi, ${t} tour${t>1?'s':''}) !`,{c:id(d),k:'gel'})}
  function fracturer(d,fc,dg,t){d.st.fract.push({fc,dg,t});L('statut',`${nom(d)} est fracturé (${fc} % de se blesser en attaquant, −${dg} PV, ${t} tour${t>1?'s':''}) !`,{c:id(d),k:'fracture'})}
 // Purification : retire les statuts négatifs de t et lui rend l'ATQ perdu par malédiction
  function purifier(t,silent){const z=t.st,pk=[];z.pg=(z.pg||0)+1;
-  if(z.dots.some(d=>d.k==='poison'))pk.push('poison');if(z.dots.some(d=>d.k==='brûlure'))pk.push('brulure');if(z.curses.length)pk.push('malediction');if(z.bleeds.length)pk.push('saignement');if(z.frost.length)pk.push('gel');if(z.fract.length)pk.push('fracture');
-  const etd=z.stun>0||z.skip>0,rest=z.cl;z.dots=[];z.curses=[];z.bleeds=[];z.frost=[];z.fract=[];z.stun=0;z.skip=0;z.cl=0;
+  z.dots.forEach(d=>pk.push(d.k==='poison'?'poison':'brulure'));z.curses.forEach(()=>pk.push('malediction'));z.bleeds.forEach(()=>pk.push('saignement'));z.frost.forEach(()=>pk.push('gel'));z.fat.forEach(()=>pk.push('fatigue'));z.fract.forEach(()=>pk.push('fracture'));
+  const etd=z.stun>0||z.skip>0,rest=z.cl;z.dots=[];z.curses=[];z.bleeds=[];z.frost=[];z.fract=[];z.fat=[];z.stun=0;z.skip=0;z.cl=0;
   if(!silent)L('statut',`${nom(t)} est purifié${pk.length||etd||rest?'':' (rien à retirer)'} !`,{c:id(t),k:'purif'});
   if(rest>0){t.atq+=rest;L('stat',`ATQ de ${nom(t)} +${rest} (malédiction levée)`,{c:id(t),k:'mod',s:'ATQ',d:rest})}
   if(!silent){pk.forEach(k=>L('finstatut',`${k} dissipé`,{c:id(t),k}));}if(etd&&!silent)L('statut',`${nom(t)} n'est plus étourdi`,{c:id(t),k:'etourdi_fin'})}
@@ -228,11 +284,12 @@ function simuler(pA,pB,opt={}){
   for(let k=0;k<multi&&d.pv>0;k++){
    if(k>=base)L('attaque',`${nom(a)} enchaîne une frappe de plus !`,{c:ia,k:'enchaine'});
    const ech=Math.min(reg.plafondEsquive,d.pl.filter(p=>p.type==='esquive').reduce((q,p)=>q+(p.chance||0),0)+d.st.esqb);if(ech>0&&roll(ech)){L('esquive',`${nom(d)} esquive !`,{c:idd});continue} // l'esquive annule aussi les effets associés
-   let n=a.atq*(a.st.dbl>0?2:1)+a.st.bonus;a.st.bonus=0;
+   let n=Math.max(0,a.atq*(a.st.dbl>0?2:1)+a.st.bonus+a.st.rage.reduce((q,g)=>q+g.n,0)-a.st.fat.reduce((q,f)=>q+f.n,0));a.st.bonus=0;   // rage : dégâts en plus · fatigue : dégâts en moins
    d.pl.filter(p=>p.type==='reduc_degats').forEach(p=>{if(roll(p.chance)){L('bloque',`${nom(d)} bloque une partie des dégâts`,{c:idd});n=Math.max(0,n-amt(p,n))}});
    d.rt++;n=dmg(a,d,n);L('degats',`${nom(d)} subit ${n} dégâts`,{c:idd,n});
    d.pl.filter(p=>p.type==='renvoi').forEach(p=>{if(n>0){const b=dmg(d,a,amt(p,n));L('degats',`${nom(a)} subit ${b} dégâts renvoyés`,{c:ia,n:b,k:'renvoi',from:idd})}});
    d.st.ren.forEach(R=>{const b=dmg(d,a,n*R.pct/100);if(b>0)L('degats',`${nom(a)} subit ${b} dégâts renvoyés`,{c:ia,n:b,k:'renvoi',from:idd})});
+   if(a.pv<=0||over())return;
    if(n>0&&d.pv>0){
     a.pl.filter(p=>p.type==='vol_pct_atq').forEach(p=>{if(roll(p.chance))heal(a,rd(n*p.pctatq/100))});
     {const ec=[...a.pl,...a.st.atkfx].filter(q=>q.type==='etourdir').reduce((q,p)=>q+(p.chance||0),0);   // chances d'étourdir cumulables (passifs + effets de magie)
@@ -243,7 +300,8 @@ function simuler(pA,pB,opt={}){
      if(q.type==='saignement'&&roll(q.chance))saigner(d,q.pctpv||0,q.reducsoin||0,q.tours||1);
      if(q.type==='malediction'&&roll(q.chance))maudire(d,q.val||0,q.tours||1);
      if(q.type==='fracture'&&roll(q.chance))fracturer(d,q.fchance||0,q.degfrac||0,q.tours||1);
-     if(q.type==='gel'&&roll(q.chance))geler(d,q.annul||0,q.stunch||0,q.tours||1)}
+     if(q.type==='gel'&&roll(q.chance))geler(d,q.annul||0,q.stunch||0,q.tours||1);
+     if(q.type==='fatigue'&&roll(q.chance))fatiguer(d,q.fatval||0,q.u,q.fattours||1)}
    }
    if(over())return;
   }
@@ -252,21 +310,28 @@ function simuler(pA,pB,opt={}){
  function finDeTour(){
   S.forEach(s=>{if(s.pv<=0)return;const x=adv(s),pg0=s.st.pg||0,pgd=()=>(s.st.pg||0)!==pg0;
    s.st.dots=s.st.dots.filter(d=>{if(pgd())return false;const n=dmg(x,s,d.n);L('degats',`${nom(s)} subit ${n} (${d.k})`,{c:id(s),n,k:d.k});if(pgd())return false;if(--d.t>0)return true;L('finstatut',`${d.k} de ${nom(s)} se termine`,{c:id(s),k:d.k==='poison'?'poison':'brulure'});return false});
+   if(s.pv<=0)return;
    s.st.curses=s.st.curses.filter(c=>{const q=Math.min(c.n,s.atq);s.atq-=q;s.st.cl+=q;if(q>0)L('stat',`ATQ de ${nom(s)} −${q} (malédiction)`,{c:id(s),k:'malediction_tick',s:'ATQ',d:-q});if(--c.t>0)return true;L('finstatut',`La malédiction de ${nom(s)} se termine`,{c:id(s),k:'malediction'});return false});
    s.st.bleeds=s.st.bleeds.filter(b=>{if(pgd())return false;const n=dmg(x,s,rd(s.max*b.pct/100));L('degats',`${nom(s)} subit ${n} (saignement)`,{c:id(s),n,k:'saignement'});if(pgd())return false;if(--b.t>0)return true;L('finstatut',`Le saignement de ${nom(s)} s'arrête`,{c:id(s),k:'saignement'});return false});
    s.st.frost=s.st.frost.filter(f=>{if(--f.t>0)return true;L('finstatut',`${nom(s)} n'est plus gelé`,{c:id(s),k:'gel'});return false});
    s.st.fract=s.st.fract.filter(f=>{if(--f.t>0)return true;L('finstatut',`La fracture de ${nom(s)} guérit`,{c:id(s),k:'fracture'});return false});
    s.st.purs=s.st.purs.filter(h=>{if(h.t.pv<=0)return false;if(++h.c<h.every)return true;h.c=0;purifier(h.t);return --h.left>0});
+   if(s.pv<=0)return;
+   s.st.fat=s.st.fat.filter(f=>{if(--f.t>0)return true;L('finstatut',`La fatigue de ${nom(s)} se dissipe`,{c:id(s),k:'fatigue'});return false});
+   s.st.rage=s.st.rage.filter(g=>{if(--g.t>0)return true;L('finstatut',`La rage de ${nom(s)} retombe`,{c:id(s),k:'rage'});if(g.ft>0&&g.fv>0)fatiguer(s,g.fv,g.fu,g.ft,true);return false});
    s.st.hots=s.st.hots.filter(h=>{heal(s,h.n);if(--h.t>0)return true;L('statut',`La régénération de ${nom(s)} se termine`);return false});
+   if(s.pv<=0)return;
    s.pl.forEach((p,pi)=>{
+    if(p.type==='aleatoire'&&(!p.every||tour%p.every===0)&&roll(p.chance==null||p.chance===''?100:p.chance)&&!over())effetAlea(s,x);
     // Passif de purification : tous les X tours (vide = chaque tour), X fois au maximum (vide = illimité) ; ne se déclenche que s'il y a un statut négatif à retirer
     if(p.type==='purification'&&(!p.every||tour%p.every===0)&&(!p.fois||(s.st.pcnt[pi]||0)<p.fois)){const z=s.st;
-     if(z.dots.length||z.curses.length||z.bleeds.length||z.frost.length||z.fract.length||z.stun>0||z.skip>0||z.cl>0){s.st.pcnt[pi]=(s.st.pcnt[pi]||0)+1;purifier(s)}}
+     if(z.dots.length||z.curses.length||z.bleeds.length||z.frost.length||z.fract.length||z.fat.length||z.stun>0||z.skip>0||z.cl>0){s.st.pcnt[pi]=(s.st.pcnt[pi]||0)+1;purifier(s)}}
    if(p.type==='soin_tour')heal(s,amt(p,s.max));
    if(p.type==='atq_tours'&&tour%p.tours===0){const dd=amt(p,s.atq);s.atq+=dd;L('stat',`ATQ de ${nom(s)} +${dd}`,{c:id(s),k:'mod',s:'ATQ',d:dd})}
    if(p.type==='pv_tours'&&tour%p.tours===0){const d=amt(p,s.max);s.max+=d;s.pv+=d;L('stat',`PV max de ${nom(s)} +${d}`,{c:id(s),k:'mod',s:'PV max',d})}
    if(p.type==='bonus_frappe'&&s.rt>=(p.coups||1)){s.st.bonus=amt(p,s.atq);L('statut',`${nom(s)} prépare une contre-attaque renforcée`,{c:id(s)})}
    });
+   if(s.pv<=0)return;
    s.st.prog=s.st.prog.filter(p=>{if(--p.t>0)return true;const n=dmg(p.src,s,p.n);L('degats',`${nom(s)} subit ${n} (dégâts différés)`,{c:id(s),n});return false});
    s.st.ren=s.st.ren.filter(R=>--R.t>0);if(s.st.insens>0)s.st.insens--;if(s.st.dbl>0)s.st.dbl--;
   });
@@ -345,6 +410,18 @@ function fxStart(card,k){
   for(let a=0;a<=18.85;a+=.12){const rad=r0*a/18.85,ang=a-t*5,px=cx+Math.cos(ang)*rad,py=cy+Math.sin(ang)*rad;if(a)x.lineTo(px,py);else x.moveTo(px,py)}x.stroke();x.restore();
   for(let i=0;i<3;i++){const ang=t*3+i*2.094,px=cx+Math.cos(ang)*r0*1.5,py=cy-r0*1.1+Math.sin(ang)*r0*.35,sr=W*.04;x.fillStyle='rgba(255,225,70,.95)';x.beginPath();
    for(let j=0;j<10;j++){const rr0=j%2?sr*.45:sr,aa=-1.571+j*.628;x.lineTo(px+Math.cos(aa)*rr0,py+Math.sin(aa)*rr0)}x.closePath();x.fill()}}
+ function rageL(){   // rage persistante : lueur rouge qui pulse, petits symboles « énervés » qui apparaissent
+  if(Math.random()<.07)P.push({x:R(.12,.88)*W,y:R(.05,.45)*H,s:R(.1,.16)*W,l:0,d:R(.55,.8)});
+  x.clearRect(0,0,W,H);const g=x.createRadialGradient(W/2,H/2,H*.2,W/2,H/2,H*.75);g.addColorStop(0,'rgba(255,40,20,0)');g.addColorStop(1,`rgba(255,40,20,${.3+.12*Math.sin(t*10)})`);x.fillStyle=g;x.fillRect(0,0,W,H);
+  for(const p of P){p.l+=.016/p.d;if(p.l>=1)continue;const u=p.l,sc=u<.25?u/.25*1.25:u<.4?1.25-(u-.25)/.15*.25:1;anger(x,p.x,p.y,p.s*sc,u>.75?(1-u)/.25:1)}}
+ function fatL(){   // fatigue persistante : voile bleu-gris, paupières lourdes, gouttes de sueur et « Z » qui montent
+  if(Math.random()<.06)P.push({z:1,x:R(.55,.9)*W,y:R(.22,.42)*H,s:R(.09,.15)*W,l:0,d:R(1.6,2.4),ph:R(0,6)});
+  if(Math.random()<.08)P.push({x:R(.08,.92)*W,y:-4,vy:R(.5,1.1)*H/500,s:R(.012,.022)*W,l:0,d:R(2.4,3.6)});
+  x.clearRect(0,0,W,H);const g=x.createLinearGradient(0,0,0,H);g.addColorStop(0,'rgba(40,55,90,.5)');g.addColorStop(1,'rgba(30,40,70,.15)');x.fillStyle=g;x.fillRect(0,0,W,H);
+  x.fillStyle='rgba(15,20,40,.55)';x.fillRect(0,0,W,H*(.06+.03*Math.sin(t*1.5)));
+  for(const p of P){p.l+=.016/p.d;if(p.l>=1)continue;const a=Math.sin(Math.PI*p.l);
+   if(p.z){x.save();x.translate(p.x+Math.sin(t*2+p.ph)*W*.03,p.y-p.l*H*.35);x.rotate(-.2);x.font=`900 ${p.s*(.7+.6*p.l)}px system-ui,sans-serif`;x.textAlign='center';x.lineWidth=3;x.strokeStyle=`rgba(20,30,60,${a})`;x.fillStyle=`rgba(200,220,255,${a})`;x.strokeText('Z',0,0);x.fillText('Z',0,0);x.restore()}
+   else{p.y+=p.vy;x.fillStyle=`rgba(170,220,255,${a*.9})`;x.beginPath();x.moveTo(p.x,p.y-p.s*1.6);x.quadraticCurveTo(p.x+p.s,p.y+p.s*.2,p.x,p.y+p.s);x.quadraticCurveTo(p.x-p.s,p.y+p.s*.2,p.x,p.y-p.s*1.6);x.fill()}}}
  function sang(){
   if(Math.random()<.13)P.push({x:R(.05,.95)*W,y:R(-.05,.15)*H,vy:R(.35,1)*H/650,w:R(.02,.045)*W,l:0,d:R(2.8,4.2),len:0});
   x.clearRect(0,0,W,H);const g=x.createRadialGradient(W/2,H/2,H*.22,W/2,H/2,H*.78);g.addColorStop(0,'rgba(120,0,0,0)');g.addColorStop(1,'rgba(150,0,10,.45)');x.fillStyle=g;x.fillRect(0,0,W,H);
@@ -361,7 +438,7 @@ function fxStart(card,k){
    sp(f*W,H,-1.571,h,w,tw);sp(f*W,0,1.571,h*.8,w,tw);sp(0,f*H,0,h*.55,w*1.3,tw);sp(W,f*H,3.1416,h*.55,w*1.3,tw)}
   for(const p of P){p.l+=.016/p.d;if(p.l>=1)continue;p.y+=p.vy;const a=Math.sin(Math.PI*p.l),px=p.x+Math.sin(t*2+p.ph)*W*.03;x.strokeStyle=`rgba(255,255,255,${a*.9})`;x.lineWidth=1.3;
    for(let j=0;j<3;j++){const an=j*1.047;x.beginPath();x.moveTo(px-Math.cos(an)*p.s,p.y-Math.sin(an)*p.s);x.lineTo(px+Math.cos(an)*p.s,p.y+Math.sin(an)*p.s);x.stroke()}}}
- function loop(){if(!run)return;const nw=performance.now();if(nw-(loop.l||0)<14){raf=requestAnimationFrame(loop);return}loop.l=nw;t+=.016;(k==='brulure'?feu:k==='etourdi'?etd:k==='malediction'?mal:k==='saignement'?sang:k==='gel'?givre:gaz)();P=P.filter(p=>p.l<1);raf=requestAnimationFrame(loop)}
+ function loop(){if(!run)return;const nw=performance.now();if(nw-(loop.l||0)<14){raf=requestAnimationFrame(loop);return}loop.l=nw;t+=.016;(k==='brulure'?feu:k==='etourdi'?etd:k==='malediction'?mal:k==='saignement'?sang:k==='rage'?rageL:k==='fatigue'?fatL:k==='gel'?givre:gaz)();P=P.filter(p=>p.l<1);raf=requestAnimationFrame(loop)}
  cv._stop=()=>{run=false;cancelAnimationFrame(raf)};fxAll.add(cv._stop);loop();
 }
 
@@ -597,6 +674,19 @@ function ailes(c){const K=rc(c),W=K.w,H=K.h,DUR=2.7,
    x.beginPath();for(let f=0;f<=1.001;f+=.05){const p=arm(f);f?x.lineTo(p.x,p.y):x.moveTo(p.x,p.y)}x.strokeStyle=`rgba(255,246,215,${.9*al})`;x.lineWidth=Math.max(3,W*.022);x.lineCap='round';x.shadowColor='rgba(255,220,120,.9)';x.shadowBlur=12;x.stroke();x.restore()}
   for(const b of bits){const q=cl((t-.7)/1.7*b.d);if(q<=0||q>=1)continue;x.save();x.translate(K.cx+b.sd*W*(.5+b.x*.8)+Math.sin(t*3+b.ph)*W*.04,K.cy-H*.25+q*H*.8);x.rotate(1.2+Math.sin(t*3+b.ph)*.7);plume(x,W*b.s,W*b.s*.2,'255,255,250',.85*(1-q)*al);x.restore()}})}
 
+// RAGE : symbole « énervé » de dessin animé (4 croissants rouges) qui jaillit en haut de la carte, vapeur et lueur rouge
+function anger(x,cx,cy,r,a){if(r<=0||a<=0)return;x.save();x.translate(cx,cy);x.lineJoin='round';
+ for(let i=0;i<4;i++){x.save();x.rotate(i*Math.PI/2);x.beginPath();x.moveTo(r*.95,r*.22);x.quadraticCurveTo(r*.98,r*.98,r*.22,r*.95);x.quadraticCurveTo(r*.42,r*.42,r*.95,r*.22);x.closePath();
+  x.fillStyle=`rgba(228,22,36,${a})`;x.fill();x.lineWidth=Math.max(1.5,r*.08);x.strokeStyle=`rgba(80,0,10,${a})`;x.stroke();x.restore()}
+ x.restore()}
+function colere(c){const K=rc(c),top=K.cy-K.h/2,puff=Array.from({length:10},()=>({x:R(.25,.75),v:R(.5,1),s:R(.06,.12),de:R(0,.4)}));
+ addFx(1.6,(x,t)=>{const al=cl(t/.12)*(1-cl((t-1.2)/.4));
+  x.globalCompositeOperation='lighter';orb(x,K.cx,K.cy,K.h*.8,`rgba(255,40,20,${.45*Math.sin(Math.PI*cl(t/1.6))})`,'rgba(255,0,0,0)');x.globalCompositeOperation='source-over';
+  for(const p of puff){const q=cl((t-p.de)/1);if(q<=0||q>=1)continue;x.fillStyle=`rgba(235,235,240,${.55*(1-q)})`;x.beginPath();x.arc(K.cx-K.w/2+p.x*K.w,top-q*K.h*.25*p.v,K.w*p.s*(1+q),0,7);x.fill()}
+  const e=t<.25?t/.25*1.4:t<.45?1.4-(t-.25)/.2*.4:1,sh=t<.9?Math.sin(t*50)*K.w*.012:0;
+  anger(x,K.cx+K.w*.28+sh,K.cy-K.h*.34,K.w*.2*e,al);
+  if(t>.2){anger(x,K.cx-K.w*.3,K.cy-K.h*.18,K.w*.1*cl((t-.2)/.2),al*.9);anger(x,K.cx+K.w*.05,K.cy-K.h*.4,K.w*.08*cl((t-.3)/.2),al*.9)}})}
+
 // RÉANIMATION : les morceaux de la carte reviennent se ressouder dans un halo vert doré, puis la carte réapparaît
 function reforme(c){const cw=$('#p'+c+' .cw'),card=cw.querySelector('.card'),K=rc(c),tw=Math.round(K.w),th=Math.round(K.h),tex=document.createElement('canvas');tex.width=tw;tex.height=th;
  const m=/url\(["']?(.*?)["']?\)/.exec(card.style.backgroundImage||''),img=m?new Image():null,txt=card.textContent.trim();
@@ -690,6 +780,9 @@ async function jouer(res){
    else if(e.t==='protege')ailes(e.c);
    else if(e.t==='reanim_mort'){document.querySelectorAll('#p'+e.c+' .card canvas.fx').forEach(k=>k.remove());Object.keys(st).filter(k=>k.startsWith(String(e.c))).forEach(k=>st[k]=0);briser(e.c);await wait(3100)}
    else if(e.t==='reanim'){reforme(e.c);flot(e.c,'+'+e.n,'#4ade80');await wait(2100)}
+   else if(e.t==='statut'&&e.k==='rage'){statut(e.c,'rage',true);colere(e.c);flot(e.c,'RAGE !','#ef4444','big');await wait(1000)}
+   else if(e.t==='statut'&&e.k==='fatigue'){statut(e.c,'fatigue',true);flot(e.c,'Fatigue…','#94a3b8');await wait(700)}
+   else if(e.t==='statut'&&e.k==='alea'){flot(e.c,'🎲 '+(e.txt.split(' : ')[1]||'').replace(' !',''),'#c4b5fd');await wait(800)}
    else if(e.t==='statut'&&e.k==='purif'){purif(e.c);flot(e.c,'Purifié !','#fde047');await wait(1300)}
    else if(e.t==='statut'&&e.k==='gel_bloque'){givreCoup(e.c);flot(e.c,'Gelé !','#bae6fd');await wait(500)}
    else if(e.t==='statut'&&e.k==='fracture'){statut(e.c,'fracture',true);os(e.c)}
@@ -771,6 +864,8 @@ if(DEMO){
   ['Statuts','Malédiction (crânes)',c=>{statut(c,'malediction',true);cranes(c)},2800,c=>statut(c,'malediction',false),'malediction'],
   ['Statuts','Saignement (sang qui coule)',c=>statut(c,'saignement',true),3000,c=>statut(c,'saignement',false),'saignement'],
   ['Statuts','Réanimation (brisée puis reformée)',c=>{briser(c);setTimeout(()=>{reforme(c);flot(c,'+30','#4ade80')},3100)},5600],
+  ['Statuts','Rage (symbole énervé)',c=>{statut(c,'rage',true);colere(c);flot(c,'RAGE !','#ef4444','big')},3500,c=>statut(c,'rage',false),'rage'],
+  ['Statuts','Fatigue (sueur et Z)',c=>{statut(c,'fatigue',true);flot(c,'Fatigue…','#94a3b8')},3500,c=>statut(c,'fatigue',false),'fatigue'],
   ['Statuts','Purification (aura jaune)',c=>{flot(c,'Purifié !','#fde047');purif(c)},2000],
   ['Statuts','Gel (givre)',c=>statut(c,'gel',true),3000,c=>statut(c,'gel',false),'gel'],
   ['Statuts','Gel : attaque bloquée',c=>{flot(c,'Gelé !','#bae6fd');givreCoup(c)},1500],
@@ -809,9 +904,9 @@ if(DEMO){
    <button id="rtt" style="width:100%;margin-top:4px">📊 Tous contre tous (sans animation)</button><div id="rtab" style="font-size:11px;margin-top:4px"></div>`;
   $('#dl').after(sec);
   const LB={evite_mort:'évite la mort une fois',soin_tour:'se soigne chaque tour',renvoi:'renvoie des dégâts',atq_tours:"augmente l'ATQ tous les X tours",pv_tours:'augmente les PV tous les X tours',multi_frappe:'frappe plusieurs fois',reduc_degats:'réduit les dégâts reçus',bonus_frappe:'bonus de dégâts si frappé',etourdir:'étourdit',vol_pct_atq:'vole de la vie',brulure:'brûlure',poison:'poison',esquive:'esquive',degats:'dégâts directs',voler:'vole une carte',detruire:'détruit une carte',equiper:'équipe une carte',soin:'se soigne',vol_vie:'vole de la vie',echange_atq:"échange l'ATQ",annule_attaque:"annule l'attaque",double_degats:'double ses dégâts',echange_atq_def:"échange ATQ et PV de l'adversaire"};
-  Object.assign(LB,{purification:'purification (retire les statuts négatifs)',reanimation:'réanimation (meurt puis revient)',soin_tours:'régénération (soigne chaque tour)',purification:'purification (retire les statuts négatifs)',atk_enchainement:'attaque de base : enchaînement',atk_saignement:'attaque de base : saignement',atk_malediction:'attaque de base : malédiction',atk_fracture:'attaque de base : fracture',atk_gel:'attaque de base : gel',saignement:'saignement (dégâts sur la durée, soins réduits)',gel:'gel (attaque annulée ou étourdi)',fracture:'fracture (se blesse en attaquant)',vol_ultime:"vole l'ultime",malediction:'malédiction (ATQ en baisse par tour)',enchainement:'enchaîne les frappes tant que ça réussit',poison_effet:'poison',brulure_effet:'brûlure',etourdir_effet:'étourdit',atk_brulure:"attaque de base : brûlure",atk_poison:"attaque de base : poison",atk_etourdir:"attaque de base : étourdissement",esquive_mod:"modifie l'esquive (%)",reset_ultime:"réinitialise l'ultime",atq_mod:"modifie l'ATQ",pv_mod:'modifie les PV max',insensible_piege:'insensible aux pièges',annule_magies:'annule les magies',mort_evitee:'évite la mort (1 PV)',degats_tours:'dégâts différés'});
+  Object.assign(LB,{rage:'rage puis fatigue',fatigue:'fatigue (réduit les dégâts)',aleatoire:'effet aléatoire',atk_fatigue:'attaque de base : fatigue',purification:'purification (retire les statuts négatifs)',reanimation:'réanimation (meurt puis revient)',soin_tours:'régénération (soigne chaque tour)',purification:'purification (retire les statuts négatifs)',atk_enchainement:'attaque de base : enchaînement',atk_saignement:'attaque de base : saignement',atk_malediction:'attaque de base : malédiction',atk_fracture:'attaque de base : fracture',atk_gel:'attaque de base : gel',saignement:'saignement (dégâts sur la durée, soins réduits)',gel:'gel (attaque annulée ou étourdi)',fracture:'fracture (se blesse en attaquant)',vol_ultime:"vole l'ultime",malediction:'malédiction (ATQ en baisse par tour)',enchainement:'enchaîne les frappes tant que ça réussit',poison_effet:'poison',brulure_effet:'brûlure',etourdir_effet:'étourdit',atk_brulure:"attaque de base : brûlure",atk_poison:"attaque de base : poison",atk_etourdir:"attaque de base : étourdissement",esquive_mod:"modifie l'esquive (%)",reset_ultime:"réinitialise l'ultime",atq_mod:"modifie l'ATQ",pv_mod:'modifie les PV max',insensible_piege:'insensible aux pièges',annule_magies:'annule les magies',mort_evitee:'évite la mort (1 PV)',degats_tours:'dégâts différés'});
   const CL={adv_attaque:"l'adversaire a attaqué X fois",adv_ultime:"l'adversaire utilise son ultime",proprio_pv_sous:'le propriétaire passe sous X % de PV',adv_pv_bas:"l'adversaire passe sous X % de PV",adv_soigne:"l'adversaire se soigne",proprio_soigne:'le propriétaire se soigne',proprio_meurt:'le propriétaire meurt'};
-  const KL={pctrev:'% PV au retour',every:'tous les X tours',fois:'nombre de fois',reducsoin:'soins en moins %',annul:'attaque annulée %',stunch:'étourdi %',fchance:'se blesse %',degfrac:'dégâts en attaquant',val:'valeur',chance:'chance %',apres_tours:'après N tours',degtour:'dégâts par tour',pctpv:'% des PV max',pctatq:'% de l\'ATQ',tours:'tours',frappes:'frappes',coups:'coups',carte:'carte'};
+  const KL={nbalea:"nombre d'effets tirés",ragev:'rage : dégâts en plus',ragetours:'rage : tours',fatval:'fatigue : dégâts en moins',fattours:'fatigue : tours',pctrev:'% PV au retour',every:'tous les X tours',fois:'nombre de fois',reducsoin:'soins en moins %',annul:'attaque annulée %',stunch:'étourdi %',fchance:'se blesse %',degfrac:'dégâts en attaquant',val:'valeur',chance:'chance %',apres_tours:'après N tours',degtour:'dégâts par tour',pctpv:'% des PV max',pctatq:'% de l\'ATQ',tours:'tours',frappes:'frappes',coups:'coups',carte:'carte'};
   const fmt=o=>!o||!o.type?'aucun':(LB[o.type]||o.type)+' ('+Object.entries(o).filter(([k,v])=>!['type','utilisations','delai_tours','sur_carte','u'].includes(k)&&v!=null&&v!==false&&v!==0).map(([k,v])=>(KL[k]||k)+' '+v+(k==='val'&&o.u==='pct'?' %':'')).join(', ')+')';
   const fmtE=e=>!e?'aucun':e.briques?e.briques.map(fmtE).join(' + '):fmt(e);
   const fmtC=c=>!c||!c.effet?'aucun effet':c.type==='piege'?`Quand ${(c.effet.condition&&CL[c.effet.condition.type])||'?'}${c.effet.condition&&c.effet.condition.coups?' ('+c.effet.condition.coups+')':''}${c.effet.condition&&c.effet.condition.seuilpv?' ('+c.effet.condition.seuilpv+' %)':''} → ${fmtE(c.effet.effet)}`:fmtE(c.effet);
