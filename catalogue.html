@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Catalogue des cartes</title>
+<style>
+*{box-sizing:border-box}
+html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{margin:0;font:14px/1.35 system-ui,-apple-system,Segoe UI,sans-serif;background:#f3f4f6;color:#111827}
+header{background:#111827;color:#fff;padding:14px 20px}
+header h1{margin:0 0 4px;font-size:22px}
+header small{opacity:.75}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:10px 20px;background:#fff;border-bottom:1px solid #d1d5db;position:sticky;top:0;z-index:5}
+.bar label{display:flex;gap:5px;align-items:center;font-size:13px}
+.bar input[type=text]{padding:6px 9px;border:1px solid #cbd5e1;border-radius:6px;min-width:160px}
+button{padding:7px 14px;border:0;border-radius:6px;background:#2563eb;color:#fff;font-weight:700;cursor:pointer}
+#msg{padding:14px 20px;font-size:14px}
+.legend{display:flex;flex-wrap:wrap;gap:6px;padding:10px 20px;background:#fff;border-bottom:1px solid #e5e7eb}
+h2{margin:18px 20px 8px;font-size:19px;border-bottom:3px solid #111827;padding-bottom:3px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:12px;padding:0 20px 10px}
+.card{background:#fff;border:1px solid #d1d5db;border-radius:10px;padding:10px;break-inside:avoid;page-break-inside:avoid;display:flex;gap:10px}
+.card.off{opacity:.55}
+.card img{width:84px;height:118px;object-fit:cover;border-radius:6px;border:1px solid #cbd5e1;flex:none}
+.body{flex:1;min-width:0}
+.top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.nom{font-weight:800;font-size:16px;line-height:1.15}
+.meta{font-size:11px;color:#6b7280;margin-top:2px}
+.rar{display:inline-block;padding:1px 7px;border-radius:9px;font-size:11px;font-weight:700;color:#fff;background:#6b7280}
+.stats{display:flex;gap:6px;flex:none}
+.st{min-width:38px;text-align:center;border-radius:8px;padding:2px 6px;font-weight:900;font-size:17px;color:#fff;line-height:1.2}
+.st small{display:block;font-size:9px;font-weight:700;opacity:.85}
+.atq{background:#dc2626}.pv{background:#2563eb}
+.sec{margin-top:7px}
+.sec h4{margin:0 0 3px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#6b7280}
+.ch{display:block;margin:0 0 3px;padding:3px 8px;border-radius:6px;font-size:12.5px;line-height:1.3}
+.cond{font-size:12px;margin-bottom:3px;color:#374151;font-style:italic}
+.desc{margin-top:6px;font-size:12px;color:#4b5563}
+.none{color:#9ca3af;font-size:12px}
+/* couleurs des effets */
+.c-sang{background:#b91c1c;color:#fff}.c-gel{background:#38bdf8;color:#06283d}.c-poison{background:#16a34a;color:#fff}
+.c-feu{background:#f97316;color:#fff}.c-mal{background:#9333ea;color:#fff}.c-os{background:#e7dcc0;color:#4a3f22;border:1px solid #cdbf98}
+.c-purif{background:#facc15;color:#3b2f00}.c-soin{background:#4ade80;color:#052e16}.c-etourdi{background:#eab308;color:#2f2500}
+.c-esquive{background:#cbd5e1;color:#1e293b}.c-vie{background:#14b8a6;color:#fff}.c-frappe{background:#e11d48;color:#fff}
+.c-defense{background:#92400e;color:#fff}.c-echange{background:#3b82f6;color:#fff}.c-ultime{background:#111827;color:#fecaca;border:1px solid #dc2626}
+.c-degats{background:#be185d;color:#fff}.c-stat{background:#64748b;color:#fff}.c-autre{background:#6b7280;color:#fff}
+@media print{
+ body{background:#fff;font-size:11.5px}
+ .bar,#msg:empty{display:none}
+ header{background:#fff;color:#111827;border-bottom:2px solid #111827;padding:6px 0}
+ .grid{grid-template-columns:repeat(2,1fr);padding:0;gap:8px}
+ h2{margin:12px 0 6px;break-after:avoid}
+ .legend{padding:6px 0;background:#fff}
+ @page{size:A4;margin:10mm}
+}
+</style>
+</head>
+<body>
+<header><h1>Catalogue des cartes</h1><small id="sub">Chargement…</small></header>
+<div class="bar">
+ <button onclick="window.print()">🖨 Imprimer / Enregistrer en PDF</button>
+ <input type="text" id="q" placeholder="Rechercher une carte…">
+ <label><input type="checkbox" id="fi" checked> Images</label>
+ <label><input type="checkbox" id="fa"> Cartes actives seulement</label>
+ <label><input type="checkbox" id="tc" checked> Combattants</label>
+ <label><input type="checkbox" id="tm" checked> Magies</label>
+ <label><input type="checkbox" id="tp" checked> Pièges</label>
+</div>
+<div class="legend" id="legend"></div>
+<div id="msg"></div>
+<div id="out"></div>
+<script>
+// ======== Description des effets (en français) ========
+const COL={sang:'Saignement',gel:'Gel',poison:'Poison',feu:'Brûlure',mal:'Malédiction',os:'Fracture',purif:'Purification',soin:'Soin / régénération',etourdi:'Étourdissement',esquive:'Esquive',vie:'Évite la mort / réanimation',frappe:'Frappes en plus',defense:'Défense / renvoi',echange:'Échanges de stats',ultime:'Ultime (vol, relance)',degats:'Dégâts directs',stat:'Modif. ATQ / PV',autre:'Autres'};
+const CATS={saignement:'sang',gel:'gel',poison:'poison',poison_effet:'poison',brulure:'feu',brulure_effet:'feu',malediction:'mal',fracture:'os',purification:'purif',
+ soin:'soin',soin_tour:'soin',soin_tours:'soin',vol_pct_atq:'soin',vol_vie:'soin',etourdir:'etourdi',etourdir_effet:'etourdi',esquive:'esquive',esquive_mod:'esquive',
+ evite_mort:'vie',mort_evitee:'vie',reanimation:'vie',enchainement:'frappe',multi_frappe:'frappe',double_degats:'frappe',bonus_frappe:'frappe',
+ renvoi:'defense',reduc_degats:'defense',echange_atq:'echange',echange_atq_def:'echange',echange_pv:'echange',echange_tout:'echange',
+ vol_ultime:'ultime',reset_ultime:'ultime',degats:'degats',degats_tours:'degats',atq_mod:'stat',pv_mod:'stat',atq_tours:'stat',pv_tours:'stat'};
+const catOf=t=>CATS[String(t).replace(/^atk_/,'')]||'autre';
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const sg=v=>(v>=0?'+':'')+v;
+const U=e=>e.u==='pct'?`${e.val} %`:`${e.val}`;
+const T=(n)=>`${n||1} tour${(n||1)>1?'s':''}`;
+const tgt=(e,def)=>((e.ciblem||e.cible)||def)==='soi'?'soi-même':"l'adversaire";
+function core(e,pas){   // texte de l'effet (sans le « donne à l'attaque de base »)
+ const t=e.type,ch=e.chance!=null&&e.chance!=='';
+ const P=ch?`${e.chance} % de chances de `:'';
+ switch(t){
+  case'evite_mort':return"Évite la mort une fois (reste à 1 PV, retire les statuts négatifs)";
+  case'reanimation':return`Réanimation : meurt puis revient avec ${e.pctrev||0} % de ses PV max (une fois)`;
+  case'mort_evitee':return`Évite la mort une fois (reste à 1 PV, retire les statuts négatifs) — condition : ${e.cond==='pv_max'?`PV max ≥ ${e.seuil||0}`:e.cond==='degats_infliges'?`a déjà infligé ≥ ${e.seuil||0} dégâts`:'aucune'}`;
+  case'purification':return pas?`Purification : retire les statuts négatifs ${e.every>1?`tous les ${e.every} tours`:'chaque tour'}${e.fois?`, ${e.fois} fois au maximum`:''} (rend l'ATQ perdu par malédiction)`
+    :`Purification de ${tgt(e,'soi')} : tout de suite${e.fois>1?`, puis tous les ${e.every||1} tour(s), ${e.fois} fois au total`:''} (retire les statuts négatifs, rend l'ATQ perdu)`;
+  case'esquive':return`${e.chance} % d'esquiver chaque attaque (plafond 75 %)`;
+  case'esquive_mod':return`Esquive de ${tgt(e,'soi')} ${sg(e.val||0)} %`;
+  case'soin_tour':return`Se soigne de ${U(e)} chaque tour`;
+  case'soin':return`Se soigne de ${U(e)}`;
+  case'soin_tours':return`Régénération : +${U(e)} PV par tour pendant ${T(e.tours)}`;
+  case'renvoi':return pas||e.u?`Renvoie ${U(e)} des dégâts reçus`:`Renvoie ${e.val} % des dégâts reçus pendant ${T(e.tours)}`;
+  case'atq_tours':return`ATQ ${sg(e.val)}${e.u==='pct'?' %':''} tous les ${e.tours} tours`;
+  case'pv_tours':return`PV max ${sg(e.val)}${e.u==='pct'?' %':''} tous les ${e.tours} tours`;
+  case'multi_frappe':return`${e.chance} % de frapper ${e.frappes} fois`;
+  case'reduc_degats':return`${e.chance} % de réduire les dégâts reçus de ${U(e)}`;
+  case'bonus_frappe':return`Après ${e.coups} coups reçus : prochaine frappe +${U(e)}`;
+  case'etourdir':return`${P}étourdir l'adversaire à chaque coup`;
+  case'vol_pct_atq':return`${P}voler ${e.pctatq} % de l'ATQ infligée en PV`;
+  case'brulure':return`${P}brûler : ${e.pctpv} % des PV max par tour pendant ${T(e.tours)}`;
+  case'poison':return`${P}empoisonner : ${e.degtour} dégâts par tour pendant ${T(e.tours)}`;
+  case'malediction':return ch?`${P}maudire : ATQ −${e.val} par tour pendant ${T(e.tours)}`:`Malédiction sur ${tgt(e,'adversaire')} : ATQ −${e.val} par tour pendant ${T(e.tours)}`;
+  case'enchainement':return`${P}frapper une fois de plus, puis retente (jusqu'à ${e.max>0?e.max:10} frappes en plus)`;
+  case'saignement':return ch?`${P}faire saigner : ${e.pctpv} % des PV max par tour, soins −${e.reducsoin||0} %, ${T(e.tours)}`:`Saignement sur ${tgt(e,'adversaire')} : ${e.pctpv} % des PV max par tour, soins −${e.reducsoin||0} %, ${T(e.tours)}`;
+  case'gel':return ch?`${P}geler : ${e.annul||0} % d'attaque annulée, ${e.stunch||0} % d'être étourdi, ${T(e.tours)}`:`Gel de ${tgt(e,'adversaire')} : ${e.annul||0} % d'attaque annulée, ${e.stunch||0} % d'être étourdi, ${T(e.tours)}`;
+  case'fracture':return ch?`${P}fracturer : ${e.fchance||0} % de se blesser en attaquant (${e.degfrac||0} dégâts), ${T(e.tours)}`:`Fracture de ${tgt(e,'adversaire')} : ${e.fchance||0} % de se blesser en attaquant (${e.degfrac||0} dégâts), ${T(e.tours)}`;
+  case'vol_ultime':return"Vole l'ultime de l'adversaire";
+  case'reset_ultime':return"Réinitialise l'ultime (utilisable à nouveau)";
+  case'atq_mod':return`ATQ de ${tgt(e,'soi')} ${sg(e.val)}${e.u==='pct'?' %':''}`;
+  case'pv_mod':return`PV max de ${tgt(e,'soi')} ${sg(e.val)}${e.u==='pct'?' %':''}`;
+  case'degats':return`Inflige ${e.val} dégâts directs`;
+  case'vol_vie':return`Inflige ${e.val} dégâts et se soigne d'autant`;
+  case'degats_tours':return`Inflige ${e.val} dégâts après ${T(e.tours)}`;
+  case'double_degats':return`Double ses dégâts pendant ${T(e.tours)}`;
+  case'annule_attaque':return"Annule la prochaine attaque de l'adversaire";
+  case'insensible_piege':return`Insensible aux pièges adverses pendant ${T(e.tours)}`;
+  case'annule_magies':return"Annule la magie adverse";
+  case'echange_atq':return"Échange son ATQ avec celle de l'adversaire";
+  case'echange_atq_def':return`Échange l'ATQ et la défense (PV) de ${tgt(e,'adversaire')}`;
+  case'echange_pv':return"Échange ses PV avec ceux de l'adversaire";
+  case'echange_tout':return"Échange ATQ et PV avec l'adversaire";
+  case'poison_effet':return`Poison sur ${tgt(e,'adversaire')} : ${e.degtour} dégâts par tour pendant ${T(e.tours)}`;
+  case'brulure_effet':return`Brûlure sur ${tgt(e,'adversaire')} : ${e.pctpv} % des PV max par tour pendant ${T(e.tours)}`;
+  case'etourdir_effet':return`Étourdit ${tgt(e,'adversaire')} pendant ${T(e.tours)}`;
+  case'detruire':return`Détruit la ${e.carte||'carte'} de l'adversaire`;
+  case'voler':return`Vole la ${e.carte||'carte'} de l'adversaire`;
+  case'equiper':return`Équipe une ${e.carte||'carte'} de son deck`;
+ }
+ const ex=Object.entries(e).filter(([k,v])=>k!=='type'&&v!=null&&v!=='').map(([k,v])=>`${k} ${typeof v==='object'?JSON.stringify(v):v}`).join(', ');
+ return `${t}${ex?' ('+ex+')':''}`;
+}
+function line(e,pas){
+ if(!e||!e.type)return'';
+ const base=String(e.type).startsWith('atk_')?{...e,type:e.type.slice(4)}:e,pre=e.type.startsWith('atk_')?"Attaque de base : ":'';
+ return `<span class="ch c-${catOf(e.type)}">${esc(pre+core(base,pas&&!pre))}</span>`;
+}
+function lines(e,pas){if(!e)return'';return e.briques?e.briques.map(b=>lines(b,pas)).join(''):line(e,pas)}
+const CL={adv_attaque:c=>`l'adversaire a attaqué ${c.coups||'X'} fois`,adv_ultime:()=>"l'adversaire utilise son ultime",proprio_pv_sous:c=>`le propriétaire passe sous ${c.seuilpv} % de PV`,adv_pv_bas:c=>`l'adversaire passe sous ${c.seuilpv} % de PV`,adv_soigne:()=>"l'adversaire se soigne",proprio_soigne:()=>"le propriétaire se soigne",proprio_meurt:()=>"le propriétaire meurt"};
+function ultTxt(u){
+ if(!u||(!u.type&&!u.briques))return'';
+ const w=[];if(u.apres_tours)w.push(`à partir du tour ${u.apres_tours}`);if(u.sur_carte)w.push('dès qu\'une magie ou un piège est joué');
+ w.push(u.utilisations>0?`${u.utilisations} utilisation${u.utilisations>1?'s':''}`:'utilisations illimitées');if(u.delai_tours)w.push(`délai minimum ${u.delai_tours} tours`);
+ return `<div class="cond">Se déclenche ${esc(w.join(' · '))}</div>`+lines(u,false);
+}
+function cardHTML(c,img){
+ const rar=c.raretes?`<span class="rar" style="background:${esc(c.raretes.couleur||'#6b7280')}">${esc(c.raretes.nom)}</span>`:'';
+ const col=c.collections?.nom?esc(c.collections.nom):'Communes';
+ const ty={combattant:'Combattant',magie:'Magie',piege:'Piège'}[c.type]||c.type;
+ const st=c.type==='combattant'?`<div class="stats"><div class="st atq"><small>ATQ</small>${c.atq??'–'}</div><div class="st pv"><small>PV</small>${c.pv??'–'}</div></div>`:'';
+ const im=(c.variantes_carte||[]).find(v=>v.nom==='Standard')||(c.variantes_carte||[])[0];
+ let secs='';
+ if(c.type==='combattant'){
+  const p=lines(c.passif,true),u=ultTxt(c.ultime);
+  secs=`<div class="sec"><h4>Passifs</h4>${p||'<span class="none">aucun</span>'}</div><div class="sec"><h4>Ultime</h4>${u||'<span class="none">aucun</span>'}</div>`;
+ }else if(c.type==='magie'){
+  secs=`<div class="sec"><h4>Effet</h4>${lines(c.effet,false)||'<span class="none">aucun</span>'}</div>`;
+ }else{
+  const e=c.effet||{},cd=e.condition,ct=cd&&CL[cd.type]?CL[cd.type](cd):'?';
+  secs=`<div class="sec"><h4>Piège</h4><div class="cond">Quand ${esc(ct)}${e.declenchements>1?` · jusqu'à ${e.declenchements} déclenchements`:''}</div>${lines(e.effet,false)||'<span class="none">aucun effet</span>'}</div>`;
+ }
+ return `<div class="card${c.actif===false?' off':''}">${img&&im?.image_path?`<img loading="lazy" src="${STORAGE+esc(im.image_path)}" alt="">`:''}
+  <div class="body"><div class="top"><div><div class="nom">${esc(c.nom)}</div><div class="meta">${ty} · ${col} ${rar}${c.actif===false?' · <b>inactive</b>':''}</div></div>${st}</div>${secs}${c.description?`<div class="desc">${esc(c.description)}</div>`:''}</div></div>`;
+}
+// ======== Chargement et affichage ========
+const STORAGE='https://bjsvqikjnvaomyoifiml.supabase.co/storage/v1/object/public/cartes/';
+let CARTES=[];
+const $=s=>document.querySelector(s);
+function draw(){
+ const q=$('#q').value.trim().toLowerCase(),img=$('#fi').checked,act=$('#fa').checked,on={combattant:$('#tc').checked,magie:$('#tm').checked,piege:$('#tp').checked};
+ const L=CARTES.filter(c=>on[c.type]&&(!act||c.actif!==false)&&(!q||c.nom.toLowerCase().includes(q)));
+ const parts=[['combattant','Combattants'],['magie','Magies'],['piege','Pièges']].map(([t,l])=>{
+  const x=L.filter(c=>c.type===t);return x.length?`<h2>${l} (${x.length})</h2><div class="grid">${x.map(c=>cardHTML(c,img)).join('')}</div>`:''}).join('');
+ $('#out').innerHTML=parts||'<p style="padding:0 20px">Aucune carte à afficher.</p>';
+ $('#sub').textContent=`${L.length} carte${L.length>1?'s':''} · généré le ${new Date().toLocaleDateString('fr-FR')}`;
+}
+$('#legend').innerHTML=Object.entries(COL).map(([k,v])=>`<span class="ch c-${k}" style="display:inline-block;margin:0">${v}</span>`).join('');
+['q','fi','fa','tc','tm','tp'].forEach(i=>$('#'+i).addEventListener('input',draw));
+async function charger(){
+ try{
+  await new Promise((ok,ko)=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';s.onload=ok;s.onerror=()=>ko(new Error('bibliothèque de connexion non chargée (réseau ?)'));document.head.appendChild(s)});
+  const sb=supabase.createClient('https://bjsvqikjnvaomyoifiml.supabase.co','sb_publishable_-3cPqDCyE-zhb3z5r6dPhg_DJFKGAI6');
+  const {data,error}=await sb.from('cartes').select('id,nom,type,atq,pv,actif,passif,ultime,effet,description,raretes(nom,couleur),collections(nom),variantes_carte(nom,image_path)').order('nom');
+  if(error)throw error;
+  const ord={combattant:0,magie:1,piege:2};
+  CARTES=(data||[]).sort((a,b)=>(ord[a.type]-ord[b.type])||a.nom.localeCompare(b.nom,'fr'));
+  if(!CARTES.length){$('#msg').innerHTML='Aucune carte lue. Connecte-toi d\'abord sur le site avec le <b>même navigateur</b> (compte admin), puis recharge cette page.';$('#sub').textContent='Aucune carte';return}
+  $('#msg').textContent='';draw();
+ }catch(e){$('#sub').textContent='Erreur';$('#msg').innerHTML='Impossible de lire les cartes : '+esc(e.message||e)+'<br>Connecte-toi d\'abord sur le site avec le <b>même navigateur</b>, puis recharge.'}
+}
+charger();
+</script>
+</body>
+</html>
