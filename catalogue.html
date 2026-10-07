@@ -43,6 +43,7 @@ h2{margin:18px 20px 8px;font-size:19px;border-bottom:3px solid #111827;padding-b
 .c-purif{background:#facc15;color:#3b2f00}.c-soin{background:#4ade80;color:#052e16}.c-etourdi{background:#eab308;color:#2f2500}
 .c-esquive{background:#cbd5e1;color:#1e293b}.c-vie{background:#14b8a6;color:#fff}.c-frappe{background:#e11d48;color:#fff}
 .c-defense{background:#92400e;color:#fff}.c-echange{background:#3b82f6;color:#fff}.c-ultime{background:#111827;color:#fecaca;border:1px solid #dc2626}
+.c-rage{background:#7f1d1d;color:#fde047;border:1px solid #ef4444}.c-fatigue{background:#334155;color:#cbd5e1}.c-alea{background:linear-gradient(90deg,#f43f5e,#f59e0b,#22c55e,#3b82f6,#a855f7);color:#fff}
 .c-degats{background:#be185d;color:#fff}.c-stat{background:#64748b;color:#fff}.c-autre{background:#6b7280;color:#fff}
 @media print{
  body{background:#fff;font-size:11.5px}
@@ -71,12 +72,12 @@ h2{margin:18px 20px 8px;font-size:19px;border-bottom:3px solid #111827;padding-b
 <div id="out"></div>
 <script>
 // ======== Description des effets (en français) ========
-const COL={sang:'Saignement',gel:'Gel',poison:'Poison',feu:'Brûlure',mal:'Malédiction',os:'Fracture',purif:'Purification',soin:'Soin / régénération',etourdi:'Étourdissement',esquive:'Esquive',vie:'Évite la mort / réanimation',frappe:'Frappes en plus',defense:'Défense / renvoi',echange:'Échanges de stats',ultime:'Ultime (vol, relance)',degats:'Dégâts directs',stat:'Modif. ATQ / PV',autre:'Autres'};
+const COL={sang:'Saignement',gel:'Gel',poison:'Poison',feu:'Brûlure',mal:'Malédiction',os:'Fracture',purif:'Purification',soin:'Soin / régénération',etourdi:'Étourdissement',esquive:'Esquive',vie:'Évite la mort / réanimation',frappe:'Frappes en plus',defense:'Défense / renvoi',echange:'Échanges de stats',ultime:'Ultime (vol, relance)',degats:'Dégâts directs',stat:'Modif. ATQ / PV',rage:'Rage',fatigue:'Fatigue',alea:'Effet aléatoire',autre:'Autres'};
 const CATS={saignement:'sang',gel:'gel',poison:'poison',poison_effet:'poison',brulure:'feu',brulure_effet:'feu',malediction:'mal',fracture:'os',purification:'purif',
  soin:'soin',soin_tour:'soin',soin_tours:'soin',vol_pct_atq:'soin',vol_vie:'soin',etourdir:'etourdi',etourdir_effet:'etourdi',esquive:'esquive',esquive_mod:'esquive',
  evite_mort:'vie',mort_evitee:'vie',reanimation:'vie',enchainement:'frappe',multi_frappe:'frappe',double_degats:'frappe',bonus_frappe:'frappe',
  renvoi:'defense',reduc_degats:'defense',echange_atq:'echange',echange_atq_def:'echange',echange_pv:'echange',echange_tout:'echange',
- vol_ultime:'ultime',reset_ultime:'ultime',degats:'degats',degats_tours:'degats',atq_mod:'stat',pv_mod:'stat',atq_tours:'stat',pv_tours:'stat'};
+ vol_ultime:'ultime',reset_ultime:'ultime',degats:'degats',degats_tours:'degats',atq_mod:'stat',pv_mod:'stat',atq_tours:'stat',pv_tours:'stat',rage:'rage',fatigue:'fatigue',aleatoire:'alea'};
 const catOf=t=>CATS[String(t).replace(/^atk_/,'')]||'autre';
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const sg=v=>(v>=0?'+':'')+v;
@@ -112,6 +113,9 @@ function core(e,pas){   // texte de l'effet (sans le « donne à l'attaque de ba
   case'saignement':return ch?`${P}faire saigner : ${e.pctpv} % des PV max par tour, soins −${e.reducsoin||0} %, ${T(e.tours)}`:`Saignement sur ${tgt(e,'adversaire')} : ${e.pctpv} % des PV max par tour, soins −${e.reducsoin||0} %, ${T(e.tours)}`;
   case'gel':return ch?`${P}geler : ${e.annul||0} % d'attaque annulée, ${e.stunch||0} % d'être étourdi, ${T(e.tours)}`:`Gel de ${tgt(e,'adversaire')} : ${e.annul||0} % d'attaque annulée, ${e.stunch||0} % d'être étourdi, ${T(e.tours)}`;
   case'fracture':return ch?`${P}fracturer : ${e.fchance||0} % de se blesser en attaquant (${e.degfrac||0} dégâts), ${T(e.tours)}`:`Fracture de ${tgt(e,'adversaire')} : ${e.fchance||0} % de se blesser en attaquant (${e.degfrac||0} dégâts), ${T(e.tours)}`;
+ case'rage':return`Rage : +${e.ragev||0}${e.u==='pct'?' % de l\'ATQ':''} dégâts par coup pendant ${T(e.ragetours)}, puis Fatigue : −${e.fatval||0}${e.u==='pct'?' %':''} dégâts par coup pendant ${T(e.fattours)}`;
+  case'fatigue':return ch?`${P}fatiguer : dégâts −${e.fatval||0}${e.u==='pct'?' %':''} par coup pendant ${T(e.fattours)}`:`Fatigue de ${tgt(e,'adversaire')} : dégâts −${e.fatval||0}${e.u==='pct'?' %':''} par coup pendant ${T(e.fattours)}`;
+  case'aleatoire':return pas?`Effet aléatoire parmi tous les effets du jeu : ${e.chance==null||e.chance===''?100:e.chance} % de chances ${e.every>1?`tous les ${e.every} tours`:'chaque tour'}`:`Effet aléatoire${(e.nbalea||e.fois)>1?` ×${e.nbalea||e.fois}`:''} : tiré au hasard parmi tous les effets du jeu`;
   case'vol_ultime':return"Vole l'ultime de l'adversaire";
   case'reset_ultime':return"Réinitialise l'ultime (utilisable à nouveau)";
   case'atq_mod':return`ATQ de ${tgt(e,'soi')} ${sg(e.val)}${e.u==='pct'?' %':''}`;
