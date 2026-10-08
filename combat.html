@@ -433,9 +433,8 @@ function fxStart(card,k){
   for(let i=0;i<3;i++){const ang=t*3+i*2.094,px=cx+Math.cos(ang)*r0*1.5,py=cy-r0*1.1+Math.sin(ang)*r0*.35,sr=W*.04;x.fillStyle='rgba(255,225,70,.95)';x.beginPath();
    for(let j=0;j<10;j++){const rr0=j%2?sr*.45:sr,aa=-1.571+j*.628;x.lineTo(px+Math.cos(aa)*rr0,py+Math.sin(aa)*rr0)}x.closePath();x.fill()}}
  function rageL(){   // rage persistante : lueur rouge qui pulse, petits symboles « énervés » qui apparaissent
-  if(Math.random()<.07)P.push({x:R(.12,.88)*W,y:R(.05,.45)*H,s:R(.1,.16)*W,l:0,d:R(.55,.8)});
   x.clearRect(0,0,W,H);const g=x.createRadialGradient(W/2,H/2,H*.2,W/2,H/2,H*.75);g.addColorStop(0,'rgba(255,40,20,0)');g.addColorStop(1,`rgba(255,40,20,${.3+.12*Math.sin(t*10)})`);x.fillStyle=g;x.fillRect(0,0,W,H);
-  for(const p of P){p.l+=.016/p.d;if(p.l>=1)continue;const u=p.l,sc=u<.25?u/.25*1.25:u<.4?1.25-(u-.25)/.15*.25:1;anger(x,p.x,p.y,p.s*sc,u>.75?(1-u)/.25:1)}}
+  }
  function fatL(){   // fatigue persistante : voile bleu-gris, paupières lourdes, gouttes de sueur et « Z » qui montent
   if(Math.random()<.06)P.push({z:1,x:R(.55,.9)*W,y:R(.22,.42)*H,s:R(.09,.15)*W,l:0,d:R(1.6,2.4),ph:R(0,6)});
   if(Math.random()<.08)P.push({x:R(.08,.92)*W,y:-4,vy:R(.5,1.1)*H/500,s:R(.012,.022)*W,l:0,d:R(2.4,3.6)});
@@ -715,9 +714,7 @@ function ailes(c){const K=rc(c),W=K.w,H=K.h,DUR=2.7,
    for(const f of fl){const q=cl((t-f.de)/1.1);if(q<=0||q>=1)continue;const px=K.x+f.x*K.w+Math.sin(t*9+f.ph)*K.w*.02,py=K.y+K.h*.95-q*K.h*.75*f.v,r=K.w*f.s*(1-q*.7);
     x.fillStyle=`rgba(255,${120-q*80|0},30,${.85*(1-q)})`;x.beginPath();x.moveTo(px,py-r*2.4);x.bezierCurveTo(px+r*1.2,py-r*.6,px+r,py+r*.7,px,py+r*.9);x.bezierCurveTo(px-r,py+r*.7,px-r*1.2,py-r*.6,px,py-r*2.4);x.closePath();x.fill()}
    x.globalCompositeOperation='source-over';
-   const e=t<.25?t/.25*1.4:t<.45?1.4-(t-.25)/.2*.4:1+.08*Math.sin(t*16);
-   anger(x,K.cx+K.w*.28,K.cy-K.h*.34,K.w*.21*e,al);
-   if(t>.2){anger(x,K.cx-K.w*.3,K.cy-K.h*.18,K.w*.1*cl((t-.2)/.2),al*.9);anger(x,K.cx+K.w*.05,K.cy-K.h*.4,K.w*.08*cl((t-.3)/.2),al*.9)}})}
+   })}
  
 // RÉANIMATION : les morceaux de la carte reviennent se ressouder dans un halo vert doré, puis la carte réapparaît
 function reforme(c){const cw=$('#p'+c+' .cw'),card=cw.querySelector('.card'),K=rc(c),tw=Math.round(K.w),th=Math.round(K.h),tex=document.createElement('canvas');tex.width=tw;tex.height=th;
