@@ -38,6 +38,10 @@ canvas.fx.malediction{box-shadow:inset 0 0 40px 10px rgba(150,70,230,.7);animati
 .mw small{display:block;font-size:1.5vh;opacity:.8;margin-top:.4vh}
 .mini{width:6.5vw;aspect-ratio:5/7;border-radius:8px;background:#1b2a22 center/cover;display:flex;align-items:center;justify-content:center;font-size:1.4vh;font-weight:700;padding:3px;box-sizing:border-box;box-shadow:0 0 10px #000}
 .mini.vide{opacity:.3}
+.mini{position:relative}.mini.annule{box-shadow:0 0 14px #ef4444}
+.mini.annule::before{content:'';position:absolute;inset:0;border-radius:8px;background:rgba(0,0,0,.5)}
+.mini.annule::after{content:'✖';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:6.5vh;font-weight:900;color:#ef2d2d;text-shadow:0 0 6px #000,0 0 14px #000;animation:croix .5s ease-out}
+@keyframes croix{from{transform:scale(2.4);opacity:0}to{transform:scale(1);opacity:1}}
 .mini.back{background:linear-gradient(135deg,#7f1d1d,#1e1b4b);border:3px solid #f87171;font-size:4vh}
 .mini.rev{animation:rev .8s;box-shadow:0 0 20px #f87171}
 .mini.act{animation:act 1.6s;box-shadow:0 0 20px #60a5fa}
@@ -62,6 +66,13 @@ canvas.fx.fatigue{box-shadow:inset 0 0 40px 10px rgba(70,90,130,.7)}
 canvas.fx.gel{box-shadow:inset 0 0 40px 12px rgba(150,220,255,.8)}
 /* téléphone : menus de test et barre de boutons déplaçables au doigt (n'affecte pas l'écran d'ordinateur) */
 #demo,#ctl{-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+#recap{position:fixed;inset:4vh 22vw;z-index:30;background:rgba(8,14,11,.97);border:1px solid #2f4a3c;border-radius:12px;padding:14px 16px;overflow:auto;display:none;font:14px/1.55 system-ui;color:#e8efe9;box-shadow:0 0 40px #000}
+#recap h3{margin:0 0 6px;font-size:16px;color:#fde68a}#recap h5{margin:12px 0 3px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#7dd3a8;border-top:1px solid #24382d;padding-top:6px}
+#recap .x{position:sticky;top:0;float:right;padding:5px 12px;border:0;border-radius:6px;background:#334155;color:#fff;cursor:pointer}
+#recap .l{padding:1px 0}#recap .l.degats{color:#fca5a5}#recap .l.soin{color:#86efac}#recap .l.piege,#recap .l.magie{color:#93c5fd}#recap .l.ultime{color:#fbbf24}#recap .l.fin{color:#a7f3d0;font-weight:700;margin-top:8px}
+#recap .pvs{font-size:12px;opacity:.85;margin:2px 0 6px}
+#outils{display:flex;gap:6px;align-items:center;margin:0 0 8px}#outils button,#outils select{padding:6px 10px;border-radius:6px;border:0}
+@media(max-width:800px){#recap{inset:2vh 3vw}}
 #demo{touch-action:pan-y}
 @media(max-width:800px){#demo{width:94vw;max-height:72vh;top:2vh}#ctl{flex-wrap:nowrap;overflow-x:auto;max-width:96vw;touch-action:pan-x}#ctl>*{flex:none;white-space:nowrap}}
 #demo{position:fixed;left:50%;top:3vh;transform:translateX(-50%);width:34vw;max-height:94vh;overflow:auto;background:rgba(0,0,0,.55);border-radius:12px;padding:10px;font:13px system-ui;z-index:9;display:none}
@@ -77,6 +88,7 @@ canvas.fx.gel{box-shadow:inset 0 0 40px 12px rgba(150,220,255,.8)}
 <div id="ctl"><button id="nv">⚔️ Nouveau combat</button><button id="rj">↺ Rejouer le même</button><button id="ts">🔥☠️ Test brûlure + poison</button><button id="tm">💀 Test malédiction / enchaînement</button><button id="tn">✨ Test effets de magie</button>
 Vitesse <select id="vit"><option value="1.6">Lent</option><option value="1" selected>Normal</option><option value=".5">Rapide</option></select></div>
 <div id="log"></div><canvas id="fxs"></canvas>
+<div id="recap"></div>
 <script>
 if(/demo|test|debug/.test(location.search))addEventListener('error',e=>{let b=document.getElementById('errbox');if(!b){b=document.createElement('div');b.id='errbox';b.style.cssText='position:fixed;left:8px;top:8px;max-width:60vw;background:#7f1d1d;color:#fff;font:12px monospace;padding:6px 10px;border-radius:6px;z-index:99;white-space:pre-wrap';document.body.appendChild(b)}
  b.textContent+=e.target&&e.target.src?'Fichier introuvable : '+e.target.src.split('/').pop()+'\n':'Erreur : '+e.message+' ('+(e.filename||'').split('/').pop()+':'+e.lineno+')\n'},true);
@@ -143,7 +155,7 @@ function simuler(pA,pB,opt={}){
    proprio_pv_sous:ev.t==='pv'&&o.pv>0&&o.pv/o.max*100<c.seuilpv,adv_pv_bas:ev.t==='pv'&&x.pv>0&&x.pv/x.max*100<c.seuilpv,
    adv_soigne:ev.t==='soin'&&ev.who===ia,proprio_soigne:ev.t==='soin'&&ev.who===i,proprio_meurt:ev.t==='mort'&&ev.who===i}[c.type];
   if(!ok)return;
-  if(x.st.insens>0){L('piege',`Le piège de ${o.pseudo} est bloqué (insensible)`,{c:i});return}
+  if(x.st.insens>0){L('piege',`Le piège de ${o.pseudo} est bloqué (insensible)`,{c:i,k:'bloque',carte:o.pie.nom,img:o.pie.image||null});return}
   o.decl++;L('piege',`Piège de ${o.pseudo} : ${o.pie.nom} !`,{c:i,carte:o.pie.nom,img:o.pie.image||null});if(c.type==='proprio_meurt')rv=1;fx(e.effet,o,x);rv=0;S.forEach(s=>s.pend=1);
  })}
  // Effets : o = propriétaire de l'effet, x = adversaire. mg=true : effet de magie (annulable/volable)
@@ -168,7 +180,7 @@ function simuler(pA,pB,opt={}){
    case'annule_attaque':x.st.skip=1;L('statut',`La prochaine attaque de ${nom(x)} est annulée`,{c:id(x)});break;
    case'renvoi':o.st.ren.push({pct:e.val,t:e.tours||1});break;
    case'insensible_piege':o.st.insens=e.tours||1;break;
-   case'annule_magies':if(x.magOn){x.magOn=0;undo(x);L('statut',`La magie de ${x.pseudo} est annulée`,{c:id(x)})}break;
+   case'annule_magies':if(x.magOn){x.magOn=0;undo(x);L('statut',`La magie de ${x.pseudo} est annulée`,{c:id(x),k:'magie_annulee'})}break;
    case'degats_tours':x.st.prog.push({t:e.tours||1,n:e.val,src:o});break;
    case'double_degats':o.st.dbl=e.tours||1;L('statut',`${nom(o)} double ses dégâts`,{c:id(o)});break;
    case'echange_atq':[o.atq,x.atq]=[x.atq,o.atq];L('stat',`${nom(o)} et ${nom(x)} échangent leur ATQ`,{k:'echange',cs:[id(o),id(x)],col:'bleu'});break;
@@ -189,8 +201,8 @@ function simuler(pA,pB,opt={}){
    case'reset_ultime':T.uh.forEach(h=>{h.uses=0;h.last=-99});L('statut',`L'ultime de ${nom(T)} est réinitialisé !`,{c:id(T)});break;
    case'mort_evitee':if(!mg&&!o.st.mortUsed){o.st.evite=1;L('statut',`${nom(o)} est protégé : il évitera la mort une fois`,{c:id(o)})}break;   // en magie : lue directement dans dmg() ; en ultime / piège : protection posée à l'activation
    case'detruire':case'voler':{
-    if(e.carte==='magie'&&x.magOn){x.magOn=0;undo(x);if(e.type==='voler'){fx(x.mag.effet,o,x,true);L('vol',`${o.pseudo} vole la magie de ${x.pseudo}`)}else L('vol',`La magie de ${x.pseudo} est détruite`)}
-    else if(e.carte==='piege'&&x.pieOn){x.pieOn=0;if(e.type==='voler'){o.pie=x.pie;o.pieOn=1;o.decl=0;L('vol',`${o.pseudo} vole le piège de ${x.pseudo}`)}else L('vol',`Le piège de ${x.pseudo} est détruit`)}
+    if(e.carte==='magie'&&x.magOn){x.magOn=0;undo(x);if(e.type==='voler'){fx(x.mag.effet,o,x,true);L('vol',`${o.pseudo} vole la magie de ${x.pseudo}`,{c:id(x),k:'magie_annulee'})}else L('vol',`La magie de ${x.pseudo} est détruite`,{c:id(x),k:'magie_annulee'})}
+    else if(e.carte==='piege'&&x.pieOn){x.pieOn=0;if(e.type==='voler'){o.pie=x.pie;o.pieOn=1;o.decl=0;L('vol',`${o.pseudo} vole le piège de ${x.pseudo}`,{c:id(x),k:'piege_annule',carte:x.pie.nom,img:x.pie.image||null})}else L('vol',`Le piège de ${x.pseudo} est détruit`,{c:id(x),k:'piege_annule',carte:x.pie.nom,img:x.pie.image||null})}
     break}
    case'equiper':{const c=tire(o.deck.filter(k=>k!==o.mag&&k!==o.pie),e.carte);if(c){if(e.carte==='magie'){o.mag=c;o.magOn=1;fx(c.effet,o,x,true)}else{o.pie=c;o.pieOn=1;o.decl=0}L('vol',`${nom(o)} équipe ${c.nom}`)}break}
    default:L('inconnu',`Effet non géré par le moteur : ${e.type}`);
@@ -361,7 +373,7 @@ function simuler(pA,pB,opt={}){
 
  // ---- Déroulé ----
  const first=r()<.5?0:1,ordre=[S[first],S[1-first]];
- L('debut','Le combat commence !',{joueurs:S.map(s=>({pseudo:s.pseudo,carte:s.card.nom,image:s.card.image||null,imageCombat:s.card.imageCombat||null,magie:s.mag.nom,piege:s.pie.nom,magieImg:s.mag.image||null,piegeImg:s.pie.image||null})),premier:first});
+ L('debut','Le combat commence !',{joueurs:S.map(s=>({pseudo:s.pseudo,carte:s.card.nom,image:s.card.image||null,imageCombat:s.card.imageCombat||null,magie:s.mag.nom,piege:s.pie.nom,magieImg:s.mag.image||null,piegeImg:s.pie.image||null,ids:[s.card.id,s.mag.id,s.pie.id]})),premier:first});
  ordre.forEach(s=>{if(s.mag.effet){L('magie',`Magie de ${s.pseudo} : ${s.mag.nom}`,{c:id(s),carte:s.mag.nom,img:s.mag.image||null});fx(s.mag.effet,s,adv(s),true);S.forEach(k=>k.pend=1)}});
  for(tour=1;tour<=reg.maxTours&&!over();tour++){
   L('tour',`Tour ${tour}`);S.forEach(s=>s.rt=0);
@@ -386,6 +398,7 @@ const TEST=location.search.includes('test'),DEMO=location.search.includes('demo'
 if(!TEST&&!DEMO)document.body.classList.add('obs');
 
 // ---------- Affichage d'un journal ----------
+function revele(c,e){const g=$('#g'+c);if(!g)return;g.classList.remove('back');g.classList.add('rev');g.textContent=e.img?'':(e.carte||'');g.style.backgroundImage=e.img?`url('${STORAGE+e.img}')`:''}
 function mini(img,txt){return img?`style="background-image:url('${STORAGE+img}')"`:''}
 function panneau(i,j){const im=j.imageCombat||j.image;$('#p'+i).innerHTML=`<div class="cw"><div class="card" ${im?`style="background-image:url('${STORAGE+im}')"`:''}>${im?'':j.carte}${j.imageCombat?'<span class="sv sva" data-v=""></span><span class="sv svp" data-v=""></span>':''}</div></div>
  <div class="nm">${j.pseudo} — ${j.carte}</div><div class="bar"><i></i></div><div class="pv"></div>
@@ -790,9 +803,11 @@ function maj(e){[0,1].forEach(i=>{const p=$('#p'+i);p.querySelector('i').style.w
  [['.sva',e.atq[i]],['.svp',Math.max(0,e.pv[i])]].forEach(([k,v])=>{const n=p.querySelector(k);if(!n)return;const t=String(v);if(n.dataset.v!==t){const nv=n.dataset.v!=='';n.dataset.v=t;if(nv){n.classList.remove('pls');void n.offsetWidth;n.classList.add('pls')}}})})}
 function flot(i,txt,col,cls){const d=document.createElement('div');d.className='fl'+(cls?' '+cls:'');d.textContent=txt;d.style.color=col;$('#p'+i).appendChild(d);setTimeout(()=>d.remove(),1300)}
 let enCours=false;const file=[];
+let journalRecap=null,wsLive=null;
+const ACTION_FIN=new URLSearchParams(location.search).get('action')||'Combat - Résultat';
 async function jouer(res){
  file.push(res);if(enCours)return;enCours=true;
- while(file.length){const R=file.shift();$('#log').innerHTML='';
+ while(file.length){const R=file.shift();journalRecap=R;$('#log').innerHTML='';
   for(const e of R.journal){
    $('#ban').className=e.t;$('#ban').textContent=e.txt;$('#log').innerHTML+=e.txt+'<br>';$('#log').scrollTop=1e5;
    if(e.t==='debut'){st={};fxL.length=0;fxAll.forEach(s=>s());fxAll.clear();e.joueurs.forEach((j,i)=>panneau(i,j));$('#scene').classList.add('on');maj(e);await wait(2500);continue}
@@ -820,6 +835,8 @@ async function jouer(res){
    else if(e.t==='statut'&&e.k==='etourdi_fin')statut(e.c,'etourdi',false);
    else if(e.t==='statut'&&e.k==='etourdi_tour'){}
    else if(e.t==='stat'&&e.k==='esq')flot(e.c,'Esquive '+(e.d>=0?'+':'')+e.d+' %','#bae6fd')
+   else if(e.k==='magie_annulee'){const m=$('#m'+e.c);if(m)m.classList.add('annule')}
+   else if(e.k==='piege_annule'){revele(e.c,e);$('#g'+e.c).classList.add('annule')}
    else if(e.t==='statut'&&e.k==='regen'){flot(e.c,'Régénération','#4ade80');await wait(600)}   // pas d'aura persistante (elle prenait l'aspect du poison) : le soin de chaque tour s'affiche avec l'animation de soin
    else if(e.t==='statut'&&e.k){statut(e.c,e.k,true);if(e.k==='malediction')cranes(e.c)}
    else if(e.t==='stat'&&e.k==='malediction_tick'){cranes(e.c);flot(e.c,'ATQ '+e.d,'#c084fc')}
@@ -827,11 +844,12 @@ async function jouer(res){
    else if(e.t==='finstatut')statut(e.c,e.k,false);
    else if(e.t==='ultime'){card.classList.add('ult');ultFx(e.c);setTimeout(()=>card.classList.remove('ult'),2400)}
    else if(e.t==='magie'){const m=$('#m'+e.c);m.classList.add('act');setTimeout(()=>m.classList.remove('act'),1700)}
-   else if(e.t==='piege'){const g=$('#g'+e.c);g.classList.remove('back');g.classList.add('rev');g.textContent=e.img?'':e.carte;g.style.backgroundImage=e.img?`url('${STORAGE+e.img}')`:''}
+   else if(e.t==='piege'){revele(e.c,e);if(e.k==='bloque')$('#g'+e.c).classList.add('annule')}
    const ms={magie:1800,piege:2000,ultime:2200,fin:5000,degats:900,soin:1300,esquive:1100,bloque:1500,statut:1100,stat:1500,vol:1500,protege:2700,finstatut:250}[e.t]||900;
-   if(e.t==='fin'){fxAll.forEach(s=>s());fxAll.clear();document.querySelectorAll('canvas.fx').forEach(k=>k.remove());$('#ban').textContent=e.txt+` (+${e.recompenses[e.gagnant??0]})`;if(e.gagnant!=null){briser(1-e.gagnant);auraFx(e.gagnant,{gold:1,dur:5.2})}}
+   if(e.t==='fin'){fxAll.forEach(s=>s());fxAll.clear();document.querySelectorAll('canvas.fx').forEach(k=>k.remove());{const rw=e.recompenses[e.gagnant??0];$('#ban').textContent=e.txt+(rw>0?` (+${rw})`:'')}if(e.gagnant!=null){briser(1-e.gagnant);auraFx(e.gagnant,{gold:1,dur:5.2})}}
    await wait(ms);
   }
+  if(!TEST&&!DEMO&&R.annonce&&wsLive&&wsLive.readyState===1)wsLive.send(JSON.stringify({request:'DoAction',id:'fin-combat',action:{name:ACTION_FIN},args:{message:R.annonce}}));   // annonce du résultat dans le chat, une fois l'animation terminée
   if(!TEST){$('#scene').classList.remove('on');await wait(800)}
  }
  enCours=false;
@@ -854,7 +872,8 @@ const DECK=[
 let dernier=null;
 let dernierDecks=null;
 function lancer(seed,decks){dernierDecks=decks||null;dernier=Moteur.simuler(decks?decks[0]:{pseudo:'Toi',deck:DECK},decks?decks[1]:{pseudo:'Bot',deck:DECK},{seed});jouer(dernier)}
-if(TEST){$('#ctl').style.display='flex';$('#log').style.display='block';
+if(TEST){$('#ctl').style.display='none';$('#log').style.display='none';   // l'ancienne barre de boutons et le journal en bas sont remplacés par le panneau + le bouton « Récap »
+
  $('#nv').onclick=()=>{if(!enCours)lancer()};$('#ts').onclick=()=>{if(enCours)return;const f=n=>DECK.find(c=>c.nom===n),A={...f('Loup-garou'),passif:{type:'poison',chance:100,degtour:3,tours:3}},B={...f('Spectre'),passif:{type:'brulure',chance:100,pctpv:6,tours:3}},ult={...f('Chasseur'),passif:null,ultime:{type:'degats',val:10,apres_tours:2,utilisations:1}};
   const m=DECK.filter(c=>c.type!=='combattant');dernier=Moteur.simuler({pseudo:'Toi',deck:[A,...m]},{pseudo:'Bot',deck:[B,...m]},{seed:7});jouer(dernier)};
  $('#tn').onclick=()=>{if(enCours)return;const f=n=>DECK.find(c=>c.nom===n),A=f('Chasseur'),B=f('Loup-garou'),
@@ -1000,9 +1019,23 @@ if(DEMO){
 // ---------- Mode live : reçoit le journal par WebSocket (Streamer.bot) ----------
 function extraire(d){for(let k=0;k<4;k++){if(typeof d==='string'){try{d=JSON.parse(d)}catch(x){return null}}
  if(Array.isArray(d))d=d[0];if(d&&d.journal)return d;if(d&&d.data)d=d.data;else return null}return null}
-function connect(){const ws=new WebSocket('ws://127.0.0.1:8080/');
+function connect(){const ws=new WebSocket('ws://127.0.0.1:8080/');wsLive=ws;
  ws.onopen=()=>ws.send(JSON.stringify({request:'Subscribe',id:'sub-combat',events:{General:['Custom']}}));
  ws.onmessage=e=>{const r=extraire(e.data);if(r)jouer(r)};
  ws.onclose=()=>setTimeout(connect,3000);ws.onerror=()=>ws.close()}
+
+// ---------- Récap du dernier combat (page de test) ----------
+function ouvrirRecap(){const R=journalRecap,box=$('#recap');if(!R){box.innerHTML='<button class="x" onclick="this.parentNode.style.display=\'none\'">Fermer</button><h3>Récap</h3>Aucun combat joué pour l\'instant.';box.style.display='block';return}
+ const ic={attaque:'⚔️',degats:'💥',soin:'💚',magie:'✨',piege:'🪤',ultime:'🔥',statut:'🌀',stat:'📊',vol:'🫳',esquive:'💨',bloque:'🛡️',protege:'😇',fin:'🏆',debut:'🎬'};
+ const d=R.journal.find(e=>e.t==='debut'),f=R.journal[R.journal.length-1],esc=t=>String(t).replace(/</g,'&lt;');
+ let h='<button class="x" id="rcx">Fermer ✕</button>';
+ if(d)h+=`<h3>${esc(d.joueurs[0].pseudo)} (${esc(d.joueurs[0].carte)}) contre ${esc(d.joueurs[1].pseudo)} (${esc(d.joueurs[1].carte)})</h3><div class="pvs">Magies : ${esc(d.joueurs[0].magie)} / ${esc(d.joueurs[1].magie)} · Pièges : ${esc(d.joueurs[0].piege)} / ${esc(d.joueurs[1].piege)}</div>`;
+ for(const e of R.journal){if(e.t==='debut')continue;
+  if(e.t==='tour'){h+=`<h5>${esc(e.txt)}</h5>`;continue}
+  h+=`<div class="l ${e.t}">${ic[e.t]||'•'} ${esc(e.txt)}</div>`}
+ if(f&&f.pv)h+=`<div class="pvs">PV à la fin : ${f.pv[0]} / ${f.max[0]} · ${f.pv[1]} / ${f.max[1]}</div>`;
+ box.innerHTML=h;box.style.display='block';$('#rcx').onclick=()=>box.style.display='none'}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')$('#recap').style.display='none'});
+if(TEST||DEMO){const dm=$('#demo');if(dm){const row=document.createElement('div');row.id='outils';row.innerHTML='<button id="brc">📋 Récap du combat</button>Vitesse ';row.appendChild($('#vit'));dm.prepend(row);$('#brc').onclick=ouvrirRecap}}
 if(!TEST&&!DEMO)connect();
 </script></body></html>
