@@ -191,10 +191,12 @@ async function charger(){
  try{
   await new Promise((ok,ko)=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';s.onload=ok;s.onerror=()=>ko(new Error('bibliothèque de connexion non chargée (réseau ?)'));document.head.appendChild(s)});
   const sb=supabase.createClient('https://bjsvqikjnvaomyoifiml.supabase.co','sb_publishable_-3cPqDCyE-zhb3z5r6dPhg_DJFKGAI6');
-  const {data,error}=await sb.from('cartes').select('id,nom,type,atq,pv,actif,passif,ultime,effet,description,raretes(nom,couleur),collections(nom),variantes_carte(nom,image_path)').order('nom');
+  const {data,error}=await sb.from('cartes').select('id,nom,type,atq,pv,actif,passif,ultime,effet,description,raretes(nom,couleur,poids),collections(nom),variantes_carte(nom,image_path)').order('nom');
   if(error)throw error;
   const ord={combattant:0,magie:1,piege:2};
-  CARTES=(data||[]).sort((a,b)=>(ord[a.type]-ord[b.type])||a.nom.localeCompare(b.nom,'fr'));
+  // rangement : les raretés les plus hautes en premier (poids de drop le plus faible = légendaire d'abord), puis combattant / magie / piège, puis par nom
+  const rg=c=>c.raretes&&c.raretes.poids!=null?+c.raretes.poids:1e9;
+  CARTES=(data||[]).sort((a,b)=>(rg(a)-rg(b))||(ord[a.type]-ord[b.type])||a.nom.localeCompare(b.nom,'fr'));
   if(!CARTES.length){$('#msg').innerHTML='Aucune carte lue. Connecte-toi d\'abord sur le site avec le <b>même navigateur</b> (compte admin), puis recharge cette page.';$('#sub').textContent='Aucune carte';return}
   $('#msg').textContent='';draw();
  }catch(e){$('#sub').textContent='Erreur';$('#msg').innerHTML='Impossible de lire les cartes : '+esc(e.message||e)+'<br>Connecte-toi d\'abord sur le site avec le <b>même navigateur</b>, puis recharge.'}
