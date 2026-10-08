@@ -118,8 +118,9 @@ function drawColl(){
 async function vBoutique(){
   const [t,s]=await Promise.all([q(sb.from('types_boosters').select('*').eq('actif',true)),
     q(sb.from('stock_boosters').select('quantite,types_boosters(nom)').eq('joueur_id',user.id).gt('quantite',0))]);
+  const vv=await sb.rpc('vedettes_boosters'),ved={};(vv.data||[]).forEach(v=>(ved[v.type_id]=ved[v.type_id]||[]).push(v));
   main.innerHTML=`<h3>Tes boosters non ouverts</h3><p>${s.length?s.map(x=>`${esc(x.types_boosters.nom)} ×${x.quantite}`).join(' · ')+'<br><small>Ouvre-les pendant le live avec !booster</small>':'Aucun'}</p>
-  <h3>Acheter</h3><div class="grid">${t.map(b=>`<div class="card">${b.image_path?`<img src="${img(b.image_path)}">`:''}<b>${esc(b.nom)}</b><small>${b.nb_cartes} cartes</small><button data-id="${b.id}">Acheter · 💰 ${b.prix}</button></div>`).join('')}</div>`;
+  <h3>Acheter</h3><div class="grid">${t.map(b=>`<div class="card">${b.image_path?`<img src="${img(b.image_path)}">`:''}<b>${esc(b.nom)}</b><small>${b.nb_cartes} cartes</small>${(ved[b.id]||[]).map(v=>`<div style="margin:6px 0;text-align:center"><small>⭐ À l'affiche</small><br>${v.image_path?`<img src="${img(v.image_path)}" style="width:90px;border-radius:6px;box-shadow:0 0 12px ${esc(v.couleur||'#fff')}">`:''}<br><small>${esc(v.nom)}</small></div>`).join('')}<button data-id="${b.id}">Acheter · 💰 ${b.prix}</button></div>`).join('')}</div>`;
   main.querySelectorAll('button[data-id]').forEach(b=>b.onclick=async()=>{
     const {error}=await sb.rpc('acheter_booster',{p_type_id:+b.dataset.id});
     if(error)alert(error.message.includes('MONNAIE')?'Pas assez de monnaie.':error.message);
@@ -290,8 +291,7 @@ async function aCartes(){
   editId=null;
   const [col,rar,cartes]=await Promise.all([q(sb.from('collections').select('*')),q(sb.from('raretes').select('*').order('ordre')),
     q(sb.from('cartes').select('id,nom,type,actif,raretes(nom,poids),collections(nom),variantes_carte(id)').order('id',{ascending:false}))]);
-  {const rg=c=>c.raretes&&c.raretes.poids!=null?+c.raretes.poids:1e9;   // rangement : raretés les plus hautes en premier (poids de drop le plus faible), puis par nom
-   cartes.sort((a,b)=>(rg(a)-rg(b))||a.nom.localeCompare(b.nom,'fr'))}
+  cartes.sort(cmpCartes);   // légendaire en premier, puis épique, rare, commun ; par nom à rareté égale
   const ep=await sb.from('effets_perso').select('*'),cu=ep.data||[];
   const mc=(b,k)=>({...b,...Object.fromEntries(cu.filter(x=>x.categorie==k).map(x=>[x.cle,[x.libelle,...x.params]]))});
   const CAT={pas:mc(PAS,'passif'),ult:mc(ULT,'ultime'),mag:mc(MAG,'magie'),con:mc(CON,'condition')};
@@ -383,10 +383,20 @@ async function aCollections(){
       await q(sb.from('collections').delete().eq('id',tr.dataset.id));aCollections();};});
 }
 
+const RANGS_RAR=['legendaire','epique','rare','commun'];   // du plus haut au plus bas ; un nom inconnu passe après, du plus rare au moins rare selon son poids de drop
+function rangRar(r){const n=String((r&&r.nom)||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(),i=RANGS_RAR.findIndex(k=>n.includes(k));return[i<0?9:i,+(r&&r.poids)||0]}
+function cmpCartes(a,b){const x=rangRar(a.raretes),y=rangRar(b.raretes);return(x[0]-y[0])||(x[1]-y[1])||a.nom.localeCompare(b.nom,'fr')}
 const PRIX_MIN=250;   // un combat gagné rapporte 50 : un booster coûte au moins 5 victoires
+function vedHTML(x,bv,cartes){
+  const cur=bv.filter(v=>x&&v.type_id==x.id);
+  const opt=sel=>'<option value="">— aucune —</option>'+cartes.map(c=>`<option value="${c.id}" ${sel==c.id?'selected':''}>${esc(c.nom)} (${esc(c.raretes?c.raretes.nom:'?')}${c.collections?' · '+esc(c.collections.nom):''})</option>`).join('');
+  return `<small>⭐ Cartes vedettes (0 à 2) : mises en avant dans la boutique. Poids : 1 = comme les autres cartes de sa rareté ; 3 = trois fois plus de chances que chacune des autres cartes de cette rareté dans ce booster. La carte doit faire partie d'une collection du booster (ou être une carte commune sans collection).</small>
+  <div class="row">${[1,2].map(n=>{const v=cur[n-1];return `<label><small>Vedette ${n}</small><br><select name="vc${n}">${opt(v&&v.carte_id)}</select></label><label><small>Poids</small><br><input name="vp${n}" type="number" step="any" min="0.01" value="${v?v.poids:3}" style="width:70px"></label>`}).join('')}</div>`}
 async function aBoosters(){
   const [b,col,rar,bc,bm]=await Promise.all([q(sb.from('types_boosters').select('*').order('id')),q(sb.from('collections').select('*').order('nom')),
     q(sb.from('raretes').select('*').order('ordre')),q(sb.from('boosters_collections').select('*')),q(sb.from('boosters_modifs').select('*'))]);
+  const vr=await sb.from('boosters_vedettes').select('*'),vedOk=!vr.error,bv=vedOk?vr.data:[];
+  const cr=vedOk?await sb.from('cartes').select('id,nom,type,raretes(nom,poids),collections(nom)').eq('actif',true):{data:[]},cartesV=(cr.data||[]).sort(cmpCartes);
   const form=x=>{
     const cs=new Set(bc.filter(y=>x&&y.type_id==x.id).map(y=>y.collection_id)),ms={};
     bm.filter(y=>x&&y.type_id==x.id).forEach(y=>ms[y.rarete_id]=y.modif);
@@ -402,7 +412,8 @@ async function aBoosters(){
     <div class="row">${col.map(c=>`<label><input type="checkbox" name="c${c.id}" ${cs.has(c.id)?'checked':''}> ${esc(c.nom)}</label>`).join('')||'<small>Aucune collection</small>'}</div>
     <small>Modificateur de drop : s'ajoute au poids de la rareté pour ce booster (négatif possible)</small>
     <div class="row">${rar.map(r=>`<label><small>${esc(r.nom)} (poids ${r.poids})</small><br><input name="m${r.id}" type="number" step="any" value="${ms[r.id]||0}" style="width:90px"></label>`).join('')}</div>
-    <div class="row"><button>${x?'Enregistrer':'Créer le booster'}</button>${x?`<button type="button" class="sec" data-del="${x.id}" data-nom="${esc(x.nom)}">🗑️ Supprimer</button>`:''}</div></form>`};
+    ${vedOk?vedHTML(x,bv,cartesV):'<small>⭐ Cartes vedettes : lance d\'abord 07-prix-vedettes.sql dans Supabase.</small>'}
+     <div class="row"><button>${x?'Enregistrer':'Créer le booster'}</button>${x?`<button type="button" class="sec" data-del="${x.id}" data-nom="${esc(x.nom)}">🗑️ Supprimer</button>`:''}</div></form>`};
   $('#sub').innerHTML=form(null)+'<h3>Boosters existants ('+b.length+')</h3>'+b.map(form).join('');
   $('#sub').querySelectorAll('form').forEach(f=>f.onsubmit=async e=>{e.preventDefault();
     try{const row={nom:f.nom.value,prix:+f.prix.value,nb_cartes:+f.nb.value,actif:f.actif.checked,quotidien:f.quotidien.checked};if(f.file.files[0])row.image_path=await upload(f.file.files[0]);let id=f.dataset.id;
@@ -413,6 +424,9 @@ async function aBoosters(){
      const cs=col.filter(c=>f['c'+c.id].checked).map(c=>({type_id:id,collection_id:c.id}));
      if(cs.length)await q(sb.from('boosters_collections').insert(cs));
      await q(sb.from('boosters_modifs').upsert(rar.map(r=>({type_id:id,rarete_id:r.id,modif:+f['m'+r.id].value||0}))));
+      if(vedOk){await q(sb.from('boosters_vedettes').delete().eq('type_id',id));
+       const vs=[1,2].map(n=>({type_id:id,carte_id:+f['vc'+n].value,poids:Math.max(.01,+f['vp'+n].value||3)})).filter((v,i,t)=>v.carte_id&&t.findIndex(w=>w.carte_id==v.carte_id)==i);
+       if(vs.length)await q(sb.from('boosters_vedettes').insert(vs))}
      aBoosters();}catch(x){}});
   $('#sub').querySelectorAll('button[data-del]').forEach(x=>x.onclick=async()=>{
     if(!confirm('Supprimer « '+x.dataset.nom+' » ?\nLes boosters non ouverts de ce type chez les joueurs seront perdus.\n(Pour seulement le retirer de la boutique, décoche « En vente ».)'))return;
