@@ -289,7 +289,9 @@ function mkMulti(el,cat,lab,rem){
 async function aCartes(){
   editId=null;
   const [col,rar,cartes]=await Promise.all([q(sb.from('collections').select('*')),q(sb.from('raretes').select('*').order('ordre')),
-    q(sb.from('cartes').select('id,nom,type,actif,raretes(nom),collections(nom),variantes_carte(id)').order('id',{ascending:false}))]);
+    q(sb.from('cartes').select('id,nom,type,actif,raretes(nom,poids),collections(nom),variantes_carte(id)').order('id',{ascending:false}))]);
+  {const rg=c=>c.raretes&&c.raretes.poids!=null?+c.raretes.poids:1e9;   // rangement : raretés les plus hautes en premier (poids de drop le plus faible), puis par nom
+   cartes.sort((a,b)=>(rg(a)-rg(b))||a.nom.localeCompare(b.nom,'fr'))}
   const ep=await sb.from('effets_perso').select('*'),cu=ep.data||[];
   const mc=(b,k)=>({...b,...Object.fromEntries(cu.filter(x=>x.categorie==k).map(x=>[x.cle,[x.libelle,...x.params]]))});
   const CAT={pas:mc(PAS,'passif'),ult:mc(ULT,'ultime'),mag:mc(MAG,'magie'),con:mc(CON,'condition')};
