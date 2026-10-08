@@ -113,7 +113,7 @@ function simuler(pA,pB,opt={}){
  }
  // Malédiction : l'ATQ de la cible baisse de n points à chaque fin de tour pendant t tours (se cumule)
  // ── Statuts à TIK (brûlure, poison, saignement, malédiction) ──
- // « t tours » = t TIK au total : 1 TIK tout de suite à l'application, puis 1 TIK au début de chaque tour de la cible (jamais pendant le tour de l'adversaire).
+ // « t tours » = t TIK au total, SANS TIK à l'application : le 1er TIK a lieu au début du prochain tour de la cible, puis 1 par tour de la cible (jamais pendant le tour de l'adversaire).
  // Chaque application est une entrée à part : les statuts s'additionnent.
  function tikUn(s,kind,d){const x=adv(s);
   if(kind==='dots'){const n=dmg(x,s,d.n);L('degats',`${nom(s)} subit ${n} (${d.k})`,{c:id(s),n,k:d.k})}
@@ -124,9 +124,9 @@ function simuler(pA,pB,opt={}){
   s.st[kind]=s.st[kind].filter(z=>z!==d);
   const FIN={dots:()=>[d.k==='poison'?'poison':'brulure',`${d.k} de ${nom(s)} se termine`],bleeds:()=>['saignement',`Le saignement de ${nom(s)} s'arrête`],curses:()=>['malediction',`La malédiction de ${nom(s)} se termine`]}[kind]();
   L('finstatut',FIN[1],{c:id(s),k:FIN[0]})}
- function maudire(dst,n,t){const d={n,t};dst.st.curses.push(d);L('statut',`${nom(dst)} est maudit (ATQ −${n} par tour, ${t} tour${t>1?'s':''}) !`,{c:id(dst),k:'malediction'});tikUn(dst,'curses',d)}
- function saigner(d0,pct,r,t){const d={pct,r,t};d0.st.bleeds.push(d);L('statut',`${nom(d0)} saigne (${pct} % des PV max par tour, soins −${r} %, ${t} tour${t>1?'s':''}) !`,{c:id(d0),k:'saignement'});if(d0.pv>0)tikUn(d0,'bleeds',d)}
- function dotUn(M,k,n,t){const d={k,n,t};M.st.dots.push(d);L('statut',`${nom(M)} ${k==='poison'?'est empoisonné':'brûle'} !`,{c:id(M),k:k==='poison'?'poison':'brulure'});if(M.pv>0)tikUn(M,'dots',d)}
+ function maudire(dst,n,t){const d={n,t};dst.st.curses.push(d);L('statut',`${nom(dst)} est maudit (ATQ −${n} par tour, ${t} tour${t>1?'s':''}) !`,{c:id(dst),k:'malediction'})}
+ function saigner(d0,pct,r,t){const d={pct,r,t};d0.st.bleeds.push(d);L('statut',`${nom(d0)} saigne (${pct} % des PV max par tour, soins −${r} %, ${t} tour${t>1?'s':''}) !`,{c:id(d0),k:'saignement'})}
+ function dotUn(M,k,n,t){const d={k,n,t};M.st.dots.push(d);L('statut',`${nom(M)} ${k==='poison'?'est empoisonné':'brûle'} !`,{c:id(M),k:k==='poison'?'poison':'brulure'})}
  function fatiguer(d,n,u,t,apresRage){const v=u==='pct'?rd(d.atq*n/100):n;t=t||1;d.st.fat.push({n:v,t});L('statut',`${nom(d)} est fatigué (dégâts −${v} par coup, ${t} tour${t>1?'s':''})${apresRage?' après la rage':''} !`,{c:id(d),k:'fatigue'})}
 
  // Effet aléatoire : tire au hasard (graine du combat) un effet parmi tous ceux du jeu, avec des valeurs adaptées aux stats des cartes
