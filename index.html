@@ -381,6 +381,7 @@ async function aCollections(){
       await q(sb.from('collections').delete().eq('id',tr.dataset.id));aCollections();};});
 }
 
+const PRIX_MIN=250;   // un combat gagné rapporte 50 : un booster coûte au moins 5 victoires
 async function aBoosters(){
   const [b,col,rar,bc,bm]=await Promise.all([q(sb.from('types_boosters').select('*').order('id')),q(sb.from('collections').select('*').order('nom')),
     q(sb.from('raretes').select('*').order('ordre')),q(sb.from('boosters_collections').select('*')),q(sb.from('boosters_modifs').select('*'))]);
@@ -389,9 +390,11 @@ async function aBoosters(){
     bm.filter(y=>x&&y.type_id==x.id).forEach(y=>ms[y.rarete_id]=y.modif);
     return `<form class="f" data-id="${x?x.id:'new'}"><b>${x?esc(x.nom):'Nouveau booster'}</b>
     <input name="nom" value="${esc(x?x.nom:'')}" placeholder="Nom du booster" required>
-    <div class="row"><label><small>Prix</small><br><input name="prix" type="number" min="0" value="${x?x.prix:100}" style="width:90px"></label>
+    <div class="row"><label><small>Prix</small><br><input name="prix" type="number" min="${PRIX_MIN}" value="${x?x.prix:PRIX_MIN}" style="width:90px"></label>
      <label><small>Nb de cartes</small><br><input name="nb" type="number" min="1" value="${x?x.nb_cartes:5}" style="width:90px"></label>
-     <label><input type="checkbox" name="actif" ${!x||x.actif?'checked':''}> En vente</label></div>
+     <label><input type="checkbox" name="actif" ${!x||x.actif?'checked':''}> En vente</label>
+     <label><input type="checkbox" name="quotidien" ${x&&x.quotidien?'checked':''}> 🎁 Distribué par le booster quotidien</label></div>
+    <small>Prix minimum ${PRIX_MIN} (un combat gagné rapporte 50). Le booster quotidien ne tire que parmi les boosters cochés « Distribué par le booster quotidien » : laisse décochés les boosters premium.</small>
     ${x&&x.image_path?`<img src="${img(x.image_path)}" style="max-width:140px;border-radius:6px">`:''}<label><small>Image du booster (optionnel)</small><br><input name="file" type="file" accept="image/*"></label>
     <small>Collections présentes (les cartes communes sont toujours incluses)</small>
     <div class="row">${col.map(c=>`<label><input type="checkbox" name="c${c.id}" ${cs.has(c.id)?'checked':''}> ${esc(c.nom)}</label>`).join('')||'<small>Aucune collection</small>'}</div>
@@ -400,7 +403,7 @@ async function aBoosters(){
     <div class="row"><button>${x?'Enregistrer':'Créer le booster'}</button>${x?`<button type="button" class="sec" data-del="${x.id}" data-nom="${esc(x.nom)}">🗑️ Supprimer</button>`:''}</div></form>`};
   $('#sub').innerHTML=form(null)+'<h3>Boosters existants ('+b.length+')</h3>'+b.map(form).join('');
   $('#sub').querySelectorAll('form').forEach(f=>f.onsubmit=async e=>{e.preventDefault();
-    try{const row={nom:f.nom.value,prix:+f.prix.value,nb_cartes:+f.nb.value,actif:f.actif.checked};if(f.file.files[0])row.image_path=await upload(f.file.files[0]);let id=f.dataset.id;
+    try{const row={nom:f.nom.value,prix:+f.prix.value,nb_cartes:+f.nb.value,actif:f.actif.checked,quotidien:f.quotidien.checked};if(f.file.files[0])row.image_path=await upload(f.file.files[0]);let id=f.dataset.id;
      if(id=='new')id=(await q(sb.from('types_boosters').insert(row).select('id').single())).id;
      else await q(sb.from('types_boosters').update(row).eq('id',id));
      id=+id;
