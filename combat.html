@@ -820,6 +820,7 @@ async function jouer(res){
    else if(e.t==='statut'&&e.k==='etourdi_fin')statut(e.c,'etourdi',false);
    else if(e.t==='statut'&&e.k==='etourdi_tour'){}
    else if(e.t==='stat'&&e.k==='esq')flot(e.c,'Esquive '+(e.d>=0?'+':'')+e.d+' %','#bae6fd')
+   else if(e.t==='statut'&&e.k==='regen'){flot(e.c,'Régénération','#4ade80');await wait(600)}   // pas d'aura persistante (elle prenait l'aspect du poison) : le soin de chaque tour s'affiche avec l'animation de soin
    else if(e.t==='statut'&&e.k){statut(e.c,e.k,true);if(e.k==='malediction')cranes(e.c)}
    else if(e.t==='stat'&&e.k==='malediction_tick'){cranes(e.c);flot(e.c,'ATQ '+e.d,'#c084fc')}
    else if(e.t==='stat'&&e.k==='mod'&&e.d)fleches(e.c,e.s,e.d);
