@@ -14,7 +14,7 @@ body.obs{background:transparent}
 .pv{font-size:2vh;text-shadow:0 0 4px #000}
 /* ATQ (rouge) et PV (bleu) en direct sur la carte — seulement si la carte a une « image pour le combat » (sans chiffres).
    Réglages : --sl / --sr = distance du bord gauche / droit, --sb = distance du bas, --ss = taille des chiffres */
-.sv{--sl:5%;--sr:5%;--sb:1.5%;--ss:3.6vw;position:absolute;bottom:var(--sb);font-size:var(--ss);font-weight:900;line-height:1;pointer-events:none;text-shadow:0 0 .35vw #fff,0 0 .35vw #fff,0 0 .15vw #fff}
+.sv{--sl:5%;--sr:5%;--sb:1.5%;--ss:3.6vw;position:absolute;z-index:5;bottom:var(--sb);font-size:var(--ss);font-weight:900;line-height:1;pointer-events:none;text-shadow:0 0 .35vw #fff,0 0 .35vw #fff,0 0 .15vw #fff}
 .sv::before{content:attr(data-v)}.sva{left:var(--sl);color:#e0303c}.svp{right:var(--sr);color:#4747d6}
 .sv.pls{animation:svp .5s}@keyframes svp{40%{transform:scale(1.4)}}.sub{font-size:1.7vh;opacity:.8}
 /* chiffres flottants : au-dessus des cartes et des effets */
@@ -43,7 +43,7 @@ canvas.fx.malediction{box-shadow:inset 0 0 40px 10px rgba(150,70,230,.7);animati
 .mini.act{animation:act 1.6s;box-shadow:0 0 20px #60a5fa}
 @keyframes rev{from{transform:rotateY(90deg) scale(1.6)}to{transform:none}}
 @keyframes act{30%,70%{transform:scale(1.4);box-shadow:0 0 30px 10px #60a5fa}}
-canvas.fx{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+canvas.fx{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1}
 canvas.fx.brulure{box-shadow:inset 0 0 35px 10px rgba(249,115,22,.9);animation:fg .4s infinite alternate}
 @keyframes fg{to{box-shadow:inset 0 0 55px 18px rgba(255,160,30,.95)}}
 canvas.fx.poison{box-shadow:inset 0 0 40px 12px rgba(34,197,94,.75);animation:pg 1.6s infinite alternate}
