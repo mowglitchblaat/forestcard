@@ -180,8 +180,8 @@ function simuler(pA,pB,opt={}){
    case'gel':geler((e.ciblem||e.cible)==='soi'?o:x,e.annul||0,e.stunch||0,e.tours||1);break;
    case'fracture':fracturer((e.ciblem||e.cible)==='soi'?o:x,e.fchance||0,e.degfrac||0,e.tours||1);break;
    case'vol_ultime':{const h=x.uh.find(z=>z.u&&z.u.type);if(h){x.uh=x.uh.filter(z=>z!==h);o.uh.push({u:h.u,uses:0,last:-99});L('vol',`${o.pseudo} vole l'ultime de ${x.pseudo}`,{k:'vol_ultime',from:id(x),c:id(o)})}else L('statut',`${x.pseudo} n'a aucun ultime à voler`)}break;
-   case'poison_effet':{const M=(e.ciblem||e.cible)==='soi'?o:x;M.st.dots.push({k:'poison',n:e.degtour||0,t:e.tours||1});L('statut',`${nom(M)} est empoisonné !`,{c:id(M),k:'poison'});break}
-   case'brulure_effet':{const M=(e.ciblem||e.cible)==='soi'?o:x;M.st.dots.push({k:'brûlure',n:rd(M.max*(e.pctpv||0)/100),t:e.tours||1});L('statut',`${nom(M)} brûle !`,{c:id(M),k:'brulure'});break}
+   case'poison_effet':{const M=(e.ciblem||e.cible)==='soi'?o:x;dotUn(M,'poison',e.degtour||0,e.tours||1);break}
+   case'brulure_effet':{const M=(e.ciblem||e.cible)==='soi'?o:x;dotUn(M,'brûlure',rd(M.max*(e.pctpv||0)/100),e.tours||1);break}
    case'etourdir_effet':{const M=(e.ciblem||e.cible)==='soi'?o:x;M.st.stun=Math.max(M.st.stun,e.tours||1);L('statut',`${nom(M)} est étourdi (${e.tours||1} tour${(e.tours||1)>1?'s':''}) !`,{c:id(M),k:'etourdi'});break}
    case'atk_fatigue':case'atk_enchainement':case'atk_brulure':case'atk_poison':case'atk_etourdir':case'atk_saignement':case'atk_malediction':case'atk_fracture':case'atk_gel':{const q={...e,type:e.type.slice(4)};o.st.atkfx.push(q);if(mg)o.mdelta.push({undo:()=>{o.st.atkfx=o.st.atkfx.filter(z=>z!==q)}});
     L('statut',`L'attaque de ${nom(o)} peut maintenant ${{fatigue:'fatiguer',enchainement:'enchaîner les frappes',brulure:'brûler',poison:'empoisonner',etourdir:'étourdir',saignement:'faire saigner',malediction:'maudire',fracture:'fracturer',gel:'geler'}[q.type]} (${q.chance} %)`);break}
@@ -197,8 +197,21 @@ function simuler(pA,pB,opt={}){
   }
  }
  // Malédiction : l'ATQ de la cible baisse de n points à chaque fin de tour pendant t tours (se cumule)
- function maudire(dst,n,t){dst.st.curses.push({n,t});L('statut',`${nom(dst)} est maudit (ATQ −${n} par tour, ${t} tour${t>1?'s':''}) !`,{c:id(dst),k:'malediction'})}
- function saigner(d,pct,r,t){d.st.bleeds.push({pct,r,t});L('statut',`${nom(d)} saigne (${pct} % des PV max par tour, soins −${r} %, ${t} tour${t>1?'s':''}) !`,{c:id(d),k:'saignement'})}
+ // ── Statuts à TIK (brûlure, poison, saignement, malédiction) ──
+ // « t tours » = t TIK au total : 1 TIK tout de suite à l'application, puis 1 TIK au début de chaque tour de la cible (jamais pendant le tour de l'adversaire).
+ // Chaque application est une entrée à part : les statuts s'additionnent.
+ function tikUn(s,kind,d){const x=adv(s);
+  if(kind==='dots'){const n=dmg(x,s,d.n);L('degats',`${nom(s)} subit ${n} (${d.k})`,{c:id(s),n,k:d.k})}
+  else if(kind==='bleeds'){const n=dmg(x,s,rd(s.max*d.pct/100));L('degats',`${nom(s)} subit ${n} (saignement)`,{c:id(s),n,k:'saignement'})}
+  else if(kind==='curses'){const q=Math.min(d.n,s.atq);s.atq-=q;s.st.cl+=q;if(q>0)L('stat',`ATQ de ${nom(s)} −${q} (malédiction)`,{c:id(s),k:'malediction_tick',s:'ATQ',d:-q})}
+  if(!s.st[kind].includes(d)||s.pv<=0)return;   // purifié ou mort pendant le TIK : rien de plus
+  if(--d.t>0)return;
+  s.st[kind]=s.st[kind].filter(z=>z!==d);
+  const FIN={dots:()=>[d.k==='poison'?'poison':'brulure',`${d.k} de ${nom(s)} se termine`],bleeds:()=>['saignement',`Le saignement de ${nom(s)} s'arrête`],curses:()=>['malediction',`La malédiction de ${nom(s)} se termine`]}[kind]();
+  L('finstatut',FIN[1],{c:id(s),k:FIN[0]})}
+ function maudire(dst,n,t){const d={n,t};dst.st.curses.push(d);L('statut',`${nom(dst)} est maudit (ATQ −${n} par tour, ${t} tour${t>1?'s':''}) !`,{c:id(dst),k:'malediction'});tikUn(dst,'curses',d)}
+ function saigner(d0,pct,r,t){const d={pct,r,t};d0.st.bleeds.push(d);L('statut',`${nom(d0)} saigne (${pct} % des PV max par tour, soins −${r} %, ${t} tour${t>1?'s':''}) !`,{c:id(d0),k:'saignement'});if(d0.pv>0)tikUn(d0,'bleeds',d)}
+ function dotUn(M,k,n,t){const d={k,n,t};M.st.dots.push(d);L('statut',`${nom(M)} ${k==='poison'?'est empoisonné':'brûle'} !`,{c:id(M),k:k==='poison'?'poison':'brulure'});if(M.pv>0)tikUn(M,'dots',d)}
  function fatiguer(d,n,u,t,apresRage){const v=u==='pct'?rd(d.atq*n/100):n;t=t||1;d.st.fat.push({n:v,t});L('statut',`${nom(d)} est fatigué (dégâts −${v} par coup, ${t} tour${t>1?'s':''})${apresRage?' après la rage':''} !`,{c:id(d),k:'fatigue'})}
 
  // Effet aléatoire : tire au hasard (graine du combat) un effet parmi tous ceux du jeu, avec des valeurs adaptées aux stats des cartes
@@ -295,8 +308,8 @@ function simuler(pA,pB,opt={}){
     {const ec=[...a.pl,...a.st.atkfx].filter(q=>q.type==='etourdir').reduce((q,p)=>q+(p.chance||0),0);   // chances d'étourdir cumulables (passifs + effets de magie)
      if(ec>0&&roll(Math.min(100,ec))){d.st.stun=Math.max(d.st.stun,1);L('statut',`${nom(d)} est étourdi !`,{c:idd,k:'etourdi'})}}
     for(const q of [...a.pl,...a.st.atkfx]){   // statuts donnés par les passifs et par les effets d'attaque de base
-     if(q.type==='brulure'&&roll(q.chance)){d.st.dots.push({k:'brûlure',n:rd(d.max*(q.pctpv||0)/100),t:q.tours||1});L('statut',`${nom(d)} brûle !`,{c:idd,k:'brulure'})}
-     if(q.type==='poison'&&roll(q.chance)){d.st.dots.push({k:'poison',n:q.degtour||0,t:q.tours||1});L('statut',`${nom(d)} est empoisonné !`,{c:idd,k:'poison'})}
+     if(q.type==='brulure'&&roll(q.chance))dotUn(d,'brûlure',rd(d.max*(q.pctpv||0)/100),q.tours||1);
+     if(q.type==='poison'&&roll(q.chance))dotUn(d,'poison',q.degtour||0,q.tours||1);
      if(q.type==='saignement'&&roll(q.chance))saigner(d,q.pctpv||0,q.reducsoin||0,q.tours||1);
      if(q.type==='malediction'&&roll(q.chance))maudire(d,q.val||0,q.tours||1);
      if(q.type==='fracture'&&roll(q.chance))fracturer(d,q.fchance||0,q.degfrac||0,q.tours||1);
@@ -307,19 +320,28 @@ function simuler(pA,pB,opt={}){
   }
   scan({t:'attaque',by:ia});
  }
+ // Début du tour d'une carte : TIK des statuts (brûlure en premier, puis poison, saignement, malédiction), puis régénération — avant l'ultime et l'attaque
+ function debutTour(s){
+  if(s.pv<=0)return;
+  for(const kind of ['dots','bleeds','curses']){
+   for(const d of s.st[kind].slice()){if(s.pv<=0||over())return;if(!s.st[kind].includes(d))continue;tikUn(s,kind,d)}}
+  if(s.pv<=0)return;
+  s.st.hots=s.st.hots.filter(h=>{if(s.pv<=0)return false;heal(s,h.n);if(--h.t>0)return true;L('statut',`La régénération de ${nom(s)} se termine`);return false});
+ }
+ // Fin du tour d'une carte : les durées qui dépendent de SES actions (rage, fatigue, gel, fracture, dégâts doublés) baissent d'un tour.
+ // Un tour où elle est étourdie ou gelée compte aussi ; le tour de l'adversaire ne compte jamais.
+ function finTourCarte(s){
+  if(s.pv<=0)return;
+  s.st.frost=s.st.frost.filter(f=>{if(--f.t>0)return true;L('finstatut',`${nom(s)} n'est plus gelé`,{c:id(s),k:'gel'});return false});
+  s.st.fract=s.st.fract.filter(f=>{if(--f.t>0)return true;L('finstatut',`La fracture de ${nom(s)} guérit`,{c:id(s),k:'fracture'});return false});
+  s.st.fat=s.st.fat.filter(f=>{if(--f.t>0)return true;L('finstatut',`La fatigue de ${nom(s)} se dissipe`,{c:id(s),k:'fatigue'});return false});   // avant la rage : la fatigue qui suit la rage commence au tour d'après
+  s.st.rage=s.st.rage.filter(g=>{if(--g.t>0)return true;L('finstatut',`La rage de ${nom(s)} retombe`,{c:id(s),k:'rage'});if(g.ft>0&&g.fv>0)fatiguer(s,g.fv,g.fu,g.ft,true);return false});
+  if(s.st.dbl>0)s.st.dbl--;
+ }
  function finDeTour(){
-  S.forEach(s=>{if(s.pv<=0)return;const x=adv(s),pg0=s.st.pg||0,pgd=()=>(s.st.pg||0)!==pg0;
-   s.st.dots=s.st.dots.filter(d=>{if(pgd())return false;const n=dmg(x,s,d.n);L('degats',`${nom(s)} subit ${n} (${d.k})`,{c:id(s),n,k:d.k});if(pgd())return false;if(--d.t>0)return true;L('finstatut',`${d.k} de ${nom(s)} se termine`,{c:id(s),k:d.k==='poison'?'poison':'brulure'});return false});
-   if(s.pv<=0)return;
-   s.st.curses=s.st.curses.filter(c=>{const q=Math.min(c.n,s.atq);s.atq-=q;s.st.cl+=q;if(q>0)L('stat',`ATQ de ${nom(s)} −${q} (malédiction)`,{c:id(s),k:'malediction_tick',s:'ATQ',d:-q});if(--c.t>0)return true;L('finstatut',`La malédiction de ${nom(s)} se termine`,{c:id(s),k:'malediction'});return false});
-   s.st.bleeds=s.st.bleeds.filter(b=>{if(pgd())return false;const n=dmg(x,s,rd(s.max*b.pct/100));L('degats',`${nom(s)} subit ${n} (saignement)`,{c:id(s),n,k:'saignement'});if(pgd())return false;if(--b.t>0)return true;L('finstatut',`Le saignement de ${nom(s)} s'arrête`,{c:id(s),k:'saignement'});return false});
-   s.st.frost=s.st.frost.filter(f=>{if(--f.t>0)return true;L('finstatut',`${nom(s)} n'est plus gelé`,{c:id(s),k:'gel'});return false});
-   s.st.fract=s.st.fract.filter(f=>{if(--f.t>0)return true;L('finstatut',`La fracture de ${nom(s)} guérit`,{c:id(s),k:'fracture'});return false});
+  S.forEach(s=>{if(s.pv<=0)return;const x=adv(s);
    s.st.purs=s.st.purs.filter(h=>{if(h.t.pv<=0)return false;if(++h.c<h.every)return true;h.c=0;purifier(h.t);return --h.left>0});
    if(s.pv<=0)return;
-   s.st.fat=s.st.fat.filter(f=>{if(--f.t>0)return true;L('finstatut',`La fatigue de ${nom(s)} se dissipe`,{c:id(s),k:'fatigue'});return false});
-   s.st.rage=s.st.rage.filter(g=>{if(--g.t>0)return true;L('finstatut',`La rage de ${nom(s)} retombe`,{c:id(s),k:'rage'});if(g.ft>0&&g.fv>0)fatiguer(s,g.fv,g.fu,g.ft,true);return false});
-   s.st.hots=s.st.hots.filter(h=>{heal(s,h.n);if(--h.t>0)return true;L('statut',`La régénération de ${nom(s)} se termine`);return false});
    if(s.pv<=0)return;
    s.pl.forEach((p,pi)=>{
     if(p.type==='aleatoire'&&(!p.every||tour%p.every===0)&&roll(p.chance==null||p.chance===''?100:p.chance)&&!over())effetAlea(s,x);
@@ -333,7 +355,7 @@ function simuler(pA,pB,opt={}){
    });
    if(s.pv<=0)return;
    s.st.prog=s.st.prog.filter(p=>{if(--p.t>0)return true;const n=dmg(p.src,s,p.n);L('degats',`${nom(s)} subit ${n} (dégâts différés)`,{c:id(s),n});return false});
-   s.st.ren=s.st.ren.filter(R=>--R.t>0);if(s.st.insens>0)s.st.insens--;if(s.st.dbl>0)s.st.dbl--;
+   s.st.ren=s.st.ren.filter(R=>--R.t>0);if(s.st.insens>0)s.st.insens--;
   });
  }
 
@@ -343,7 +365,7 @@ function simuler(pA,pB,opt={}){
  ordre.forEach(s=>{if(s.mag.effet){L('magie',`Magie de ${s.pseudo} : ${s.mag.nom}`,{c:id(s),carte:s.mag.nom,img:s.mag.image||null});fx(s.mag.effet,s,adv(s),true);S.forEach(k=>k.pend=1)}});
  for(tour=1;tour<=reg.maxTours&&!over();tour++){
   L('tour',`Tour ${tour}`);S.forEach(s=>s.rt=0);
-  for(const a of ordre){if(over())break;ultime(a);if(over())break;attaque(a)}
+  for(const a of ordre){if(over())break;debutTour(a);if(over())break;ultime(a);if(over())break;attaque(a);if(over())break;finTourCarte(a)}
   if(over())break;finDeTour();
  }
  const dead=S.map(s=>s.pv<=0);let w=null;
@@ -371,7 +393,7 @@ function panneau(i,j){const im=j.imageCombat||j.image;$('#p'+i).innerHTML=`<div 
  <div class="mw"><div class="mini back${/^Aucun/.test(j.piege)?' vide':''}" id="g${i}">?</div><small>Piège</small></div></div>`}
 let st={};const fxAll=new Set(),R=(a,b)=>a+Math.random()*(b-a);
 function fxStart(card,k){
- const cv=document.createElement('canvas');cv.className='fx '+k;const d=window.devicePixelRatio||1,W=card.clientWidth,H=card.clientHeight;
+ const cv=document.createElement('canvas');cv.className='fx '+k;const d=Math.min(1.5,window.devicePixelRatio||1),W=card.clientWidth,H=card.clientHeight;
  cv.width=W*d;cv.height=H*d;const x=cv.getContext('2d');x.scale(d,d);card.appendChild(cv);
  let P=[],t=0,raf,run=true;
  function feu(){
@@ -448,7 +470,7 @@ const SPR={fumee:spr(96,[[0,'rgba(14,0,6,1)'],[1,'rgba(14,0,6,0)']]),braise:spr(
 const STAR=(()=>{const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d'),m=64,r=g.createRadialGradient(m,m,0,m,m,m);r.addColorStop(0,'rgba(255,250,225,1)');r.addColorStop(.35,'rgba(255,200,60,.65)');r.addColorStop(1,'rgba(255,170,0,0)');g.fillStyle=r;g.fillRect(0,0,128,128);
  g.fillStyle='rgba(255,248,225,1)';g.beginPath();g.moveTo(0,m);g.lineTo(m,m-5);g.lineTo(128,m);g.lineTo(m,m+5);g.closePath();g.fill();g.beginPath();g.moveTo(m,0);g.lineTo(m+5,m);g.lineTo(m,128);g.lineTo(m-5,m);g.closePath();g.fill();return c})();
 function auraFx(c,o={}){
- const gold=!!o.gold,DUR=o.dur||(gold?5.2:2.7),cw=$('#p'+c+' .cw'),card=cw.querySelector('.card'),W=card.clientWidth,H=card.clientHeight,pad=Math.round(W*(gold?.32:.55)),d=window.devicePixelRatio||1,CW=W+2*pad,CH=H+2*pad,sc=W/320;
+ const gold=!!o.gold,DUR=o.dur||(gold?5.2:2.7),cw=$('#p'+c+' .cw'),card=cw.querySelector('.card'),W=card.clientWidth,H=card.clientHeight,pad=Math.round(W*(gold?.32:.55)),d=Math.min(1.5,window.devicePixelRatio||1),CW=W+2*pad,CH=H+2*pad,sc=W/320;
  const cv=document.createElement('canvas');cv.className='fx ultfx';cv.width=CW*d;cv.height=CH*d;
  cv.style.cssText=`position:absolute;left:${-pad}px;top:${-pad}px;width:${CW}px;height:${CH}px;z-index:2;pointer-events:none`;
  cw.appendChild(cv);const x=cv.getContext('2d');x.scale(d,d);
@@ -503,10 +525,10 @@ function auraFlammes(c,DUR=2.7){const K=rc(c),sc=K.w/320;let P=[],last=0,acc=0,a
   P=P.filter(p=>p.l<1)})}
 /* ====== Effets plein écran : vent, bouclier, renvoi, soin, échange ====== */
 const FS=$('#fxs'),fxL=[];let fxRaf=0;
-function fsSize(){const d=devicePixelRatio||1;FS.width=innerWidth*d;FS.height=innerHeight*d}fsSize();addEventListener('resize',fsSize);
+function fsSize(){const d=Math.min(1.5,window.devicePixelRatio||1);FS.width=innerWidth*d;FS.height=innerHeight*d}fsSize();addEventListener('resize',fsSize);
 function addFx(dur,draw){fxL.push({t0:performance.now(),dur,draw});if(!fxRaf)fxRaf=requestAnimationFrame(fxLoop)}
 let fxLast=0;
-function fxLoop(){const d=devicePixelRatio||1,x=FS.getContext('2d'),now=performance.now();if(now-fxLast<14&&fxLast){fxRaf=requestAnimationFrame(fxLoop);return}fxLast=now;x.setTransform(d,0,0,d,0,0);x.clearRect(0,0,innerWidth,innerHeight);
+function fxLoop(){const d=Math.min(1.5,window.devicePixelRatio||1),x=FS.getContext('2d'),now=performance.now();if(now-fxLast<14&&fxLast){fxRaf=requestAnimationFrame(fxLoop);return}fxLast=now;x.setTransform(d,0,0,d,0,0);x.clearRect(0,0,innerWidth,innerHeight);
  for(const f of fxL.slice()){const t=(now-f.t0)/1000;if(t>=f.dur){fxL.splice(fxL.indexOf(f),1);continue}x.save();f.draw(x,t,t/f.dur);x.restore()}
  fxRaf=fxL.length?requestAnimationFrame(fxLoop):0;if(!fxL.length)x.clearRect(0,0,innerWidth,innerHeight)}
 const rc=c=>{const r=$('#p'+c+' .card').getBoundingClientRect();return{x:r.left,y:r.top,w:r.width,h:r.height,cx:r.left+r.width/2,cy:r.top+r.height/2}};
@@ -674,19 +696,29 @@ function ailes(c){const K=rc(c),W=K.w,H=K.h,DUR=2.7,
    x.beginPath();for(let f=0;f<=1.001;f+=.05){const p=arm(f);f?x.lineTo(p.x,p.y):x.moveTo(p.x,p.y)}x.strokeStyle=`rgba(255,246,215,${.9*al})`;x.lineWidth=Math.max(3,W*.022);x.lineCap='round';x.shadowColor='rgba(255,220,120,.9)';x.shadowBlur=12;x.stroke();x.restore()}
   for(const b of bits){const q=cl((t-.7)/1.7*b.d);if(q<=0||q>=1)continue;x.save();x.translate(K.cx+b.sd*W*(.5+b.x*.8)+Math.sin(t*3+b.ph)*W*.04,K.cy-H*.25+q*H*.8);x.rotate(1.2+Math.sin(t*3+b.ph)*.7);plume(x,W*b.s,W*b.s*.2,'255,255,250',.85*(1-q)*al);x.restore()}})}
 
-// RAGE : symbole « énervé » de dessin animé (4 croissants rouges) qui jaillit en haut de la carte, vapeur et lueur rouge
-function anger(x,cx,cy,r,a){if(r<=0||a<=0)return;x.save();x.translate(cx,cy);x.lineJoin='round';
- for(let i=0;i<4;i++){x.save();x.rotate(i*Math.PI/2);x.beginPath();x.moveTo(r*.95,r*.22);x.quadraticCurveTo(r*.98,r*.98,r*.22,r*.95);x.quadraticCurveTo(r*.42,r*.42,r*.95,r*.22);x.closePath();
-  x.fillStyle=`rgba(228,22,36,${a})`;x.fill();x.lineWidth=Math.max(1.5,r*.08);x.strokeStyle=`rgba(80,0,10,${a})`;x.stroke();x.restore()}
- x.restore()}
-function colere(c){const K=rc(c),top=K.cy-K.h/2,puff=Array.from({length:10},()=>({x:R(.25,.75),v:R(.5,1),s:R(.06,.12),de:R(0,.4)}));
- addFx(1.6,(x,t)=>{const al=cl(t/.12)*(1-cl((t-1.2)/.4));
-  x.globalCompositeOperation='lighter';orb(x,K.cx,K.cy,K.h*.8,`rgba(255,40,20,${.45*Math.sin(Math.PI*cl(t/1.6))})`,'rgba(255,0,0,0)');x.globalCompositeOperation='source-over';
-  for(const p of puff){const q=cl((t-p.de)/1);if(q<=0||q>=1)continue;x.fillStyle=`rgba(235,235,240,${.55*(1-q)})`;x.beginPath();x.arc(K.cx-K.w/2+p.x*K.w,top-q*K.h*.25*p.v,K.w*p.s*(1+q),0,7);x.fill()}
-  const e=t<.25?t/.25*1.4:t<.45?1.4-(t-.25)/.2*.4:1,sh=t<.9?Math.sin(t*50)*K.w*.012:0;
-  anger(x,K.cx+K.w*.28+sh,K.cy-K.h*.34,K.w*.2*e,al);
-  if(t>.2){anger(x,K.cx-K.w*.3,K.cy-K.h*.18,K.w*.1*cl((t-.2)/.2),al*.9);anger(x,K.cx+K.w*.05,K.cy-K.h*.4,K.w*.08*cl((t-.3)/.2),al*.9)}})}
-
+// RAGE : onde de choc rouge, lignes de vitesse façon manga, flammes qui montent, symbole « énervé » (veine) qui pulse, la carte tremble
+ function anger(x,cx,cy,r,a){if(r<=0||a<=0)return;x.save();x.translate(cx,cy);x.lineJoin='round';x.lineCap='round';
+  for(let i=0;i<4;i++){x.save();x.rotate(i*Math.PI/2);x.beginPath();x.moveTo(r*.95,r*.22);x.quadraticCurveTo(r*.98,r*.98,r*.22,r*.95);x.quadraticCurveTo(r*.42,r*.42,r*.95,r*.22);x.closePath();
+   x.fillStyle=`rgba(232,24,38,${a})`;x.fill();x.lineWidth=Math.max(1.5,r*.08);x.strokeStyle=`rgba(70,0,10,${a})`;x.stroke();
+   x.beginPath();x.moveTo(r*.86,r*.3);x.quadraticCurveTo(r*.88,r*.8,r*.34,r*.86);x.lineWidth=Math.max(1,r*.05);x.strokeStyle=`rgba(255,175,150,${a*.85})`;x.stroke();x.restore()}
+  x.restore()}
+ function colere(c){const K=rc(c),top=K.cy-K.h/2,cw=$('#p'+c+' .cw'),
+   ray=Array.from({length:16},(_,i)=>({a:i/16*6.283+R(-.12,.12),l:R(.5,1),w:R(.05,.1)})),
+   fl=Array.from({length:10},()=>({x:R(.08,.92),v:R(.6,1.2),s:R(.045,.09),de:R(0,.5),ph:R(0,6)}));
+  if(cw&&cw.animate)cw.animate([{transform:'translate(0,0)'},{transform:'translate(-5px,2px)'},{transform:'translate(5px,-2px)'},{transform:'translate(-4px,-1px)'},{transform:'translate(4px,1px)'},{transform:'translate(0,0)'}],{duration:700,composite:'add'});
+  addFx(1.9,(x,t)=>{const al=cl(t/.12)*(1-cl((t-1.5)/.4));
+   x.globalCompositeOperation='lighter';
+   orb(x,K.cx,K.cy,K.h*.8,`rgba(255,40,20,${.5*Math.sin(Math.PI*cl(t/1.9))})`,'rgba(255,0,0,0)');
+   if(t<1.3){const ra=Math.sin(Math.PI*cl(t/1.3));x.fillStyle=`rgba(255,80,45,${.55*ra})`;
+    for(const r of ray){const r1=K.h*.52,r2=K.h*(.52+.55*r.l*cl(t/.3)),a0=r.a-r.w,a1=r.a+r.w;x.beginPath();x.moveTo(K.cx+Math.cos(r.a)*r2,K.cy+Math.sin(r.a)*r2);x.lineTo(K.cx+Math.cos(a0)*r1,K.cy+Math.sin(a0)*r1);x.lineTo(K.cx+Math.cos(a1)*r1,K.cy+Math.sin(a1)*r1);x.closePath();x.fill()}}
+   {const u=cl(t/.8);if(u>0&&u<1){x.strokeStyle=`rgba(255,70,35,${.9*(1-u)})`;x.lineWidth=2+9*(1-u);x.beginPath();x.arc(K.cx,K.cy,K.w*(.3+1*ez(u)),0,7);x.stroke()}}
+   for(const f of fl){const q=cl((t-f.de)/1.1);if(q<=0||q>=1)continue;const px=K.x+f.x*K.w+Math.sin(t*9+f.ph)*K.w*.02,py=K.y+K.h*.95-q*K.h*.75*f.v,r=K.w*f.s*(1-q*.7);
+    x.fillStyle=`rgba(255,${120-q*80|0},30,${.85*(1-q)})`;x.beginPath();x.moveTo(px,py-r*2.4);x.bezierCurveTo(px+r*1.2,py-r*.6,px+r,py+r*.7,px,py+r*.9);x.bezierCurveTo(px-r,py+r*.7,px-r*1.2,py-r*.6,px,py-r*2.4);x.closePath();x.fill()}
+   x.globalCompositeOperation='source-over';
+   const e=t<.25?t/.25*1.4:t<.45?1.4-(t-.25)/.2*.4:1+.08*Math.sin(t*16);
+   anger(x,K.cx+K.w*.28,K.cy-K.h*.34,K.w*.21*e,al);
+   if(t>.2){anger(x,K.cx-K.w*.3,K.cy-K.h*.18,K.w*.1*cl((t-.2)/.2),al*.9);anger(x,K.cx+K.w*.05,K.cy-K.h*.4,K.w*.08*cl((t-.3)/.2),al*.9)}})}
+ 
 // RÉANIMATION : les morceaux de la carte reviennent se ressouder dans un halo vert doré, puis la carte réapparaît
 function reforme(c){const cw=$('#p'+c+' .cw'),card=cw.querySelector('.card'),K=rc(c),tw=Math.round(K.w),th=Math.round(K.h),tex=document.createElement('canvas');tex.width=tw;tex.height=th;
  const m=/url\(["']?(.*?)["']?\)/.exec(card.style.backgroundImage||''),img=m?new Image():null,txt=card.textContent.trim();
