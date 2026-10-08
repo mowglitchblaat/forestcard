@@ -194,9 +194,9 @@ async function charger(){
   const {data,error}=await sb.from('cartes').select('id,nom,type,atq,pv,actif,passif,ultime,effet,description,raretes(nom,couleur,poids),collections(nom),variantes_carte(nom,image_path)').order('nom');
   if(error)throw error;
   const ord={combattant:0,magie:1,piege:2};
-  // rangement : les raretés les plus hautes en premier (poids de drop le plus faible = légendaire d'abord), puis combattant / magie / piège, puis par nom
-  const rg=c=>c.raretes&&c.raretes.poids!=null?+c.raretes.poids:1e9;
-  CARTES=(data||[]).sort((a,b)=>(rg(a)-rg(b))||(ord[a.type]-ord[b.type])||a.nom.localeCompare(b.nom,'fr'));
+  // rangement : légendaire en premier, puis épique, rare, commun ; puis combattant / magie / piège ; puis par nom
+  const RG=['legendaire','epique','rare','commun'],rg=c=>{const n=String((c.raretes&&c.raretes.nom)||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(),i=RG.findIndex(k=>n.includes(k));return[i<0?9:i,+(c.raretes&&c.raretes.poids)||0]};
+  CARTES=(data||[]).sort((a,b)=>{const x=rg(a),y=rg(b);return(x[0]-y[0])||(x[1]-y[1])||(ord[a.type]-ord[b.type])||a.nom.localeCompare(b.nom,'fr')});
   if(!CARTES.length){$('#msg').innerHTML='Aucune carte lue. Connecte-toi d\'abord sur le site avec le <b>même navigateur</b> (compte admin), puis recharge cette page.';$('#sub').textContent='Aucune carte';return}
   $('#msg').textContent='';draw();
  }catch(e){$('#sub').textContent='Erreur';$('#msg').innerHTML='Impossible de lire les cartes : '+esc(e.message||e)+'<br>Connecte-toi d\'abord sur le site avec le <b>même navigateur</b>, puis recharge.'}
