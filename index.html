@@ -395,7 +395,7 @@ function vedHTML(x,bv,cartes){
 async function aBoosters(){
   const [b,col,rar,bc,bm]=await Promise.all([q(sb.from('types_boosters').select('*').order('id')),q(sb.from('collections').select('*').order('nom')),
     q(sb.from('raretes').select('*').order('ordre')),q(sb.from('boosters_collections').select('*')),q(sb.from('boosters_modifs').select('*'))]);
-  const vr=await sb.from('boosters_vedettes').select('*'),vedOk=!vr.error,bv=vedOk?vr.data:[];
+  const vr=await sb.from('boosters_vedettes').select('*'),vedOk=!vr.error,vedErr=vr.error?vr.error.message:'',bv=vedOk?vr.data:[];
   const cr=vedOk?await sb.from('cartes').select('id,nom,type,raretes(nom,poids),collections(nom)').eq('actif',true):{data:[]},cartesV=(cr.data||[]).sort(cmpCartes);
   const form=x=>{
     const cs=new Set(bc.filter(y=>x&&y.type_id==x.id).map(y=>y.collection_id)),ms={};
@@ -412,7 +412,7 @@ async function aBoosters(){
     <div class="row">${col.map(c=>`<label><input type="checkbox" name="c${c.id}" ${cs.has(c.id)?'checked':''}> ${esc(c.nom)}</label>`).join('')||'<small>Aucune collection</small>'}</div>
     <small>Modificateur de drop : s'ajoute au poids de la rareté pour ce booster (négatif possible)</small>
     <div class="row">${rar.map(r=>`<label><small>${esc(r.nom)} (poids ${r.poids})</small><br><input name="m${r.id}" type="number" step="any" value="${ms[r.id]||0}" style="width:90px"></label>`).join('')}</div>
-    ${vedOk?vedHTML(x,bv,cartesV):'<small>⭐ Cartes vedettes : lance d\'abord 07-prix-vedettes.sql dans Supabase.</small>'}
+    ${vedOk?vedHTML(x,bv,cartesV):`<small>⭐ Cartes vedettes indisponibles (erreur : ${esc(vedErr)}). Lance 07-prix-vedettes.sql puis 07b-vedettes-acces.sql dans Supabase.</small>`}
      <div class="row"><button>${x?'Enregistrer':'Créer le booster'}</button>${x?`<button type="button" class="sec" data-del="${x.id}" data-nom="${esc(x.nom)}">🗑️ Supprimer</button>`:''}</div></form>`};
   $('#sub').innerHTML=form(null)+'<h3>Boosters existants ('+b.length+')</h3>'+b.map(form).join('');
   $('#sub').querySelectorAll('form').forEach(f=>f.onsubmit=async e=>{e.preventDefault();
