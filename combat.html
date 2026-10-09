@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="fr"><head><meta charset="utf-8"><title>Combat</title>
 <style>
-html,body{margin:0;height:100%;overflow:hidden;background:#0b1410;font-family:system-ui,sans-serif;color:#fff}
+html,body{margin:0;height:100%;overflow:hidden;background:transparent;font-family:system-ui,sans-serif;color:#fff}
 body.obs{background:transparent}
-#scene{position:absolute;inset:0;display:flex;align-items:center;justify-content:space-around;opacity:0;transition:opacity .6s}
+#scene{position:absolute;inset:0;display:flex;align-items:center;justify-content:space-around;opacity:0;transition:opacity .6s;background:rgba(8,16,12,.88)}   /* le fond sombre n'apparaît (en fondu) que pendant un combat ; sinon l'overlay est entièrement transparent */
 #scene.on{opacity:1}
 .p{position:relative;width:22vw;text-align:center}
 .card{position:relative;z-index:1;overflow:hidden;width:100%;aspect-ratio:5/7;border-radius:12px;background:#1b2a22 center/cover;display:flex;align-items:center;justify-content:center;font-size:3vh;font-weight:700;box-shadow:0 0 25px #000;transition:transform .15s}
@@ -888,7 +888,7 @@ if(TEST){$('#ctl').style.display='none';$('#log').style.display='none';   // l'a
 
 // ---------- Mode démo : tous les effets, un bouton chacun (combat.html?demo) ----------
 if(DEMO){
- const dm=document.createElement('div');dm.id='demo';document.body.appendChild(dm);dm.style.display='block';if(TEST)$('#mid').style.marginTop='38vh';else $('#mid').style.visibility='hidden';document.body.style.background='#0b1410';
+ const dm=document.createElement('div');dm.id='demo';document.body.appendChild(dm);dm.style.display='block';if(TEST)$('#mid').style.marginTop='38vh';else $('#mid').style.visibility='hidden';document.body.style.background='#0b1410';document.documentElement.style.background='#0b1410';
  const J=i=>({pseudo:i?'Bot':'Toi',carte:i?'Spectre':'Chasseur',magie:'Rage',piege:'Riposte'});
  const mk=()=>{$('#ban').textContent='';$('#tour').textContent='';fxAll.forEach(s=>s());fxAll.clear();fxL.length=0;st={};document.getAnimations().forEach(a=>a.cancel());document.querySelectorAll('canvas.fx').forEach(k=>k.remove());[0,1].forEach(i=>panneau(i,J(i)));maj({pv:[70,70],max:[70,70],atq:[12,12]});$('#scene').classList.add('on')};
  const cardOf=c=>$('#p'+c+' .card'),has=(c,k)=>!!cardOf(c).querySelector('canvas.fx.'+k);
