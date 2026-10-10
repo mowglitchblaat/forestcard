@@ -33,6 +33,16 @@ table{border-collapse:collapse;width:100%}td,th{padding:6px;border-bottom:1px so
 .mk{min-width:0}.mk>select{width:100%;max-width:100%;text-overflow:ellipsis}
 .mk .row{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end}.mk .row label{flex:1 1 130px;min-width:0}.mk .row input,.mk .row select{width:100%;min-width:0;max-width:100%}
 form.f select{max-width:100%;min-width:0}form.f>*{min-width:0}
+.hc{background:#1d1d27;border:1px solid #2c2c38;border-left:4px solid #444;border-radius:10px;padding:10px 14px;margin:10px 0}
+.hc.victoire{border-left-color:#4ade80}.hc.defaite{border-left-color:#f87171}.hc.nul{border-left-color:#9ca3af}
+.hc .top{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.hc .cartes{color:#aaa;font-size:13px;margin:6px 0}
+.dr{margin-top:10px;border-top:1px dashed #2c2c38;padding-top:8px;font-size:14px;line-height:1.55}
+.dr h4{margin:10px 0 2px;color:#c4b5fd}.dr div.degats{color:#f87171}.dr div.soin{color:#4ade80}.dr div.statut,.dr div.stat,.dr div.finstatut{color:#c4b5fd}.dr div.attaque{color:#fbbf24}.dr div.fin{font-weight:700;color:#fff;margin-top:8px}.dr div.finstatut{opacity:.65}
+.rg h3{margin:26px 0 4px}.rg p.sub{margin:0 0 12px;color:#aaa}
+.pill{display:inline-block;padding:4px 14px;border-radius:999px;font-weight:700;color:#111;margin:0 6px 6px 0}
+.rg .stat{font-size:15px;line-height:1.5}.rg .stat h4{margin:0 0 6px;font-size:17px}.rg .stat ul{margin:6px 0 0;padding-left:18px}.rg .stat li{margin:3px 0}
+code.cmd{color:#fbbf24;font-weight:700}
 </style></head><body>
 <header><h1>🃏 Jeu de cartes</h1><div id="me"></div></header>
 <nav id="nav"></nav><main id="main"></main>
@@ -44,7 +54,7 @@ const img=p=>p?sb.storage.from('cartes').getPublicUrl(p).data.publicUrl:'';
 async function q(p){const r=await p;if(r.error){alert(r.error.message);throw r.error}return r.data}
 let user,joueur,isAdmin,tab='collection',sub='cartes',B={};
 const opts=(a,l='nom')=>a.map(x=>`<option value="${x.id}">${esc(x[l])}</option>`).join('');
-const TABS={collection:'Ma collection',boutique:'Boutique',deck:'Mon deck',dos:'Dos de cartes',profil:'Profils'};
+const TABS={collection:'Ma collection',boutique:'Boutique',deck:'Mon deck',dos:'Dos de cartes',historique:'Historique',profil:'Profils',regles:'Comment jouer'};
 
 async function init(){
   const {data:{session}}=await sb.auth.getSession();
@@ -60,7 +70,7 @@ async function init(){
   header();show(tab);
 }
 function header(){
-  $('#me').innerHTML=`${isAdmin?'<small style="opacity:.5;margin-right:8px">site v9</small>':''}${esc(joueur.pseudo)} · 💰 ${joueur.monnaie} <button class="sec" id="out">Déconnexion</button>`;
+  $('#me').innerHTML=`${isAdmin?'<small style="opacity:.5;margin-right:8px">site v10</small>':''}${esc(joueur.pseudo)} · 💰 ${joueur.monnaie} <button class="sec" id="out">Déconnexion</button>`;
   $('#out').onclick=async()=>{await sb.auth.signOut();location.reload()};
 }
 async function refreshJoueur(){joueur=await q(sb.from('joueurs').select('*').eq('id',user.id).single());header()}
@@ -68,7 +78,7 @@ function show(t){
   tab=t;const T={...TABS};if(isAdmin)T.admin='⚙️ Admin';
   $('#nav').innerHTML=Object.entries(T).map(([k,v])=>`<button class="${k==t?'on':'sec'}" data-t="${k}">${v}</button>`).join('');
   $('#nav').querySelectorAll('button').forEach(b=>b.onclick=()=>show(b.dataset.t));
-  ({collection:vCollection,boutique:vBoutique,deck:vDeck,dos:vDos,profil:vProfil,admin:vAdmin})[t]();
+  ({collection:vCollection,boutique:vBoutique,deck:vDeck,dos:vDos,historique:vHistorique,profil:vProfil,regles:vRegles,admin:vAdmin})[t]();
 }
 
 /* ---------- Collection ---------- */
@@ -183,6 +193,128 @@ async function vProfil(id=user.id){
   <h3>Classement</h3><p><small>Clique sur un pseudo pour voir son profil.</small></p>
   <table><tr><th>#</th><th>Joueur</th><th>V</th><th>D</th><th>N</th></tr>${rank}</table>`;
   main.querySelectorAll('button[data-p]').forEach(b=>b.onclick=()=>{vProfil(b.dataset.p);window.scrollTo(0,0)});
+}
+
+/* ---------- Historique des parties ---------- */
+const LB_RES={victoire:'Victoire',defaite:'Défaite',nul:'Match nul'};
+async function vHistorique(){
+  const r=await sb.rpc('mon_historique',{p_limite:50});
+  if(r.error){main.innerHTML='<p class="ko">Historique indisponible pour le moment (l\'admin doit d\'abord lancer 08-historique.sql dans Supabase).</p>';return}
+  const L=r.data||[];
+  if(!L.length){main.innerHTML='<h3>Historique</h3><p><small>Aucun combat enregistré pour l\'instant : tes prochains combats apparaîtront ici avec leur déroulé.</small></p>';return}
+  const date=d=>new Date(d).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+  const trio=(c,m,p)=>[c,m,p].filter(x=>x&&!/^Aucun/.test(x)).map(esc).join(' · ')||'—';
+  main.innerHTML=`<h3>Historique</h3><p><small>Tes ${L.length} derniers combats. Clique sur « Voir le déroulé » pour revoir ce qui s'est passé.</small></p>`+L.map(x=>`
+  <div class="hc ${esc(x.resultat)}" data-id="${x.id}">
+   <div class="top"><span><b class="${x.resultat=='victoire'?'ok':x.resultat=='defaite'?'ko':''}">${LB_RES[x.resultat]||''}</b> contre <b>${esc(x.adversaire)}</b></span>
+    <small>${date(x.cree_le)} · ${x.mode=='payant'?'Duel':'Combat du jour'} · ${x.tours} tour${x.tours>1?'s':''} · +${x.gain??0} 💰</small></div>
+   <div class="cartes">Toi : ${trio(x.ma_carte,x.ma_magie,x.mon_piege)}<br>Lui : ${trio(x.sa_carte,x.sa_magie,x.son_piege)}</div>
+   <button class="sec" data-d="${x.id}">Voir le déroulé</button><div class="dr" style="display:none"></div>
+  </div>`).join('');
+  main.querySelectorAll('button[data-d]').forEach(b=>b.onclick=async()=>{
+    const box=b.nextElementSibling;
+    if(box.style.display!=='none'){box.style.display='none';b.textContent='Voir le déroulé';return}
+    if(!box.dataset.ok){
+      b.disabled=true;const d=await sb.rpc('combat_deroule',{p_id:+b.dataset.d});b.disabled=false;
+      if(d.error||!d.data){box.innerHTML='<span class="ko">Déroulé indisponible.</span>'}
+      else box.innerHTML=d.data.map(e=>e.t==='tour'?`<h4>${esc(e.txt)}</h4>`:`<div class="${esc(e.t)}">${esc(e.txt)}</div>`).join('');
+      box.dataset.ok=1}
+    box.style.display='block';b.textContent='Masquer le déroulé'});
+}
+
+/* ---------- Comment jouer ---------- */
+function vRegles(){
+  const c=(t,body)=>`<div class="stat"><h4>${t}</h4>${body}</div>`,ul=a=>'<ul>'+a.map(x=>`<li>${x}</li>`).join('')+'</ul>';
+  const col=k=>({y:'#fbbf24',v:'#4ade80',b:'#60a5fa',r:'#f87171',p:'#c4b5fd'}[k]);
+  const h=(t,k,sub)=>`<h3>${t.replace(/(\S+)$/,`<span style="color:${col(k)}">$1</span>`)}</h3>${sub?`<p class="sub">${sub}</p>`:''}`;
+  main.innerHTML=`<div class="rg">
+  <div class="row"><h2 style="margin:0">Forest Card — Comment jouer</h2><a href="Forest-Card-presentation.pdf" target="_blank" rel="noopener"><button class="sec">📄 Présentation (PDF)</button></a></div>
+  <p>Le jeu de cartes à collectionner de la chaîne : ouvre des boosters, compose ton deck et affronte les autres viewers en direct.</p>
+
+  ${h('Le principe en 4 étapes','y','Tout se joue entre le site et le live.')}
+  <div class="stats">
+   ${c('1 · Obtiens des boosters','Achète-les sur le site avec tes gold, ou récupère le cadeau du jour.')}
+   ${c('2 · Ouvre-les en live','Avec la commande <code class="cmd">!booster</code> : les cartes apparaissent à l\'écran.')}
+   ${c('3 · Compose ton deck','Choisis tes cartes sur le site, directement depuis ta collection.')}
+   ${c('4 · Combats !','Duels et combats automatiques, avec animations en direct.')}
+  </div>
+
+  ${h('Trois types de cartes','y','Chaque combat met en jeu un combattant, une magie et un piège.')}
+  <div class="stats">
+   ${c('<span style="color:#fbbf24">Combattant</span>',ul(['Des stats : ATQ et PV','Des passifs : esquive, poison, renvoi…','Un ultime, qui se déclenche après quelques tours ou quand une carte s\'active']))}
+   ${c('<span style="color:#c4b5fd">Magie</span>',ul(['Prend effet dès le début du combat','Reste active comme un bonus ou un malus : +ATQ, soins, protection…','Peut être détruite ou volée']))}
+   ${c('<span style="color:#f87171">Piège</span>',ul(['Reste caché, face retournée','Se déclenche sous condition : l\'adversaire attaque, utilise son ultime, passe sous X % de PV…','Dévoilé en gros plan à l\'écran']))}
+  </div>
+
+  ${h('Raretés & collections','v','Plus une carte est rare, plus elle est difficile à obtenir.')}
+  <p><span class="pill" style="background:#9ca3af">Commun</span><span class="pill" style="background:#60a5fa">Rare</span><span class="pill" style="background:#c084fc">Épique</span><span class="pill" style="background:#fbbf24">Légendaire</span></p>
+  <div class="stats">
+   ${c('Deux collections','Horreurs et Chasseurs, avec des boosters dédiés, plus un lot de cartes communes qui n\'appartiennent à aucune collection.')}
+   ${c('Versions alternatives','Certaines cartes existent en version « full art » : le même effet, un visuel encore plus beau à exhiber.')}
+   ${c('Cartes vedettes','Chaque booster met en avant une ou deux cartes à retrouver, visibles dans la boutique.')}
+  </div>
+
+  ${h('Les boosters','y','Les cartes s\'obtiennent uniquement par boosters.')}
+  <div class="stats">
+   ${c('Boutique du site','Les boosters s\'achètent avec des gold, à partir de 250 gold. Ils vont dans ton stock, en attente d\'être ouverts.')}
+   ${c('Ouverture en live','Tape <code class="cmd">!booster</code> pendant le stream : l\'animation d\'ouverture s\'affiche à l\'écran et les cartes rejoignent ta collection.')}
+   ${c('Cadeau du jour','Avec <code class="cmd">!quotidien</code>, récupère chaque jour entre 1 et 3 boosters gratuits.')}
+  </div>
+
+  ${h('Ton deck','b','Simple et volontairement limité.')}
+  <div class="stats">
+   ${c('Les règles',ul(['9 à 10 cartes par deck','Au moins 3 combattants, 3 magies et 3 pièges','Une seule copie de chaque carte, pour éviter les combos trop forts']))}
+   ${c('Sur le site',ul(['« Ma collection » : clique sur une carte pour l\'ajouter au deck','Cartes rangées par rareté, filtres par type et collection','« Mon deck » : visualise ton équipe']))}
+  </div>
+
+  ${h('Le combat','r','Un combattant, une magie et un piège sont tirés au hasard dans le deck de chaque joueur. Le calcul est automatique.')}
+  <div class="stats">
+   ${c('Début','Les magies s\'activent et dévoilent leur carte.')}
+   ${c('Chaque tour','Chaque carte joue à son tour : soins éventuels, puis ultime éventuel, puis attaque. En fin de tour, une fois que les deux cartes ont joué, les statuts font effet.')}
+   ${c('Pièges','Ils se déclenchent dès que leur condition est remplie.')}
+   ${c('Fin','À 0 PV, ou après 10 tours : le plus de PV l\'emporte.')}
+  </div>
+  <p><small>Tout est rejoué à l'écran avec des animations : coups, esquives, poison, brûlure, boucliers, cartes qui se brisent, aura dorée pour le vainqueur. Tes derniers combats sont à retrouver dans l'onglet « Historique ».</small></p>
+
+  ${h('Lancer un combat','r','Deux façons de se battre.')}
+  <div class="stats">
+   ${c('<code class="cmd">!combat</code> · Combat du jour','Des combats gratuits chaque jour (leur nombre est fixé par le streamer), contre un adversaire pris au hasard.')}
+   ${c('<code class="cmd">Duel + @pseudo</code> · Défi ciblé','Une récompense de points de chaîne : écris le @ du viewer que tu veux défier.')}
+  </div>
+  <p><small>Même absent du live, l'adversaire peut être défié : il gagne lui aussi des gold et des statistiques.</small></p>
+
+  ${h('Récompenses & économie','y','Tout le monde gagne quelque chose à chaque combat.')}
+  <div class="stats">
+   ${c('Gains par combat','<table><tr><td>Victoire</td><td><b>50 gold</b></td></tr><tr><td>Match nul</td><td><b>20 gold</b></td></tr><tr><td>Défaite</td><td><b>10 gold</b></td></tr></table>')}
+   ${c('Et ensuite ?','Les gold servent à acheter des boosters sur le site, à partir de 250 gold : environ 5 victoires pour un nouveau booster. Plus on joue, plus la collection grandit.')}
+  </div>
+
+  ${h('Des effets partout','p','Chaque effet a sa propre animation à l\'écran.')}
+  <div class="stats">
+   ${c('Statuts','Poison, brûlure, saignement, gel, fracture, malédiction, étourdissement, rage, fatigue.')}
+   ${c('Défense','Esquive, blocage, renvoi de dégâts, soin, purification, évite la mort, réanimation.')}
+   ${c('Attaque','Enchaînement de frappes, vol de vie, vol d\'ultime, échange d\'ATQ et de PV, effets aléatoires.')}
+  </div>
+  ${ul(['Poison, brûlure, saignement et malédiction font effet en fin de tour, une fois que les deux cartes ont joué. Le tour où ils sont posés compte déjà.','Un statut garde la même intensité à chaque tour. Si un effet le réapplique par-dessus, l\'intensité s\'additionne et la durée repart de zéro.','La purification retire tous les statuts négatifs présents à ce moment-là.','Rage, fatigue, gel et fracture comptent les tours de la carte touchée.']).replace('<ul>','<ul style="color:#aaa;font-size:14px">')}
+
+  ${h('Ton profil','v','Visible par tous les joueurs connectés.')}
+  <div class="stats">
+   ${c('Combats',ul(['Victoires et défaites','Plus grande série de victoires','Plus gros coup infligé']))}
+   ${c('Records',ul(['Victoire la plus rapide','Carte la plus jouée','Collection et deck']))}
+  </div>
+
+  ${h('Les commandes en un coup d\'œil','y','Tout ce que le chat peut faire.')}
+  <table><tr><th>Commande</th><th>Effet</th></tr>
+   <tr><td><code class="cmd">!booster</code></td><td>Ouvre un booster de ton stock, en direct</td></tr>
+   <tr><td><code class="cmd">!quotidien</code></td><td>Récupère 1 à 3 boosters gratuits, une fois par jour</td></tr>
+   <tr><td><code class="cmd">!combat</code></td><td>Combat gratuit du jour contre un adversaire au hasard</td></tr>
+   <tr><td><code class="cmd">Duel + @pseudo</code></td><td>Récompense de points de chaîne : défie un viewer précis</td></tr></table>
+
+  ${h('Et bientôt ?','b','Les idées qui arrivent ensuite.')}
+  <div class="stats">
+   ${c('Le combat pour le titre','Un champion de la chaîne, un deck de 20 cartes, trois combats d\'affilée : la première équipe entièrement éliminée perd. Le champion doit accepter le défi dans le chat.')}
+   ${c('Échanges & recyclage','Échanger ses doublons avec d\'autres joueurs, ou les recycler en gold.')}
+  </div></div>`;
 }
 
 /* ---------- Admin ---------- */
