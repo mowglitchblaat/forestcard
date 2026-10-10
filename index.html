@@ -44,7 +44,7 @@ const img=p=>p?sb.storage.from('cartes').getPublicUrl(p).data.publicUrl:'';
 async function q(p){const r=await p;if(r.error){alert(r.error.message);throw r.error}return r.data}
 let user,joueur,isAdmin,tab='collection',sub='cartes',B={};
 const opts=(a,l='nom')=>a.map(x=>`<option value="${x.id}">${esc(x[l])}</option>`).join('');
-const TABS={collection:'Ma collection',boutique:'Boutique',deck:'Mon deck',profil:'Profils'};
+const TABS={collection:'Ma collection',boutique:'Boutique',deck:'Mon deck',dos:'Dos de cartes',profil:'Profils'};
 
 async function init(){
   const {data:{session}}=await sb.auth.getSession();
@@ -60,7 +60,7 @@ async function init(){
   header();show(tab);
 }
 function header(){
-  $('#me').innerHTML=`${isAdmin?'<small style="opacity:.5;margin-right:8px">site v8</small>':''}${esc(joueur.pseudo)} · 💰 ${joueur.monnaie} <button class="sec" id="out">Déconnexion</button>`;
+  $('#me').innerHTML=`${isAdmin?'<small style="opacity:.5;margin-right:8px">site v9</small>':''}${esc(joueur.pseudo)} · 💰 ${joueur.monnaie} <button class="sec" id="out">Déconnexion</button>`;
   $('#out').onclick=async()=>{await sb.auth.signOut();location.reload()};
 }
 async function refreshJoueur(){joueur=await q(sb.from('joueurs').select('*').eq('id',user.id).single());header()}
@@ -68,7 +68,7 @@ function show(t){
   tab=t;const T={...TABS};if(isAdmin)T.admin='⚙️ Admin';
   $('#nav').innerHTML=Object.entries(T).map(([k,v])=>`<button class="${k==t?'on':'sec'}" data-t="${k}">${v}</button>`).join('');
   $('#nav').querySelectorAll('button').forEach(b=>b.onclick=()=>show(b.dataset.t));
-  ({collection:vCollection,boutique:vBoutique,deck:vDeck,profil:vProfil,admin:vAdmin})[t]();
+  ({collection:vCollection,boutique:vBoutique,deck:vDeck,dos:vDos,profil:vProfil,admin:vAdmin})[t]();
 }
 
 /* ---------- Collection ---------- */
@@ -187,10 +187,10 @@ async function vProfil(id=user.id){
 
 /* ---------- Admin ---------- */
 async function vAdmin(){
-  const S={cartes:'Cartes',collections:'Collections',boosters:'Boosters',effets:'Effets',raretes:'Raretés',cadeaux:'Cadeaux',joueurs:'Joueurs'};
+  const S={cartes:'Cartes',collections:'Collections',boosters:'Boosters',effets:'Effets',raretes:'Raretés',cadeaux:'Cadeaux',dos:'Dos de cartes',reglages:'Réglages',joueurs:'Joueurs'};
   main.innerHTML=`<div class="row">${Object.entries(S).map(([k,v])=>`<button class="${k==sub?'on':'sec'}" data-s="${k}">${v}</button>`).join('')}</div><div id="sub"></div>`;
   main.querySelectorAll('button[data-s]').forEach(b=>b.onclick=()=>{sub=b.dataset.s;vAdmin()});
-  ({cartes:aCartes,collections:aCollections,boosters:aBoosters,effets:aEffets,raretes:aRaretes,cadeaux:aCadeaux,joueurs:aJoueurs})[sub]();
+  ({cartes:aCartes,collections:aCollections,boosters:aBoosters,effets:aEffets,raretes:aRaretes,cadeaux:aCadeaux,dos:aDos,reglages:aReglages,joueurs:aJoueurs})[sub]();
 }
 async function upload(file){
   const path=crypto.randomUUID()+'.'+(file.name.split('.').pop()||'png');
@@ -504,6 +504,70 @@ async function aJoueurs(){
     await q(sb.rpc('admin_vider_joueur',{p_joueur:id,...opt()}));fini('Joueur remis à zéro.')};
   $('#rza').onclick=async()=>{if(prompt('Cela vide les cartes de TOUS les joueurs, toi compris. Tape VIDER pour confirmer :')!=='VIDER')return;
     await q(sb.rpc('admin_vider_joueur',{p_joueur:null,...opt()}));fini('Tous les joueurs ont été remis à zéro.')};
+}
+
+
+/* ---------- Dos de cartes : choix du joueur ---------- */
+async function vDos(){
+  const r=await sb.rpc('mes_dos');
+  if(r.error){main.innerHTML='<p class="ko">Dos de cartes indisponibles pour le moment (l\'admin doit d\'abord lancer 07-dos-et-reglages.sql dans Supabase).</p>';return}
+  const L=r.data||[],aucun=!L.some(x=>x.actif);
+  const tuile=(id,nom,image,actif,etiq)=>`<div class="cw"><div style="aspect-ratio:5/7;border-radius:10px;border:3px solid ${actif?'#4ade80':'#444'};background:${image?`#111 url('${img(image)}') center/cover`:'linear-gradient(135deg,#7f1d1d,#1e1b4b)'};box-shadow:${actif?'0 0 14px #4ade80':'none'}"></div><b>${esc(nom)}</b><small>${etiq}</small><button class="${actif?'on':'sec'}" data-d="${id}" ${actif?'disabled':''}>${actif?'✓ Utilisé':'Utiliser'}</button></div>`;
+  main.innerHTML=`<p><small>Ton dos de carte s'affiche sur ton piège face cachée pendant les combats en direct. Les dos spéciaux sont offerts par le streamer.</small></p>
+  <div class="cgrid">${tuile('','Dos standard',null,aucun,'Dos du jeu')}${L.map(x=>tuile(x.id,x.nom,x.image,x.actif,x.par_defaut?'Dos de base':'Offert')).join('')}</div>`;
+  main.querySelectorAll('button[data-d]').forEach(b=>b.onclick=async()=>{
+    const e=await sb.rpc('choisir_dos',{p_dos:b.dataset.d||null});if(e.error)return alert(e.error.message);vDos()});
+}
+
+/* ---------- Admin : dos de cartes (stock et cadeaux) ---------- */
+async function aDos(){
+  const R=await Promise.all([sb.from('dos_cartes').select('*').order('cree_le'),sb.from('dos_joueur').select('joueur_id,dos_id'),sb.from('joueurs').select('id,pseudo').order('pseudo')]);
+  if(R.some(x=>x.error)){$('#sub').innerHTML='<p class="ko">Lance d\'abord 07-dos-et-reglages.sql dans Supabase (SQL Editor), puis recharge la page.</p>';return}
+  const [d,dj,j]=R.map(x=>x.data||[]),nomJ=id=>(j.find(x=>x.id==id)||{}).pseudo||'?';
+  $('#sub').innerHTML=`<p><small>Stocke ici tes dos de cartes (même format que tes cartes, ratio 5/7). Le « dos de base » est utilisable par tous les joueurs ; les autres ne servent qu'à ceux à qui tu les offres. Chaque joueur choisit le sien dans l'onglet « Dos de cartes ».</small></p>
+  <form class="f" id="fd"><input name="nom" placeholder="Nom du dos" required>
+   <label>Image du dos<br><input name="file" type="file" accept="image/*" required></label>
+   <label><input type="checkbox" name="def"> Dos de base (disponible pour tous les joueurs)</label><button>Ajouter ce dos</button></form>
+  <div class="cgrid">${d.map(x=>{const own=dj.filter(y=>y.dos_id==x.id);return `<div class="cw" data-id="${x.id}">
+   <div style="aspect-ratio:5/7;border-radius:10px;border:3px solid ${x.par_defaut?'#fbbf24':'#444'};background:#111 url('${img(x.image)}') center/cover"></div>
+   <b>${esc(x.nom)}</b>${x.par_defaut?'<small style="color:#fbbf24">★ Dos de base</small>':`<small>${own.length} joueur(s) l'ont reçu</small>`}
+   <select data-o><option value="">🎁 Tous les joueurs</option>${opts(j,'pseudo')}</select>
+   <button data-a="offrir">Offrir</button>
+   <button class="sec" data-a="base">${x.par_defaut?'Retirer « dos de base »':'Définir comme dos de base'}</button>
+   <button class="sec" data-a="suppr" style="color:#f87171">Supprimer</button>
+   ${own.length?`<div class="row">${own.map(y=>`<span style="background:#262633;border:1px solid #444;border-radius:12px;padding:2px 8px;font-size:12px">${esc(nomJ(y.joueur_id))} <a href="#" data-r="${y.joueur_id}" style="color:#f87171;text-decoration:none">✕</a></span>`).join('')}</div>`:''}
+  </div>`}).join('')||'<p><small>Aucun dos pour l\'instant.</small></p>'}</div>`;
+  $('#fd').onsubmit=async e=>{e.preventDefault();const f=e.target,fic=f.file.files[0];if(!fic)return;
+    const image=await upload(fic);
+    if(f.def.checked)await q(sb.from('dos_cartes').update({par_defaut:false}).eq('par_defaut',true));
+    await q(sb.from('dos_cartes').insert({nom:f.nom.value,image,par_defaut:f.def.checked}));aDos()};
+  $('#sub').querySelectorAll('.cw[data-id]').forEach(c=>{const id=c.dataset.id,x=d.find(z=>z.id==id);
+    c.querySelector('[data-a=offrir]').onclick=async()=>{
+      const n=await q(sb.rpc('admin_offrir_dos',{p_dos:id,p_joueur:c.querySelector('[data-o]').value||null}));
+      alert(n?n+' joueur(s) ont reçu ce dos.':'Rien à faire : le ou les joueurs ont déjà ce dos.');aDos()};
+    c.querySelector('[data-a=base]').onclick=async()=>{
+      await q(sb.from('dos_cartes').update({par_defaut:false}).eq('par_defaut',true));
+      if(!x.par_defaut)await q(sb.from('dos_cartes').update({par_defaut:true}).eq('id',id));aDos()};
+    c.querySelector('[data-a=suppr]').onclick=async()=>{
+      if(!confirm('Supprimer ce dos ? Les joueurs qui l\'utilisent reviendront au dos standard.'))return;
+      await q(sb.from('dos_cartes').delete().eq('id',id));aDos()};
+    c.querySelectorAll('a[data-r]').forEach(a=>a.onclick=async ev=>{ev.preventDefault();
+      await q(sb.rpc('admin_retirer_dos',{p_dos:id,p_joueur:a.dataset.r}));aDos()})});
+}
+
+/* ---------- Admin : réglages du jeu ---------- */
+async function aReglages(){
+  const r=await sb.from('reglages_jeu').select('cle,valeur');
+  if(r.error){$('#sub').innerHTML='<p class="ko">Lance d\'abord 07-dos-et-reglages.sql dans Supabase (SQL Editor), puis recharge la page.</p>';return}
+  const v=Object.fromEntries((r.data||[]).map(x=>[x.cle,x.valeur]));
+  $('#sub').innerHTML=`<form class="f" id="fr"><label><b>Combats gratuits par jour</b> (commande !combat)<br>
+    <small>0 = désactivés. Le compteur repart de zéro chaque jour à minuit, heure de Paris.</small><br>
+    <input name="n" type="number" min="0" max="50" value="${esc(v.combats_gratuits_par_jour??1)}" style="width:90px"></label><button>Enregistrer</button></form>
+   <h3>Tests</h3><div class="f"><button class="sec" id="rzc">Remettre à zéro les combats gratuits du jour (tous les joueurs)</button></div>`;
+  $('#fr').onsubmit=async e=>{e.preventDefault();const n=Math.max(0,Math.min(50,parseInt(e.target.n.value,10)||0));
+    await q(sb.from('reglages_jeu').upsert({cle:'combats_gratuits_par_jour',valeur:String(n)}));alert('Enregistré : '+n+' combat'+(n>1?'s':'')+' gratuit'+(n>1?'s':'')+' par jour.');aReglages()};
+  $('#rzc').onclick=async()=>{if(!confirm('Remettre à zéro le compteur de combats gratuits de tous les joueurs ?'))return;
+    await q(sb.rpc('admin_reset_combats_jour'));alert('Compteurs remis à zéro.')};
 }
 
 sb.auth.onAuthStateChange((ev)=>{if(ev==='SIGNED_IN'&&!user)init()});
