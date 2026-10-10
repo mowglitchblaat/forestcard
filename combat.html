@@ -47,6 +47,9 @@ canvas.fx.malediction{box-shadow:inset 0 0 40px 10px rgba(150,70,230,.7);animati
 .mini.back{background:linear-gradient(135deg,#7f1d1d,#1e1b4b);border:3px solid #f87171;font-size:4vh}
 .mini.rev{animation:rev .8s;box-shadow:0 0 20px #f87171}
 .mini.act{animation:act 1.6s;box-shadow:0 0 20px #60a5fa}
+#scene~.zoom,.zoom{position:fixed;z-index:25;border-radius:1.2vh;background:#1b2a22 center/cover;display:flex;align-items:center;justify-content:center;text-align:center;font-weight:800;font-size:3vh;padding:1vh;box-sizing:border-box;pointer-events:none;will-change:transform}
+.zoom.magie{box-shadow:0 0 5vh 1.2vh rgba(96,165,250,.85),0 0 0 .5vh rgba(147,197,253,.9)}
+.zoom.piege{box-shadow:0 0 5vh 1.2vh rgba(248,113,113,.85),0 0 0 .5vh rgba(252,165,165,.9)}
 @keyframes rev{from{transform:rotateY(90deg) scale(1.6)}to{transform:none}}
 @keyframes act{30%,70%{transform:scale(1.4);box-shadow:0 0 30px 10px #60a5fa}}
 canvas.fx{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1}
@@ -119,8 +122,9 @@ function simuler(pA,pB,opt={}){
  const S=[nw(pA),nw(pB)],id=s=>S.indexOf(s),adv=s=>S[1-id(s)],nom=s=>s.card.nom;
  S.forEach(s=>{if(s.mag.vide)s.magOn=0;if(s.pie.vide)s.pieOn=0});
  let tour=0,rv=0;
- let pendRev=[];
- const L=(t,txt,o={})=>{J.push({t,txt,...o,tour,pv:S.map(s=>s.pv),max:S.map(s=>s.max),atq:S.map(s=>s.atq)});if(t==='degats'&&pendRev.length)flush()};
+ let pendRev=[],pendEv=[];   // pendRev : réanimations en attente · pendEv : effets (pièges, « évite la mort ») à jouer APRÈS l'affichage des dégâts
+ const L=(t,txt,o={})=>{if(t==='degats'&&o.n===0){flush();return}if(t==='stat'&&o.d===0)return;   // rien à montrer pour 0 dégât ou une stat inchangée
+  J.push({t,txt,...o,tour,pv:S.map(s=>s.pv),max:S.map(s=>s.max),atq:S.map(s=>s.atq)});if(t==='degats')flush()};
  const amt=(e,b)=>e.u==='pct'?rd(b*e.val/100):(e.val||0);
  const over=()=>{flush();return S.some(s=>s.pv<=0)};
 
@@ -133,22 +137,23 @@ function simuler(pA,pB,opt={}){
   if(n>=dst.pv){
    const me=dst.magOn&&dst.mag.effet?dst.mag.effet:null,m=me?(me.type==='mort_evitee'?me:(me.briques||[]).find(b=>b.type==='mort_evitee')||null):null;
    if(m&&!dst.st.mortUsed&&(m.cond==='aucune'||(m.cond==='pv_max'?dst.max>=(m.seuil||0):dst.cum>=(m.seuil||0)))){
-    dst.st.mortUsed=1;n=dst.pv-1;L('protege',`${nom(dst)} évite la mort (1 PV) !`,{c:id(dst)});after=()=>purifier(dst);   // reste à 1 PV, statuts négatifs retirés sur le moment
-   }else if(dst.st.evite){dst.st.evite=0;n=dst.pv-1;L('protege',`${nom(dst)} évite la mort (passif) !`,{c:id(dst)});after=()=>purifier(dst)}
+    dst.st.mortUsed=1;n=dst.pv-1;after=()=>{L('protege',`${nom(dst)} évite la mort (1 PV) !`,{c:id(dst)});purifier(dst)};   // reste à 1 PV, statuts négatifs retirés sur le moment
+   }else if(dst.st.evite){dst.st.evite=0;n=dst.pv-1;after=()=>{L('protege',`${nom(dst)} évite la mort (passif) !`,{c:id(dst)});purifier(dst)}}
   }
   const lethal=n>=dst.pv;dst.pv-=n;src.cum+=n;
   if(lethal){const rs=reanSrc(dst);if(rs){dst.st.rUsed.push(rs);dst.pv=0;pendRev.push({d:dst,pct:rs.pctrev||0})}}   // la carte meurt vraiment ; elle revient juste après (voir flush)
-  if(after)after();scan({t:'pv'});return n;
+  if(after)pendEv.push(after);pendEv.push(()=>scan({t:'pv'}));return n;   // les effets se jouent juste après les dégâts, pas avant
  }
  // Réanimation : sources possibles = effet donné par ultime/piège, passif, magie active
  function reanSrc(d){const c=[...d.st.reanL,...d.pl.filter(p=>p.type==='reanimation')];
   if(d.magOn&&d.mag.effet){const me=d.mag.effet;(me.type==='reanimation'?[me]:(me.briques||[]).filter(b=>b.type==='reanimation')).forEach(b=>c.push(b))}
   return c.find(z=>!d.st.rUsed.includes(z))}
- function flush(){while(pendRev.length){const{d,pct}=pendRev.shift();
+ function flushRev(){while(pendRev.length){const{d,pct}=pendRev.shift();
    L('reanim_mort',`${nom(d)} est détruit !`,{c:id(d)});
    const v=Math.max(1,Math.min(d.max,rd(d.max*pct/100)));d.pv=v;
    L('reanim',`${nom(d)} est réanimé avec ${v} PV (${pct} %) !`,{c:id(d),n:v,k:'reanim'});
    purifier(d,true)}}
+ function flush(){do{flushRev();if(pendEv.length)pendEv.shift()()}while(pendRev.length||pendEv.length)}
  // Pièges : chaque événement du combat est « scanné » pour voir si une condition est remplie
  function scan(ev){S.forEach((o,i)=>{
   const e=o.pie.effet;if(!o.pieOn||!e||!e.condition||o.decl>=(e.declenchements||1))return;
@@ -402,6 +407,16 @@ if(!TEST&&!DEMO)document.body.classList.add('obs');
 
 // ---------- Affichage d'un journal ----------
 function revele(c,e){const g=$('#g'+c);if(!g)return;g.classList.remove('back');g.classList.add('rev');g.textContent=e.img?'':(e.carte||'');g.style.backgroundImage=e.img?`url('${STORAGE+e.img}')`:''}
+// Gros plan : la carte magie / piège grandit au centre de l'écran, y reste un instant, puis retourne dans son emplacement
+function zoomCarte(id,e,kind){return new Promise(res=>{const src=$('#'+id);if(!src||!src.animate){res();return}
+ const r=src.getBoundingClientRect(),vw=innerWidth,vh=innerHeight,H=vh*.62,W=H*5/7,z=document.createElement('div');
+ z.className='zoom '+kind;z.style.cssText=`left:${(vw-W)/2}px;top:${(vh-H)/2}px;width:${W}px;height:${H}px`;
+ if(e.img)z.style.backgroundImage=`url('${STORAGE+e.img}')`;else z.textContent=e.carte||'';
+ document.body.appendChild(z);
+ const dx=r.left+r.width/2-vw/2,dy=r.top+r.height/2-vh/2,k=r.width/W,pt=`translate(${dx}px,${dy}px) scale(${k})`,d=2100*+$('#vit').value;
+ let fini=false;const f=()=>{if(fini)return;fini=true;z.remove();res()};
+ const a=z.animate([{transform:pt,opacity:.3},{transform:'none',opacity:1,offset:.2},{transform:'scale(1.04)',opacity:1,offset:.5},{transform:'none',opacity:1,offset:.78},{transform:pt,opacity:0}],{duration:d,easing:'ease-in-out'});
+ a.onfinish=f;setTimeout(f,d+300)})}
 function mini(img,txt){return img?`style="background-image:url('${STORAGE+img}')"`:''}
 function panneau(i,j){const im=j.imageCombat||j.image;$('#p'+i).innerHTML=`<div class="cw"><div class="card" ${im?`style="background-image:url('${STORAGE+im}')"`:''}>${im?'':j.carte}${j.imageCombat?'<span class="sv sva" data-v=""></span><span class="sv svp" data-v=""></span>':''}</div></div>
  <div class="nm">${j.pseudo} — ${j.carte}</div><div class="bar"><i></i></div><div class="pv"></div>
@@ -695,21 +710,53 @@ function echangeLien(a,b,col){const A=rc(a),B=rc(b),cols={bleu:[[80,160,255]],ro
     if(arr>0&&arr<1){orb(x,T.cx,T.cy,T.w*(.3+.5*arr),`rgba(${cc},${(1-arr)*.9})`,`rgba(${cc},0)`);x.strokeStyle=`rgba(${cc},${1-arr})`;x.lineWidth=4;x.beginPath();x.arc(T.cx,T.cy,T.w*.55*arr,0,7);x.stroke()}})});
   if(arr>0&&arr<1){orb(x,A.cx,A.cy,A.w*.6,`rgba(255,255,255,${(1-arr)*.35})`,'rgba(255,255,255,0)');orb(x,B.cx,B.cy,B.w*.6,`rgba(255,255,255,${(1-arr)*.35})`,'rgba(255,255,255,0)')}})}
 
-// ÉVITE LA MORT : ailes d'ange gardien (deux ailes articulées, trois rangées de plumes qui se déploient et battent)
-function ailes(c){const K=rc(c),W=K.w,H=K.h,DUR=2.7,
- rows=[{n:11,s:1,wd:.15,col:'250,246,232'},{n:10,s:.64,wd:.17,col:'255,255,255'},{n:9,s:.36,wd:.2,col:'255,250,228'}],
- bits=Array.from({length:16},()=>({x:R(0,1),d:R(.4,1.5),s:R(.05,.09),ph:R(0,6),sd:Math.random()<.5?-1:1}));
- function plume(x,L,w,col,a){x.beginPath();x.moveTo(0,0);x.bezierCurveTo(L*.2,-w*.8,L*.7,-w*1.1,L*.95,-w*.5);x.quadraticCurveTo(L*1.03,0,L*.95,w*.5);x.bezierCurveTo(L*.7,w*1.1,L*.2,w*.8,0,0);
-  const g=x.createLinearGradient(0,0,L,0);g.addColorStop(0,`rgba(${col},${a})`);g.addColorStop(.7,`rgba(255,255,255,${a})`);g.addColorStop(1,`rgba(255,232,170,${a*.95})`);x.fillStyle=g;x.fill();
-  x.strokeStyle=`rgba(205,175,100,${.38*a})`;x.lineWidth=1;x.stroke();x.beginPath();x.moveTo(L*.04,0);x.lineTo(L*.9,0);x.strokeStyle=`rgba(200,175,115,${.5*a})`;x.stroke()}
- addFx(DUR,(x,t)=>{const op=ez(cl(t/1)),fl=Math.sin(t*6)*cl((t-1)/.3),al=cl((DUR-t)/.6)*cl(t/.18);
-  x.globalCompositeOperation='lighter';orb(x,K.cx,K.cy-H*.1,H*.85,`rgba(255,238,190,${.3*al})`,'rgba(255,220,120,0)');x.globalCompositeOperation='source-over';
-  const arm=f=>({x:W*.7*op*f,y:-H*.36*op*Math.sin(f*1.571)+fl*H*.012*f});
-  for(const sd of[-1,1]){x.save();x.translate(K.cx+sd*W*.4,K.cy-H*.05);x.scale(sd,1);
-   rows.forEach((rw,ri)=>{for(let i=0;i<rw.n;i++){const fb=.06+.94*i/(rw.n-1),bp=arm(fb),th=(96+((88-50*fb)-96)*op+fl*3*(.4+fb))*Math.PI/180,
-     L=H*.36*rw.s*(.5+.62*Math.pow(fb,.7))*(.28+.72*op);x.save();x.translate(bp.x,bp.y+ri*H*.022*op);x.rotate(th);x.shadowColor='rgba(255,225,140,.7)';x.shadowBlur=ri?0:12;plume(x,L,L*rw.wd,rw.col,.97*al);x.restore()}});
-   x.beginPath();for(let f=0;f<=1.001;f+=.05){const p=arm(f);f?x.lineTo(p.x,p.y):x.moveTo(p.x,p.y)}x.strokeStyle=`rgba(255,246,215,${.9*al})`;x.lineWidth=Math.max(3,W*.022);x.lineCap='round';x.shadowColor='rgba(255,220,120,.9)';x.shadowBlur=12;x.stroke();x.restore()}
-  for(const b of bits){const q=cl((t-.7)/1.7*b.d);if(q<=0||q>=1)continue;x.save();x.translate(K.cx+b.sd*W*(.5+b.x*.8)+Math.sin(t*3+b.ph)*W*.04,K.cy-H*.25+q*H*.8);x.rotate(1.2+Math.sin(t*3+b.ph)*.7);plume(x,W*b.s,W*b.s*.2,'255,255,250',.85*(1-q)*al);x.restore()}})}
+// ÉVITE LA MORT : un crâne se dresse devant la carte, une grande croix rouge le barre (« refusé »), il se fissure et éclate ; la carte reste debout dans une lueur dorée
+function ailes(c){const K=rc(c),W=K.w,H=K.h,DUR=2.8,S=Math.min(W,H*.72)*1.05,
+ frag=Array.from({length:18},(_,i)=>({a:i/18*6.283+R(-.18,.18),v:R(.45,1.1),r:R(.05,.11),rot:R(-7,7)})),
+ spk=Array.from({length:24},()=>({x:R(-.5,.5),d:R(0,.5),v:R(.5,1.2),s:R(.012,.03),ph:R(0,6)})),
+ crk=[[[-.02,-.5],[.04,-.3],[-.05,-.14],[.03,.02],[-.04,.2]],[[.2,-.4],[.12,-.24],[.2,-.1],[.1,.04]],[[-.24,-.36],[-.16,-.2],[-.26,-.08]]];
+ function boite(x,a,b,w,h,r){x.beginPath();x.moveTo(a+r,b);x.arcTo(a+w,b,a+w,b+h,r);x.arcTo(a+w,b+h,a,b+h,r);x.arcTo(a,b+h,a,b,r);x.arcTo(a,b,a+w,b,r);x.closePath()}
+ function crane(x,px,py,s,a,glow){x.save();x.translate(px,py);x.globalAlpha=a;
+  const g=x.createLinearGradient(0,-s*.55,0,s*.56);g.addColorStop(0,'#fbf6e4');g.addColorStop(1,'#c9bc96');
+  x.shadowColor=glow;x.shadowBlur=s*.22;
+  x.beginPath();x.moveTo(-s*.5,-s*.05);x.bezierCurveTo(-s*.5,-s*.66,s*.5,-s*.66,s*.5,-s*.05);x.bezierCurveTo(s*.5,s*.12,s*.36,s*.2,s*.3,s*.27);
+  x.lineTo(s*.3,s*.5);x.quadraticCurveTo(s*.3,s*.57,s*.23,s*.57);x.lineTo(-s*.23,s*.57);x.quadraticCurveTo(-s*.3,s*.57,-s*.3,s*.5);x.lineTo(-s*.3,s*.27);x.bezierCurveTo(-s*.36,s*.2,-s*.5,s*.12,-s*.5,-s*.05);x.closePath();
+  x.fillStyle=g;x.fill();x.shadowBlur=0;x.lineWidth=Math.max(2,s*.026);x.strokeStyle='rgba(55,40,28,.92)';x.stroke();
+  for(const sd of[-1,1]){x.beginPath();x.ellipse(sd*s*.2,-s*.03,s*.13,s*.155,sd*.12,0,7);x.fillStyle='#180d1a';x.fill();orb(x,sd*s*.2,-s*.03,s*.11,'rgba(255,70,55,.6)','rgba(255,70,55,0)')}
+  x.beginPath();x.moveTo(0,s*.09);x.lineTo(-s*.065,s*.25);x.lineTo(s*.065,s*.25);x.closePath();x.fillStyle='#2a1822';x.fill();
+  x.strokeStyle='rgba(55,40,28,.8)';x.lineWidth=Math.max(1.5,s*.02);
+  for(let i=-2;i<=2;i++){x.beginPath();x.moveTo(i*s*.11,s*.36);x.lineTo(i*s*.11,s*.57);x.stroke()}
+  x.beginPath();x.moveTo(-s*.3,s*.4);x.lineTo(s*.3,s*.4);x.stroke();x.restore()}
+ addFx(DUR,(x,t)=>{
+  const cx=K.cx,cy=K.cy-H*.03,al=cl((DUR-t)/.45),ap=ez(cl(t/.55)),imp=.85,brk=cl((t-1.55)/.95);
+  x.globalCompositeOperation='lighter';
+  orb(x,cx,cy,H*.8,`rgba(130,45,170,${.38*ap*(1-brk)*al})`,'rgba(130,45,170,0)');
+  orb(x,cx,cy,H*.95,`rgba(255,215,120,${.5*ez(brk)*al})`,'rgba(255,200,90,0)');
+  if(t>imp){const f=cl((t-imp)/.3);orb(x,cx,cy,S*.9,`rgba(255,255,255,${.55*(1-f)})`,'rgba(255,255,255,0)')}
+  x.globalCompositeOperation='source-over';
+  const sa=ap*(1-cl(brk*5));
+  if(sa>0){const sh=t>imp&&t<1.5?Math.sin(t*70)*W*.007*(1-cl((t-imp)/.65)):0;
+   crane(x,cx+sh,cy+(1-ap)*H*.1,S*(.72+.28*ap)*(1+.025*Math.sin(t*5)),sa,'rgba(170,70,210,.95)');
+   const fz=cl((t-imp-.1)/.5);
+   if(fz>0){x.save();x.translate(cx,cy);x.strokeStyle=`rgba(30,15,20,${.9*sa})`;x.lineWidth=Math.max(2,S*.014);x.lineJoin='round';
+    crk.forEach((p,i)=>{const n=Math.max(2,Math.ceil(p.length*cl(fz*1.4-i*.15)));x.beginPath();p.slice(0,n).forEach((q,k)=>k?x.lineTo(q[0]*S,q[1]*S):x.moveTo(q[0]*S,q[1]*S));x.stroke()});x.restore()}}
+  // la croix rouge qui refuse la mort
+  const cr=cl((t-.65)/.2),cf=cl((2.35-t)/.4);
+  if(cr>0&&cf>0){const sc=1+1.5*(1-ez(cr));x.save();x.translate(cx,cy);x.scale(sc,sc);x.globalAlpha=cl((t-.65)/.07)*cf;
+   for(const r of[Math.PI/4,-Math.PI/4]){x.save();x.rotate(r);const L2=S*1.32,w=S*.17;
+    x.shadowColor='rgba(255,40,40,.95)';x.shadowBlur=S*.14;boite(x,-L2/2-4,-w/2-4,L2+8,w+8,w*.45);x.fillStyle='#3c0409';x.fill();x.shadowBlur=0;
+    const g=x.createLinearGradient(0,-w/2,0,w/2);g.addColorStop(0,'#ff6a5c');g.addColorStop(.5,'#d71c24');g.addColorStop(1,'#8f0f18');boite(x,-L2/2,-w/2,L2,w,w*.4);x.fillStyle=g;x.fill();
+    x.strokeStyle='rgba(255,215,200,.75)';x.lineWidth=Math.max(1.5,w*.08);x.beginPath();x.moveTo(-L2/2+w*.4,-w*.22);x.lineTo(L2/2-w*.4,-w*.22);x.stroke();x.restore()}
+   x.restore()}
+  if(t>imp){const f=cl((t-imp)/.55);if(f<1){x.strokeStyle=`rgba(255,235,190,${.9*(1-f)})`;x.lineWidth=2+9*(1-f);x.beginPath();x.arc(cx,cy,S*(.25+.95*ez(f)),0,7);x.stroke()}}
+  // le crâne éclate
+  if(brk>0){for(const f of frag){const d=ez(brk)*f.v*S*.95,fx2=cx+Math.cos(f.a)*d,fy2=cy+Math.sin(f.a)*d+brk*brk*H*.18,r=f.r*S*(1-brk*.5);
+    x.save();x.translate(fx2,fy2);x.rotate(f.rot*brk);x.globalAlpha=(1-brk)*al;x.beginPath();x.moveTo(0,-r);x.lineTo(r*.9,r*.7);x.lineTo(-r*.8,r*.6);x.closePath();x.fillStyle='#e9e0c4';x.fill();x.strokeStyle='rgba(55,40,28,.8)';x.lineWidth=1.5;x.stroke();x.restore()}}
+  // étincelles dorées : la carte est sauvée
+  x.globalCompositeOperation='lighter';
+  for(const p of spk){const q=cl((t-1.45-p.d)/1.15);if(q<=0||q>=1)continue;const px=cx+p.x*W+Math.sin(t*4+p.ph)*W*.03,py=cy+H*.15-q*H*.75*p.v;
+   orb(x,px,py,W*p.s*(1.4-q*.6),`rgba(255,225,140,${.85*(1-q)*al})`,'rgba(255,200,80,0)')}
+  x.globalCompositeOperation='source-over'})}
 
 // RAGE : onde de choc rouge, lignes de vitesse façon manga, flammes qui montent, symbole « énervé » (veine) qui pulse, la carte tremble
  function anger(x,cx,cy,r,a){if(r<=0||a<=0)return;x.save();x.translate(cx,cy);x.lineJoin='round';x.lineCap='round';
@@ -846,9 +893,9 @@ async function jouer(res){
    else if(e.t==='stat'&&e.k==='mod'&&e.d)fleches(e.c,e.s,e.d);
    else if(e.t==='finstatut')statut(e.c,e.k,false);
    else if(e.t==='ultime'){card.classList.add('ult');ultFx(e.c);setTimeout(()=>card.classList.remove('ult'),2400)}
-   else if(e.t==='magie'){const m=$('#m'+e.c);m.classList.add('act');setTimeout(()=>m.classList.remove('act'),1700)}
-   else if(e.t==='piege'){revele(e.c,e);if(e.k==='bloque')$('#g'+e.c).classList.add('annule')}
-   const ms={magie:1800,piege:2000,ultime:2200,fin:5000,degats:900,soin:1300,esquive:1100,bloque:1500,statut:1100,stat:1500,vol:1500,protege:2700,finstatut:250}[e.t]||900;
+   else if(e.t==='magie'){const m=$('#m'+e.c);await zoomCarte('m'+e.c,e,'magie');m.classList.add('act');setTimeout(()=>m.classList.remove('act'),1000)}
+   else if(e.t==='piege'){revele(e.c,e);await zoomCarte('g'+e.c,e,'piege');if(e.k==='bloque')$('#g'+e.c).classList.add('annule')}
+   const ms={magie:600,piege:600,ultime:2200,fin:5000,degats:900,soin:1300,esquive:1100,bloque:1500,statut:1100,stat:1500,vol:1500,protege:2900,finstatut:250}[e.t]||900;
    if(e.t==='fin'){fxAll.forEach(s=>s());fxAll.clear();document.querySelectorAll('canvas.fx').forEach(k=>k.remove());{const rw=e.recompenses[e.gagnant??0];$('#ban').textContent=e.txt+(rw>0?` (+${rw})`:'')}if(e.gagnant!=null){briser(1-e.gagnant);auraFx(e.gagnant,{gold:1,dur:5.2})}}
    await wait(ms);
   }
@@ -899,7 +946,7 @@ if(DEMO){
   ['Défense','Esquive',c=>{flot(c,'Esquive !','#e5e7eb');vent(c)},1700],
   ['Défense','Blocage (bouclier)',c=>bouclier(c),1600],
   ['Défense','Renvoi de dégâts (miroir)',c=>miroir(c,1-c),2100],
-  ['Défense','Évite la mort (ailes)',c=>ailes(c),2400],
+  ['Défense','Évite la mort (crâne)',c=>ailes(c),2800],
   ['Défense','Réanimation (auréole)',c=>{flot(c,'+20','#4ade80');soin(c);aureole(c)},2000],
   ['Soin et stats','Soin',c=>{flot(c,'+15','#4ade80');soin(c)},1600],
   ['Soin et stats','Hausse d\'ATQ',c=>fleches(c,'ATQ',4),1700],
