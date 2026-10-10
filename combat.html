@@ -45,6 +45,7 @@ canvas.fx.malediction{box-shadow:inset 0 0 40px 10px rgba(150,70,230,.7);animati
 .mini.annule::after{content:'✖';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:6.5vh;font-weight:900;color:#ef2d2d;text-shadow:0 0 6px #000,0 0 14px #000;animation:croix .5s ease-out}
 @keyframes croix{from{transform:scale(2.4);opacity:0}to{transform:scale(1);opacity:1}}
 .mini.back{background:linear-gradient(135deg,#7f1d1d,#1e1b4b);border:3px solid #f87171;font-size:4vh}
+.mini.back.dos{background-color:#111;background-size:cover;background-position:center;border:2px solid rgba(255,255,255,.35)}
 .mini.rev{animation:rev .8s;box-shadow:0 0 20px #f87171}
 .mini.act{animation:act 1.6s;box-shadow:0 0 20px #60a5fa}
 #scene~.zoom,.zoom{position:fixed;z-index:25;border-radius:1.2vh;background:#1b2a22 center/cover;display:flex;align-items:center;justify-content:center;text-align:center;font-weight:800;font-size:3vh;padding:1vh;box-sizing:border-box;pointer-events:none;will-change:transform}
@@ -116,7 +117,7 @@ function simuler(pA,pB,opt={}){
  const tire=(deck,t)=>{const l=deck.filter(c=>c.type===t);return l[Math.floor(r()*l.length)]};
  const normPas=p=>!p?[]:p.briques?p.briques.filter(b=>b&&b.type):(p.type?[p]:[]);   // passif unique (ancien format) ou plusieurs passifs { briques:[…] }
  const nw=p=>{const c=tire(p.deck,'combattant');if(!c)throw new Error(p.pseudo+" n'a aucun combattant dans son deck");const pl=normPas(c.passif);
-  return{pseudo:p.pseudo,deck:p.deck,card:c,mag:tire(p.deck,'magie')||VM,pie:tire(p.deck,'piege')||VP,atq:c.atq,pv:c.pv,max:c.pv,pl:pl,ult:c.ultime,
+  return{pseudo:p.pseudo,deck:p.deck,dos:p.dos||null,card:c,mag:tire(p.deck,'magie')||VM,pie:tire(p.deck,'piege')||VP,atq:c.atq,pv:c.pv,max:c.pv,pl:pl,ult:c.ultime,
    uh:[{u:c.ultime,uses:0,last:-99}],magOn:1,pieOn:1,decl:0,mdelta:[],st:{rage:[],fat:[],pcnt:[],rUsed:[],reanL:[],purs:[],hots:[],cl:0,bleeds:[],frost:[],fract:[],stun:0,skip:0,dbl:0,dots:[],curses:[],atkfx:[],esqb:0,ren:[],insens:0,prog:[],evite:pl.some(p=>p.type==='evite_mort'),mortUsed:0,bonus:0},
    cum:0,coups:0,rt:0,uses:0,last:-99,pend:0}};
  const S=[nw(pA),nw(pB)],id=s=>S.indexOf(s),adv=s=>S[1-id(s)],nom=s=>s.card.nom;
@@ -380,7 +381,7 @@ function simuler(pA,pB,opt={}){
 
  // ---- Déroulé ----
  const first=r()<.5?0:1,ordre=[S[first],S[1-first]];
- L('debut','Le combat commence !',{joueurs:S.map(s=>({pseudo:s.pseudo,carte:s.card.nom,image:s.card.image||null,imageCombat:s.card.imageCombat||null,magie:s.mag.nom,piege:s.pie.nom,magieImg:s.mag.image||null,piegeImg:s.pie.image||null,ids:[s.card.id,s.mag.id,s.pie.id]})),premier:first});
+ L('debut','Le combat commence !',{joueurs:S.map(s=>({pseudo:s.pseudo,dos:s.dos,carte:s.card.nom,image:s.card.image||null,imageCombat:s.card.imageCombat||null,magie:s.mag.nom,piege:s.pie.nom,magieImg:s.mag.image||null,piegeImg:s.pie.image||null,ids:[s.card.id,s.mag.id,s.pie.id]})),premier:first});
  ordre.forEach(s=>{if(s.mag.effet){L('magie',`Magie de ${s.pseudo} : ${s.mag.nom}`,{c:id(s),carte:s.mag.nom,img:s.mag.image||null});fx(s.mag.effet,s,adv(s),true);S.forEach(k=>k.pend=1)}});
  for(tour=1;tour<=reg.maxTours&&!over();tour++){
   L('tour',`Tour ${tour}`);S.forEach(s=>s.rt=0);
@@ -421,7 +422,7 @@ function mini(img,txt){return img?`style="background-image:url('${STORAGE+img}')
 function panneau(i,j){const im=j.imageCombat||j.image;$('#p'+i).innerHTML=`<div class="cw"><div class="card" ${im?`style="background-image:url('${STORAGE+im}')"`:''}>${im?'':j.carte}${j.imageCombat?'<span class="sv sva" data-v=""></span><span class="sv svp" data-v=""></span>':''}</div></div>
  <div class="nm">${j.pseudo} — ${j.carte}</div><div class="bar"><i></i></div><div class="pv"></div>
  <div class="mp"><div class="mw"><div class="mini${/^Aucun/.test(j.magie)?' vide':''}" id="m${i}" ${mini(j.magieImg)}>${j.magieImg?'':j.magie}</div><small>Magie</small></div>
- <div class="mw"><div class="mini back${/^Aucun/.test(j.piege)?' vide':''}" id="g${i}">?</div><small>Piège</small></div></div>`}
+ <div class="mw"><div class="mini back${/^Aucun/.test(j.piege)?' vide':''}${j.dos?' dos':''}" id="g${i}" ${j.dos?`style="background-image:url('${STORAGE+j.dos}')"`:''}>${j.dos?'':'?'}</div><small>Piège</small></div></div>`}
 let st={};const fxAll=new Set(),R=(a,b)=>a+Math.random()*(b-a);
 function fxStart(card,k){
  const cv=document.createElement('canvas');cv.className='fx '+k;const d=Math.min(1.5,window.devicePixelRatio||1),W=card.clientWidth,H=card.clientHeight;
@@ -854,10 +855,19 @@ function maj(e){[0,1].forEach(i=>{const p=$('#p'+i);p.querySelector('i').style.w
 function flot(i,txt,col,cls){const d=document.createElement('div');d.className='fl'+(cls?' '+cls:'');d.textContent=txt;d.style.color=col;$('#p'+i).appendChild(d);setTimeout(()=>d.remove(),1300)}
 let enCours=false;const file=[];
 let journalRecap=null,wsLive=null;
+// Verrou partagé avec l'overlay des boosters (même navigateur OBS) : un seul des deux à l'écran à la fois
+const VERROU='fc_overlay_verrou';let battement=null;
+const lireVerrou=()=>{try{return JSON.parse(localStorage.getItem(VERROU)||'null')}catch{return null}};
+async function verrouPrendre(nom){if(TEST||DEMO)return;const t0=Date.now(),ecrire=()=>{try{localStorage.setItem(VERROU,JSON.stringify({o:nom,t:Date.now()}))}catch{}};
+ for(;;){const v=lireVerrou();
+  if(!v||v.o===nom||Date.now()-v.t>6000||Date.now()-t0>120000){ecrire();await sleep(200);const w=lireVerrou();if(!w||w.o===nom)break}
+  await sleep(400)}
+ clearInterval(battement);battement=setInterval(ecrire,1500)}
+function verrouLacher(nom){clearInterval(battement);const v=lireVerrou();if(v&&v.o===nom){try{localStorage.removeItem(VERROU)}catch{}}}
 const ACTION_FIN=new URLSearchParams(location.search).get('action')||'Combat - Résultat';
 async function jouer(res){
  file.push(res);if(enCours)return;enCours=true;
- while(file.length){const R=file.shift();journalRecap=R;$('#log').innerHTML='';
+ while(file.length){const R=file.shift();await verrouPrendre('combat');journalRecap=R;$('#log').innerHTML='';
   for(const e of R.journal){
    $('#ban').className=e.t;$('#ban').textContent=e.txt;$('#log').innerHTML+=e.txt+'<br>';$('#log').scrollTop=1e5;
    if(e.t==='debut'){st={};fxL.length=0;fxAll.forEach(s=>s());fxAll.clear();e.joueurs.forEach((j,i)=>panneau(i,j));$('#scene').classList.add('on');maj(e);await wait(2500);continue}
@@ -901,6 +911,7 @@ async function jouer(res){
   }
   if(!TEST&&!DEMO&&R.annonce&&wsLive&&wsLive.readyState===1)wsLive.send(JSON.stringify({request:'DoAction',id:'fin-combat',action:{name:ACTION_FIN},args:{message:R.annonce}}));   // annonce du résultat dans le chat, une fois l'animation terminée
   if(!TEST){$('#scene').classList.remove('on');await wait(800)}
+  verrouLacher('combat');
  }
  enCours=false;
 }
