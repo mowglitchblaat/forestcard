@@ -510,7 +510,7 @@ async function aJoueurs(){
 /* ---------- Dos de cartes : choix du joueur ---------- */
 async function vDos(){
   const r=await sb.rpc('mes_dos');
-  if(r.error){main.innerHTML='<p class="ko">Dos de cartes indisponibles pour le moment (l\'admin doit d\'abord lancer 07-dos-et-reglages.sql dans Supabase).</p>';return}
+  if(r.error){main.innerHTML='<p class="ko">Dos de cartes indisponibles pour le moment. Message de Supabase : <b>'+esc(r.error.message)+'</b></p>';return}
   const L=r.data||[],aucun=!L.some(x=>x.actif);
   const tuile=(id,nom,image,actif,etiq)=>`<div class="cw"><div style="aspect-ratio:5/7;border-radius:10px;border:3px solid ${actif?'#4ade80':'#444'};background:${image?`#111 url('${img(image)}') center/cover`:'linear-gradient(135deg,#7f1d1d,#1e1b4b)'};box-shadow:${actif?'0 0 14px #4ade80':'none'}"></div><b>${esc(nom)}</b><small>${etiq}</small><button class="${actif?'on':'sec'}" data-d="${id}" ${actif?'disabled':''}>${actif?'✓ Utilisé':'Utiliser'}</button></div>`;
   main.innerHTML=`<p><small>Ton dos de carte s'affiche sur ton piège face cachée pendant les combats en direct. Les dos spéciaux sont offerts par le streamer.</small></p>
@@ -522,7 +522,7 @@ async function vDos(){
 /* ---------- Admin : dos de cartes (stock et cadeaux) ---------- */
 async function aDos(){
   const R=await Promise.all([sb.from('dos_cartes').select('*').order('cree_le'),sb.from('dos_joueur').select('joueur_id,dos_id'),sb.from('joueurs').select('id,pseudo').order('pseudo')]);
-  if(R.some(x=>x.error)){$('#sub').innerHTML='<p class="ko">Lance d\'abord 07-dos-et-reglages.sql dans Supabase (SQL Editor), puis recharge la page.</p>';return}
+  if(R.some(x=>x.error)){$('#sub').innerHTML='<p class="ko">Les dos de cartes ne sont pas encore disponibles côté Supabase (07-dos-et-reglages.sql). Message de Supabase : <b>'+esc(R.find(x=>x.error).error.message)+'</b></p>';return}
   const [d,dj,j]=R.map(x=>x.data||[]),nomJ=id=>(j.find(x=>x.id==id)||{}).pseudo||'?';
   $('#sub').innerHTML=`<p><small>Stocke ici tes dos de cartes (même format que tes cartes, ratio 5/7). Le « dos de base » est utilisable par tous les joueurs ; les autres ne servent qu'à ceux à qui tu les offres. Chaque joueur choisit le sien dans l'onglet « Dos de cartes ».</small></p>
   <form class="f" id="fd"><input name="nom" placeholder="Nom du dos" required>
@@ -558,7 +558,7 @@ async function aDos(){
 /* ---------- Admin : réglages du jeu ---------- */
 async function aReglages(){
   const r=await sb.from('reglages_jeu').select('cle,valeur');
-  if(r.error){$('#sub').innerHTML='<p class="ko">Lance d\'abord 07-dos-et-reglages.sql dans Supabase (SQL Editor), puis recharge la page.</p>';return}
+  if(r.error){$('#sub').innerHTML='<p class="ko">Les réglages ne sont pas encore disponibles côté Supabase (07-dos-et-reglages.sql). Message de Supabase : <b>'+esc(r.error.message)+'</b></p>';return}
   const v=Object.fromEntries((r.data||[]).map(x=>[x.cle,x.valeur]));
   $('#sub').innerHTML=`<form class="f" id="fr"><label><b>Combats gratuits par jour</b> (commande !combat)<br>
     <small>0 = désactivés. Le compteur repart de zéro chaque jour à minuit, heure de Paris.</small><br>
