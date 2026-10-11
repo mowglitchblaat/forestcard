@@ -295,7 +295,7 @@ function vRegles(){
    ${c('Défense','Esquive, blocage, renvoi de dégâts, soin, purification, évite la mort, réanimation.')}
    ${c('Attaque','Enchaînement de frappes, vol de vie, vol d\'ultime, échange d\'ATQ et de PV, effets aléatoires.')}
   </div>
-  ${ul(['Poison, brûlure, saignement et malédiction font effet en fin de tour, une fois que les deux cartes ont joué. Le tour où ils sont posés compte déjà.','Un statut garde la même intensité à chaque tour. Si un effet le réapplique par-dessus, l\'intensité s\'additionne et la durée repart de zéro.','La purification retire tous les statuts négatifs présents à ce moment-là.','Rage, fatigue, gel et fracture comptent les tours de la carte touchée.']).replace('<ul>','<ul style="color:#aaa;font-size:14px">')}
+  ${ul(['Poison, brûlure, saignement et malédiction font effet en fin de tour, une fois que les deux cartes ont joué. Le tour où ils sont posés compte déjà.','Un statut garde la même intensité à chaque tour. Si un effet le réapplique par-dessus, l\'intensité s\'additionne et la durée repart de zéro.','La purification retire tous les statuts négatifs présents à ce moment-là, sauf l\'étourdissement : il fait toujours sauter la prochaine attaque de la carte touchée, quoi qu\'il arrive.','Rage, fatigue, gel et fracture comptent les tours de la carte touchée.']).replace('<ul>','<ul style="color:#aaa;font-size:14px">')}
 
   ${h('Ton profil','v','Visible par tous les joueurs connectés.')}
   <div class="stats">
