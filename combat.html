@@ -319,6 +319,7 @@ function simuler(pA,pB,opt={}){
   if(over())return;
   for(let k=0;k<multi&&d.pv>0;k++){
    if(k>=base)L('attaque',`${nom(a)} enchaîne une frappe de plus !`,{c:ia,k:'enchaine'});
+   else if(base>1)L('frappe',`Frappe ${k+1}/${base} de ${nom(a)}`,{c:ia});
    const ech=Math.min(reg.plafondEsquive,d.pl.filter(p=>p.type==='esquive').reduce((q,p)=>q+(p.chance||0),0)+d.st.esqb);if(ech>0&&roll(ech)){L('esquive',`${nom(d)} esquive !`,{c:idd});continue} // l'esquive annule aussi les effets associés
    let n=Math.max(0,a.atq*(a.st.dbl>0?2:1)+a.st.bonus+a.st.rage.reduce((q,g)=>q+g.n,0)-a.st.fat.reduce((q,f)=>q+f.n,0));a.st.bonus=0;   // rage : dégâts en plus · fatigue : dégâts en moins
    d.pl.filter(p=>p.type==='reduc_degats').forEach(p=>{if(roll(p.chance)){L('bloque',`${nom(d)} bloque une partie des dégâts`,{c:idd});n=Math.max(0,n-amt(p,n))}});
@@ -392,8 +393,8 @@ function simuler(pA,pB,opt={}){
  L('debut','Le combat commence !',{joueurs:S.map(s=>({pseudo:s.pseudo,dos:s.dos,carte:s.card.nom,image:s.card.image||null,imageCombat:s.card.imageCombat||null,magie:s.mag.nom,piege:s.pie.nom,magieImg:s.mag.image||null,piegeImg:s.pie.image||null,ids:[s.card.id,s.mag.id,s.pie.id]})),premier:first});
  ordre.forEach(s=>{if(s.mag.effet){L('magie',`Magie de ${s.pseudo} : ${s.mag.nom}`,{c:id(s),carte:s.mag.nom,img:s.mag.image||null});fx(s.mag.effet,s,adv(s),true);S.forEach(k=>k.pend=1)}});
  for(tour=1;tour<=reg.maxTours&&!over();tour++){
-  L('tour',`Tour ${tour}`);S.forEach(s=>s.rt=0);
-  for(const a of ordre){if(over())break;debutTour(a);if(over())break;ultime(a);if(over())break;attaque(a);if(over())break;finTourCarte(a)}
+  S.forEach(s=>s.rt=0);
+  for(let oi=0;oi<2;oi++){const a=ordre[oi];if(over())break;L('tour',`Tour ${(tour-1)*2+oi+1}`);debutTour(a);if(over())break;ultime(a);if(over())break;attaque(a);if(over())break;finTourCarte(a)}
   if(over())break;tikFinDeTour();if(over())break;finDeTour();
  }
  const dead=S.map(s=>s.pv<=0);let w=null;
@@ -913,7 +914,7 @@ async function jouer(res){
    else if(e.t==='ultime'){card.classList.add('ult');ultFx(e.c);setTimeout(()=>card.classList.remove('ult'),2400)}
    else if(e.t==='magie'){const m=$('#m'+e.c);await zoomCarte('m'+e.c,e,'magie');m.classList.add('act');setTimeout(()=>m.classList.remove('act'),1000)}
    else if(e.t==='piege'){revele(e.c,e);await zoomCarte('g'+e.c,e,'piege');if(e.k==='bloque')$('#g'+e.c).classList.add('annule')}
-   const ms={magie:600,piege:600,ultime:2200,fin:5000,degats:900,soin:1300,esquive:1100,bloque:1500,statut:1100,stat:1500,vol:1500,protege:2900,finstatut:250}[e.t]||900;
+   const ms={magie:600,piege:600,ultime:2200,fin:5000,degats:900,soin:1300,esquive:1100,bloque:1500,statut:1100,stat:1500,vol:1500,protege:2900,finstatut:250,frappe:350}[e.t]||900;
    if(e.t==='fin'){fxAll.forEach(s=>s());fxAll.clear();document.querySelectorAll('canvas.fx').forEach(k=>k.remove());{const rw=e.recompenses[e.gagnant??0];$('#ban').textContent=e.txt+(rw>0?` (+${rw})`:'')}if(e.gagnant!=null){briser(1-e.gagnant);auraFx(e.gagnant,{gold:1,dur:5.2})}}
    await wait(ms);
   }
