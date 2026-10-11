@@ -38,7 +38,7 @@ form.f select{max-width:100%;min-width:0}form.f>*{min-width:0}
 .hc .top{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
 .hc .cartes{color:#aaa;font-size:13px;margin:6px 0}
 .dr{margin-top:10px;border-top:1px dashed #2c2c38;padding-top:8px;font-size:14px;line-height:1.55}
-.dr h4{margin:10px 0 2px;color:#c4b5fd}.dr div.degats{color:#f87171}.dr div.soin{color:#4ade80}.dr div.statut,.dr div.stat,.dr div.finstatut{color:#c4b5fd}.dr div.attaque{color:#fbbf24}.dr div.fin{font-weight:700;color:#fff;margin-top:8px}.dr div.finstatut{opacity:.65}
+.dr h4{margin:10px 0 2px;color:#c4b5fd}.dr div.degats{color:#f87171}.dr div.soin{color:#4ade80}.dr div.statut,.dr div.stat,.dr div.finstatut{color:#c4b5fd}.dr div.attaque,.dr div.frappe{color:#fbbf24}.dr div.frappe{opacity:.75;padding-left:12px}.dr div.fin{font-weight:700;color:#fff;margin-top:8px}.dr div.finstatut{opacity:.65}
 .rg h3{margin:26px 0 4px}.rg p.sub{margin:0 0 12px;color:#aaa}
 .pill{display:inline-block;padding:4px 14px;border-radius:999px;font-weight:700;color:#111;margin:0 6px 6px 0}
 .rg .stat{font-size:15px;line-height:1.5}.rg .stat h4{margin:0 0 6px;font-size:17px}.rg .stat ul{margin:6px 0 0;padding-left:18px}.rg .stat li{margin:3px 0}
@@ -272,7 +272,7 @@ function vRegles(){
    ${c('Début','Les magies s\'activent et dévoilent leur carte.')}
    ${c('Chaque tour','Chaque carte joue à son tour : malédiction et soins éventuels, puis ultime éventuel, puis attaque. En fin de tour, une fois que les deux cartes ont joué, poison, brûlure et saignement font effet.')}
    ${c('Pièges','Ils se déclenchent dès que leur condition est remplie.')}
-   ${c('Fin','À 0 PV, ou après 10 tours : le plus de PV l\'emporte.')}
+   ${c('Fin','À 0 PV, ou quand chaque carte a joué 10 fois : le plus de PV l\'emporte. Chaque carte qui joue compte pour un tour (tour 1 : le premier joueur, tour 2 : le deuxième, et ainsi de suite).')}
   </div>
   <p><small>Tout est rejoué à l'écran avec des animations : coups, esquives, poison, brûlure, boucliers, cartes qui se brisent, aura dorée pour le vainqueur. Tes derniers combats sont à retrouver dans l'onglet « Historique ».</small></p>
 
