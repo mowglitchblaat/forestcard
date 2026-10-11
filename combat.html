@@ -218,7 +218,7 @@ function simuler(pA,pB,opt={}){
  }
  // Malédiction : l'ATQ de la cible baisse de n points à chaque fin de tour pendant t tours (se cumule)
  // ── Statuts à TIK (brûlure, poison, saignement, malédiction) ──
- // « t tours » = t TIK au total. Les TIK ont lieu en fin de tour, APRÈS que les deux cartes ont attaqué (le tour où le statut est posé compte déjà).
+ // « t tours » = t TIK au total. Brûlure, poison, saignement : TIK en fin de tour, APRÈS que les deux cartes ont attaqué (le tour où le statut est posé compte déjà). Malédiction : TIK au début du tour de la carte maudite, avant son attaque.
  // Un seul statut de chaque sorte par carte : il garde la même intensité à chaque tik. Si quelque chose le réapplique par-dessus, l'intensité s'additionne et la durée repart à zéro.
  function tikUn(s,kind,d){const x=adv(s);
   if(kind==='dots'){const n=dmg(x,s,d.n);L('degats',`${nom(s)} subit ${n} (${d.k})`,{c:id(s),n,k:d.k})}
@@ -343,10 +343,11 @@ function simuler(pA,pB,opt={}){
   }
   scan({t:'attaque',by:ia});
  }
- // Début du tour d'une carte : régénération — avant l'ultime et l'attaque (les TIK des statuts sont en fin de tour : voir tikFinDeTour)
+ // Début du tour d'une carte : malédiction (l'ATQ baisse), puis régénération — avant l'ultime et l'attaque (les autres TIK de statut sont en fin de tour : voir tikFinDeTour)
  function debutTour(s){
   if(s.pv<=0)return;
-   if(s.pv<=0)return;
+  for(const d of s.st.curses.slice()){if(s.pv<=0||over())return;if(!s.st.curses.includes(d))continue;tikUn(s,'curses',d)}   // malédiction : l'ATQ baisse AVANT l'attaque de la carte maudite
+  if(s.pv<=0)return;
   s.st.hots=s.st.hots.filter(h=>{if(s.pv<=0)return false;heal(s,h.n);if(--h.t>0)return true;L('statut',`La régénération de ${nom(s)} se termine`);return false});
  }
  // Fin du tour d'une carte : les durées qui dépendent de SES actions (rage, fatigue, gel, fracture, dégâts doublés) baissent d'un tour.
@@ -359,10 +360,10 @@ function simuler(pA,pB,opt={}){
   s.st.rage=s.st.rage.filter(g=>{if(--g.t>0)return true;L('finstatut',`La rage de ${nom(s)} retombe`,{c:id(s),k:'rage'});if(g.ft>0&&g.fv>0)fatiguer(s,g.fv,g.fu,g.ft,true);return false});
   if(s.st.dbl>0)s.st.dbl--;
  }
- // Fin de tour, après les deux attaques : TIK des statuts de chaque carte (brûlure / poison dans l'ordre d'application, puis saignement, puis malédiction)
+ // Fin de tour, après les deux attaques : TIK des dégâts de statut de chaque carte (brûlure / poison dans l'ordre d'application, puis saignement)
  function tikFinDeTour(){
   for(const s of ordre){if(s.pv<=0)continue;
-   for(const kind of ['dots','bleeds','curses']){
+   for(const kind of ['dots','bleeds']){
     for(const d of s.st[kind].slice()){if(s.pv<=0||over())return;if(!s.st[kind].includes(d))continue;tikUn(s,kind,d)}}}
  }
  function finDeTour(){
