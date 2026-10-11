@@ -1016,6 +1016,7 @@ if(DEMO){
  if(TEST){
   const sec=document.createElement('div');sec.id='reel';
   sec.innerHTML=`<h4>Vraies cartes (base de données)</h4><div id="rst" style="font-size:12px;opacity:.85;margin-bottom:4px">Chargement des cartes…</div>
+   <div style="font-size:12px;margin-bottom:4px">🎲 Le tirage « au hasard » se fait parmi la rareté : <select id="rrf"><option value="">toutes</option></select></div>
    <div class="g"><div><select id="ra"><option value="">⏳ Chargement des cartes…</option></select><select id="rma"><option value="">⏳ Chargement des cartes…</option></select><select id="rpa"><option value="">⏳ Chargement des cartes…</option></select><div class="ri" id="rai"></div></div><div><select id="rb"><option value="">⏳ Chargement des cartes…</option></select><select id="rmb"><option value="">⏳ Chargement des cartes…</option></select><select id="rpb"><option value="">⏳ Chargement des cartes…</option></select><div class="ri" id="rbi"></div></div></div>
    <label style="font-size:12px;display:block;margin:3px 0"><input type="checkbox" id="rmp" checked> Démo et classement : avec magies et pièges au hasard</label>
    <div class="g"><button class="big" id="rgo" style="margin:0">⚔️ Combattre avec ces cartes</button><button id="rre">↺ Rejouer le même combat</button></div>
@@ -1032,7 +1033,7 @@ if(DEMO){
   const info=c=>{if(!c)return'Choix au hasard parmi les cartes chargées';const u=c.ultime;let x=`Passif : ${fmtE(c.passif)}<br>Ultime : ${fmt(u)}`;
    if(u&&u.type&&!u.apres_tours&&!u.sur_carte)x+=' <b style="color:#fca5a5">⚠ aucun déclencheur : ne se lancera jamais</b>';
    else if(u&&u.sur_carte&&!u.apres_tours)x+=' <b style="color:#fcd34d">(seulement quand une magie/piège s\'active : pas de magie ni de piège ici)</b>';return x};
-  const REEL={cartes:[],magies:[],pieges:[]},pick=v=>v===''?REEL.cartes[Math.floor(Math.random()*REEL.cartes.length)]:REEL.cartes.find(c=>String(c.id)===v);
+  const REEL={cartes:[],magies:[],pieges:[]},poolC=()=>{const r=$('#rrf')?$('#rrf').value:'';return r?REEL.cartes.filter(c=>c.rarete===r):REEL.cartes},pick=v=>v===''?(l=>l[Math.floor(Math.random()*l.length)])(poolC()):REEL.cartes.find(c=>String(c.id)===v);
   const TOUS=()=>[...REEL.cartes,...REEL.magies,...REEL.pieges],rndl=l=>l.length?l[Math.floor(Math.random()*l.length)]:null;
   // magie / piège : '' = aucun, 'r' = au hasard, sinon id de la carte
   const pickX=(v,l)=>v===''?null:v==='r'?rndl(l):l.find(c=>String(c.id)===v)||null;
@@ -1046,17 +1047,18 @@ if(DEMO){
   sc.onerror=()=>{vide('Cartes non chargées');$('#rst').innerHTML='Impossible de charger la bibliothèque de connexion (réseau, bloqueur de contenu ?).'+RB};
   sc.onload=async()=>{try{
     const sb=supabase.createClient('https://bjsvqikjnvaomyoifiml.supabase.co','sb_publishable_-3cPqDCyE-zhb3z5r6dPhg_DJFKGAI6');
-    const sel=v=>sb.from('cartes').select('id,nom,type,atq,pv,actif,passif,ultime,effet,variantes_carte(nom,image_path'+v+')').in('type',['combattant','magie','piege']).order('nom');
-    let{data,error}=await sel(',image_combat');
-    if(error&&/image_combat/.test(error.message||''))({data,error}=await sel(''));
+    const sel=(v,r)=>sb.from('cartes').select('id,nom,type,atq,pv,actif,passif,ultime,effet'+r+',variantes_carte(nom,image_path'+v+')').in('type',['combattant','magie','piege']).order('nom');
+    let{data,error}=await sel(',image_combat',',raretes(nom)');
+    if(error&&/image_combat/.test(error.message||''))({data,error}=await sel('',',raretes(nom)'));
+    if(error&&/rarete/i.test(error.message||''))({data,error}=await sel('',''));
     if(error)throw error;
-    const all=(data||[]).map(c=>{const vs=c.variantes_carte||[],v=vs.find(x=>x.nom==='Standard')||vs[0]||{};return{id:c.id,type:c.type,nom:c.nom,atq:c.atq,pv:c.pv,actif:c.actif,passif:c.passif,ultime:c.ultime,effet:c.effet,image:v.image_path||null,imageCombat:v.image_combat||null}});
+    const all=(data||[]).map(c=>{const vs=c.variantes_carte||[],v=vs.find(x=>x.nom==='Standard')||vs[0]||{};const rr=Array.isArray(c.raretes)?c.raretes[0]:c.raretes;return{rarete:(rr&&rr.nom)||'—',id:c.id,type:c.type,nom:c.nom,atq:c.atq,pv:c.pv,actif:c.actif,passif:c.passif,ultime:c.ultime,effet:c.effet,image:v.image_path||null,imageCombat:v.image_combat||null}});
     REEL.cartes=all.filter(c=>c.type==='combattant');REEL.magies=all.filter(c=>c.type==='magie');REEL.pieges=all.filter(c=>c.type==='piege');
     if(!REEL.cartes.length){vide('Aucune carte lue (non connecté ?)');$('#rst').innerHTML='Aucun combattant lu. Si tu en as créé, il faut être connecté sur le site.'+IOS+RB;return}
-    const o='<option value="">🎲 Au hasard</option>'+REEL.cartes.map(c=>`<option value="${c.id}">${c.nom} — ATQ ${c.atq} · PV ${c.pv}${c.actif?'':' (non publiée)'}</option>`).join('');
+    const o='<option value="">🎲 Au hasard</option>'+REEL.cartes.map(c=>`<option value="${c.id}">${c.nom} · ${c.rarete} — ATQ ${c.atq} · PV ${c.pv}${c.actif?'':' (non publiée)'}</option>`).join('');
     const lab=c=>`<option value="${c.id}">${c.nom}${c.actif?'':' (non publiée)'}</option>`,om='<option value="">— Aucune magie —</option><option value="r">🎲 Magie au hasard</option>'+REEL.magies.map(lab).join(''),op='<option value="">— Aucun piège —</option><option value="r">🎲 Piège au hasard</option>'+REEL.pieges.map(lab).join('');
     $('#ra').innerHTML=o;$('#rb').innerHTML=o;$('#rma').innerHTML=om;$('#rmb').innerHTML=om;$('#rpa').innerHTML=op;$('#rpb').innerHTML=op;
-    $('#rst').textContent=REEL.cartes.length+' combattant(s), '+REEL.magies.length+' magie(s), '+REEL.pieges.length+' piège(s) chargé(s). Choisis pour chaque joueur (toi à gauche, le bot à droite) ou laisse au hasard.';refresh();
+    $('#rst').textContent=REEL.cartes.length+' combattant(s), '+REEL.magies.length+' magie(s), '+REEL.pieges.length+' piège(s) chargé(s). Choisis pour chaque joueur (toi à gauche, le bot à droite) ou laisse au hasard.';refresh();wrInit();
    }catch(e){vide('Cartes non chargées');$('#rst').innerHTML='Impossible de lire les cartes : '+(e.message||e)+IOS+RB}};
   document.head.appendChild(sc);
   ['ra','rb','rma','rmb','rpa','rpb'].forEach(i=>$('#'+i).onchange=refresh);
@@ -1069,7 +1071,7 @@ if(DEMO){
    if(!REEL.cartes.length)return;demoOn=true;$('#rdm').textContent='■ Arrêter la démo';const n=+$('#rn').value;
    for(let i=0;i<n&&demoOn;i++){
     while(enCours&&demoOn)await sleep(200);if(!demoOn)break;
-    const A=rnd(REEL.cartes);let B=rnd(REEL.cartes);if(REEL.cartes.length>1)while(B===A)B=rnd(REEL.cartes);
+    const PL=poolC(),A=rnd(PL);let B=rnd(PL);if(PL.length>1)while(B===A)B=rnd(PL);
     $('#dl').textContent=`Combat ${i+1}/${n} : ${A.nom} contre ${B.nom}`;
     lancer(undefined,[{pseudo:'Toi',deck:randDeck(A)},{pseudo:'Bot',deck:randDeck(B)}]);
     await sleep(300);while(enCours&&demoOn)await sleep(200);await sleep(800)}
@@ -1082,6 +1084,69 @@ if(DEMO){
     if(r.gagnant===0){st[i].v++;st[j].d++}else if(r.gagnant===1){st[j].v++;st[i].d++}else{st[i].x++;st[j].x++}}}
    st.sort((a,b)=>b.v/b.n-a.v/a.n);const p=(a,b)=>Math.round(a/b*100)+' %';
    $('#rtab').innerHTML=`<b>Classement</b> (chaque carte contre toutes les autres, ${N*2} combats par paire, ${$('#rmp').checked?'avec magies et pièges tirés dans la base':'sans magie ni piège'})<table style="width:100%;border-collapse:collapse;margin-top:3px"><tr style="opacity:.7"><td>Carte</td><td>ATQ/PV</td><td>Victoires</td><td>Défaites</td><td>Nuls</td></tr>${st.map(s=>`<tr><td>${s.c.nom}</td><td>${s.c.atq}/${s.c.pv}</td><td>${p(s.v,s.n)}</td><td>${p(s.d,s.n)}</td><td>${p(s.x,s.n)}</td></tr>`).join('')}</table>`};
+   // ── Statistiques de winrate : on coche les cartes à tester (ou une rareté entière) ──
+  const sx=document.createElement('div');sx.id='wr';
+  sx.innerHTML=`<h4>📊 Statistiques de winrate</h4>
+   <div id="wrs" style="font-size:12px;opacity:.85;margin-bottom:4px">Chargement des cartes…</div>
+   <div id="wrr" style="margin-bottom:4px;font-size:12px"></div>
+   <input id="wrq" placeholder="Rechercher une carte…" style="width:100%;box-sizing:border-box;margin-bottom:4px">
+   <div id="wrl" style="max-height:190px;overflow:auto;border:1px solid #333;border-radius:6px;padding:4px;font-size:12px"></div>
+   <div class="g" style="margin-top:4px"><button id="wra">Tout cocher</button><button id="wrn">Tout décocher</button></div>
+   <div style="font-size:12px;margin-top:4px">Adversaires : <select id="wro"><option value="all">toutes les autres cartes</option><option value="rar">cartes de la même rareté</option><option value="sel">seulement les cartes cochées</option></select>
+    · Combats par adversaire : <select id="wrk"><option>20</option><option selected>50</option><option>100</option></select></div>
+   <div style="font-size:11px;opacity:.7">Magies et pièges : suit la case « Démo et classement : avec magies et pièges au hasard » ci-dessus.</div>
+   <button class="big" id="wrg" style="margin-top:4px">📊 Calculer les winrates</button><div id="wrt" style="font-size:11px;margin-top:4px"></div>`;
+  $('#reel').after(sx);
+  // wr:begin
+  const wrCalc=async(cartes,M,Pg,T,mode,N,mg,checked,prog)=>{
+   const dk=(c,s,k)=>mg?[c,...(M.length?[M[(s*5+k)%M.length]]:[]),...(Pg.length?[Pg[(s*3+k*2+1)%Pg.length]]:[])]:[c],out=[];
+   for(let ti=0;ti<T.length;ti++){const t=T[ti];
+    const opp=cartes.filter(o=>o!==t&&(mode==='all'||(mode==='rar'&&o.rarete===t.rarete)||(mode==='sel'&&checked.has(String(o.id)))));
+    const R={t,v:0,d:0,x:0,n:0,rounds:0,par:{}};
+    for(let j=0;j<opp.length;j++){const o=opp[j],P=R.par[o.rarete]||(R.par[o.rarete]={v:0,n:0});
+     for(let s=0;s<N;s++){const flip=s%2,a=flip?o:t,b=flip?t:o,tw=flip?1:0;   // le côté (premier / deuxième joueur) alterne
+      const r=Moteur.simuler({pseudo:'A',deck:dk(a,s,j)},{pseudo:'B',deck:dk(b,s+1,j+3)},{seed:s*7919+j*131+ti*17+1});
+      R.n++;P.n++;R.rounds+=Math.ceil(r.journal.filter(e=>e.t==='tour').length/2);
+      if(r.gagnant===null)R.x++;else if(r.gagnant===tw){R.v++;P.v++}else R.d++}}
+    out.push(R);if(prog)await prog(ti+1,T.length)}
+   return out};
+  // wr:end
+  const wrChecked=new Set(),e2=t=>String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;'),
+   wrRank=x=>{const i=['commun','rare','epique','épique','legendaire','légendaire'].indexOf(String(x).toLowerCase());return i<0?99:i},
+   wrRars=()=>[...new Set(REEL.cartes.map(c=>c.rarete))].sort((a,b)=>wrRank(a)-wrRank(b));
+  const wrCount=()=>{$('#wrs').textContent=wrChecked.size+' carte(s) cochée(s) sur '+REEL.cartes.length+'. Coche les cartes à tester, ou toute une rareté.';
+   $('#wrr').querySelectorAll('input').forEach(i=>{const l=REEL.cartes.filter(c=>c.rarete===i.dataset.r);i.checked=l.length>0&&l.every(c=>wrChecked.has(String(c.id)))})};
+  const wrDraw=()=>{const q=($('#wrq').value||'').toLowerCase();
+   $('#wrl').innerHTML=REEL.cartes.filter(c=>c.nom.toLowerCase().includes(q)).map(c=>`<label style="display:block"><input type="checkbox" data-id="${c.id}" ${wrChecked.has(String(c.id))?'checked':''}> ${e2(c.nom)} <span style="opacity:.6">· ${e2(c.rarete)} · ${c.atq}/${c.pv}</span></label>`).join('')||'<i>Aucune carte</i>';
+   $('#wrl').querySelectorAll('input').forEach(i=>i.onchange=()=>{i.checked?wrChecked.add(i.dataset.id):wrChecked.delete(i.dataset.id);wrCount()});wrCount()};
+  const wrInit=()=>{const R=wrRars();
+   $('#rrf').innerHTML='<option value="">toutes</option>'+R.map(r=>`<option value="${e2(r)}">${e2(r)}</option>`).join('');
+   $('#wrr').innerHTML='Cocher une rareté entière : '+R.map(r=>`<label style="margin-right:8px;white-space:nowrap"><input type="checkbox" data-r="${e2(r)}"> ${e2(r)} (${REEL.cartes.filter(c=>c.rarete===r).length})</label>`).join('');
+   $('#wrr').querySelectorAll('input').forEach(i=>i.onchange=()=>{REEL.cartes.filter(c=>c.rarete===i.dataset.r).forEach(c=>i.checked?wrChecked.add(String(c.id)):wrChecked.delete(String(c.id)));wrDraw()});
+   wrDraw()};
+  $('#wrq').oninput=()=>{if(REEL.cartes.length)wrDraw()};
+  $('#wra').onclick=()=>{REEL.cartes.forEach(c=>wrChecked.add(String(c.id)));wrDraw()};
+  $('#wrn').onclick=()=>{wrChecked.clear();wrDraw()};
+  $('#wrg').onclick=async()=>{
+   const T=REEL.cartes.filter(c=>wrChecked.has(String(c.id)));
+   if(!T.length){$('#wrt').textContent='Coche au moins une carte à tester.';return}
+   const mode=$('#wro').value,N=+$('#wrk').value,mg=$('#rmp').checked;
+   if(mode==='sel'&&T.length<2){$('#wrt').textContent="Pour « seulement les cartes cochées », coche au moins deux cartes.";return}
+   const est=T.length*(mode==='sel'?T.length:REEL.cartes.length)*N;
+   if(est>150000&&!confirm('Environ '+est.toLocaleString('fr-FR')+' combats à simuler : ça peut prendre un moment. Continuer ?'))return;
+   $('#wrg').disabled=true;
+   try{
+    const out=await wrCalc(REEL.cartes,REEL.magies,REEL.pieges,T,mode,N,mg,wrChecked,async(i,n)=>{$('#wrt').textContent=`Calcul… ${i}/${n} carte(s)`;await sleep(0)});
+    const rars=wrRars(),pc=(a,b)=>b?Math.round(a/b*100):null,col=p=>p==null?'':p>=60?'#4ade80':p<=40?'#f87171':'#e5e7eb',cell=p=>p==null?'<td>—</td>':`<td style="color:${col(p)}">${p} %</td>`;
+    out.sort((a,b)=>(pc(b.v,b.n)??-1)-(pc(a.v,a.n)??-1));
+    const tot=out.reduce((q,r)=>q+r.n,0);
+    if(!tot){$('#wrt').textContent='Aucun adversaire ne correspond à ce choix (essaie « toutes les autres cartes »).';return}
+    $('#wrt').innerHTML=`<b>Winrate</b> : ${tot.toLocaleString('fr-FR')} combats (${N} par adversaire, côtés alternés, ${mg?'avec magies et pièges tirés dans la base':'sans magie ni piège'}). Les nuls comptent comme non-victoires.
+     <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;margin-top:3px"><tr style="opacity:.7"><td>Carte</td><td>Rareté</td><td>ATQ/PV</td><td>Winrate</td><td>Défaites</td><td>Nuls</td><td>Durée moy.</td>${rars.map(r=>`<td>vs ${e2(r)}</td>`).join('')}</tr>
+     ${out.map(r=>`<tr><td>${e2(r.t.nom)}</td><td>${e2(r.t.rarete)}</td><td>${r.t.atq}/${r.t.pv}</td>${r.n?cell(pc(r.v,r.n)):'<td>—</td>'}<td>${r.n?pc(r.d,r.n)+' %':'—'}</td><td>${r.n?pc(r.x,r.n)+' %':'—'}</td><td>${r.n?(r.rounds/r.n).toFixed(1):'—'}</td>${rars.map(q=>{const P=r.par[q];return P?cell(pc(P.v,P.n)):'<td>—</td>'}).join('')}</tr>`).join('')}</table></div>
+     <div style="opacity:.7">Durée moy. = nombre moyen de tours par carte. Un winrate proche de 50 % est équilibré ; au-dessus de 60 % (vert) la carte est probablement trop forte, sous 40 % (rouge) trop faible.</div>`;
+   }catch(e){$('#wrt').textContent='Erreur pendant le calcul : '+(e.message||e)}
+   finally{$('#wrg').disabled=false}};
  }
  mk();
 }
