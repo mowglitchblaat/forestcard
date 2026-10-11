@@ -270,7 +270,7 @@ function vRegles(){
   ${h('Le combat','r','Un combattant, une magie et un piège sont tirés au hasard dans le deck de chaque joueur. Le calcul est automatique.')}
   <div class="stats">
    ${c('Début','Les magies s\'activent et dévoilent leur carte.')}
-   ${c('Chaque tour','Chaque carte joue à son tour : soins éventuels, puis ultime éventuel, puis attaque. En fin de tour, une fois que les deux cartes ont joué, les statuts font effet.')}
+   ${c('Chaque tour','Chaque carte joue à son tour : malédiction et soins éventuels, puis ultime éventuel, puis attaque. En fin de tour, une fois que les deux cartes ont joué, poison, brûlure et saignement font effet.')}
    ${c('Pièges','Ils se déclenchent dès que leur condition est remplie.')}
    ${c('Fin','À 0 PV, ou après 10 tours : le plus de PV l\'emporte.')}
   </div>
@@ -295,7 +295,7 @@ function vRegles(){
    ${c('Défense','Esquive, blocage, renvoi de dégâts, soin, purification, évite la mort, réanimation.')}
    ${c('Attaque','Enchaînement de frappes, vol de vie, vol d\'ultime, échange d\'ATQ et de PV, effets aléatoires.')}
   </div>
-  ${ul(['Poison, brûlure, saignement et malédiction font effet en fin de tour, une fois que les deux cartes ont joué. Le tour où ils sont posés compte déjà.','Un statut garde la même intensité à chaque tour. Si un effet le réapplique par-dessus, l\'intensité s\'additionne et la durée repart de zéro.','La purification retire tous les statuts négatifs présents à ce moment-là, sauf l\'étourdissement : il fait toujours sauter la prochaine attaque de la carte touchée, quoi qu\'il arrive.','Rage, fatigue, gel et fracture comptent les tours de la carte touchée.']).replace('<ul>','<ul style="color:#aaa;font-size:14px">')}
+  ${ul(['Poison, brûlure et saignement font effet en fin de tour, une fois que les deux cartes ont joué. La malédiction baisse l\'ATQ au début du tour de la carte maudite, juste avant son attaque.','Un statut garde la même intensité à chaque tour. Si un effet le réapplique par-dessus, l\'intensité s\'additionne et la durée repart de zéro.','La purification retire tous les statuts négatifs présents à ce moment-là, sauf l\'étourdissement : il fait toujours sauter la prochaine attaque de la carte touchée, quoi qu\'il arrive.','Rage, fatigue, gel et fracture comptent les tours de la carte touchée.']).replace('<ul>','<ul style="color:#aaa;font-size:14px">')}
 
   ${h('Ton profil','v','Visible par tous les joueurs connectés.')}
   <div class="stats">
