@@ -320,7 +320,7 @@ function simuler(pA,pB,opt={}){
  L('debut','Le combat commence !',{joueurs:S.map(s=>({pseudo:s.pseudo,dos:s.dos,carte:s.card.nom,image:s.card.image||null,imageCombat:s.card.imageCombat||null,rar:s.card.rar||null,magie:s.mag.nom,piege:s.pie.nom,magieImg:s.mag.image||null,piegeImg:s.pie.image||null,ids:[s.card.id,s.mag.id,s.pie.id]})),premier:first});
  ordre.forEach(s=>{if(s.mag.effet){L('magie',`Magie de ${s.pseudo} : ${s.mag.nom}`,{c:id(s),carte:s.mag.nom,img:s.mag.image||null});fx(s.mag.effet,s,adv(s),true);S.forEach(k=>k.pend=1)}});
  for(tour=1;tour<=reg.maxTours&&!over();tour++){
-  for(let oi=0;oi<2;oi++){const a=ordre[oi];if(over())break;L('tour',`Tour ${(tour-1)*2+oi+1}`);debutTour(a);if(over())break;ultime(a);if(over())break;attaque(a);if(over())break;passifsTour(a);if(over())break;statutsCarte(a);if(over())break;finTourCarte(a)}
+  for(let oi=0;oi<2;oi++){const a=ordre[oi];if(over())break;L('tour',`Tour ${(tour-1)*2+oi+1}`,{c:id(a)});debutTour(a);if(over())break;ultime(a);if(over())break;attaque(a);if(over())break;passifsTour(a);if(over())break;statutsCarte(a);if(over())break;finTourCarte(a)}
  }
  const dead=S.map(s=>s.pv<=0);let w=null;
  if(dead[0]!==dead[1])w=dead[0]?1:0;else if(!dead[0]&&S[0].pv!==S[1].pv)w=S[0].pv>S[1].pv?0:1;
