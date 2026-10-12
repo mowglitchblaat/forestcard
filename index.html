@@ -92,6 +92,18 @@ form.f select{max-width:100%;min-width:0}form.f>*{min-width:0}
 .cmi{align-self:start}
 .tilt{position:relative;border-radius:16px;overflow:hidden;transform:perspective(900px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));transition:transform .12s ease-out;box-shadow:0 0 26px color-mix(in srgb,var(--g) 60%,transparent);animation:ctpop .45s cubic-bezier(.2,.9,.3,1.25) backwards}
 .tilt img{display:block;width:100%}
+/* retournement complet de la carte (dos équipé) */
+.fp{perspective:1100px;position:relative}
+.fi{position:relative;transform-style:preserve-3d;transform:rotateX(var(--rx,0deg)) rotateY(calc(var(--ry,0deg) + var(--fl,0deg)));transition:transform .12s ease-out}
+.fi.fl{transition:transform .7s cubic-bezier(.3,.8,.3,1)}
+.fi .face{backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.fi .tilt{transform:none!important;transition:none}
+.fi .bk{backface-visibility:hidden;-webkit-backface-visibility:hidden;position:absolute;inset:0;border-radius:16px;overflow:hidden;transform:rotateY(180deg);box-shadow:0 0 26px color-mix(in srgb,var(--g) 60%,transparent);border:3px solid color-mix(in srgb,var(--g) 55%,#fff);box-sizing:border-box;background:linear-gradient(135deg,#7f1d1d,#1e1b4b) center/cover;display:flex;align-items:center;justify-content:center;font-size:54px}
+.fi .bk .gl{position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at var(--mx,50%) var(--my,25%),rgba(255,255,255,.35),transparent 45%);mix-blend-mode:overlay}
+.flb{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}.flb button{font-size:13px;padding:6px 12px}.flb small{color:#9a9aa8}
+/* code couleur du texte des effets */
+.k-d{color:#ff7b7b;font-weight:700}.k-h{color:#5eea8a;font-weight:700}.k-s{color:#c4a5ff;font-weight:700}.k-a{color:#ffb454;font-weight:700}
+.k-p{color:#ffe066;font-weight:800}.k-t{color:#7dd3fc;font-weight:700}.k-n{color:#fff;font-weight:800}
 .tilt .gl{position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at var(--mx,50%) var(--my,25%),rgba(255,255,255,.42),transparent 45%);mix-blend-mode:overlay}
 .tilt .ho{position:absolute;inset:0;pointer-events:none;opacity:0;mix-blend-mode:color-dodge;background:linear-gradient(115deg,transparent 20%,rgba(255,0,170,.45) 35%,rgba(0,230,255,.45) 50%,rgba(255,230,0,.45) 65%,transparent 80%);background-size:220% 100%;background-position:var(--hx,50%) 0}
 .cmb[data-t=ep] .ho,.cmb[data-t=lg] .ho{opacity:.4}
@@ -304,6 +316,9 @@ function lignesCarte(c){
 /* FX-END */
 const TIER=r=>['lg','ep','ra','co'][rangRar(r)[0]]||'ra';
 const txOn=h=>{const m=/^#?([0-9a-f]{6})$/i.exec(String(h||'').trim());if(!m)return'#111';const n=parseInt(m[1],16);return(0.299*(n>>16)+0.587*((n>>8)&255)+0.114*(n&255))/255>.6?'#111':'#fff'};
+const KRX=/(?<![\p{L}])(?:([+\-−]?\d+(?:[.,]\d+)?\s?%)|(\d+\s?tours?)|(dégâts?|saign\p{L}*|brûl\p{L}*|poison\p{L}*|malédiction\p{L}*|fracture\p{L}*|renvo\p{L}*)|(soins?|soign\p{L}*|régénér\p{L}*|réanim\p{L}*|PV|récup\p{L}*|protég\p{L}*|évite la mort|purifi\p{L}*)|(étourd\p{L}*|gel\p{L}*|fatigu\p{L}*|insensib\p{L}*|vol(?:e|er|é|s)?|échang\p{L}*|annul\p{L}*)|(ATQ|attaq\p{L}*|frappe\p{L}*|rage)|([+\-−]?\d+))(?![\p{L}])/giu;
+const CK=['','k-p','k-t','k-d','k-h','k-s','k-a','k-n'];
+const cz=t=>String(t).replace(KRX,(m,...g)=>{const k=g.slice(0,7).findIndex(x=>x!==undefined);return`<span class="${CK[k+1]}">${m}</span>`});   // le texte est déjà échappé : on ne touche qu'aux mots clés
 const TYPE_L={combattant:['⚔️','Combattant'],magie:['✨','Magie'],piege:['🪤','Piège']};
 function cardHTML(x,i){
   const v=x.variantes_carte,c=v.cartes,on=deck.has(c.id),col=c.raretes.couleur||'#888',L=lignesCarte(c);
@@ -314,12 +329,14 @@ function cardHTML(x,i){
     <div class="ch"><b class="cn">${esc(c.nom)}</b><span class="rp">${esc(c.raretes.nom)}</span></div>
     <div class="cm">${(TYPE_L[c.type]||['',''])[0]} ${esc((TYPE_L[c.type]||['',c.type])[1])} · ${esc(cn(x))}${v.nom?` · ${esc(v.nom)}`:''}</div>
     ${c.type==='combattant'&&(c.atq!=null||c.pv!=null)?`<div class="cs"><span class="chip">⚔ ${esc(c.atq??'?')}</span><span class="chip">❤ ${esc(c.pv??'?')}</span></div>`:''}
-    ${show.length?`<ul class="ce">${show.map(s=>`<li><i>${s.ico}</i><span title="${esc(s.t)}">${esc(s.t)}</span></li>`).join('')}${more>0?`<li class="more">+ ${more} autre${more>1?'s':''} effet${more>1?'s':''}…</li>`:''}</ul>`:''}
+    ${show.length?`<ul class="ce">${show.map(s=>`<li><i>${s.ico}</i><span title="${esc(s.t)}">${cz(esc(s.t))}</span></li>`).join('')}${more>0?`<li class="more">+ ${more} autre${more>1?'s':''} effet${more>1?'s':''}…</li>`:''}</ul>`:''}
     <div class="ca"><button class="sec" data-open>Détails</button><button class="${on?'sec':''}" data-c="${c.id}">${on?'✓ Retirer':'Ajouter au deck'}</button></div>
    </div></div>`;
 }
 /* ---------- Fenêtre de détails d'une carte ---------- */
-let mdList=[],mdIdx=0,mdRedraw=null,mdFocus=null;
+let mdList=[],mdIdx=0,mdRedraw=null,mdFocus=null,mdFlip=false,_dosC=null;
+// dos de carte équipé par le joueur (mis en cache ; sans réponse, on montre le dos standard)
+async function dosActif(){if(_dosC)return _dosC;try{const r=await sb.rpc('mes_dos');const L=(r&&r.data)||[],a=L.find(x=>x.actif);_dosC=a?{nom:a.nom,image:a.image}:{nom:'Dos standard',image:null}}catch(e){_dosC={nom:'Dos standard',image:null}}return _dosC}
 function mdEnsure(){
   if($('#cm'))return;
   document.body.insertAdjacentHTML('beforeend','<div class="cmo" id="cm" hidden><div class="cmb" role="dialog" aria-modal="true" aria-label="Détails de la carte"></div></div>');
@@ -335,11 +352,12 @@ function mdDraw(){
   const mxA=Math.max(1,...collData.map(y=>nz(y.variantes_carte.cartes.atq))),mxP=Math.max(1,...collData.map(y=>nz(y.variantes_carte.cartes.pv)));
   box.dataset.t=TIER(c.raretes);box.style.setProperty('--g',col);box.style.setProperty('--tx',txOn(col));
   box.innerHTML=`<button class="cx" aria-label="Fermer">✕</button>
-   <div class="cmi"><div class="tilt">${v.image_path?`<img src="${img(v.image_path)}" alt="${esc(c.nom)}">`:`<div style="aspect-ratio:5/7;display:flex;align-items:center;justify-content:center;font-weight:700;padding:14px;text-align:center">${esc(c.nom)}</div>`}<div class="ho"></div><div class="gl"></div></div></div>
+   <div class="cmi"><div class="fp"><div class="fi"><div class="tilt face">${v.image_path?`<img src="${img(v.image_path)}" alt="${esc(c.nom)}">`:`<div style="aspect-ratio:5/7;display:flex;align-items:center;justify-content:center;font-weight:700;padding:14px;text-align:center">${esc(c.nom)}</div>`}<div class="ho"></div><div class="gl"></div></div><div class="bk" id="mbk">🌲<div class="gl"></div></div></div></div>
+    <div class="flb"><button class="sec" id="mflip">🔄 Retourner la carte</button><small id="mdosn"></small></div></div>
    <div class="cmd"><h2>${esc(c.nom)}</h2>
     <div class="pills"><span class="pl r">${esc(c.raretes.nom)}</span><span class="pl">${tl[0]} ${esc(tl[1])}</span><span class="pl">${esc(cn(x))}</span>${v.nom?`<span class="pl">${esc(v.nom)}</span>`:''}<span class="pl">Possédée ×${x.quantite}</span></div>
     ${c.type==='combattant'&&(c.atq!=null||c.pv!=null)?`<div class="sb"><div class="sbr"><span>⚔ ATQ</span><div class="sbar"><i style="width:${Math.min(100,Math.round(nz(c.atq)/mxA*100))}%"></i></div><b>${esc(c.atq??'?')}</b></div><div class="sbr"><span>❤ PV</span><div class="sbar"><i style="width:${Math.min(100,Math.round(nz(c.pv)/mxP*100))}%"></i></div><b>${esc(c.pv??'?')}</b></div></div>`:''}
-    ${L.map(s=>`<div class="sec2"><h4>${s.ico} ${esc(s.t)}</h4>${s.meta?`<div class="trg">${esc(s.meta)}</div>`:''}<ul>${s.items.map(t=>`<li>${esc(t)}</li>`).join('')}</ul></div>`).join('')||'<div class="sec2"><small>Cette carte n\'a pas d\'effet particulier.</small></div>'}
+    ${L.map(s=>`<div class="sec2"><h4>${s.ico} ${esc(s.t)}</h4>${s.meta?`<div class="trg">${esc(s.meta)}</div>`:''}<ul>${s.items.map(t=>`<li>${cz(esc(t))}</li>`).join('')}</ul></div>`).join('')||'<div class="sec2"><small>Cette carte n\'a pas d\'effet particulier.</small></div>'}
     ${c.description?`<div class="dsc">${esc(c.description)}</div>`:''}
     <div class="cmf"><button class="sec" data-nav="-1" ${mdList.length<2?'disabled':''}>‹ Précédente</button><button class="sec" data-nav="1" ${mdList.length<2?'disabled':''}>Suivante ›</button><span class="sp"></span><button class="${on?'sec':''}" data-mdeck>${on?'✓ Retirer du deck':'Ajouter au deck'}</button></div>
    </div>`;
@@ -350,11 +368,16 @@ function mdDraw(){
     else if(deck.size>=10){alert('Deck complet : 10 cartes maximum.');return}
     else deck.add(c.id);
     if(mdRedraw)mdRedraw();mdDraw()};
-  const tilt=box.querySelector('.tilt');
-  tilt.onpointermove=e=>{const r=tilt.getBoundingClientRect(),px=(e.clientX-r.left)/r.width,py=(e.clientY-r.top)/r.height;
-    tilt.style.setProperty('--rx',((0.5-py)*14).toFixed(1)+'deg');tilt.style.setProperty('--ry',((px-0.5)*18).toFixed(1)+'deg');
-    tilt.style.setProperty('--mx',(px*100).toFixed(0)+'%');tilt.style.setProperty('--my',(py*100).toFixed(0)+'%');tilt.style.setProperty('--hx',(px*100).toFixed(0)+'%')};
-  tilt.onpointerleave=()=>{['--rx','--ry','--mx','--my','--hx'].forEach(k=>tilt.style.removeProperty(k))};
+  const tilt=box.querySelector('.fi'),fp=box.querySelector('.fp');
+  fp.onpointermove=e=>{const r=fp.getBoundingClientRect(),px=(e.clientX-r.left)/r.width,py=(e.clientY-r.top)/r.height;
+    tilt.style.setProperty('--rx',((0.5-py)*14).toFixed(1)+'deg');tilt.style.setProperty('--ry',((px-0.5)*18*(mdFlip?-1:1)).toFixed(1)+'deg');
+    [tilt,...tilt.querySelectorAll('.tilt,.bk')].forEach(n=>{n.style.setProperty('--mx',(px*100).toFixed(0)+'%');n.style.setProperty('--my',(py*100).toFixed(0)+'%');n.style.setProperty('--hx',(px*100).toFixed(0)+'%')})};
+  fp.onpointerleave=()=>{['--rx','--ry','--mx','--my','--hx'].forEach(k=>tilt.style.removeProperty(k))};
+  mdFlip=false;
+  box.querySelector('#mflip').onclick=()=>{mdFlip=!mdFlip;tilt.classList.add('fl');tilt.style.setProperty('--fl',mdFlip?'180deg':'0deg');box.querySelector('#mflip').textContent=mdFlip?'🔄 Voir la face':'🔄 Retourner la carte';setTimeout(()=>tilt.classList.remove('fl'),750)};
+  dosActif().then(d=>{const bk=box.querySelector('#mbk'),n=box.querySelector('#mdosn');if(!bk)return;
+    if(d&&d.image){bk.style.backgroundImage=`url('${img(d.image)}')`;bk.firstChild.nodeValue=''}
+    n.textContent=d?(d.image?'Dos équipé : '+d.nom:'Dos standard du jeu'):'';});
   box.querySelector('.cx').focus({preventScroll:true});
 }
 function bindOpen(L,redraw){main.querySelectorAll('.ct').forEach(t=>t.querySelectorAll('[data-open]').forEach(e=>e.onclick=()=>mdOpen(L,+t.dataset.i,redraw)))}
@@ -911,7 +934,7 @@ async function vDos(){
   main.innerHTML=`<p><small>Ton dos de carte s'affiche sur ton piège face cachée pendant les combats en direct. Les dos spéciaux sont offerts par le streamer.</small></p>
   <div class="cgrid">${tuile('','Dos standard',null,aucun,'Dos du jeu')}${L.map(x=>tuile(x.id,x.nom,x.image,x.actif,x.par_defaut?'Dos de base':'Offert')).join('')}</div>`;
   main.querySelectorAll('button[data-d]').forEach(b=>b.onclick=async()=>{
-    const e=await sb.rpc('choisir_dos',{p_dos:b.dataset.d||null});if(e.error)return alert(e.error.message);vDos()});
+    const e=await sb.rpc('choisir_dos',{p_dos:b.dataset.d||null});if(e.error)return alert(e.error.message);_dosC=null;vDos()});
 }
 
 /* ---------- Admin : dos de cartes (stock et cadeaux) ---------- */
