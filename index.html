@@ -201,7 +201,7 @@ function fxPassif(p){
     case 'evite_mort':return "Évite la mort une fois (reste à 1 PV, statuts négatifs retirés)";
     case 'reanimation':return `Réanimation : revient avec ${nz(p.pctrev)} % de ses PV max (une fois)`;
     case 'esquive':return `${c} % de chances d'esquiver chaque attaque`;
-    case 'fatigue':return `${c} % de chances de fatiguer la cible à chaque coup (−${nz(p.fatval)}${upc(p.u)} de dégâts pendant ${trs(nz(p.fattours)||1)})`;
+    case 'fatigue':return `${c} % de chances de fatiguer la cible à chaque coup (ATQ −${nz(p.fatval)}${upc(p.u)} pendant ${trs(nz(p.fattours)||1)})`;
     case 'aleatoire':return `Effet aléatoire ${tousT(nz(p.every))}${c<100?` (${c} % de chances)`:''}`;
     case 'purification':return `Purification : retire les statuts négatifs ${tousT(nz(p.every))}${nz(p.fois)>0?` (${p.fois} fois max)`:''}`;
     case 'soin_tour':return `Se soigne de ${v}${p.u==='pct'?' % des PV max':' PV'} à chaque tour`;
@@ -211,7 +211,7 @@ function fxPassif(p){
     case 'multi_frappe':return `${c} % de chances de frapper ${nz(p.frappes)} fois par tour`;
     case 'reduc_degats':return `${c} % de chances de réduire les dégâts reçus de ${v}${upc(p.u)}`;
     case 'bonus_frappe':return `S'il est frappé ${nz(p.coups)||1} fois, sa prochaine attaque fait +${v}${upc(p.u)} de dégâts`;
-    case 'etourdir':return `${c} % de chances d'étourdir la cible ${t>1?`pendant ${t} attaques`:'(elle saute sa prochaine attaque)'}`;
+    case 'etourdir':return `${c} % de chances${nz(p.essais)>1?` (${p.essais} tentatives)`:''} d'étourdir la cible ${t>1?`pendant ${t} attaques`:'(elle saute sa prochaine attaque)'}`;
     case 'vol_pct_atq':return `${c} % de chances de se soigner de ${nz(p.pctatq)} % des dégâts infligés`;
     case 'brulure':return `${c} % de chances de brûler la cible (${nz(p.pctpv)} % de ses PV max par tour, ${trs(T)})`;
     case 'poison':return `${c} % de chances d'empoisonner la cible (${nz(p.degtour)} dégâts par tour, ${trs(T)})`;
@@ -231,8 +231,8 @@ function fxEffet(e){
     case 'pv_mod':return[`${e.cible==='adversaire'?"PV max de l'adversaire":'Ses PV max'} ${sgn(v)}${upc(e.u)}`];
     case 'soin':return[`Se soigne de ${v}${pct?' % des PV max':' PV'}`];
     case 'reanimation':return[`Réanimation : revient avec ${nz(e.pctrev)} % de ses PV max (une fois)`];
-    case 'rage':return[`Rage : +${nz(e.ragev)}${upc(e.u)} de dégâts par coup pendant ${trs(nz(e.ragetours)||1)}, puis fatigue (−${nz(e.fatval)}${upc(e.u)} pendant ${trs(nz(e.fattours)||1)})`];
-    case 'fatigue':return[`Fatigue ${ci} : −${nz(e.fatval)}${upc(e.u)} de dégâts par coup pendant ${trs(nz(e.fattours)||1)}`];
+    case 'rage':return[`Rage : +${nz(e.ragev)}${upc(e.u)} de dégâts par coup pendant ${trs(nz(e.ragetours)||1)}, puis fatigue (ATQ −${nz(e.fatval)}${upc(e.u)} pendant ${trs(nz(e.fattours)||1)})`];
+    case 'fatigue':return[`Fatigue ${ci} : ATQ −${nz(e.fatval)}${upc(e.u)} pendant ${trs(nz(e.fattours)||1)}`];
     case 'aleatoire':{const n=Math.max(1,nz(e.nbalea)||nz(e.fois)||1);return[`Effet aléatoire${n>1?` ×${n}`:''}`]}
     case 'soin_tours':return[`Régénération : +${v}${pct?' % des PV max':' PV'} par tour pendant ${trs(T)}`];
     case 'purification':return[`Purification ${e.cible==='adversaire'?"de l'adversaire":'de sa carte'} : retire les statuts négatifs${nz(e.fois)>1?` (${e.fois} fois, ${tousT(nz(e.every))})`:''}`];
@@ -255,7 +255,7 @@ function fxEffet(e){
     case 'vol_ultime':return["Vole l'ultime de l'adversaire"];
     case 'poison_effet':return[`Empoisonne ${ci} : ${nz(e.degtour)} dégâts par tour pendant ${trs(T)}`];
     case 'brulure_effet':return[`Brûle ${ci} : ${nz(e.pctpv)} % des PV max par tour pendant ${trs(T)}`];
-    case 'etourdir_effet':{const ch=e.chance==null||e.chance===''?100:nz(e.chance);return[`${ch<100?`${ch} % de chances d'étourdir`:'Étourdit'} ${ci} pendant ${trs(T)}`]}
+    case 'etourdir_effet':{const ch=e.chance==null||e.chance===''?100:nz(e.chance);return[`${ch<100?`${ch} % de chances${nz(e.essais)>1?` (${e.essais} tentatives)`:''} d'étourdir`:'Étourdit'} ${ci} pendant ${trs(T)}`]}
     case 'esquive_mod':return[`${e.cible==='adversaire'?"Esquive de l'adversaire":'Son esquive'} ${sgn(v)} %`];
     case 'reset_ultime':return["Réinitialise l'ultime (utilisable à nouveau)"];
     case 'mort_evitee':{const k=e.cond||'aucune';return[`Évite la mort une fois (reste à 1 PV, statuts négatifs retirés)${k==='pv_max'?` — si ses PV max sont d'au moins ${nz(e.seuil)}`:k==='degats_infliges'?` — s'il a déjà infligé ${nz(e.seuil)} dégâts`:''}`]}
@@ -554,7 +554,7 @@ function vRegles(){
    ${c('Défense','Esquive, blocage, renvoi de dégâts, soin, purification, évite la mort, réanimation.')}
    ${c('Attaque','Enchaînement de frappes, vol de vie, vol d\'ultime, échange d\'ATQ et de PV, effets aléatoires.')}
   </div>
-  ${ul(['Les effets suivent le tour de la carte concernée : la malédiction baisse l\'ATQ au début de son tour, juste avant son attaque ; poison, brûlure et saignement font effet à la fin de son tour, juste après son attaque. Jouer en premier ou en deuxième ne change jamais cet ordre.','Un statut garde la même intensité à chaque tour. Si un effet le réapplique par-dessus, l\'intensité s\'additionne et la durée repart de zéro.','La purification retire tous les statuts négatifs présents à ce moment-là, sauf l\'étourdissement : il fait toujours sauter la prochaine attaque de la carte touchée, quoi qu\'il arrive.','Rage, fatigue, gel et fracture comptent les tours de la carte touchée.']).replace('<ul>','<ul style="color:#aaa;font-size:14px">')}
+  ${ul(['Les effets suivent le tour de la carte concernée : la malédiction baisse l\'ATQ au début de son tour, juste avant son attaque ; poison, brûlure et saignement font effet à la fin de son tour, juste après son attaque. Jouer en premier ou en deuxième ne change jamais cet ordre.','Un statut garde la même intensité à chaque tour. Si un effet le réapplique par-dessus, l\'intensité s\'additionne et la durée repart de zéro.','La purification retire tous les statuts négatifs présents à ce moment-là, sauf l\'étourdissement : il fait toujours sauter la prochaine attaque de la carte touchée, quoi qu\'il arrive.','Rage, fatigue, gel et fracture comptent les tours de la carte touchée.','La fatigue fait vraiment baisser l\'ATQ de la carte touchée (rendue à la fin) ; réappliquée, elle dure plus longtemps mais ne s\'aggrave pas.']).replace('<ul>','<ul style="color:#aaa;font-size:14px">')}
 
   ${h('Ton profil','v','Visible par tous les joueurs connectés.')}
   <div class="stats">
@@ -590,15 +590,15 @@ async function upload(file){
 
 /* ---------- Catalogue d'effets (pour ajouter un effet : une ligne ici) ---------- */
 // Paramètres réutilisables : [libellé, 'n' (nombre) ou liste de choix]
-const P={val:['Valeur','n'],u:['Unité',['pts','pct']],tours:['Nb de tours','n'],chance:['Chance (%)','n'],frappes:['Nb de frappes','n'],
+const P={essais:['Nb de tentatives (la chance est tirée jusqu\'à X fois de suite, la 1re réussite suffit ; 1 par défaut)','n'],val:['Valeur','n'],u:['Unité',['pts','pct']],tours:['Nb de tours','n'],chance:['Chance (%)','n'],frappes:['Nb de frappes','n'],
  coups:['Nb de coups','n'],cible:['Cible',['soi','adversaire']],carte:['Carte',['magie','piege']],seuil:['Seuil (ignoré si aucune condition)','n'],seuilpv:['Seuil (% PV)','n'],
- cond:['Condition pour éviter la mort',['aucune','pv_max','degats_infliges']],pct:['% PV rendus en plus','n'],pctrev:['% des PV max au retour','n'],val2:['2e valeur','n'],pctatq:["% de l'ATQ infligée volé en PV",'n'],pctpv:['% des PV max de la cible perdus par tour','n'],degtour:['Points de dégâts par tour','n'],ciblem:['Cible (adversaire par défaut)',['adversaire','soi']],max:['Plafond de frappes en plus','n'],reducsoin:['% de soins en moins','n'],ragev:['Rage : dégâts en plus par coup','n'],ragetours:['Rage : nombre de tours','n'],fatval:['Fatigue : dégâts en moins par coup','n'],fattours:['Fatigue : nombre de tours','n'],nbalea:["Nombre d'effets aléatoires tirés (1 par défaut)",'n'],every:['Agit tous les X tours','n'],fois:['Nombre de fois (1 = une seule)','n'],annul:["Chance d'annuler l'attaque (%)",'n'],stunch:["Chance d'être étourdi avant l'attaque (%)",'n'],fchance:['Chance de se blesser en attaquant (%)','n'],degfrac:['Dégâts subis en attaquant','n']};
+ cond:['Condition pour éviter la mort',['aucune','pv_max','degats_infliges']],pct:['% PV rendus en plus','n'],pctrev:['% des PV max au retour','n'],val2:['2e valeur','n'],pctatq:["% de l'ATQ infligée volé en PV",'n'],pctpv:['% des PV max de la cible perdus par tour','n'],degtour:['Points de dégâts par tour','n'],ciblem:['Cible (adversaire par défaut)',['adversaire','soi']],max:['Plafond de frappes en plus','n'],reducsoin:['% de soins en moins','n'],ragev:['Rage : dégâts en plus par coup','n'],ragetours:['Rage : nombre de tours','n'],fatval:['Fatigue : ATQ en moins','n'],fattours:['Fatigue : nombre de tours','n'],nbalea:["Nombre d'effets aléatoires tirés (1 par défaut)",'n'],every:['Agit tous les X tours','n'],fois:['Nombre de fois (1 = une seule)','n'],annul:["Chance d'annuler l'attaque (%)",'n'],stunch:["Chance d'être étourdi avant l'attaque (%)",'n'],fchance:['Chance de se blesser en attaquant (%)','n'],degfrac:['Dégâts subis en attaquant','n']};
 // Chaque effet : [libellé, ...paramètres]
-const PAS={evite_mort:['Évite la mort une fois (reste à 1 PV et retire les statuts négatifs)'],reanimation:['Réanimation : la carte est détruite puis revient avec X % de ses PV max (une fois)','pctrev'],esquive:["Esquive : X % de chances d'esquiver chaque attaque (plafond 75 %)",'chance'],fatigue:["À X % de chances, fatigue la cible à chaque coup (réduit ses dégâts de X pendant X tours)",'chance','fatval','u','fattours'],aleatoire:["Effet aléatoire parmi tous les effets du jeu : X % de chances, tous les X tours (vide = chaque tour)",'chance','every'],purification:['Purification : retire les statuts négatifs de la carte, tous les X tours (vide = chaque tour), X fois au maximum (vide = illimité)','every','fois'],soin_tour:['Se soigne de X chaque tour','val','u'],renvoi:['Renvoie X dégâts reçus','val','u'],
+const PAS={evite_mort:['Évite la mort une fois (reste à 1 PV et retire les statuts négatifs)'],reanimation:['Réanimation : la carte est détruite puis revient avec X % de ses PV max (une fois)','pctrev'],esquive:["Esquive : X % de chances d'esquiver chaque attaque (plafond 75 %)",'chance'],fatigue:["À X % de chances, fatigue la cible à chaque coup (réduit son ATQ de X pendant X tours ; la durée s'additionne, pas l'intensité)",'chance','fatval','u','fattours'],aleatoire:["Effet aléatoire parmi tous les effets du jeu : X % de chances, tous les X tours (vide = chaque tour)",'chance','every'],purification:['Purification : retire les statuts négatifs de la carte, tous les X tours (vide = chaque tour), X fois au maximum (vide = illimité)','every','fois'],soin_tour:['Se soigne de X chaque tour','val','u'],renvoi:['Renvoie X dégâts reçus','val','u'],
  atq_tours:["Augmente l'ATQ tous les X tours",'tours','val','u'],pv_tours:['Augmente les PV tous les X tours','tours','val','u'],
  multi_frappe:['À X % de chances, frappe X fois par tour','chance','frappes'],reduc_degats:['À X % de chances, réduit les dégâts reçus de X','chance','val','u'],
  bonus_frappe:["Si frappé X fois par tour, bonus à la prochaine attaque",'coups','val','u'],
- etourdir:["À X % de chances, étourdit la cible : elle saute sa prochaine attaque, ou les X prochaines si tu indiques une durée",'chance','tours'],
+ etourdir:["À X % de chances, étourdit la cible : elle saute sa prochaine attaque, ou les X prochaines si tu indiques une durée",'chance','essais','tours'],
  vol_pct_atq:["À X % de chances, vole X % de l'ATQ infligée (soin)",'chance','pctatq'],
  brulure:["À X % de chances, applique une brûlure (% de PV par tour)",'chance','pctpv','tours'],
  poison:["À X % de chances, applique un poison (points par tour)",'chance','degtour','tours'],
@@ -618,11 +618,11 @@ const ULT={degats:["Dégâts directs à l'adversaire",'val'],voler:['Vole une ma
  soin_tours:["Régénération : soigne de X PV par tour pendant X tours",'val','u','tours'],
  purification:["Purification : retire les statuts négatifs (poison, brûlure, gel, saignement, fracture, malédiction, étourdissement…) et rend l'ATQ perdu. 1re purification tout de suite, puis une tous les X tours, X fois au total",'cible','every','fois'],
  reanimation:['Réanimation : la carte est détruite puis revient avec X % de ses PV max (une fois)','pctrev'],
- rage:["Rage : dégâts en plus par coup pendant X tours, puis obligatoirement Fatigue (dégâts en moins pendant X tours)",'ragev','u','ragetours','fatval','fattours'],
- fatigue:["Fatigue : réduit les dégâts de la cible de X par coup pendant X tours (adversaire par défaut)",'ciblem','fatval','u','fattours'],
+ rage:["Rage : dégâts en plus par coup pendant X tours, puis obligatoirement Fatigue (ATQ en moins pendant X tours)",'ragev','u','ragetours','fatval','fattours'],
+ fatigue:["Fatigue : réduit l'ATQ de la cible de X pendant X tours (rendu à la fin). Réappliquée : la durée s'additionne, pas l'intensité (adversaire par défaut)",'ciblem','fatval','u','fattours'],
  aleatoire:["Effet aléatoire : tire au hasard un effet parmi tous ceux du jeu (valeurs adaptées aux stats)",'nbalea'],
  atk_enchainement:["Enchaînement : X % de chances de frapper une fois de plus, puis retente (s'arrête au 1er échec)",'chance','max'],
- etourdir_effet:["À X % de chances, étourdit pendant X tours (soi ou adversaire ; 100 % si la chance est vide)",'ciblem','chance','tours'],
+ etourdir_effet:["À X % de chances, étourdit pendant X tours (soi ou adversaire ; 100 % si la chance est vide)",'ciblem','chance','essais','tours'],
  poison_effet:["Poison : X points par tour pendant X tours (soi ou adversaire)",'ciblem','degtour','tours'],
  brulure_effet:["Brûlure : X % des PV max par tour pendant X tours (soi ou adversaire)",'ciblem','pctpv','tours']};
 const MAG={atq_mod:["Modifie l'ATQ (négatif = baisse)",'cible','val','u'],pv_mod:['Modifie les PV max (négatif = baisse)','cible','val','u'],
@@ -633,17 +633,17 @@ const MAG={atq_mod:["Modifie l'ATQ (négatif = baisse)",'cible','val','u'],pv_mo
  malediction:["Malédiction : l'ATQ baisse de X points par tour pendant X tours",'ciblem','val','tours'],
  poison_effet:["Poison : X points par tour pendant X tours (soi ou adversaire)",'ciblem','degtour','tours'],
  brulure_effet:["Brûlure : X % des PV max par tour pendant X tours (soi ou adversaire)",'ciblem','pctpv','tours'],
- etourdir_effet:["À X % de chances, étourdit pendant X tours (soi ou adversaire ; 100 % si la chance est vide)",'ciblem','chance','tours'],
+ etourdir_effet:["À X % de chances, étourdit pendant X tours (soi ou adversaire ; 100 % si la chance est vide)",'ciblem','chance','essais','tours'],
  atk_brulure:["Attaque de base : X % de chances de brûler (X % des PV max par tour, X tours)",'chance','pctpv','tours'],
  atk_poison:["Attaque de base : X % de chances d'empoisonner (X points par tour, X tours)",'chance','degtour','tours'],
- atk_etourdir:["Attaque de base : +X % de chances d'étourdir, pendant X attaques (1 par défaut ; s'ajoute au passif)",'chance','tours'],
+ atk_etourdir:["Attaque de base : +X % de chances d'étourdir, pendant X attaques (1 par défaut ; s'ajoute au passif)",'chance','essais','tours'],
  esquive_mod:["Modifie le % d'esquive (négatif = baisse)",'cible','val'],
  soin_tours:["Régénération : soigne de X PV par tour pendant X tours",'val','u','tours'],
  purification:["Purification : retire les statuts négatifs (poison, brûlure, gel, saignement, fracture, malédiction, étourdissement…) et rend l'ATQ perdu. 1re purification tout de suite, puis une tous les X tours, X fois au total",'cible','every','fois'],
- rage:["Rage : dégâts en plus par coup pendant X tours, puis obligatoirement Fatigue (dégâts en moins pendant X tours)",'ragev','u','ragetours','fatval','fattours'],
- fatigue:["Fatigue : réduit les dégâts de la cible de X par coup pendant X tours (adversaire par défaut)",'ciblem','fatval','u','fattours'],
+ rage:["Rage : dégâts en plus par coup pendant X tours, puis obligatoirement Fatigue (ATQ en moins pendant X tours)",'ragev','u','ragetours','fatval','fattours'],
+ fatigue:["Fatigue : réduit l'ATQ de la cible de X pendant X tours (rendu à la fin). Réappliquée : la durée s'additionne, pas l'intensité (adversaire par défaut)",'ciblem','fatval','u','fattours'],
  aleatoire:["Effet aléatoire : tire au hasard un effet parmi tous ceux du jeu (valeurs adaptées aux stats)",'nbalea'],
- atk_fatigue:["Attaque de base : X % de chances de fatiguer (dégâts en moins pendant X tours)",'chance','fatval','u','fattours'],
+ atk_fatigue:["Attaque de base : X % de chances de fatiguer (ATQ en moins pendant X tours ; la durée s'additionne, pas l'intensité)",'chance','fatval','u','fattours'],
  atk_enchainement:["Attaque de base : X % de chances de frapper une fois de plus, puis retente (s'arrête au 1er échec)",'chance','max'],
  atk_saignement:["Attaque de base : X % de chances de faire saigner (X % des PV max par tour, soins réduits, X tours)",'chance','pctpv','reducsoin','tours'],
  atk_malediction:["Attaque de base : X % de chances de maudire (ATQ −X par tour, X tours)",'chance','val','tours'],
@@ -688,7 +688,7 @@ async function aCartes(){
     q(sb.from('cartes').select('id,nom,type,actif,raretes(nom,poids),collections(nom),variantes_carte(id)').order('id',{ascending:false}))]);
   cartes.sort(cmpCartes);   // légendaire en premier, puis épique, rare, commun ; par nom à rareté égale
   const ep=await sb.from('effets_perso').select('*'),cu=ep.data||[];
-  const mc=(b,k)=>({...b,...Object.fromEntries(cu.filter(x=>x.categorie==k).map(x=>[x.cle,[x.libelle,...x.params]]))});
+  const mc=(b,k)=>({...b,...Object.fromEntries(cu.filter(x=>x.categorie==k).map(x=>[x.cle,[x.libelle+(/^perso_.*etourd/.test(x.cle)?' ✅ (exécuté comme un étourdissement)':' ⚠️ texte seulement : le moteur ne l\'exécute pas'),...x.params]]))});
   const CAT={pas:mc(PAS,'passif'),ult:mc(ULT,'ultime'),mag:mc(MAG,'magie'),con:mc(CON,'condition')};
   $('#sub').innerHTML=`<h3 id="ftitle">Nouvelle carte</h3>
   <form class="f" id="fc"><input name="nom" placeholder="Nom" required>
@@ -834,7 +834,8 @@ async function aEffets(){
   const r=await sb.from('effets_perso').select('*').order('id');
   if(r.error){$('#sub').innerHTML='<p class="ko">Table introuvable : lance d\'abord 04-effets.sql dans Supabase.</p>';return}
   const L=r.data,CATS={passif:'Passif',ultime:'Ultime',magie:'Magie',condition:'Condition de piège'};
-  $('#sub').innerHTML=`<form class="f" id="fe"><b>Nouvel effet</b><select name="cat">${Object.entries(CATS).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select>
+  $('#sub').innerHTML=`<p class="ko">⚠️ Les effets créés ici sont <b>seulement un texte affiché</b> : le moteur de combat ne sait pas les exécuter (seuls ceux qui parlent d'étourdissement le sont). Pour qu'un nouvel effet agisse vraiment dans les combats, il doit être ajouté au moteur : utilise d'abord les effets de la liste de base des cartes.</p>
+   <form class="f" id="fe"><b>Nouvel effet</b><select name="cat">${Object.entries(CATS).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select>
    <input name="lib" placeholder="Texte affiché (ex : Gagne X PV quand il attaque)" required>
    <small>Valeurs à saisir pour cet effet</small>
    <div class="row">${Object.entries(P).map(([k,v])=>`<label><input type="checkbox" name="p_${k}"> ${v[0]}</label>`).join('')}</div>
