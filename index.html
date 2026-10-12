@@ -17,7 +17,9 @@ button{cursor:pointer;background:#7c3aed;border-color:#7c3aed}button.sec{backgro
 .cw{display:flex;flex-direction:column;gap:12px}
 .cimg{width:100%;display:block;filter:drop-shadow(0 0 3px var(--g)) drop-shadow(0 0 12px var(--g))}
 .inf{font-size:11px;color:#6b6b78;text-align:center;line-height:1.4;border-top:1px dashed #2c2c38;padding-top:6px}
-.dbar{position:sticky;top:0;z-index:5;background:#1d1d27;padding:10px 14px;border-radius:10px;margin:8px 0 14px;display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;border:1px solid #2c2c38}
+.dbar{position:sticky;top:0;z-index:5;background:#1d1d27;padding:10px 14px;border-radius:10px;margin:8px 0 14px;display:flex;flex-direction:column;gap:10px;border:1px solid #2c2c38}
+.dtop{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap}.dbt{display:flex;gap:8px;flex-wrap:wrap}
+.dmul{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:13px}.dmul select{max-width:100%;min-width:150px}
 button:disabled{opacity:.4;cursor:not-allowed}
 .cimg.in{filter:drop-shadow(0 0 3px var(--g)) drop-shadow(0 0 12px var(--g)) drop-shadow(0 0 24px var(--g))}
 .cw button{font-size:13px}
@@ -42,6 +44,71 @@ form.f select{max-width:100%;min-width:0}form.f>*{min-width:0}
 .rg h3{margin:26px 0 4px}.rg p.sub{margin:0 0 12px;color:#aaa}
 .pill{display:inline-block;padding:4px 14px;border-radius:999px;font-weight:700;color:#111;margin:0 6px 6px 0}
 .rg .stat{font-size:15px;line-height:1.5}.rg .stat h4{margin:0 0 6px;font-size:17px}.rg .stat ul{margin:6px 0 0;padding-left:18px}.rg .stat li{margin:3px 0}
+/* ---------- Cartes de la collection : cadre, couleurs de rareté, effets, fenêtre de détails ---------- */
+.cgrid{grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:22px 18px}
+.ct{--g:#888;--g1:color-mix(in srgb,var(--g) 38%,transparent);--g2:color-mix(in srgb,var(--g) 80%,transparent);--sp:3.4s;position:relative;display:flex;flex-direction:column;gap:9px;padding:9px 9px 11px;border-radius:16px;
+ border:1px solid var(--g);border:1px solid color-mix(in srgb,var(--g) 60%,#2c2c38);
+ background:linear-gradient(165deg,color-mix(in srgb,var(--g) 16%,#1c1c27) 0%,#15151d 62%);box-shadow:0 0 12px 0 var(--g1),0 8px 22px rgba(0,0,0,.4);
+ transition:transform .25s cubic-bezier(.2,.9,.3,1.3),filter .25s;
+ animation:ctpop .55s cubic-bezier(.2,.9,.3,1.25) backwards,ctglow var(--sp) ease-in-out .7s infinite;
+ animation-delay:calc(min(var(--i,0),14)*40ms),calc(.7s + min(var(--i,0),14)*40ms)}
+.ct:hover{transform:translateY(-6px) scale(1.03);filter:brightness(1.08);z-index:2}
+.ct[data-t=co]{animation:ctpop .5s cubic-bezier(.2,.9,.3,1.25) backwards;animation-delay:calc(min(var(--i,0),14)*40ms);box-shadow:0 0 8px 0 var(--g1),0 6px 16px rgba(0,0,0,.35)}
+.ct[data-t=ra]{--sp:3.6s}.ct[data-t=ep]{--sp:3s}
+.ct[data-t=lg]{--sp:2.4s;border:2px solid transparent;padding:8px 8px 10px;
+ background:linear-gradient(165deg,color-mix(in srgb,var(--g) 18%,#1c1c27) 0%,#15151d 62%) padding-box,conic-gradient(from var(--ang),var(--g),#fffbe0,var(--g),#ffe58a,var(--g)) border-box;animation:ctpop .6s cubic-bezier(.2,.9,.3,1.25) backwards,ctglow var(--sp) ease-in-out .7s infinite,ctspin 4.5s linear infinite;
+ animation-delay:calc(min(var(--i,0),14)*40ms),calc(.7s + min(var(--i,0),14)*40ms),0s}
+@property --ang{syntax:'<angle>';initial-value:0deg;inherits:false}
+@keyframes ctspin{to{--ang:360deg}}
+@keyframes ctpop{0%{opacity:0;transform:translateY(16px) scale(.92)}60%{opacity:1;transform:translateY(-4px) scale(1.03)}100%{opacity:1;transform:none}}
+@keyframes ctglow{0%,100%{box-shadow:0 0 10px 0 var(--g1),0 8px 22px rgba(0,0,0,.4)}50%{box-shadow:0 0 24px 3px var(--g2),0 8px 22px rgba(0,0,0,.4)}}
+@keyframes ctshine{0%,55%{transform:translateX(-130%)}100%{transform:translateX(130%)}}
+@keyframes cmfade{from{opacity:0}to{opacity:1}}
+@supports not (color:color-mix(in srgb,red,blue)){.ct{--g1:var(--g);--g2:var(--g)}}
+.ct.in{outline:2px solid #4ade80;outline-offset:3px}
+.ci{position:relative;border-radius:12px;overflow:hidden;cursor:zoom-in;background:#0e0e14}
+.ci img{display:block;width:100%;transition:transform .35s}.ct:hover .ci img{transform:scale(1.04)}
+.ci::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:0;background:linear-gradient(115deg,transparent 38%,rgba(255,255,255,.4) 50%,transparent 62%);transform:translateX(-130%)}
+.ct[data-t=ep] .ci::after,.ct[data-t=lg] .ci::after{opacity:1;animation:ctshine 5s ease-in-out infinite;animation-delay:calc(min(var(--i,0),14)*300ms + 1s)}
+.ct[data-t=lg] .ci::after{animation-duration:3.6s}
+.cq,.cd{position:absolute;top:6px;z-index:1;font-size:11px;font-weight:800;border-radius:999px;padding:2px 8px;background:rgba(0,0,0,.68);border:1px solid rgba(255,255,255,.2);color:#fff}
+.cq{right:6px}.cd{left:6px;background:#166534;border-color:#4ade80}
+.cb{display:flex;flex-direction:column;gap:6px;min-width:0;flex:1}
+.ch{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.cn{font-size:14px;line-height:1.2;overflow-wrap:anywhere}
+.rp{font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:2px 8px;border-radius:999px;white-space:nowrap;background:var(--g);color:var(--tx,#111)}
+.cm{font-size:11px;color:#9a9aa8}
+.cs{display:flex;gap:6px}.chip{font-size:12px;font-weight:700;padding:2px 8px;border-radius:8px;background:#0f0f15;border:1px solid #2c2c38}
+.ce{list-style:none;margin:0;padding:7px 0 0;border-top:1px solid color-mix(in srgb,var(--g) 30%,#2c2c38);display:flex;flex-direction:column;gap:4px;font-size:11.5px;line-height:1.35;color:#c9c9d6}
+.ce li{display:flex;gap:6px}.ce i{font-style:normal;flex:none}
+.ce span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ce li.more{color:#8a8a99;font-size:11px}
+.ca{display:flex;gap:6px;margin-top:auto;padding-top:4px}.ca button{flex:1;font-size:12.5px;padding:6px 8px}
+.cmo{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(6,6,10,.8);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);animation:cmfade .2s both}
+.cmo[hidden]{display:none}
+.cmb{--g:#888;position:relative;display:grid;grid-template-columns:minmax(220px,380px) minmax(0,1fr);gap:24px;max-width:980px;width:100%;max-height:92vh;overflow:auto;padding:24px;border-radius:20px;border:2px solid var(--g);
+ background:linear-gradient(160deg,color-mix(in srgb,var(--g) 18%,#1b1b25),#12121a 65%);box-shadow:0 0 40px color-mix(in srgb,var(--g) 55%,transparent),0 20px 60px rgba(0,0,0,.6);animation:ctpop .45s cubic-bezier(.2,.9,.3,1.25) backwards}
+@media(max-width:760px){.cmb{grid-template-columns:1fr;padding:16px;gap:14px}.cmi{max-width:320px;margin:0 auto}}
+.cmi{align-self:start}
+.tilt{position:relative;border-radius:16px;overflow:hidden;transform:perspective(900px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));transition:transform .12s ease-out;box-shadow:0 0 26px color-mix(in srgb,var(--g) 60%,transparent);animation:ctpop .45s cubic-bezier(.2,.9,.3,1.25) backwards}
+.tilt img{display:block;width:100%}
+.tilt .gl{position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at var(--mx,50%) var(--my,25%),rgba(255,255,255,.42),transparent 45%);mix-blend-mode:overlay}
+.tilt .ho{position:absolute;inset:0;pointer-events:none;opacity:0;mix-blend-mode:color-dodge;background:linear-gradient(115deg,transparent 20%,rgba(255,0,170,.45) 35%,rgba(0,230,255,.45) 50%,rgba(255,230,0,.45) 65%,transparent 80%);background-size:220% 100%;background-position:var(--hx,50%) 0}
+.cmb[data-t=ep] .ho,.cmb[data-t=lg] .ho{opacity:.4}
+.cmd{min-width:0}.cmd h2{margin:0 36px 6px 0;font-size:26px;line-height:1.15}
+.pills{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 12px}
+.pl{font-size:11px;font-weight:800;padding:3px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.18);background:#0f0f15}
+.pl.r{background:var(--g);color:var(--tx,#111);border-color:transparent;text-transform:uppercase;letter-spacing:.04em}
+.sb{display:grid;gap:8px;margin:8px 0 14px}
+.sbr{display:grid;grid-template-columns:44px 1fr 56px;gap:8px;align-items:center;font-size:13px}.sbr b{text-align:right}
+.sbar{height:9px;border-radius:99px;background:#0f0f15;overflow:hidden;border:1px solid #2c2c38}.sbar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,color-mix(in srgb,var(--g) 55%,#000),var(--g))}
+.sec2{margin:14px 0 0}.sec2 h4{margin:0 0 6px;font-size:14px;color:color-mix(in srgb,var(--g) 70%,#fff)}
+.sec2 ul{margin:0;padding-left:18px;line-height:1.5;font-size:14px}.sec2 li{margin:3px 0}
+.trg{font-size:12px;color:#9a9aa8;margin:0 0 6px}
+.dsc{font-style:italic;color:#aeb0c0;border-left:3px solid var(--g);padding:2px 12px;margin:14px 0 0}
+.cmf{display:flex;gap:8px;margin-top:18px;flex-wrap:wrap;align-items:center}.cmf .sp{flex:1}
+.cx{position:absolute;top:10px;right:12px;z-index:3;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.2);border-radius:999px;width:34px;height:34px;padding:0;font-size:16px}
+@media(prefers-reduced-motion:reduce){.ct,.ct *,.cmb,.cmb *,.tilt{animation:none!important;transition:none!important}.ct[data-t=lg]{border-color:var(--g)}}
 code.cmd{color:#fbbf24;font-weight:700}
 </style></head><body>
 <header><h1>🃏 Jeu de cartes</h1><div id="me"></div></header>
@@ -82,26 +149,215 @@ function show(t){
 }
 
 /* ---------- Collection ---------- */
-let deck=null,typeOf={},flt='tout',fcol='tout',collData=[];
+let deck=null,typeOf={},flt='tout',fcol='tout',collData=[],savedDecks=[],decksOK=true,selDeck='',curView=null;
+async function loadDecks(){const r=await sb.rpc('mes_decks');if(r.error){decksOK=false;savedDecks=[];return}decksOK=true;savedDecks=r.data||[]}
 const cn=x=>x.variantes_carte.cartes.collections?.nom||'Communes';
 const TYPES={combattant:'Combattants',magie:'Magies',piege:'Pièges'};
 async function loadColl(){
-  collData=await q(sb.from('collection_joueur').select('quantite,variantes_carte(nom,image_path,cartes(id,nom,type,collections(nom),raretes(nom,couleur,poids)))').eq('joueur_id',user.id));
+  let r=await sb.from('collection_joueur').select('quantite,variantes_carte(nom,image_path,cartes(id,nom,type,atq,pv,description,passif,ultime,effet,collections(nom),raretes(nom,couleur,poids)))').eq('joueur_id',user.id);
+  if(r.error)r=await sb.from('collection_joueur').select('quantite,variantes_carte(nom,image_path,cartes(id,nom,type,collections(nom),raretes(nom,couleur,poids)))').eq('joueur_id',user.id);
+  if(r.error){alert(r.error.message);throw r.error}
+  collData=r.data;
   collData.sort(cmpColl);   // légendaire en premier, puis épique, rare, commun
   typeOf={};collData.forEach(x=>{const c=x.variantes_carte.cartes;typeOf[c.id]=c.type});
   if(!deck){const dk=await q(sb.from('deck').select('carte_id').eq('joueur_id',user.id));deck=new Set(dk.map(x=>x.carte_id))}
 }
 function updBar(){
   const n=t=>[...deck].filter(i=>typeOf[i]==t).length,ok=deck.size>=9&&deck.size<=10&&n('combattant')>=3&&n('magie')>=3&&n('piege')>=3;
-  $('#dbar').innerHTML=`<span><b>${deck.size}/10</b> — combattants ${n('combattant')}/3 · magies ${n('magie')}/3 · pièges ${n('piege')}/3</span><button id="sv" ${ok?'':'disabled'} title="9 ou 10 cartes, au moins 3 de chaque type">Enregistrer le deck</button>`;
+  $('#dbar').innerHTML=`<div class="dtop"><span><b>${deck.size}/10</b> — combattants ${n('combattant')}/3 · magies ${n('magie')}/3 · pièges ${n('piege')}/3</span>
+   <span class="dbt"><button id="clr" class="sec" ${deck.size?'':'disabled'} title="Vide le deck en cours de montage (le deck de combat déjà enregistré ne change pas)">🧹 Tout retirer</button><button id="sv" ${ok?'':'disabled'} title="9 ou 10 cartes, au moins 3 de chaque type">Enregistrer comme deck de combat</button></span></div>
+   ${decksOK?`<div class="dmul"><span>Mes decks :</span><select id="dsel"><option value="">— choisir —</option>${savedDecks.map(d=>`<option value="${d.id}" ${String(d.id)===String(selDeck)?'selected':''}>${esc(d.nom)} (${(d.cartes||[]).length})</option>`).join('')}</select>
+    <button id="dld" class="sec" ${selDeck?'':'disabled'}>Charger</button><button id="dsa" class="sec">💾 Sauver sous un nom</button><button id="ddl" class="sec" ${selDeck?'':'disabled'}>🗑 Supprimer</button></div>`
+   :`<small>Decks multiples indisponibles pour le moment (l'admin doit lancer 09-decks-multiples.sql dans Supabase).</small>`}`;
   $('#sv').onclick=async()=>{
     const {error}=await sb.rpc('enregistrer_deck',{p_cartes:[...deck]});
-    alert(error?({DECK_TAILLE_INVALIDE:'Il faut 9 ou 10 cartes.',DECK_COMPOSITION_INVALIDE:'Il faut au moins 3 cartes de chaque type.'}[error.message]||error.message):'Deck enregistré !');};
+    alert(error?({DECK_TAILLE_INVALIDE:'Il faut 9 ou 10 cartes.',DECK_COMPOSITION_INVALIDE:'Il faut au moins 3 cartes de chaque type.'}[error.message]||error.message):'Deck de combat enregistré !');};
+  $('#clr').onclick=()=>{deck.clear();selDeck='';if(curView)curView();else updBar()};
+  if(!decksOK)return;
+  $('#dsel').onchange=e=>{selDeck=e.target.value;updBar()};
+  $('#dld').onclick=()=>{const d=savedDecks.find(x=>String(x.id)===String(selDeck));if(!d)return;
+    const own=new Set(collData.map(x=>x.variantes_carte.cartes.id)),ids=(d.cartes||[]).filter(i=>own.has(i));
+    if(ids.length<(d.cartes||[]).length)alert((d.cartes.length-ids.length)+' carte(s) de ce deck ne sont plus dans ta collection : elles n\'ont pas été chargées.');
+    deck=new Set(ids);if(curView)curView();else updBar()};
+  $('#dsa').onclick=async()=>{
+    if(!deck.size){alert('Ajoute d\'abord des cartes au deck.');return}
+    const cur=savedDecks.find(x=>String(x.id)===String(selDeck)),nom=(prompt('Nom du deck (le même nom remplace un deck existant) :',cur?cur.nom:'')||'').trim();
+    if(!nom)return;
+    const {data,error}=await sb.rpc('sauver_deck',{p_nom:nom,p_cartes:[...deck]});
+    if(error){alert(({TROP_DE_DECKS:'Tu as déjà 10 decks enregistrés : supprime-en un d\'abord.',NOM_INVALIDE:'Le nom doit faire entre 1 et 30 caractères.',DECK_TROP_GRAND:'Un deck contient 10 cartes au maximum.'}[error.message])||error.message);return}
+    await loadDecks();selDeck=String(data);updBar()};
+  $('#ddl').onclick=async()=>{const d=savedDecks.find(x=>String(x.id)===String(selDeck));if(!d||!confirm('Supprimer le deck « '+d.nom+' » ?'))return;
+    const {error}=await sb.rpc('supprimer_deck',{p_id:+selDeck});if(error){alert(error.message);return}
+    selDeck='';await loadDecks();updBar()};
 }
-function cardHTML(x){
-  const v=x.variantes_carte,c=v.cartes,on=deck.has(c.id);
-  return `<div class="cw">${v.image_path?`<img class="cimg${on?' in':''}" style="--g:${esc(c.raretes.couleur)}" src="${img(v.image_path)}">`:''}<div class="inf">${esc(c.nom)} · ${esc(c.type)} · ${esc(c.raretes.nom)}<br>${esc(v.nom)} ×${x.quantite}</div><button class="${on?'sec':''}" data-c="${c.id}">${on?'✓ Retirer du deck':'Ajouter au deck'}</button></div>`;
+/* FX-BEGIN */
+/* ---------- Effets en texte clair (cartes de la collection) ---------- */
+const nz=v=>+v||0,trs=t=>`${t} tour${t>1?'s':''}`,sgn=v=>(v>0?'+':'')+v,upc=u=>u==='pct'?' %':'',tousT=t=>t>1?`tous les ${t} tours`:'à chaque tour';
+const ciblT=e=>(e.ciblem||e.cible)==='soi'?'sur soi':"sur l'adversaire";
+const cat=t=>{const L=typeof MAG!=='undefined'&&(MAG[t]||ULT[t]||PAS[t]);return L?L[0]:String(t||'Effet')};
+function fxPassif(p){
+  const c=p.chance==null||p.chance===''?100:nz(p.chance),t=nz(p.tours),v=nz(p.val),T=t||1;
+  switch(p.type){
+    case 'evite_mort':return "Évite la mort une fois (reste à 1 PV, statuts négatifs retirés)";
+    case 'reanimation':return `Réanimation : revient avec ${nz(p.pctrev)} % de ses PV max (une fois)`;
+    case 'esquive':return `${c} % de chances d'esquiver chaque attaque`;
+    case 'fatigue':return `${c} % de chances de fatiguer la cible à chaque coup (−${nz(p.fatval)}${upc(p.u)} de dégâts pendant ${trs(nz(p.fattours)||1)})`;
+    case 'aleatoire':return `Effet aléatoire ${tousT(nz(p.every))}${c<100?` (${c} % de chances)`:''}`;
+    case 'purification':return `Purification : retire les statuts négatifs ${tousT(nz(p.every))}${nz(p.fois)>0?` (${p.fois} fois max)`:''}`;
+    case 'soin_tour':return `Se soigne de ${v}${p.u==='pct'?' % des PV max':' PV'} à chaque tour`;
+    case 'renvoi':return p.u==='pct'?`Renvoie ${v} % des dégâts reçus`:`Renvoie ${v} dégâts à chaque coup reçu`;
+    case 'atq_tours':return `ATQ +${v}${upc(p.u)} ${tousT(t)}`;
+    case 'pv_tours':return `PV max +${v}${upc(p.u)} ${tousT(t)}`;
+    case 'multi_frappe':return `${c} % de chances de frapper ${nz(p.frappes)} fois par tour`;
+    case 'reduc_degats':return `${c} % de chances de réduire les dégâts reçus de ${v}${upc(p.u)}`;
+    case 'bonus_frappe':return `S'il est frappé ${nz(p.coups)||1} fois, sa prochaine attaque fait +${v}${upc(p.u)} de dégâts`;
+    case 'etourdir':return `${c} % de chances d'étourdir la cible ${t>1?`pendant ${t} attaques`:'(elle saute sa prochaine attaque)'}`;
+    case 'vol_pct_atq':return `${c} % de chances de se soigner de ${nz(p.pctatq)} % des dégâts infligés`;
+    case 'brulure':return `${c} % de chances de brûler la cible (${nz(p.pctpv)} % de ses PV max par tour, ${trs(T)})`;
+    case 'poison':return `${c} % de chances d'empoisonner la cible (${nz(p.degtour)} dégâts par tour, ${trs(T)})`;
+    case 'malediction':return `${c} % de chances de maudire la cible (ATQ −${v} par tour, ${trs(T)})`;
+    case 'enchainement':return `${c} % de chances de frapper une fois de plus, puis retente${nz(p.max)>0?` (${p.max} frappes en plus au maximum)`:''}`;
+    case 'saignement':return `${c} % de chances de faire saigner la cible (${nz(p.pctpv)} % des PV max par tour, soins −${nz(p.reducsoin)} %, ${trs(T)})`;
+    case 'gel':return `${c} % de chances de geler la cible (${nz(p.annul)} % d'attaque annulée, ${nz(p.stunch)} % d'être étourdie, ${trs(T)})`;
+    case 'fracture':return `${c} % de chances de fracturer la cible (${nz(p.fchance)} % de se blesser de ${nz(p.degfrac)} PV en attaquant, ${trs(T)})`;
+    default:return cat(p.type)}
 }
+function fxEffet(e){
+  if(!e)return[];
+  if(Array.isArray(e.briques))return e.briques.flatMap(fxEffet);
+  const t=nz(e.tours),T=t||1,v=nz(e.val),pct=e.u==='pct',ci=ciblT(e);
+  switch(e.type){
+    case 'atq_mod':return[`${e.cible==='adversaire'?"ATQ de l'adversaire":'Son ATQ'} ${sgn(v)}${upc(e.u)}`];
+    case 'pv_mod':return[`${e.cible==='adversaire'?"PV max de l'adversaire":'Ses PV max'} ${sgn(v)}${upc(e.u)}`];
+    case 'soin':return[`Se soigne de ${v}${pct?' % des PV max':' PV'}`];
+    case 'reanimation':return[`Réanimation : revient avec ${nz(e.pctrev)} % de ses PV max (une fois)`];
+    case 'rage':return[`Rage : +${nz(e.ragev)}${upc(e.u)} de dégâts par coup pendant ${trs(nz(e.ragetours)||1)}, puis fatigue (−${nz(e.fatval)}${upc(e.u)} pendant ${trs(nz(e.fattours)||1)})`];
+    case 'fatigue':return[`Fatigue ${ci} : −${nz(e.fatval)}${upc(e.u)} de dégâts par coup pendant ${trs(nz(e.fattours)||1)}`];
+    case 'aleatoire':{const n=Math.max(1,nz(e.nbalea)||nz(e.fois)||1);return[`Effet aléatoire${n>1?` ×${n}`:''}`]}
+    case 'soin_tours':return[`Régénération : +${v}${pct?' % des PV max':' PV'} par tour pendant ${trs(T)}`];
+    case 'purification':return[`Purification ${e.cible==='adversaire'?"de l'adversaire":'de sa carte'} : retire les statuts négatifs${nz(e.fois)>1?` (${e.fois} fois, ${tousT(nz(e.every))})`:''}`];
+    case 'degats':return[`Inflige ${v} dégâts directs`];
+    case 'vol_vie':return[`Vole ${v} PV à l'adversaire`];
+    case 'annule_attaque':return["Annule la prochaine attaque de l'adversaire"];
+    case 'renvoi':return[`Renvoie ${v} % des dégâts reçus pendant ${trs(T)}`];
+    case 'insensible_piege':return[`Insensible aux pièges pendant ${trs(T)}`];
+    case 'annule_magies':return["Annule la magie de l'adversaire"];
+    case 'degats_tours':return[`Inflige ${v} dégâts après ${trs(T)}`];
+    case 'double_degats':return[`Double ses dégâts pendant ${trs(T)}`];
+    case 'echange_atq':return["Échange son ATQ avec celle de l'adversaire"];
+    case 'echange_atq_def':return[`Échange l'ATQ et les PV ${(e.ciblem||e.cible)==='soi'?'de sa carte':"de l'adversaire"}`];
+    case 'echange_pv':return["Échange ses PV avec ceux de l'adversaire"];
+    case 'echange_tout':return["Échange ATQ et PV avec l'adversaire"];
+    case 'malediction':return[`Maudit ${ci} : ATQ −${v} par tour pendant ${trs(T)}`];
+    case 'saignement':return[`Fait saigner ${ci} : ${nz(e.pctpv)} % des PV max par tour, soins −${nz(e.reducsoin)} %, ${trs(T)}`];
+    case 'gel':return[`Gèle ${ci} (${nz(e.annul)} % d'attaque annulée, ${nz(e.stunch)} % d'étourdissement, ${trs(T)})`];
+    case 'fracture':return[`Fracture ${ci} (${nz(e.fchance)} % de se blesser de ${nz(e.degfrac)} PV en attaquant, ${trs(T)})`];
+    case 'vol_ultime':return["Vole l'ultime de l'adversaire"];
+    case 'poison_effet':return[`Empoisonne ${ci} : ${nz(e.degtour)} dégâts par tour pendant ${trs(T)}`];
+    case 'brulure_effet':return[`Brûle ${ci} : ${nz(e.pctpv)} % des PV max par tour pendant ${trs(T)}`];
+    case 'etourdir_effet':{const ch=e.chance==null||e.chance===''?100:nz(e.chance);return[`${ch<100?`${ch} % de chances d'étourdir`:'Étourdit'} ${ci} pendant ${trs(T)}`]}
+    case 'esquive_mod':return[`${e.cible==='adversaire'?"Esquive de l'adversaire":'Son esquive'} ${sgn(v)} %`];
+    case 'reset_ultime':return["Réinitialise l'ultime (utilisable à nouveau)"];
+    case 'mort_evitee':{const k=e.cond||'aucune';return[`Évite la mort une fois (reste à 1 PV, statuts négatifs retirés)${k==='pv_max'?` — si ses PV max sont d'au moins ${nz(e.seuil)}`:k==='degats_infliges'?` — s'il a déjà infligé ${nz(e.seuil)} dégâts`:''}`]}
+    case 'detruire':return[`Détruit ${e.carte==='magie'?"la magie":"le piège"} de l'adversaire`];
+    case 'voler':return[`Vole ${e.carte==='magie'?"la magie":"le piège"} de l'adversaire`];
+    case 'equiper':return[`Équipe ${e.carte==='magie'?'une autre magie':'un autre piège'} du deck`];
+    default:
+      if(String(e.type||'').startsWith('atk_'))return['Attaque de base : '+fxPassif({...e,type:e.type.slice(4)})];
+      return[cat(e.type)]}
+}
+function fxCond(c){
+  if(!c||!c.type)return'';
+  switch(c.type){
+    case 'adv_attaque':return `Quand l'adversaire a attaqué ${nz(c.coups)||1} fois`;
+    case 'adv_ultime':return "Quand l'adversaire utilise son ultime";
+    case 'proprio_pv_sous':return `Quand le propriétaire passe sous ${nz(c.seuilpv)} % de PV`;
+    case 'adv_pv_bas':return `Quand l'adversaire passe sous ${nz(c.seuilpv)} % de PV`;
+    case 'adv_soigne':return "Quand l'adversaire se soigne";
+    case 'proprio_soigne':return "Quand le propriétaire se soigne";
+    case 'proprio_meurt':return "Quand le propriétaire est sur le point de mourir";
+    default:return typeof CON!=='undefined'&&CON[c.type]?CON[c.type][0]:String(c.type)}
+}
+function fxTrigUlt(u){
+  const p=[];
+  if(nz(u.apres_tours))p.push(`dès son tour ${u.apres_tours}`);
+  if(u.sur_carte)p.push("quand une carte s'active");
+  let s=p.length?'Se déclenche '+p.join(' ou '):'Ultime';
+  if(nz(u.delai_tours)>0)s+=`, au plus une fois tous les ${u.delai_tours} tours`;
+  if(nz(u.utilisations)>0)s+=`, ${u.utilisations} utilisation${u.utilisations>1?'s':''} maximum`;
+  return s;
+}
+function lignesCarte(c){
+  const L=[];
+  if(c.type==='combattant'){
+    const P=c.passif?(c.passif.briques?c.passif.briques.filter(b=>b&&b.type):(c.passif.type?[c.passif]:[])):[];
+    if(P.length)L.push({ico:'🛡️',t:P.length>1?'Passifs':'Passif',items:P.map(fxPassif)});
+    const u=c.ultime;if(u&&(u.type||u.briques)){const it=fxEffet(u);if(it.length)L.push({ico:'⚡',t:'Ultime',meta:fxTrigUlt(u),items:it})}
+  }else if(c.type==='magie'){
+    const it=fxEffet(c.effet);if(it.length)L.push({ico:'✨',t:'Effet de la magie',items:it});
+  }else if(c.type==='piege'&&c.effet){
+    const e=c.effet,it=fxEffet(e.effet);
+    if(it.length||e.condition)L.push({ico:'🪤',t:'Piège',meta:(fxCond(e.condition)||'Piège caché')+(nz(e.declenchements)>1?` (jusqu'à ${e.declenchements} fois)`:''),items:it});
+  }
+  return L;
+}
+/* FX-END */
+const TIER=r=>['lg','ep','ra','co'][rangRar(r)[0]]||'ra';
+const txOn=h=>{const m=/^#?([0-9a-f]{6})$/i.exec(String(h||'').trim());if(!m)return'#111';const n=parseInt(m[1],16);return(0.299*(n>>16)+0.587*((n>>8)&255)+0.114*(n&255))/255>.6?'#111':'#fff'};
+const TYPE_L={combattant:['⚔️','Combattant'],magie:['✨','Magie'],piege:['🪤','Piège']};
+function cardHTML(x,i){
+  const v=x.variantes_carte,c=v.cartes,on=deck.has(c.id),col=c.raretes.couleur||'#888',L=lignesCarte(c);
+  const flat=L.flatMap(s=>s.items.map(t=>({ico:s.ico,t}))),show=flat.slice(0,3),more=flat.length-show.length;
+  return `<div class="ct${on?' in':''}" data-t="${TIER(c.raretes)}" data-i="${i}" style="--g:${esc(col)};--tx:${txOn(col)};--i:${i}">
+   <div class="ci" data-open>${v.image_path?`<img loading="lazy" src="${img(v.image_path)}" alt="${esc(c.nom)}">`:`<div style="aspect-ratio:5/7;display:flex;align-items:center;justify-content:center;padding:10px;text-align:center;font-weight:700">${esc(c.nom)}</div>`}<span class="cq">×${x.quantite}</span>${on?'<span class="cd">✓ Deck</span>':''}</div>
+   <div class="cb">
+    <div class="ch"><b class="cn">${esc(c.nom)}</b><span class="rp">${esc(c.raretes.nom)}</span></div>
+    <div class="cm">${(TYPE_L[c.type]||['',''])[0]} ${esc((TYPE_L[c.type]||['',c.type])[1])} · ${esc(cn(x))}${v.nom?` · ${esc(v.nom)}`:''}</div>
+    ${c.type==='combattant'&&(c.atq!=null||c.pv!=null)?`<div class="cs"><span class="chip">⚔ ${esc(c.atq??'?')}</span><span class="chip">❤ ${esc(c.pv??'?')}</span></div>`:''}
+    ${show.length?`<ul class="ce">${show.map(s=>`<li><i>${s.ico}</i><span title="${esc(s.t)}">${esc(s.t)}</span></li>`).join('')}${more>0?`<li class="more">+ ${more} autre${more>1?'s':''} effet${more>1?'s':''}…</li>`:''}</ul>`:''}
+    <div class="ca"><button class="sec" data-open>Détails</button><button class="${on?'sec':''}" data-c="${c.id}">${on?'✓ Retirer':'Ajouter au deck'}</button></div>
+   </div></div>`;
+}
+/* ---------- Fenêtre de détails d'une carte ---------- */
+let mdList=[],mdIdx=0,mdRedraw=null,mdFocus=null;
+function mdEnsure(){
+  if($('#cm'))return;
+  document.body.insertAdjacentHTML('beforeend','<div class="cmo" id="cm" hidden><div class="cmb" role="dialog" aria-modal="true" aria-label="Détails de la carte"></div></div>');
+  $('#cm').onclick=e=>{if(e.target.id==='cm')mdClose()};
+  document.addEventListener('keydown',e=>{const m=$('#cm');if(!m||m.hidden)return;if(e.key==='Escape')mdClose();else if(e.key==='ArrowRight')mdNav(1);else if(e.key==='ArrowLeft')mdNav(-1)});
+}
+function mdOpen(list,i,redraw){mdEnsure();mdList=list;mdIdx=i;mdRedraw=redraw;mdFocus=document.activeElement;$('#cm').hidden=false;document.body.style.overflow='hidden';mdDraw()}
+function mdClose(){const m=$('#cm');if(!m)return;m.hidden=true;document.body.style.overflow='';if(mdFocus&&mdFocus.focus){try{mdFocus.focus()}catch(e){}}}
+function mdNav(d){if(mdList.length<2)return;mdIdx=(mdIdx+d+mdList.length)%mdList.length;mdDraw()}
+function mdDraw(){
+  const x=mdList[mdIdx];if(!x){mdClose();return}
+  const v=x.variantes_carte,c=v.cartes,on=deck.has(c.id),col=c.raretes.couleur||'#888',L=lignesCarte(c),box=$('#cm .cmb'),tl=TYPE_L[c.type]||['',c.type];
+  const mxA=Math.max(1,...collData.map(y=>nz(y.variantes_carte.cartes.atq))),mxP=Math.max(1,...collData.map(y=>nz(y.variantes_carte.cartes.pv)));
+  box.dataset.t=TIER(c.raretes);box.style.setProperty('--g',col);box.style.setProperty('--tx',txOn(col));
+  box.innerHTML=`<button class="cx" aria-label="Fermer">✕</button>
+   <div class="cmi"><div class="tilt">${v.image_path?`<img src="${img(v.image_path)}" alt="${esc(c.nom)}">`:`<div style="aspect-ratio:5/7;display:flex;align-items:center;justify-content:center;font-weight:700;padding:14px;text-align:center">${esc(c.nom)}</div>`}<div class="ho"></div><div class="gl"></div></div></div>
+   <div class="cmd"><h2>${esc(c.nom)}</h2>
+    <div class="pills"><span class="pl r">${esc(c.raretes.nom)}</span><span class="pl">${tl[0]} ${esc(tl[1])}</span><span class="pl">${esc(cn(x))}</span>${v.nom?`<span class="pl">${esc(v.nom)}</span>`:''}<span class="pl">Possédée ×${x.quantite}</span></div>
+    ${c.type==='combattant'&&(c.atq!=null||c.pv!=null)?`<div class="sb"><div class="sbr"><span>⚔ ATQ</span><div class="sbar"><i style="width:${Math.min(100,Math.round(nz(c.atq)/mxA*100))}%"></i></div><b>${esc(c.atq??'?')}</b></div><div class="sbr"><span>❤ PV</span><div class="sbar"><i style="width:${Math.min(100,Math.round(nz(c.pv)/mxP*100))}%"></i></div><b>${esc(c.pv??'?')}</b></div></div>`:''}
+    ${L.map(s=>`<div class="sec2"><h4>${s.ico} ${esc(s.t)}</h4>${s.meta?`<div class="trg">${esc(s.meta)}</div>`:''}<ul>${s.items.map(t=>`<li>${esc(t)}</li>`).join('')}</ul></div>`).join('')||'<div class="sec2"><small>Cette carte n\'a pas d\'effet particulier.</small></div>'}
+    ${c.description?`<div class="dsc">${esc(c.description)}</div>`:''}
+    <div class="cmf"><button class="sec" data-nav="-1" ${mdList.length<2?'disabled':''}>‹ Précédente</button><button class="sec" data-nav="1" ${mdList.length<2?'disabled':''}>Suivante ›</button><span class="sp"></span><button class="${on?'sec':''}" data-mdeck>${on?'✓ Retirer du deck':'Ajouter au deck'}</button></div>
+   </div>`;
+  box.querySelector('.cx').onclick=mdClose;
+  box.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>mdNav(+b.dataset.nav));
+  box.querySelector('[data-mdeck]').onclick=()=>{
+    if(deck.has(c.id))deck.delete(c.id);
+    else if(deck.size>=10){alert('Deck complet : 10 cartes maximum.');return}
+    else deck.add(c.id);
+    if(mdRedraw)mdRedraw();mdDraw()};
+  const tilt=box.querySelector('.tilt');
+  tilt.onpointermove=e=>{const r=tilt.getBoundingClientRect(),px=(e.clientX-r.left)/r.width,py=(e.clientY-r.top)/r.height;
+    tilt.style.setProperty('--rx',((0.5-py)*14).toFixed(1)+'deg');tilt.style.setProperty('--ry',((px-0.5)*18).toFixed(1)+'deg');
+    tilt.style.setProperty('--mx',(px*100).toFixed(0)+'%');tilt.style.setProperty('--my',(py*100).toFixed(0)+'%');tilt.style.setProperty('--hx',(px*100).toFixed(0)+'%')};
+  tilt.onpointerleave=()=>{['--rx','--ry','--mx','--my','--hx'].forEach(k=>tilt.style.removeProperty(k))};
+  box.querySelector('.cx').focus({preventScroll:true});
+}
+function bindOpen(L,redraw){main.querySelectorAll('.ct').forEach(t=>t.querySelectorAll('[data-open]').forEach(e=>e.onclick=()=>mdOpen(L,+t.dataset.i,redraw)))}
 function bindToggle(redraw){
   main.querySelectorAll('button[data-c]').forEach(b=>b.onclick=()=>{const id=+b.dataset.c;
     if(deck.has(id))deck.delete(id);
@@ -110,19 +366,21 @@ function bindToggle(redraw){
     redraw();});
 }
 async function vCollection(){
-  await loadColl();
+  await loadColl();await loadDecks();
   if(!collData.length){main.innerHTML='<p>Tu n\'as encore aucune carte. Achète un booster dans la boutique, puis ouvre-le en live avec !booster.</p>';return}
   main.innerHTML='<div id="dbar" class="dbar"></div><div class="row" id="flt"></div><div class="row" id="fcol"></div><div class="cgrid" id="gr"></div>';
   drawColl();
 }
 function drawColl(){
+  curView=drawColl;
   $('#flt').innerHTML=[['tout','Tout'],...Object.entries(TYPES)].map(([k,v])=>`<button class="${k==flt?'on':'sec'}" data-f="${k}">${v}</button>`).join('');
   $('#flt').querySelectorAll('button').forEach(b=>b.onclick=()=>{flt=b.dataset.f;drawColl()});
   const names=[...new Set(collData.map(cn))].sort();
   $('#fcol').innerHTML=[['tout','Toutes les collections'],...names.map(n=>[n,n])].map(([k,v])=>`<button class="${k==fcol?'on':'sec'}" data-k="${esc(k)}">${esc(v)}</button>`).join('');
   $('#fcol').querySelectorAll('button').forEach(b=>b.onclick=()=>{fcol=b.dataset.k;drawColl()});
-  $('#gr').innerHTML=collData.filter(x=>(flt=='tout'||x.variantes_carte.cartes.type==flt)&&(fcol=='tout'||cn(x)==fcol)).map(cardHTML).join('');
-  bindToggle(drawColl);updBar();
+  const L=collData.filter(x=>(flt=='tout'||x.variantes_carte.cartes.type==flt)&&(fcol=='tout'||cn(x)==fcol));
+  $('#gr').innerHTML=L.map(cardHTML).join('');
+  bindToggle(drawColl);bindOpen(L,drawColl);updBar();
 }
 
 /* ---------- Boutique ---------- */
@@ -140,16 +398,17 @@ async function vBoutique(){
 
 /* ---------- Deck ---------- */
 async function vDeck(){
-  await loadColl();
+  await loadColl();await loadDecks();
   main.innerHTML='<div id="dbar" class="dbar"></div><div class="cgrid" id="gr"></div>';
   drawDeck();
 }
 function drawDeck(){
+  curView=drawDeck;
   const seen=new Set(),ord={combattant:0,magie:1,piege:2};
   const L=collData.filter(x=>{const i=x.variantes_carte.cartes.id;if(!deck.has(i)||seen.has(i))return false;seen.add(i);return true})
     .sort((a,b)=>(ord[a.variantes_carte.cartes.type]-ord[b.variantes_carte.cartes.type])||cmpColl(a,b));
   $('#gr').innerHTML=L.length?L.map(cardHTML).join(''):'<p>Ton deck est vide. Ajoute des cartes depuis « Ma collection ».</p>';
-  bindToggle(drawDeck);updBar();
+  bindToggle(drawDeck);bindOpen(L,drawDeck);updBar();
 }
 
 /* ---------- Profils (visibles par tous les joueurs connectés) ---------- */
@@ -264,7 +523,7 @@ function vRegles(){
   ${h('Ton deck','b','Simple et volontairement limité.')}
   <div class="stats">
    ${c('Les règles',ul(['9 à 10 cartes par deck','Au moins 3 combattants, 3 magies et 3 pièges','Une seule copie de chaque carte, pour éviter les combos trop forts']))}
-   ${c('Sur le site',ul(['« Ma collection » : clique sur une carte pour l\'ajouter au deck','Cartes rangées par rareté, filtres par type et collection','« Mon deck » : visualise ton équipe']))}
+   ${c('Sur le site',ul(['« Ma collection » : clique sur une carte pour l\'ajouter au deck','Cartes rangées par rareté, filtres par type et collection','« Mon deck » : visualise ton équipe','Clique sur une carte pour voir ses stats et ses effets en détail','Tu peux enregistrer plusieurs decks sous un nom (10 maximum), les recharger, et choisir celui qui sert aux combats']))}
   </div>
 
   ${h('Le combat','r','Un combattant, une magie et un piège sont tirés au hasard dans le deck de chaque joueur. Le calcul est automatique.')}
@@ -362,7 +621,10 @@ const ULT={degats:["Dégâts directs à l'adversaire",'val'],voler:['Vole une ma
  rage:["Rage : dégâts en plus par coup pendant X tours, puis obligatoirement Fatigue (dégâts en moins pendant X tours)",'ragev','u','ragetours','fatval','fattours'],
  fatigue:["Fatigue : réduit les dégâts de la cible de X par coup pendant X tours (adversaire par défaut)",'ciblem','fatval','u','fattours'],
  aleatoire:["Effet aléatoire : tire au hasard un effet parmi tous ceux du jeu (valeurs adaptées aux stats)",'nbalea'],
- atk_enchainement:["Enchaînement : X % de chances de frapper une fois de plus, puis retente (s'arrête au 1er échec)",'chance','max']};
+ atk_enchainement:["Enchaînement : X % de chances de frapper une fois de plus, puis retente (s'arrête au 1er échec)",'chance','max'],
+ etourdir_effet:["À X % de chances, étourdit pendant X tours (soi ou adversaire ; 100 % si la chance est vide)",'ciblem','chance','tours'],
+ poison_effet:["Poison : X points par tour pendant X tours (soi ou adversaire)",'ciblem','degtour','tours'],
+ brulure_effet:["Brûlure : X % des PV max par tour pendant X tours (soi ou adversaire)",'ciblem','pctpv','tours']};
 const MAG={atq_mod:["Modifie l'ATQ (négatif = baisse)",'cible','val','u'],pv_mod:['Modifie les PV max (négatif = baisse)','cible','val','u'],
  soin:['Soigne son combattant','val','u'],degats:["Dégâts directs à l'adversaire",'val'],annule_attaque:["Annule la prochaine attaque de l'adversaire"],
  renvoi:['Renvoie une part des dégâts pendant X tours','val','tours'],insensible_piege:['Insensible aux pièges pendant X tours','tours'],
@@ -371,7 +633,7 @@ const MAG={atq_mod:["Modifie l'ATQ (négatif = baisse)",'cible','val','u'],pv_mo
  malediction:["Malédiction : l'ATQ baisse de X points par tour pendant X tours",'ciblem','val','tours'],
  poison_effet:["Poison : X points par tour pendant X tours (soi ou adversaire)",'ciblem','degtour','tours'],
  brulure_effet:["Brûlure : X % des PV max par tour pendant X tours (soi ou adversaire)",'ciblem','pctpv','tours'],
- etourdir_effet:["Étourdit pendant X tours (soi ou adversaire)",'ciblem','tours'],
+ etourdir_effet:["À X % de chances, étourdit pendant X tours (soi ou adversaire ; 100 % si la chance est vide)",'ciblem','chance','tours'],
  atk_brulure:["Attaque de base : X % de chances de brûler (X % des PV max par tour, X tours)",'chance','pctpv','tours'],
  atk_poison:["Attaque de base : X % de chances d'empoisonner (X points par tour, X tours)",'chance','degtour','tours'],
  atk_etourdir:["Attaque de base : +X % de chances d'étourdir, pendant X attaques (1 par défaut ; s'ajoute au passif)",'chance','tours'],
