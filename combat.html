@@ -218,7 +218,7 @@ function simuler(pA,pB,opt={}){
  }
  // Malédiction : l'ATQ de la cible baisse de n points à chaque fin de tour pendant t tours (se cumule)
  // ── Statuts à TIK (brûlure, poison, saignement, malédiction) ──
- // « t tours » = t TIK au total. Brûlure, poison, saignement : TIK en fin de tour, APRÈS que les deux cartes ont attaqué (le tour où le statut est posé compte déjà). Malédiction : TIK au début du tour de la carte maudite, avant son attaque.
+ // « t tours » = t TIK au total, comptés sur les tours de la carte touchée. Malédiction : TIK au début de son tour, avant son attaque. Brûlure, poison, saignement : TIK à la fin de son tour, juste après son attaque.
  // Un seul statut de chaque sorte par carte : il garde la même intensité à chaque tik. Si quelque chose le réapplique par-dessus, l'intensité s'additionne et la durée repart à zéro.
  function tikUn(s,kind,d){const x=adv(s);
   if(kind==='dots'){const n=dmg(x,s,d.n);L('degats',`${nom(s)} subit ${n} (${d.k})`,{c:id(s),n,k:d.k})}
@@ -329,8 +329,9 @@ function simuler(pA,pB,opt={}){
    if(a.pv<=0||over())return;
    if(n>0&&d.pv>0){
     a.pl.filter(p=>p.type==='vol_pct_atq').forEach(p=>{if(roll(p.chance))heal(a,rd(n*p.pctatq/100))});
-    {const ec=[...a.pl,...a.st.atkfx].filter(q=>q.type==='etourdir').reduce((q,p)=>q+(p.chance||0),0);   // chances d'étourdir cumulables (passifs + effets de magie)
-     if(ec>0&&roll(Math.min(100,ec))){d.st.stun=Math.max(d.st.stun,1);L('statut',`${nom(d)} est étourdi !`,{c:idd,k:'etourdi'})}}
+    {const SQ=[...a.pl,...a.st.atkfx].filter(q=>q.type==='etourdir'&&(q.chance||0)>0),ec=SQ.reduce((q,p)=>q+p.chance,0);   // chances d'étourdir cumulables (passifs + effets de magie)
+     if(ec>0&&roll(Math.min(100,ec))){let u=r()*ec,src=SQ[SQ.length-1];for(const q of SQ){if(u<q.chance){src=q;break}u-=q.chance}   // la durée est celle de la source qui a déclenché
+      const T=Math.max(1,parseInt(src.tours,10)||1);d.st.stun=Math.max(d.st.stun,T);L('statut',`${nom(d)} est étourdi${T>1?` (${T} tours)`:''} !`,{c:idd,k:'etourdi'})}}
     for(const q of [...a.pl,...a.st.atkfx]){   // statuts donnés par les passifs et par les effets d'attaque de base
      if(q.type==='brulure'&&roll(q.chance))dotUn(d,'brûlure',rd(d.max*(q.pctpv||0)/100),q.tours||1);
      if(q.type==='poison'&&roll(q.chance))dotUn(d,'poison',q.degtour||0,q.tours||1);
@@ -349,6 +350,7 @@ function simuler(pA,pB,opt={}){
   if(s.pv<=0)return;
   for(const d of s.st.curses.slice()){if(s.pv<=0||over())return;if(!s.st.curses.includes(d))continue;tikUn(s,'curses',d)}   // malédiction : l'ATQ baisse AVANT l'attaque de la carte maudite
   if(s.pv<=0)return;
+  s.pl.forEach(p=>{if(p.type==='bonus_frappe'&&s.rt>=(p.coups||1)){s.st.bonus=amt(p,s.atq);L('statut',`${nom(s)} prépare une contre-attaque renforcée`,{c:id(s),k:'bonus'})}});s.rt=0;   // frappé X fois depuis son dernier tour : bonus sur l'attaque qui suit
   s.st.hots=s.st.hots.filter(h=>{if(s.pv<=0)return false;heal(s,h.n);if(--h.t>0)return true;L('statut',`La régénération de ${nom(s)} se termine`);return false});
  }
  // Fin du tour d'une carte : les durées qui dépendent de SES actions (rage, fatigue, gel, fracture, dégâts doublés) baissent d'un tour.
@@ -360,42 +362,45 @@ function simuler(pA,pB,opt={}){
   s.st.fat=s.st.fat.filter(f=>{if(--f.t>0)return true;L('finstatut',`La fatigue de ${nom(s)} se dissipe`,{c:id(s),k:'fatigue'});return false});   // avant la rage : la fatigue qui suit la rage commence au tour d'après
   s.st.rage=s.st.rage.filter(g=>{if(--g.t>0)return true;L('finstatut',`La rage de ${nom(s)} retombe`,{c:id(s),k:'rage'});if(g.ft>0&&g.fv>0)fatiguer(s,g.fv,g.fu,g.ft,true);return false});
   if(s.st.dbl>0)s.st.dbl--;
+  s.st.ren=s.st.ren.filter(R=>--R.t>0);if(s.st.insens>0)s.st.insens--;
  }
- // Fin de tour, après les deux attaques : TIK des dégâts de statut de chaque carte (brûlure / poison dans l'ordre d'application, puis saignement)
- function tikFinDeTour(){
-  for(const s of ordre){if(s.pv<=0)continue;
-   for(const kind of ['dots','bleeds']){
-    for(const d of s.st[kind].slice()){if(s.pv<=0||over())return;if(!s.st[kind].includes(d))continue;tikUn(s,kind,d)}}}
- }
- function finDeTour(){
-  S.forEach(s=>{if(s.pv<=0)return;const x=adv(s);
-   s.st.purs=s.st.purs.filter(h=>{if(h.t.pv<=0)return false;if(++h.c<h.every)return true;h.c=0;purifier(h.t);return --h.left>0});
-   if(s.pv<=0)return;
-   if(s.pv<=0)return;
-   s.pl.forEach((p,pi)=>{
-    if(p.type==='aleatoire'&&(!p.every||tour%p.every===0)&&roll(p.chance==null||p.chance===''?100:p.chance)&&!over())effetAlea(s,x);
-    // Passif de purification : tous les X tours (vide = chaque tour), X fois au maximum (vide = illimité) ; ne se déclenche que s'il y a un statut négatif à retirer
-    if(p.type==='purification'&&(!p.every||tour%p.every===0)&&(!p.fois||(s.st.pcnt[pi]||0)<p.fois)){const z=s.st;
-     if(z.dots.length||z.curses.length||z.bleeds.length||z.frost.length||z.fract.length||z.fat.length||z.skip>0||z.cl>0){s.st.pcnt[pi]=(s.st.pcnt[pi]||0)+1;purifier(s)}}
+ // ── ORDRE FIXE DU TOUR D'UNE CARTE (le même pour tout le monde, qu'elle joue en premier ou en deuxième) ──
+ //  1. début : malédiction (l'ATQ baisse), régénération        — debutTour
+ //  2. ultime                                                  — ultime
+ //  3. attaque (et ses effets : statuts posés, pièges…)        — attaque
+ //  4. ses effets « à chaque tour » (ATQ / PV qui augmentent, soin, effet aléatoire) — passifsTour
+ //  5. ses dégâts de statut (brûlure, poison, saignement), ses purifications, ses dégâts différés — statutsCarte
+ //  6. fin de ses durées (gel, fracture, fatigue, rage, dégâts doublés, renvoi, insensibilité aux pièges) — finTourCarte
+ // Aucun effet n'est rattaché au « tour » en général : chacun est rattaché au tour de SA carte.
+ function passifsTour(s){
+  if(s.pv<=0)return;const x=adv(s);
+  s.pl.forEach(p=>{if(s.pv<=0)return;
+   if(p.type==='aleatoire'&&(!p.every||tour%p.every===0)&&roll(p.chance==null||p.chance===''?100:p.chance)&&!over())effetAlea(s,x);
    if(p.type==='soin_tour')heal(s,amt(p,s.max));
    if(p.type==='atq_tours'&&tour%p.tours===0){const dd=amt(p,s.atq);s.atq+=dd;L('stat',`ATQ de ${nom(s)} +${dd}`,{c:id(s),k:'mod',s:'ATQ',d:dd})}
    if(p.type==='pv_tours'&&tour%p.tours===0){const d=amt(p,s.max);s.max+=d;s.pv+=d;L('stat',`PV max de ${nom(s)} +${d}`,{c:id(s),k:'mod',s:'PV max',d})}
-   if(p.type==='bonus_frappe'&&s.rt>=(p.coups||1)){s.st.bonus=amt(p,s.atq);L('statut',`${nom(s)} prépare une contre-attaque renforcée`,{c:id(s)})}
-   });
-   if(s.pv<=0)return;
-   s.st.prog=s.st.prog.filter(p=>{if(--p.t>0)return true;const n=dmg(p.src,s,p.n);L('degats',`${nom(s)} subit ${n} (dégâts différés)`,{c:id(s),n});return false});
-   s.st.ren=s.st.ren.filter(R=>--R.t>0);if(s.st.insens>0)s.st.insens--;
+  })}
+ function statutsCarte(s){
+  if(s.pv<=0)return;
+  for(const kind of ['dots','bleeds']){   // brûlure / poison dans l'ordre d'application, puis saignement
+   for(const d of s.st[kind].slice()){if(s.pv<=0||over())return;if(!s.st[kind].includes(d))continue;tikUn(s,kind,d)}}
+  if(s.pv<=0)return;
+  s.st.purs=s.st.purs.filter(h=>{if(h.t.pv<=0)return false;if(++h.c<h.every)return true;h.c=0;purifier(h.t);return --h.left>0});
+  if(s.pv<=0)return;
+  s.pl.forEach((p,pi)=>{
+   // Passif de purification : tous les X tours (vide = chaque tour), X fois au maximum (vide = illimité) ; ne se déclenche que s'il y a un statut négatif à retirer
+   if(p.type==='purification'&&(!p.every||tour%p.every===0)&&(!p.fois||(s.st.pcnt[pi]||0)<p.fois)){const z=s.st;
+    if(z.dots.length||z.curses.length||z.bleeds.length||z.frost.length||z.fract.length||z.fat.length||z.skip>0||z.cl>0){s.st.pcnt[pi]=(s.st.pcnt[pi]||0)+1;purifier(s)}}
   });
+  if(s.pv<=0)return;
+  s.st.prog=s.st.prog.filter(p=>{if(--p.t>0)return true;const n=dmg(p.src,s,p.n);L('degats',`${nom(s)} subit ${n} (dégâts différés)`,{c:id(s),n});return false});
  }
-
  // ---- Déroulé ----
  const first=r()<.5?0:1,ordre=[S[first],S[1-first]];
  L('debut','Le combat commence !',{joueurs:S.map(s=>({pseudo:s.pseudo,dos:s.dos,carte:s.card.nom,image:s.card.image||null,imageCombat:s.card.imageCombat||null,magie:s.mag.nom,piege:s.pie.nom,magieImg:s.mag.image||null,piegeImg:s.pie.image||null,ids:[s.card.id,s.mag.id,s.pie.id]})),premier:first});
  ordre.forEach(s=>{if(s.mag.effet){L('magie',`Magie de ${s.pseudo} : ${s.mag.nom}`,{c:id(s),carte:s.mag.nom,img:s.mag.image||null});fx(s.mag.effet,s,adv(s),true);S.forEach(k=>k.pend=1)}});
  for(tour=1;tour<=reg.maxTours&&!over();tour++){
-  S.forEach(s=>s.rt=0);
-  for(let oi=0;oi<2;oi++){const a=ordre[oi];if(over())break;L('tour',`Tour ${(tour-1)*2+oi+1}`);debutTour(a);if(over())break;ultime(a);if(over())break;attaque(a);if(over())break;finTourCarte(a)}
-  if(over())break;tikFinDeTour();if(over())break;finDeTour();
+  for(let oi=0;oi<2;oi++){const a=ordre[oi];if(over())break;L('tour',`Tour ${(tour-1)*2+oi+1}`);debutTour(a);if(over())break;ultime(a);if(over())break;attaque(a);if(over())break;passifsTour(a);if(over())break;statutsCarte(a);if(over())break;finTourCarte(a)}
  }
  const dead=S.map(s=>s.pv<=0);let w=null;
  if(dead[0]!==dead[1])w=dead[0]?1:0;else if(!dead[0]&&S[0].pv!==S[1].pv)w=S[0].pv>S[1].pv?0:1;
