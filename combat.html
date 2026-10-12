@@ -103,6 +103,16 @@ canvas.fx.gel{box-shadow:inset 0 0 40px 12px rgba(150,220,255,.8)}
 .cw.rr-lg::before{inset:-5px;border-radius:17px;background:conic-gradient(from var(--ang),var(--g),#fffbe0,var(--g),#ffe58a,var(--g));animation:cbglow 2.4s ease-in-out infinite,cbspin 4.5s linear infinite}
 .card .shn{position:absolute;inset:0;z-index:4;pointer-events:none;background:linear-gradient(115deg,transparent 38%,rgba(255,255,255,.42) 50%,transparent 62%);transform:translateX(-130%);animation:cbshine 4.2s ease-in-out infinite}
 .cw.rr-lg .card .shn{animation-duration:3.2s}
+
+/* tour en cours : le pseudo du joueur s'allume au-dessus de sa carte */
+.pj{font-size:3.7vh;font-weight:900;letter-spacing:.02em;line-height:1.1;margin:0 0 1.2vh;color:#e5ece7;opacity:.55;text-shadow:0 0 8px #000,0 0 3px #000;transition:opacity .35s,transform .35s,color .35s;position:relative;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.p.actif .pj{opacity:1;color:#fff;transform:scale(1.1);animation:pjglow 1.6s ease-in-out infinite;text-shadow:0 0 .8vh #ffd34d,0 0 2vh #ffb300,0 0 3px #000}
+.p.actif .pj::before{content:'▶ ';color:#ffd34d}.p.actif .pj::after{content:' ◀';color:#ffd34d}
+@keyframes pjglow{0%,100%{filter:brightness(1)}50%{filter:brightness(1.35)}}
+.p.actif .nm{color:#fff}
+.p.idle .cw{filter:brightness(.72) saturate(.85)}
+.cw{transition:filter .4s}
+.nm{font-size:2vh;font-weight:600;opacity:.9}
 </style></head><body>
 <div id="scene"><div class="p" id="p0"></div>
 <div id="mid"><div id="tour"></div><div id="ban"></div></div><div class="p" id="p1"></div></div>
@@ -438,7 +448,7 @@ function simuler(pA,pB,opt={}){
  L('debut','Le combat commence !',{joueurs:S.map(s=>({pseudo:s.pseudo,dos:s.dos,carte:s.card.nom,image:s.card.image||null,imageCombat:s.card.imageCombat||null,rar:s.card.rar||null,magie:s.mag.nom,piege:s.pie.nom,magieImg:s.mag.image||null,piegeImg:s.pie.image||null,ids:[s.card.id,s.mag.id,s.pie.id]})),premier:first});
  ordre.forEach(s=>{if(s.mag.effet){L('magie',`Magie de ${s.pseudo} : ${s.mag.nom}`,{c:id(s),carte:s.mag.nom,img:s.mag.image||null});fx(s.mag.effet,s,adv(s),true);S.forEach(k=>k.pend=1)}});
  for(tour=1;tour<=reg.maxTours&&!over();tour++){
-  for(let oi=0;oi<2;oi++){const a=ordre[oi];if(over())break;L('tour',`Tour ${(tour-1)*2+oi+1}`);debutTour(a);if(over())break;ultime(a);if(over())break;attaque(a);if(over())break;passifsTour(a);if(over())break;statutsCarte(a);if(over())break;finTourCarte(a)}
+  for(let oi=0;oi<2;oi++){const a=ordre[oi];if(over())break;L('tour',`Tour ${(tour-1)*2+oi+1}`,{c:id(a)});debutTour(a);if(over())break;ultime(a);if(over())break;attaque(a);if(over())break;passifsTour(a);if(over())break;statutsCarte(a);if(over())break;finTourCarte(a)}
  }
  const dead=S.map(s=>s.pv<=0);let w=null;
  if(dead[0]!==dead[1])w=dead[0]?1:0;else if(!dead[0]&&S[0].pv!==S[1].pv)w=S[0].pv>S[1].pv?0:1;
@@ -480,8 +490,8 @@ function tierRar(r){const n=String((r&&r.nom)||'').normalize('NFD').replace(/[\u
 let JOUEURS=[];
 const dosCSS=j=>j.dos?`background-image:url('${STORAGE+j.dos}')`:'';
 function panneau(i,j){const im=j.imageCombat||j.image,t=tierRar(j.rar),col=(j.rar&&j.rar.couleur)||'#888',magV=/^Aucun/.test(j.magie);JOUEURS[i]=j;
- $('#p'+i).innerHTML=`<div class="cw${t!=='co'?' rr rr-'+t:''}" style="--g:${col}"><div class="card" ${im?`style="background-image:url('${STORAGE+im}')"`:''}>${im?'':j.carte}<div class="dosf" style="${dosCSS(j)}">${j.dos?'':'🌲'}</div>${t==='ep'||t==='lg'?'<span class="shn"></span>':''}${j.imageCombat?'<span class="sv sva" data-v=""></span><span class="sv svp" data-v=""></span>':''}</div></div>
- <div class="nm">${j.pseudo} — ${j.carte}</div><div class="bar"><i></i></div><div class="pv"></div>
+ $('#p'+i).innerHTML=`<div class="pj">${String(j.pseudo).replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div><div class="cw${t!=='co'?' rr rr-'+t:''}" style="--g:${col}"><div class="card" ${im?`style="background-image:url('${STORAGE+im}')"`:''}>${im?'':j.carte}<div class="dosf" style="${dosCSS(j)}">${j.dos?'':'🌲'}</div>${t==='ep'||t==='lg'?'<span class="shn"></span>':''}${j.imageCombat?'<span class="sv sva" data-v=""></span><span class="sv svp" data-v=""></span>':''}</div></div>
+ <div class="nm">${j.carte}</div><div class="bar"><i></i></div><div class="pv"></div>
  <div class="mp"><div class="mw"><div class="mini${magV?' vide':' back dos mag'}" id="m${i}" ${magV?mini(j.magieImg):`style="${dosCSS(j)}"`}>${magV?(j.magieImg?'':j.magie):(j.dos?'':'?')}</div><small>Magie</small></div>
  <div class="mw"><div class="mini back${/^Aucun/.test(j.piege)?' vide':''}${j.dos?' dos':''}" id="g${i}" ${j.dos?`style="background-image:url('${STORAGE+j.dos}')"`:''}>${j.dos?'':'?'}</div><small>Piège</small></div></div>`}
 let st={};const fxAll=new Set(),R=(a,b)=>a+Math.random()*(b-a);
@@ -931,9 +941,9 @@ async function jouer(res){
  while(file.length){const R=file.shift();await verrouPrendre('combat');journalRecap=R;$('#log').innerHTML='';
   for(let ix=0;ix<R.journal.length;ix++){const e=R.journal[ix];
    $('#ban').className=e.t;$('#ban').textContent=e.txt;$('#log').innerHTML+=e.txt+'<br>';$('#log').scrollTop=1e5;
-   if(e.t==='debut'){st={};fxL.length=0;fxAll.forEach(s=>s());fxAll.clear();JOUEURS=[];e.joueurs.forEach((j,i)=>panneau(i,j));$('#scene').classList.add('on');maj(e);await wait(2200);   // les 3 dos de chaque joueur, puis les combattants se retournent
+   if(e.t==='debut'){st={};fxL.length=0;fxAll.forEach(s=>s());fxAll.clear();JOUEURS=[];[0,1].forEach(i=>$('#p'+i).classList.remove('actif','idle'));e.joueurs.forEach((j,i)=>panneau(i,j));$('#scene').classList.add('on');maj(e);await wait(2200);   // les 3 dos de chaque joueur, puis les combattants se retournent
     await Promise.all([0,1].map(i=>retourner($('#p'+i+' .card'),()=>{const d=$('#p'+i+' .dosf');if(d)d.remove()})));await wait(900);continue}
-   if(e.t==='tour'){$('#tour').textContent=e.txt;await wait(700);continue}
+   if(e.t==='tour'){const jp=e.c!=null&&JOUEURS[e.c];$('#tour').textContent=e.txt+(jp?' · Au tour de '+jp.pseudo:'');[0,1].forEach(i=>{const p=$('#p'+i);if(p){p.classList.toggle('actif',i===e.c);p.classList.toggle('idle',e.c!=null&&i!==e.c)}});await wait(700);continue}
    const card=e.c!=null?$('#p'+e.c+' .card'):null;
    if(e.t==='attaque'){card.classList.add('atk');await wait(450);card.classList.remove('atk');continue}
    if(e.k==='echange'){if(e.cs&&e.cs.length===2){echangeLien(e.cs[0],e.cs[1],e.col||'bleu');await sleep(1250)}else{(e.cs||[e.c]).forEach(echange);await sleep(1050)}maj(e);await wait(900);continue}
@@ -969,7 +979,7 @@ async function jouer(res){
    else if(e.t==='piege'){revele(e.c,e);await zoomCarte('g'+e.c,e,'piege');if(e.k==='bloque')$('#g'+e.c).classList.add('annule')}
    let ms={magie:600,piege:600,ultime:2200,fin:5000,degats:900,soin:1300,esquive:1100,bloque:1500,statut:1100,stat:1500,vol:1500,protege:2900,finstatut:250,frappe:350}[e.t]||900;
    if(e.t==='degats'&&R.journal.slice(ix+1,ix+4).some(z=>z.t==='protege'&&z.c===e.c))ms=200;   // coup fatal évité : les dégâts et l'effet « évite la mort » apparaissent presque ensemble
-   if(e.t==='fin'){[0,1].forEach(faceMagie);fxAll.forEach(s=>s());fxAll.clear();document.querySelectorAll('canvas.fx').forEach(k=>k.remove());{const rw=e.recompenses[e.gagnant??0];$('#ban').textContent=e.txt+(rw>0?` (+${rw})`:'')}if(e.gagnant!=null){briser(1-e.gagnant);auraFx(e.gagnant,{gold:1,dur:5.2})}}
+   if(e.t==='fin'){[0,1].forEach(i=>{faceMagie(i);const p=$('#p'+i);if(p)p.classList.remove('actif','idle')});fxAll.forEach(s=>s());fxAll.clear();document.querySelectorAll('canvas.fx').forEach(k=>k.remove());{const rw=e.recompenses[e.gagnant??0];$('#ban').textContent=e.txt+(rw>0?` (+${rw})`:'')}if(e.gagnant!=null){briser(1-e.gagnant);auraFx(e.gagnant,{gold:1,dur:5.2})}}
    await wait(ms);
   }
   if(!TEST&&!DEMO&&R.annonce&&wsLive&&wsLive.readyState===1)wsLive.send(JSON.stringify({request:'DoAction',id:'fin-combat',action:{name:ACTION_FIN},args:{message:R.annonce}}));   // annonce du résultat dans le chat, une fois l'animation terminée
