@@ -270,7 +270,7 @@ function vRegles(){
   ${h('Le combat','r','Un combattant, une magie et un piège sont tirés au hasard dans le deck de chaque joueur. Le calcul est automatique.')}
   <div class="stats">
    ${c('Début','Les magies s\'activent et dévoilent leur carte.')}
-   ${c('Chaque tour','Chaque carte joue à son tour : malédiction et soins éventuels, puis ultime éventuel, puis attaque. En fin de tour, une fois que les deux cartes ont joué, poison, brûlure et saignement font effet.')}
+   ${c('Chaque tour','Chaque carte joue à son tour, toujours dans le même ordre : malédiction et régénération, ultime, attaque, ses effets « à chaque tour » (ATQ qui augmente, soin, effet aléatoire), puis ses dégâts de statut (poison, brûlure, saignement) et la fin de ses durées.')}
    ${c('Pièges','Ils se déclenchent dès que leur condition est remplie.')}
    ${c('Fin','À 0 PV, ou quand chaque carte a joué 10 fois : le plus de PV l\'emporte. Chaque carte qui joue compte pour un tour (tour 1 : le premier joueur, tour 2 : le deuxième, et ainsi de suite).')}
   </div>
@@ -295,7 +295,7 @@ function vRegles(){
    ${c('Défense','Esquive, blocage, renvoi de dégâts, soin, purification, évite la mort, réanimation.')}
    ${c('Attaque','Enchaînement de frappes, vol de vie, vol d\'ultime, échange d\'ATQ et de PV, effets aléatoires.')}
   </div>
-  ${ul(['Poison, brûlure et saignement font effet en fin de tour, une fois que les deux cartes ont joué. La malédiction baisse l\'ATQ au début du tour de la carte maudite, juste avant son attaque.','Un statut garde la même intensité à chaque tour. Si un effet le réapplique par-dessus, l\'intensité s\'additionne et la durée repart de zéro.','La purification retire tous les statuts négatifs présents à ce moment-là, sauf l\'étourdissement : il fait toujours sauter la prochaine attaque de la carte touchée, quoi qu\'il arrive.','Rage, fatigue, gel et fracture comptent les tours de la carte touchée.']).replace('<ul>','<ul style="color:#aaa;font-size:14px">')}
+  ${ul(['Les effets suivent le tour de la carte concernée : la malédiction baisse l\'ATQ au début de son tour, juste avant son attaque ; poison, brûlure et saignement font effet à la fin de son tour, juste après son attaque. Jouer en premier ou en deuxième ne change jamais cet ordre.','Un statut garde la même intensité à chaque tour. Si un effet le réapplique par-dessus, l\'intensité s\'additionne et la durée repart de zéro.','La purification retire tous les statuts négatifs présents à ce moment-là, sauf l\'étourdissement : il fait toujours sauter la prochaine attaque de la carte touchée, quoi qu\'il arrive.','Rage, fatigue, gel et fracture comptent les tours de la carte touchée.']).replace('<ul>','<ul style="color:#aaa;font-size:14px">')}
 
   ${h('Ton profil','v','Visible par tous les joueurs connectés.')}
   <div class="stats">
@@ -339,7 +339,7 @@ const PAS={evite_mort:['Évite la mort une fois (reste à 1 PV et retire les sta
  atq_tours:["Augmente l'ATQ tous les X tours",'tours','val','u'],pv_tours:['Augmente les PV tous les X tours','tours','val','u'],
  multi_frappe:['À X % de chances, frappe X fois par tour','chance','frappes'],reduc_degats:['À X % de chances, réduit les dégâts reçus de X','chance','val','u'],
  bonus_frappe:["Si frappé X fois par tour, bonus à la prochaine attaque",'coups','val','u'],
- etourdir:["À X % de chances, étourdit la cible (n'attaque pas au prochain tour)",'chance'],
+ etourdir:["À X % de chances, étourdit la cible : elle saute sa prochaine attaque, ou les X prochaines si tu indiques une durée",'chance','tours'],
  vol_pct_atq:["À X % de chances, vole X % de l'ATQ infligée (soin)",'chance','pctatq'],
  brulure:["À X % de chances, applique une brûlure (% de PV par tour)",'chance','pctpv','tours'],
  poison:["À X % de chances, applique un poison (points par tour)",'chance','degtour','tours'],
@@ -374,7 +374,7 @@ const MAG={atq_mod:["Modifie l'ATQ (négatif = baisse)",'cible','val','u'],pv_mo
  etourdir_effet:["Étourdit pendant X tours (soi ou adversaire)",'ciblem','tours'],
  atk_brulure:["Attaque de base : X % de chances de brûler (X % des PV max par tour, X tours)",'chance','pctpv','tours'],
  atk_poison:["Attaque de base : X % de chances d'empoisonner (X points par tour, X tours)",'chance','degtour','tours'],
- atk_etourdir:["Attaque de base : +X % de chances d'étourdir (s'ajoute au passif)",'chance'],
+ atk_etourdir:["Attaque de base : +X % de chances d'étourdir, pendant X attaques (1 par défaut ; s'ajoute au passif)",'chance','tours'],
  esquive_mod:["Modifie le % d'esquive (négatif = baisse)",'cible','val'],
  soin_tours:["Régénération : soigne de X PV par tour pendant X tours",'val','u','tours'],
  purification:["Purification : retire les statuts négatifs (poison, brûlure, gel, saignement, fracture, malédiction, étourdissement…) et rend l'ATQ perdu. 1re purification tout de suite, puis une tous les X tours, X fois au total",'cible','every','fois'],
