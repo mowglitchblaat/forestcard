@@ -106,6 +106,8 @@ if(/demo|test|debug/.test(location.search))addEventListener('error',e=>{let b=do
    joueur = { pseudo, deck:[carte...] } ; carte = ligne de la table `cartes` (type, nom, atq, pv, passif, ultime, effet, image)
    Le calcul est entièrement déterminé par la seed : même seed = même combat (rejouable). */
 (function(g){
+const canon=e=>e&&typeof e.type==='string'&&e.type.indexOf('perso_')===0&&/etourd/.test(e.type)?{...e,type:'etourdir_effet'}:e;   // effet « perso » étourdissement : exécuté comme l'étourdissement du moteur
+const canonP=p=>p&&typeof p.type==='string'&&p.type.indexOf('perso_')===0&&/etourd/.test(p.type)?{...p,type:'etourdir'}:p;
 const REG={maxTours:10,gain:50,perte:10,nul:20,plafondEsquive:75};
 const VM={nom:'Aucune magie',effet:null,vide:1},VP={nom:'Aucun piège',effet:null,vide:1};
 const rng=s=>()=>{s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
@@ -115,7 +117,7 @@ function simuler(pA,pB,opt={}){
  const seed=opt.seed??(Math.random()*1e9|0),r=rng(seed),reg={...REG,...opt.regles},J=[];
  const roll=p=>r()*100<(p||0);
  const tire=(deck,t)=>{const l=deck.filter(c=>c.type===t);return l[Math.floor(r()*l.length)]};
- const normPas=p=>!p?[]:p.briques?p.briques.filter(b=>b&&b.type):(p.type?[p]:[]);   // passif unique (ancien format) ou plusieurs passifs { briques:[…] }
+ const normPas=p=>!p?[]:p.briques?p.briques.filter(b=>b&&b.type).map(canonP):(p.type?[canonP(p)]:[]);   // passif unique (ancien format) ou plusieurs passifs { briques:[…] }
  const nw=p=>{const c=tire(p.deck,'combattant');if(!c)throw new Error(p.pseudo+" n'a aucun combattant dans son deck");const pl=normPas(c.passif);
   return{pseudo:p.pseudo,deck:p.deck,dos:p.dos||null,card:c,mag:tire(p.deck,'magie')||VM,pie:tire(p.deck,'piege')||VP,atq:c.atq,pv:c.pv,max:c.pv,pl:pl,ult:c.ultime,
    uh:[{u:c.ultime,uses:0,last:-99}],magOn:1,pieOn:1,decl:0,mdelta:[],st:{rage:[],fat:[],pcnt:[],rUsed:[],reanL:[],purs:[],hots:[],cl:0,bleeds:[],frost:[],fract:[],stun:0,skip:0,dbl:0,dots:[],curses:[],atkfx:[],esqb:0,ren:[],insens:0,prog:[],evite:pl.some(p=>p.type==='evite_mort'),mortUsed:0,bonus:0},
@@ -169,6 +171,7 @@ function simuler(pA,pB,opt={}){
  // Effets : o = propriétaire de l'effet, x = adversaire. mg=true : effet de magie (annulable/volable)
  function fx(e,o,x,mg){
   if(!e)return;
+  e=canon(e);
   if(e.briques){e.briques.forEach(b=>fx(b,o,x,mg));return}      // effet « maison » composé de briques de base
   const T=e.cible==='adversaire'?x:o;
   const delta=(s,k,d)=>{if(mg)o.mdelta.push({s,k,d})};
@@ -203,7 +206,8 @@ function simuler(pA,pB,opt={}){
    case'poison_effet':{const M=(e.ciblem||e.cible)==='soi'?o:x;dotUn(M,'poison',e.degtour||0,e.tours||1);break}
    case'brulure_effet':{const M=(e.ciblem||e.cible)==='soi'?o:x;dotUn(M,'brûlure',rd(M.max*(e.pctpv||0)/100),e.tours||1);break}
    case'etourdir_effet':{const M=(e.ciblem||e.cible)==='soi'?o:x,ch=e.chance==null||e.chance===''?100:(+e.chance||0),T=Math.max(1,parseInt(e.tours,10)||1);   // chance vide = 100 %
-    if(!roll(ch)){L('statut',`${nom(M)} résiste à l'étourdissement (${ch} % de chances)`,{c:id(M)});break}
+    const ess=Math.max(1,parseInt(e.essais,10)||1);let ok=false;for(let k=0;k<ess&&!ok;k++)ok=roll(ch);   // X tentatives de suite, la 1re réussite suffit
+    if(!ok){L('statut',`${nom(M)} résiste à l'étourdissement (${ch} % de chances${ess>1?', '+ess+' tentatives':''})`,{c:id(M)});break}
     M.st.stun=Math.max(M.st.stun,T);L('statut',`${nom(M)} est étourdi (${T} tour${T>1?'s':''}) !`,{c:id(M),k:'etourdi'});break}
    case'atk_fatigue':case'atk_enchainement':case'atk_brulure':case'atk_poison':case'atk_etourdir':case'atk_saignement':case'atk_malediction':case'atk_fracture':case'atk_gel':{const q={...e,type:e.type.slice(4)};o.st.atkfx.push(q);if(mg)o.mdelta.push({undo:()=>{o.st.atkfx=o.st.atkfx.filter(z=>z!==q)}});
     L('statut',`L'attaque de ${nom(o)} peut maintenant ${{fatigue:'fatiguer',enchainement:'enchaîner les frappes',brulure:'brûler',poison:'empoisonner',etourdir:'étourdir',saignement:'faire saigner',malediction:'maudire',fracture:'fracturer',gel:'geler'}[q.type]} (${q.chance} %)`);break}
@@ -237,7 +241,14 @@ function simuler(pA,pB,opt={}){
   L('statut',`${nom(d0)} saigne${cum?' encore plus' :''} (${d.pct} % des PV max par tour, soins −${d.r} %, ${d.t} tour${d.t>1?'s':''}) !`,{c:id(d0),k:'saignement'})}
  function dotUn(M,k,n,t){let d=M.st.dots.find(z=>z.k===k);const cum=!!d;if(d){d.n+=n;d.t=Math.max(d.t,t)}else{d={k,n,t};M.st.dots.push(d)}
   L('statut',`${nom(M)} ${k==='poison'?'est empoisonné':'brûle'}${cum?' encore plus fort':''} !`,{c:id(M),k:k==='poison'?'poison':'brulure'})}
- function fatiguer(d,n,u,t,apresRage){const v=u==='pct'?rd(d.atq*n/100):n;t=t||1;d.st.fat.push({n:v,t});L('statut',`${nom(d)} est fatigué (dégâts −${v} par coup, ${t} tour${t>1?'s':''})${apresRage?' après la rage':''} !`,{c:id(d),k:'fatigue'})}
+ // Fatigue : l'ATQ de la carte baisse tout de suite de n points (rendus à la fin ou à la purification). Une seule fatigue par carte :
+ // si elle est réappliquée, sa DURÉE s'additionne mais son intensité ne s'additionne pas (on garde la plus forte).
+ function fatiguer(d,n,u,t,apresRage){const v=Math.max(0,u==='pct'?rd(d.atq*n/100):(+n||0));t=Math.max(1,parseInt(t,10)||1);let f=d.st.fat[0];const cum=!!f;let lost=0;
+  if(f){f.t+=t;if(v>f.n){lost=Math.min(v-f.n,d.atq);f.n=v;f.q+=lost}}
+  else{lost=Math.min(v,d.atq);f={n:v,q:lost,t};d.st.fat.push(f)}
+  d.atq-=lost;
+  L('statut',`${nom(d)} est fatigué${cum?' plus longtemps':''} (ATQ −${f.n}, ${f.t} tour${f.t>1?'s':''})${apresRage?' après la rage':''} !`,{c:id(d),k:'fatigue'});
+  if(lost>0)L('stat',`ATQ de ${nom(d)} −${lost} (fatigue)`,{c:id(d),k:'mod',s:'ATQ',d:-lost})}
 
  // Effet aléatoire : tire au hasard (graine du combat) un effet parmi tous ceux du jeu, avec des valeurs adaptées aux stats des cartes
  function effetAlea(o,x){
@@ -291,9 +302,10 @@ function simuler(pA,pB,opt={}){
 // Purification : retire les statuts négatifs de t (sauf l'étourdissement) et lui rend l'ATQ perdu par malédiction
  function purifier(t,silent){const z=t.st,pk=[];z.pg=(z.pg||0)+1;
   z.dots.forEach(d=>pk.push(d.k==='poison'?'poison':'brulure'));z.curses.forEach(()=>pk.push('malediction'));z.bleeds.forEach(()=>pk.push('saignement'));z.frost.forEach(()=>pk.push('gel'));z.fat.forEach(()=>pk.push('fatigue'));z.fract.forEach(()=>pk.push('fracture'));
-  const etd=z.skip>0,rest=z.cl;if(etd)pk.push('annule');z.dots=[];z.curses=[];z.bleeds=[];z.frost=[];z.fract=[];z.fat=[];z.skip=0;z.cl=0;   // l'étourdissement n'est JAMAIS retiré : il fait toujours sauter la prochaine attaque
+  const etd=z.skip>0,rest=z.cl,restF=z.fat.reduce((q,f)=>q+(f.q||0),0);if(etd)pk.push('annule');z.dots=[];z.curses=[];z.bleeds=[];z.frost=[];z.fract=[];z.fat=[];z.skip=0;z.cl=0;   // l'étourdissement n'est JAMAIS retiré : il fait toujours sauter la prochaine attaque
   if(!silent)L('statut',`${nom(t)} est purifié${pk.length||rest?(z.stun>0?" (sauf l'étourdissement)":''):(z.stun>0?" (l'étourdissement reste)":' (rien à retirer)')} !`,{c:id(t),k:'purif'});
   if(rest>0){t.atq+=rest;L('stat',`ATQ de ${nom(t)} +${rest} (malédiction levée)`,{c:id(t),k:'mod',s:'ATQ',d:rest})}
+  if(restF>0){t.atq+=restF;L('stat',`ATQ de ${nom(t)} +${restF} (fatigue levée)`,{c:id(t),k:'mod',s:'ATQ',d:restF})}
   if(!silent){const LB={annule:"annulation d'attaque",brulure:'brûlure',malediction:'malédiction'};pk.forEach(k=>L('finstatut',`${LB[k]||k} dissipé${k==='annule'?'e':''}`,{c:id(t),k:k==='annule'?'etourdi':k}))}}
  function undo(s){s.mdelta.forEach(d=>{if(d.undo){d.undo();return}d.s[d.k]-=d.d;if(d.k==='max')d.s.pv=Math.min(d.s.pv,d.s.max)});s.mdelta=[]}
 
@@ -323,7 +335,7 @@ function simuler(pA,pB,opt={}){
    if(k>=base)L('attaque',`${nom(a)} enchaîne une frappe de plus !`,{c:ia,k:'enchaine'});
    else if(base>1)L('frappe',`Frappe ${k+1}/${base} de ${nom(a)}`,{c:ia});
    const ech=Math.min(reg.plafondEsquive,d.pl.filter(p=>p.type==='esquive').reduce((q,p)=>q+(p.chance||0),0)+d.st.esqb);if(ech>0&&roll(ech)){L('esquive',`${nom(d)} esquive !`,{c:idd});continue} // l'esquive annule aussi les effets associés
-   let n=Math.max(0,a.atq*(a.st.dbl>0?2:1)+a.st.bonus+a.st.rage.reduce((q,g)=>q+g.n,0)-a.st.fat.reduce((q,f)=>q+f.n,0));a.st.bonus=0;   // rage : dégâts en plus · fatigue : dégâts en moins
+   let n=Math.max(0,a.atq*(a.st.dbl>0?2:1)+a.st.bonus+a.st.rage.reduce((q,g)=>q+g.n,0));a.st.bonus=0;   // rage : dégâts en plus · fatigue : dégâts en moins
    d.pl.filter(p=>p.type==='reduc_degats').forEach(p=>{if(roll(p.chance)){L('bloque',`${nom(d)} bloque une partie des dégâts`,{c:idd});n=Math.max(0,n-amt(p,n))}});
    d.rt++;n=dmg(a,d,n);L('degats',`${nom(d)} subit ${n} dégâts`,{c:idd,n});
    d.pl.filter(p=>p.type==='renvoi').forEach(p=>{if(n>0){const b=dmg(d,a,amt(p,n));L('degats',`${nom(a)} subit ${b} dégâts renvoyés`,{c:ia,n:b,k:'renvoi',from:idd})}});
@@ -332,7 +344,8 @@ function simuler(pA,pB,opt={}){
    if(n>0&&d.pv>0){
     a.pl.filter(p=>p.type==='vol_pct_atq').forEach(p=>{if(roll(p.chance))heal(a,rd(n*p.pctatq/100))});
     {const SQ=[...a.pl,...a.st.atkfx].filter(q=>q.type==='etourdir'&&(+q.chance||0)>0).map(q=>({...q,chance:+q.chance})),ec=SQ.reduce((q,p)=>q+p.chance,0);   // chances d'étourdir cumulables (passifs + effets de magie)
-     if(ec>0&&roll(Math.min(100,ec))){let u=r()*ec,src=SQ[SQ.length-1];for(const q of SQ){if(u<q.chance){src=q;break}u-=q.chance}   // la durée est celle de la source qui a déclenché
+     const ess=Math.max(1,...SQ.map(q=>parseInt(q.essais,10)||1));let okS=false;for(let k=0;k<ess&&ec>0&&!okS;k++)okS=roll(Math.min(100,ec));
+     if(ec>0&&okS){let u=r()*ec,src=SQ[SQ.length-1];for(const q of SQ){if(u<q.chance){src=q;break}u-=q.chance}   // la durée est celle de la source qui a déclenché
       const T=Math.max(1,parseInt(src.tours,10)||1);d.st.stun=Math.max(d.st.stun,T);L('statut',`${nom(d)} est étourdi${T>1?` (${T} tours)`:''} !`,{c:idd,k:'etourdi'})}}
     for(const q of [...a.pl,...a.st.atkfx]){   // statuts donnés par les passifs et par les effets d'attaque de base
      if(q.type==='brulure'&&roll(q.chance))dotUn(d,'brûlure',rd(d.max*(q.pctpv||0)/100),q.tours||1);
@@ -361,7 +374,7 @@ function simuler(pA,pB,opt={}){
   if(s.pv<=0)return;
   s.st.frost=s.st.frost.filter(f=>{if(--f.t>0)return true;L('finstatut',`${nom(s)} n'est plus gelé`,{c:id(s),k:'gel'});return false});
   s.st.fract=s.st.fract.filter(f=>{if(--f.t>0)return true;L('finstatut',`La fracture de ${nom(s)} guérit`,{c:id(s),k:'fracture'});return false});
-  s.st.fat=s.st.fat.filter(f=>{if(--f.t>0)return true;L('finstatut',`La fatigue de ${nom(s)} se dissipe`,{c:id(s),k:'fatigue'});return false});   // avant la rage : la fatigue qui suit la rage commence au tour d'après
+  s.st.fat=s.st.fat.filter(f=>{if(--f.t>0)return true;L('finstatut',`La fatigue de ${nom(s)} se dissipe`,{c:id(s),k:'fatigue'});if(f.q>0){s.atq+=f.q;L('stat',`ATQ de ${nom(s)} +${f.q} (fatigue dissipée)`,{c:id(s),k:'mod',s:'ATQ',d:f.q})}return false});   // avant la rage : la fatigue qui suit la rage commence au tour d'après
   s.st.rage=s.st.rage.filter(g=>{if(--g.t>0)return true;L('finstatut',`La rage de ${nom(s)} retombe`,{c:id(s),k:'rage'});if(g.ft>0&&g.fv>0)fatiguer(s,g.fv,g.fu,g.ft,true);return false});
   if(s.st.dbl>0)s.st.dbl--;
   s.st.ren=s.st.ren.filter(R=>--R.t>0);if(s.st.insens>0)s.st.insens--;
