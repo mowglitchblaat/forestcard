@@ -241,7 +241,10 @@ function updBar(){
 const nz=v=>+v||0,trs=t=>`${t} tour${t>1?'s':''}`,sgn=v=>(v>0?'+':'')+v,upc=u=>u==='pct'?' %':'',tousT=t=>t>1?`tous les ${t} tours`:'à chaque tour';
 const ciblT=e=>(e.ciblem||e.cible)==='soi'?'sur soi':"sur l'adversaire";
 const cat=t=>{const L=typeof MAG!=='undefined'&&(MAG[t]||ULT[t]||PAS[t]);return L?L[0]:String(t||'Effet')};
+// Effets « perso » d'étourdissement (créés dans l'onglet Effets) : décrits comme l'étourdissement du moteur, qui les exécute ainsi
+const canonFx=(e,pas)=>e&&typeof e.type==='string'&&/^perso_/.test(e.type)&&/etourd/.test(e.type)?{...e,type:pas?'etourdir':'etourdir_effet'}:e;
 function fxPassif(p){
+  p=canonFx(p,true);
   const c=p.chance==null||p.chance===''?100:nz(p.chance),t=nz(p.tours),v=nz(p.val),T=t||1;
   switch(p.type){
     case 'evite_mort':return "Évite la mort une fois (reste à 1 PV, statuts négatifs retirés)";
@@ -271,6 +274,7 @@ function fxPassif(p){
 function fxEffet(e){
   if(!e)return[];
   if(Array.isArray(e.briques))return e.briques.flatMap(fxEffet);
+  e=canonFx(e);
   const t=nz(e.tours),T=t||1,v=nz(e.val),pct=e.u==='pct',ci=ciblT(e);
   switch(e.type){
     case 'atq_mod':return[`${e.cible==='adversaire'?"ATQ de l'adversaire":'Son ATQ'} ${sgn(v)}${upc(e.u)}`];
@@ -301,7 +305,7 @@ function fxEffet(e){
     case 'vol_ultime':return["Vole l'ultime de l'adversaire"];
     case 'poison_effet':return[`Empoisonne ${ci} : ${nz(e.degtour)} dégâts par tour pendant ${trs(T)}`];
     case 'brulure_effet':return[`Brûle ${ci} : ${nz(e.pctpv)} % des PV max par tour pendant ${trs(T)}`];
-    case 'etourdir_effet':{const ch=e.chance==null||e.chance===''?100:nz(e.chance);return[`${ch<100?`${ch} % de chances${nz(e.essais)>1?` (${e.essais} tentatives)`:''} d'étourdir`:'Étourdit'} ${ci} pendant ${trs(T)}`]}
+    case 'etourdir_effet':{const ch=e.chance==null||e.chance===''?100:nz(e.chance);const qui=(e.ciblem||e.cible)==='soi'?'sa propre carte':"l'adversaire";return[`${ch<100?`${ch} % de chances${nz(e.essais)>1?` (${e.essais} tentatives)`:''} d'étourdir`:'Étourdit'} ${qui} pendant ${trs(T)}`]}
     case 'esquive_mod':return[`${e.cible==='adversaire'?"Esquive de l'adversaire":'Son esquive'} ${sgn(v)} %`];
     case 'reset_ultime':return["Réinitialise l'ultime (utilisable à nouveau)"];
     case 'mort_evitee':{const k=e.cond||'aucune';return[`Évite la mort une fois (reste à 1 PV, statuts négatifs retirés)${k==='pv_max'?` — si ses PV max sont d'au moins ${nz(e.seuil)}`:k==='degats_infliges'?` — s'il a déjà infligé ${nz(e.seuil)} dégâts`:''}`]}
