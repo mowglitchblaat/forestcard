@@ -270,7 +270,7 @@ function fxEffet(e){
     case 'annule_attaque':return["Annule la prochaine attaque de l'adversaire"];
     case 'renvoi':return[`Renvoie ${v} % des dégâts reçus pendant ${trs(T)}`];
     case 'insensible_piege':return[`Insensible aux pièges pendant ${trs(T)}`];
-    case 'annule_magies':return["Annule la magie de l'adversaire"];
+    case 'annule_magies':return[+T>0?`Annule la magie de l'adversaire pendant ${trs(T)}`:"Annule la magie de l'adversaire jusqu'à la fin du combat"];
     case 'degats_tours':return[`Inflige ${v} dégâts après ${trs(T)}`];
     case 'double_degats':return[`Double ses dégâts pendant ${trs(T)}`];
     case 'echange_atq':return["Échange son ATQ avec celle de l'adversaire"];
@@ -690,7 +690,7 @@ const ULT={degats:["Dégâts directs à l'adversaire",'val'],voler:['Vole une ma
 const MAG={atq_mod:["Modifie l'ATQ (négatif = baisse)",'cible','val','u'],pv_mod:['Modifie les PV max (négatif = baisse)','cible','val','u'],
  soin:['Soigne son combattant','val','u'],degats:["Dégâts directs à l'adversaire",'val'],annule_attaque:["Annule la prochaine attaque de l'adversaire"],
  renvoi:['Renvoie une part des dégâts pendant X tours','val','tours'],insensible_piege:['Insensible aux pièges pendant X tours','tours'],
- annule_magies:['Annule les autres magies pendant X tours','tours'],mort_evitee:['Évite la mort si condition (reste à 1 PV, retire les statuts négatifs, une fois)','cond','seuil'],reanimation:['Réanimation : la carte est détruite puis revient avec X % de ses PV max (une fois)','pctrev'],
+ annule_magies:['Annule la magie adverse pendant X tours (0 = jusqu\'à la fin du combat)','tours'],mort_evitee:['Évite la mort si condition (reste à 1 PV, retire les statuts négatifs, une fois)','cond','seuil'],reanimation:['Réanimation : la carte est détruite puis revient avec X % de ses PV max (une fois)','pctrev'],
  degats_tours:['Inflige X dégâts après X tours','val','tours'],
  malediction:["Malédiction : l'ATQ baisse de X points par tour pendant X tours",'ciblem','val','tours'],
  poison_effet:["Poison : X points par tour pendant X tours (soi ou adversaire)",'ciblem','degtour','tours'],

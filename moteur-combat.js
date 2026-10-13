@@ -70,23 +70,36 @@ function simuler(pA,pB,opt={}){
    proprio_pv_sous:ev.t==='pv'&&o.pv>0&&o.pv/o.max*100<c.seuilpv,adv_pv_bas:ev.t==='pv'&&x.pv>0&&x.pv/x.max*100<c.seuilpv,
    adv_soigne:ev.t==='soin'&&ev.who===ia,proprio_soigne:ev.t==='soin'&&ev.who===i,proprio_meurt:ev.t==='mort'&&ev.who===i}[c.type];
   if(!ok)return;
-  if(x.st.insens>0){L('piege',`Le piège de ${o.pseudo} est bloqué (insensible)`,{c:i,k:'bloque',carte:o.pie.nom,img:o.pie.image||null});return}
+  if(x.st.insens>0){o.pbl=1;L('piege',`Le piège de ${o.pseudo} est bloqué (insensible)`,{c:i,k:'bloque',carte:o.pie.nom,img:o.pie.image||null});return}
   o.decl++;L('piege',`Piège de ${o.pseudo} : ${o.pie.nom} !`,{c:i,carte:o.pie.nom,img:o.pie.image||null});if(c.type==='proprio_meurt')rv=1;fx(e.effet,o,x);rv=0;S.forEach(s=>s.pend=1);
  })}
  // Effets : o = propriétaire de l'effet, x = adversaire. mg=true : effet de magie (annulable/volable)
- function fx(e,o,x,mg){
+ const UNEFOIS=['degats','vol_vie','soin','echange_atq','echange_atq_def','echange_pv','echange_tout','purification','vol_ultime','reset_ultime','aleatoire','detruire','voler','equiper'];
+ function fx(e,o,x,mg,rt){   // rt : retour d'une magie annulée pour X tours — ses effets « une seule fois » ne se rejouent pas
   if(!e)return;
   e=canon(e);
-  if(e.briques){e.briques.forEach(b=>fx(b,o,x,mg));return}      // effet « maison » composé de briques de base
+  if(e.briques){e.briques.forEach(b=>fx(b,o,x,mg,rt));return}
+  if(rt&&UNEFOIS.includes(e.type))return;      // effet « maison » composé de briques de base
   const T=e.cible==='adversaire'?x:o;
   const delta=(s,k,d)=>{if(mg)o.mdelta.push({s,k,d})};
+  const U=f=>{if(mg)o.mdelta.push({undo:f})};
+  const sv=M=>({cu:M.st.curses[0]&&{...M.st.curses[0]},bl:M.st.bleeds[0]&&{...M.st.bleeds[0]},dt:M.st.dots.map(z=>({...z})),fr:M.st.frost.length,fc:M.st.fract.length,st:M.st.stun,sk:M.st.skip});
+  const fin=(M,k,t)=>L('finstatut',t,{c:id(M),k});
+  const back=(M,b)=>U(()=>{   // retire ce que l'effet de magie a ajouté sur la carte M (statuts encore en cours)
+   const c=M.st.curses[0];if(c){if(!b.cu){M.st.curses=[];fin(M,'malediction',`La malédiction de ${nom(M)} se termine`)}else c.n=b.cu.n}
+   const l=M.st.bleeds[0];if(l){if(!b.bl){M.st.bleeds=[];fin(M,'saignement',`Le saignement de ${nom(M)} s'arrête`)}else{l.pct=b.bl.pct;l.r=b.bl.r}}
+   M.st.dots.filter(z=>!b.dt.some(y=>y.k===z.k)).forEach(z=>fin(M,z.k==='poison'?'poison':'brulure',`${z.k} de ${nom(M)} se termine`));M.st.dots=M.st.dots.filter(z=>b.dt.some(y=>y.k===z.k));M.st.dots.forEach(z=>{const y=b.dt.find(q=>q.k===z.k);if(y)z.n=y.n});
+   if(M.st.frost.length>b.fr&&!b.fr)fin(M,'gel',`${nom(M)} n'est plus gelé`);if(M.st.fract.length>b.fc&&!b.fc)fin(M,'fracture',`La fracture de ${nom(M)} guérit`);if(M.st.stun>b.st&&!b.st)fin(M,'etourdi',`${nom(M)} n'est plus étourdi`);
+   M.st.frost=M.st.frost.slice(0,b.fr);M.st.fract=M.st.fract.slice(0,b.fc);M.st.stun=Math.min(M.st.stun,b.st);M.st.skip=Math.min(M.st.skip,b.sk)});
+  if(mg&&['malediction','saignement','gel','fracture','poison_effet','brulure_effet','etourdir_effet','annule_attaque'].includes(e.type)){const M=e.type==='annule_attaque'?x:((e.ciblem||e.cible)==='soi'?o:x);back(M,sv(M))}
   switch(e.type){
    case'atq_mod':{const d=amt(e,T.atq);T.atq=Math.max(0,T.atq+d);delta(T,'atq',d);L('stat',`ATQ de ${nom(T)} ${d>=0?'+':''}${d}`,{c:id(T),k:'mod',s:'ATQ',d});break}
    case'pv_mod':{const d=amt(e,T.max);T.max=Math.max(1,T.max+d);T.pv=Math.max(1,Math.min(T.max,T.pv+d));delta(T,'max',d);L('stat',`PV max de ${nom(T)} ${d>=0?'+':''}${d}`,{c:id(T),k:'mod',s:'PV max',d});break}
    case'soin':heal(o,amt(e,o.max));break;
    case'reanimation':if(!mg){o.st.reanL.push({pctrev:e.pctrev||0});L('statut',`${nom(o)} sera réanimé s'il meurt (${e.pctrev||0} % des PV max)`,{c:id(o)})}break;
-   case'rage':{const n=amt({u:e.u,val:e.ragev||0},o.atq),t=e.ragetours||1;o.st.rage.push({n,t,fv:e.fatval||0,fu:e.u,ft:e.fattours||0});L('statut',`${nom(o)} entre en rage ! (+${n} dégâts par coup, ${t} tour${t>1?'s':''})`,{c:id(o),k:'rage'});break}
-   case'fatigue':fatiguer((e.ciblem||e.cible)==='soi'?o:x,e.fatval||0,e.u,e.fattours||1);break;
+   case'rage':{const n=amt({u:e.u,val:e.ragev||0},o.atq),t=e.ragetours||1;const G={n,t,fv:e.fatval||0,fu:e.u,ft:e.fattours||0};o.st.rage.push(G);U(()=>{if(o.st.rage.includes(G)){o.st.rage=o.st.rage.filter(z=>z!==G);if(!o.st.rage.length)fin(o,'rage',`La rage de ${nom(o)} retombe`)}});L('statut',`${nom(o)} entre en rage ! (+${n} dégâts par coup, ${t} tour${t>1?'s':''})`,{c:id(o),k:'rage'});break}
+   case'fatigue':{const M=(e.ciblem||e.cible)==='soi'?o:x,f0=M.st.fat[0]&&{...M.st.fat[0]},a0=M.atq;fatiguer(M,e.fatval||0,e.u,e.fattours||1);const lost=a0-M.atq;
+    U(()=>{const f=M.st.fat[0];if(!f)return;const g=Math.min(lost,f.q);M.atq+=g;if(g>0)L('stat',`ATQ de ${nom(M)} +${g} (fatigue retirée)`,{c:id(M),k:'mod',s:'ATQ',d:g});if(!f0){M.st.fat=[];fin(M,'fatigue',`La fatigue de ${nom(M)} se dissipe`)}else{f.n=f0.n;f.t=f0.t;f.q=Math.max(0,f.q-lost)}});break}
    case'aleatoire':{const k=Math.max(1,e.nbalea||e.fois||1);for(let i=0;i<k&&!over();i++)effetAlea(o,x);break}
    case'soin_tours':{const n=amt(e,o.max),t=e.tours||1,h={n,t};o.st.hots.push(h);if(mg)o.mdelta.push({undo:()=>{o.st.hots=o.st.hots.filter(z=>z!==h)}});L('statut',`${nom(o)} se régénère (+${n} PV par tour, ${t} tour${t>1?'s':''})`,{c:id(o),k:'regen'});break}
    case'purification':{const t=e.cible==='adversaire'?x:o;purifier(t);const n=Math.max(0,(e.fois||1)-1);   // 1re purification tout de suite, puis « fois − 1 » autres, une tous les « every » tours
@@ -94,11 +107,12 @@ function simuler(pA,pB,opt={}){
    case'degats':{const n=dmg(o,x,e.val);L('degats',`${nom(x)} subit ${n} dégâts directs`,{c:id(x),n});break}
    case'vol_vie':{const n=dmg(o,x,e.val);L('degats',`${nom(x)} subit ${n} dégâts`,{c:id(x),n});heal(o,n);break}
    case'annule_attaque':x.st.skip=1;L('statut',`La prochaine attaque de ${nom(x)} est annulée`,{c:id(x)});break;
-   case'renvoi':o.st.ren.push({pct:e.val,t:e.tours||1});break;
-   case'insensible_piege':o.st.insens=e.tours||1;break;
-   case'annule_magies':if(x.magOn){x.magOn=0;undo(x);L('statut',`La magie de ${x.pseudo} est annulée`,{c:id(x),k:'magie_annulee'})}break;
-   case'degats_tours':x.st.prog.push({t:e.tours||1,n:e.val,src:o});break;
-   case'double_degats':o.st.dbl=e.tours||1;L('statut',`${nom(o)} double ses dégâts`,{c:id(o)});break;
+   case'renvoi':{const R={pct:e.val,t:e.tours||1};o.st.ren.push(R);U(()=>{o.st.ren=o.st.ren.filter(z=>z!==R)});break}
+   case'insensible_piege':o.st.insens=e.tours||1;U(()=>{o.st.insens=0});break;
+   case'annule_magies':if(x.magAnn===1){x.magAnn=2;if(x.mag.effet)L('magie',`Magie de ${x.pseudo} : ${x.mag.nom}`,{c:id(x),carte:x.mag.nom,img:x.mag.image||null});L('statut',`La magie de ${x.pseudo} est annulée${x.magAnnT?` (${x.magAnnT} tour${x.magAnnT>1?'s':''})`:''}`,{c:id(x),k:'magie_annulee'})}   // annulée avant d'agir (début du combat) : elle est montrée puis barrée
+    else if(x.magOn){x.magOn=0;undo(x);x.magAnnT=Math.max(0,parseInt(e.tours,10)||0);x.magNew=0;L('statut',`La magie de ${x.pseudo} est annulée${x.magAnnT?` (${x.magAnnT} tour${x.magAnnT>1?'s':''})`:''}`,{c:id(x),k:'magie_annulee'})}break;   // tours : 0 ou vide = jusqu'à la fin du combat
+   case'degats_tours':{const P={t:e.tours||1,n:e.val,src:o};x.st.prog.push(P);U(()=>{x.st.prog=x.st.prog.filter(z=>z!==P)});break}
+   case'double_degats':o.st.dbl=e.tours||1;U(()=>{o.st.dbl=0});L('statut',`${nom(o)} double ses dégâts`,{c:id(o)});break;
    case'echange_atq':[o.atq,x.atq]=[x.atq,o.atq];L('stat',`${nom(o)} et ${nom(x)} échangent leur ATQ`,{k:'echange',cs:[id(o),id(x)],col:'bleu'});break;
    case'echange_atq_def':{const Q=(e.ciblem||e.cible)==='soi'?o:x;[Q.atq,Q.pv]=[Q.pv,Q.atq];Q.pv=Math.max(1,Q.pv);Q.max=Math.max(Q.max,Q.pv);L('stat',`${nom(Q)} : ATQ et PV échangés`,{k:'echange',c:id(Q)});break}   // cible : adversaire par défaut, ou soi
    case'echange_pv':[o.pv,x.pv]=[x.pv,o.pv];[o.max,x.max]=[x.max,o.max];L('stat',`${nom(o)} et ${nom(x)} échangent leurs PV`,{k:'echange',cs:[id(o),id(x)],col:'rouge'});break;
@@ -120,8 +134,8 @@ function simuler(pA,pB,opt={}){
    case'reset_ultime':T.uh.forEach(h=>{h.uses=0;h.last=-99});L('statut',`L'ultime de ${nom(T)} est réinitialisé !`,{c:id(T)});break;
    case'mort_evitee':if(!mg&&!o.st.mortUsed){o.st.evite=1;L('statut',`${nom(o)} est protégé : il évitera la mort une fois`,{c:id(o)})}break;   // en magie : lue directement dans dmg() ; en ultime / piège : protection posée à l'activation
    case'detruire':case'voler':{
-    if(e.carte==='magie'&&x.magOn){x.magOn=0;undo(x);if(e.type==='voler'){fx(x.mag.effet,o,x,true);L('vol',`${o.pseudo} vole la magie de ${x.pseudo}`,{c:id(x),k:'magie_annulee'})}else L('vol',`La magie de ${x.pseudo} est détruite`,{c:id(x),k:'magie_annulee'})}
-    else if(e.carte==='piege'&&x.pieOn){x.pieOn=0;if(e.type==='voler'){o.pie=x.pie;o.pieOn=1;o.decl=0;L('vol',`${o.pseudo} vole le piège de ${x.pseudo}`,{c:id(x),k:'piege_annule',carte:x.pie.nom,img:x.pie.image||null})}else L('vol',`Le piège de ${x.pseudo} est détruit`,{c:id(x),k:'piege_annule',carte:x.pie.nom,img:x.pie.image||null})}
+    if(e.carte==='magie'&&(x.magOn||x.magAnnT)){const etaitOn=x.magOn;x.magOn=0;x.magAnnT=0;if(etaitOn)undo(x);if(e.type==='voler'){fx(x.mag.effet,o,x,true);L('vol',`${o.pseudo} vole la magie de ${x.pseudo}`,{c:id(x),k:'magie_annulee'})}else L('vol',`La magie de ${x.pseudo} est détruite`,{c:id(x),k:'magie_annulee'})}
+    else if(e.carte==='piege'&&x.pieOn){x.pieOn=0;if(e.type==='voler'){o.pie=x.pie;o.pieOn=1;o.decl=0;L('vol',`${o.pseudo} vole le piège de ${x.pseudo}`,{c:id(x),k:'piege_annule',carte:x.pie.nom,img:x.pie.image||null})}else L('vol',`Le piège de ${x.pseudo} est détruit`,{c:id(x),k:'piege_detruit',carte:x.pie.nom,img:x.pie.image||null})}
     break}
    case'equiper':{const c=tire(o.deck.filter(k=>k!==o.mag&&k!==o.pie),e.carte);if(c){if(e.carte==='magie'){o.mag=c;o.magOn=1;fx(c.effet,o,x,true)}else{o.pie=c;o.pieOn=1;o.decl=0}L('vol',`${nom(o)} équipe ${c.nom}`)}break}
    default:L('inconnu',`Effet non géré par le moteur : ${e.type}`);
@@ -282,7 +296,11 @@ function simuler(pA,pB,opt={}){
   s.st.fat=s.st.fat.filter(f=>{if(--f.t>0)return true;L('finstatut',`La fatigue de ${nom(s)} se dissipe`,{c:id(s),k:'fatigue'});if(f.q>0){s.atq+=f.q;L('stat',`ATQ de ${nom(s)} +${f.q} (fatigue dissipée)`,{c:id(s),k:'mod',s:'ATQ',d:f.q})}return false});   // avant la rage : la fatigue qui suit la rage commence au tour d'après
   s.st.rage=s.st.rage.filter(g=>{if(--g.t>0)return true;L('finstatut',`La rage de ${nom(s)} retombe`,{c:id(s),k:'rage'});if(g.ft>0&&g.fv>0)fatiguer(s,g.fv,g.fu,g.ft,true);return false});
   if(s.st.dbl>0)s.st.dbl--;
-  s.st.ren=s.st.ren.filter(R=>--R.t>0);if(s.st.insens>0)s.st.insens--;
+  if(s.magAnnT>0&&--s.magAnnT===0&&!s.magOn&&s.mag.effet){const neuve=s.magNew;s.magOn=1;s.magAnn=0;s.magNew=0;   // fin de l'annulation : la magie revient (si elle n'avait jamais agi, elle agit en entier)
+   L('statut',`La magie de ${s.pseudo} revient : ${s.mag.nom}`,{c:id(s),k:'magie_retour'});fx(s.mag.effet,s,adv(s),true,!neuve);S.forEach(k=>k.pend=1);if(s.pv<=0)return}
+  s.st.ren=s.st.ren.filter(R=>--R.t>0);
+  if(s.st.insens>0&&--s.st.insens===0){const x=adv(s),pe=x.pie.effet;   // fin de l'insensibilité : le piège adverse bloqué redevient actif s'il peut encore se déclencher
+   if(x.pbl&&x.pieOn&&pe&&x.decl<(pe.declenchements||1)){x.pbl=0;L('statut',`Le piège de ${x.pseudo} redevient actif`,{c:id(x),k:'piege_rearme'})}}
  }
  // ── ORDRE FIXE DU TOUR D'UNE CARTE (le même pour tout le monde, qu'elle joue en premier ou en deuxième) ──
  //  1. début : malédiction (l'ATQ baisse), régénération        — debutTour
@@ -318,7 +336,11 @@ function simuler(pA,pB,opt={}){
  // ---- Déroulé ----
  const first=r()<.5?0:1,ordre=[S[first],S[1-first]];
  L('debut','Le combat commence !',{joueurs:S.map(s=>({pseudo:s.pseudo,dos:s.dos,carte:s.card.nom,image:s.card.image||null,imageCombat:s.card.imageCombat||null,rar:s.card.rar||null,magie:s.mag.nom,piege:s.pie.nom,magieImg:s.mag.image||null,piegeImg:s.pie.image||null,ids:[s.card.id,s.mag.id,s.pie.id]})),premier:first});
- ordre.forEach(s=>{if(s.mag.effet){L('magie',`Magie de ${s.pseudo} : ${s.mag.nom}`,{c:id(s),carte:s.mag.nom,img:s.mag.image||null});fx(s.mag.effet,s,adv(s),true);S.forEach(k=>k.pend=1)}});
+ // Annulation de magie : réglée AVANT que les magies agissent, pour qu'aucun de leurs effets ne passe (la 1re carte qui joue a la priorité si les deux annulent)
+ const aMag=e=>!!e&&(e.type==='annule_magies'||(e.briques||[]).some(b=>b&&b.type==='annule_magies'));
+ const tAnn=e=>{const b=e.type==='annule_magies'?e:(e.briques||[]).find(b=>b&&b.type==='annule_magies');return Math.max(0,parseInt(b&&b.tours,10)||0)};   // 0 ou vide = jusqu'à la fin du combat
+ ordre.forEach(s=>{const x=adv(s);if(s.magOn&&aMag(s.mag.effet)&&x.magOn){x.magOn=0;x.magAnn=1;x.magAnnT=tAnn(s.mag.effet);x.magNew=1}});
+ ordre.forEach(s=>{if(s.mag.effet&&s.magAnn!==1&&s.magAnn!==2){L('magie',`Magie de ${s.pseudo} : ${s.mag.nom}`,{c:id(s),carte:s.mag.nom,img:s.mag.image||null});fx(s.mag.effet,s,adv(s),true);S.forEach(k=>k.pend=1)}});
  for(tour=1;tour<=reg.maxTours&&!over();tour++){
   for(let oi=0;oi<2;oi++){const a=ordre[oi];if(over())break;L('tour',`Tour ${(tour-1)*2+oi+1}`,{c:id(a)});debutTour(a);if(over())break;ultime(a);if(over())break;attaque(a);if(over())break;passifsTour(a);if(over())break;statutsCarte(a);if(over())break;finTourCarte(a)}
  }

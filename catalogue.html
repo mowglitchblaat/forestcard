@@ -126,7 +126,7 @@ function core(e,pas){   // texte de l'effet (sans le « donne à l'attaque de ba
   case'double_degats':return`Double ses dégâts pendant ${T(e.tours)}`;
   case'annule_attaque':return"Annule la prochaine attaque de l'adversaire";
   case'insensible_piege':return`Insensible aux pièges adverses pendant ${T(e.tours)}`;
-  case'annule_magies':return"Annule la magie adverse";
+  case'annule_magies':return(+e.tours>0?`Annule la magie adverse pendant ${e.tours} tour${e.tours>1?'s':''}`:"Annule la magie adverse jusqu'à la fin du combat");
   case'echange_atq':return"Échange son ATQ avec celle de l'adversaire";
   case'echange_atq_def':return`Échange l'ATQ et la défense (PV) de ${tgt(e,'adversaire')}`;
   case'echange_pv':return"Échange ses PV avec ceux de l'adversaire";
