@@ -163,7 +163,7 @@ const $=s=>document.querySelector(s),main=$('#main');
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const img=p=>p?sb.storage.from('cartes').getPublicUrl(p).data.publicUrl:'';
 async function q(p){const r=await p;if(r.error){alert(r.error.message);throw r.error}return r.data}
-let user,joueur,isAdmin,tab='collection',sub='cartes',B={};
+let user,joueur,isAdmin,tab='profil',sub='cartes',B={};   // ouverture sur le profil : pas d'images à charger (économise le quota Supabase)
 const opts=(a,l='nom')=>a.map(x=>`<option value="${x.id}">${esc(x[l])}</option>`).join('');
 const TABS={collection:'Ma collection',boutique:'Boutique',deck:'Mon deck',dos:'Dos de cartes',historique:'Historique',profil:'Profils',classement:'🏆 Classement',regles:'Comment jouer',propos:'🎨 Propositions',patch:'📜 Patch notes'};
 
@@ -179,6 +179,9 @@ async function init(){
   joueur=await q(sb.from('joueurs').select('*').eq('id',user.id).single());
   isAdmin=await q(sb.rpc('is_admin'));
   header();show(tab);
+  // Gold à jour sans recharger la page : petite lecture toutes les 45 s, seulement quand l'onglet du navigateur est visible
+  setInterval(async()=>{if(document.hidden||!user)return;const r=await sb.from('joueurs').select('monnaie,fragments').eq('id',user.id).single();
+    if(!r.error&&r.data&&(r.data.monnaie!==joueur.monnaie||r.data.fragments!==joueur.fragments)){joueur={...joueur,...r.data};header()}},45000);
 }
 function header(){
   $('#me').innerHTML=`${isAdmin?'<small style="opacity:.5;margin-right:8px">site v10</small>':''}${esc(joueur.pseudo)} · 💰 ${joueur.monnaie}${joueur.fragments>0?` · 🧩 ${joueur.fragments}`:''} <button class="sec" id="out">Déconnexion</button>`;
