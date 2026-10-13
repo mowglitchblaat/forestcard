@@ -794,11 +794,11 @@ async function vPropos(){
   f.onsubmit=async e=>{e.preventDefault();const fi=f.file.files[0];if(!fi)return;const autre=f.col.value=='autre';
     if(autre&&!f.colidee.value.trim()){alert('Écris ton idée de collection.');return}
     const btn=$('#pbtn');btn.disabled=true;btn.textContent='Envoi…';
-    const path=user.id+'/'+crypto.randomUUID()+'.'+((fi.name.split('.').pop()||'png').toLowerCase());
-    const up=await sb.storage.from('propositions').upload(path,fi,{contentType:fi.type});
+    const fiL=await alleger(fi,1600,.9),path=user.id+'/'+crypto.randomUUID()+'.'+(fiL.type==='image/webp'?'webp':((fi.name.split('.').pop()||'png').toLowerCase()));
+    const up=await sb.storage.from('propositions').upload(path,fiL,{contentType:fiL.type||fi.type,cacheControl:CACHE_1AN});
     if(up.error){alert(up.error.message);btn.disabled=false;btn.textContent='Envoyer ma proposition';return}
     let pc=null;try{const big=document.createElement('canvas');big.width=1488;big.height=2070;rendre(big,1488,2070);
-      const bl=await new Promise(ok=>big.toBlob(ok,'image/png'));if(bl){pc=user.id+'/'+crypto.randomUUID()+'-carte.png';const u2=await sb.storage.from('propositions').upload(pc,bl,{contentType:'image/png'});if(u2.error)pc=null}}catch(x){pc=null}
+      const bl=await new Promise(ok=>big.toBlob(ok,'image/webp',.9));if(bl){pc=user.id+'/'+crypto.randomUUID()+'-carte.webp';const u2=await sb.storage.from('propositions').upload(pc,bl,{contentType:'image/webp',cacheControl:CACHE_1AN});if(u2.error)pc=null}}catch(x){pc=null}
     const args={p_image:path,p_nom:f.nom.value,p_type:f.type.value,p_rarete:+f.rar.value||null,p_collection:autre?null:+f.col.value,p_collection_idee:autre?f.colidee.value:null,p_idee:f.idee.value};if(pc)args.p_image_carte=pc;
     if(f.type.value==='combattant'){if(f.atq.value!=='')args.p_atq=+f.atq.value;if(f.pv.value!=='')args.p_pv=+f.pv.value}
     const r=await sb.rpc('proposer_carte',args);
@@ -936,10 +936,40 @@ async function vAdmin(){
   main.querySelectorAll('button[data-s]').forEach(b=>b.onclick=()=>{sub=b.dataset.s;vAdmin()});
   ({cartes:aCartes,collections:aCollections,boosters:aBoosters,effets:aEffets,raretes:aRaretes,cadeaux:aCadeaux,dos:aDos,reglages:aReglages,joueurs:aJoueurs,votes:aVotes,propos:aPropos})[sub]();
 }
+// Images allégées : converties en WebP (transparence conservée) et réduites à 1200 px de haut maximum ; gardées 1 an en cache.
+// Objectif : réduire le volume téléchargé depuis Supabase (quota « egress » du plan gratuit).
+const CACHE_1AN='31536000';
+async function alleger(file,maxH=1200,qual=.86){
+  if(!file||!/^image\/(png|jpe?g|webp)$/i.test(file.type||''))return file;   // GIF animé ou autre : laissé tel quel
+  try{const bmp=await createImageBitmap(file);const s=Math.min(1,maxH/bmp.height),w=Math.round(bmp.width*s),hh=Math.round(bmp.height*s);
+    const c=document.createElement('canvas');c.width=w;c.height=hh;c.getContext('2d').drawImage(bmp,0,0,w,hh);
+    const b=await new Promise(ok=>c.toBlob(ok,'image/webp',qual));
+    return b&&b.size<file.size?b:file}catch(e){return file}}
 async function upload(file){
-  const path=crypto.randomUUID()+'.'+(file.name.split('.').pop()||'png');
-  await q(sb.storage.from('cartes').upload(path,file,{contentType:file.type}));return path;
+  const f=await alleger(file),ext=f.type==='image/webp'?'webp':(file.name.split('.').pop()||'png');
+  const path=crypto.randomUUID()+'.'+ext;
+  await q(sb.storage.from('cartes').upload(path,f,{contentType:f.type||file.type,cacheControl:CACHE_1AN}));return path;
 }
+// Admin : optimise les images déjà en ligne (cartes, versions de cartes, boosters, dos)
+async function optimiserImages(log){
+  const pub=p=>sb.storage.from('cartes').getPublicUrl(p).data.publicUrl;let gain=0,n=0;
+  const cibles=[];
+  const v=await sb.from('variantes_carte').select('id,image_path,image_combat');(v.data||[]).forEach(r=>{['image_path','image_combat'].forEach(k=>{if(r[k])cibles.push({t:'variantes_carte',id:r.id,k,p:r[k]})})});
+  const b=await sb.from('types_boosters').select('id,image_path');(b.data||[]).forEach(r=>{if(r.image_path)cibles.push({t:'types_boosters',id:r.id,k:'image_path',p:r.image_path})});
+  const d=await sb.from('dos_cartes').select('id,image');(d.data||[]).forEach(r=>{if(r.image)cibles.push({t:'dos_cartes',id:r.id,k:'image',p:r.image})});
+  const todo=cibles.filter(c=>!/\.webp$/i.test(c.p));
+  log(`${cibles.length} image(s) trouvée(s), ${todo.length} à optimiser.`);
+  for(const c of todo){
+    try{const res=await fetch(pub(c.p));if(!res.ok)throw new Error('lecture impossible');const blob=await res.blob();
+      const f=await alleger(new File([blob],c.p,{type:blob.type}));
+      if(f.type!=='image/webp'||f.size>=blob.size){log(`= ${c.p} déjà léger, inchangé`);continue}
+      const np=crypto.randomUUID()+'.webp';
+      const u=await sb.storage.from('cartes').upload(np,f,{contentType:'image/webp',cacheControl:CACHE_1AN});if(u.error)throw u.error;
+      const m=await sb.from(c.t).update({[c.k]:np}).eq('id',c.id);if(m.error){await sb.storage.from('cartes').remove([np]);throw m.error}
+      await sb.storage.from('cartes').remove([c.p]);   // l'ancien fichier n'est plus utilisé
+      gain+=blob.size-f.size;n++;log(`✓ ${Math.round(blob.size/1024)} Ko → ${Math.round(f.size/1024)} Ko`)}
+    catch(e){log(`✗ ${c.p} : ${e.message||e}`)}}
+  log(`Terminé : ${n} image(s) optimisée(s), ${(gain/1048576).toFixed(1)} Mo économisés par affichage complet.`)}
 
 /* ---------- Catalogue d'effets (pour ajouter un effet : une ligne ici) ---------- */
 // Paramètres réutilisables : [libellé, 'n' (nombre) ou liste de choix]
@@ -1317,12 +1347,16 @@ async function aReglages(){
   const r=await sb.from('reglages_jeu').select('cle,valeur');
   if(r.error){$('#sub').innerHTML='<p class="ko">Les réglages ne sont pas encore disponibles côté Supabase (07-dos-et-reglages.sql). Message de Supabase : <b>'+esc(r.error.message)+'</b></p>';return}
   const v=Object.fromEntries((r.data||[]).map(x=>[x.cle,x.valeur]));
-  $('#sub').innerHTML=`<form class="f" id="fr"><label><b>Combats gratuits par jour</b> (commande !combat)<br>
+  $('#sub').innerHTML=`<div class="f" style="flex-direction:column;align-items:flex-start"><b>Images : réduire la consommation Supabase</b>
+    <small>Convertit les images des cartes, boosters et dos déjà en ligne en WebP plus léger (jusqu'à 1200 px de haut) et les garde 1 an en cache. Les nouvelles images sont déjà allégées à l'envoi. À lancer une fois, ça peut prendre quelques minutes : laisse la page ouverte.</small>
+    <button id="optim">⚡ Optimiser les images existantes</button><pre id="optlog" style="max-height:220px;overflow:auto;white-space:pre-wrap;font-size:12px;margin:0"></pre></div>
+   <form class="f" id="fr"><label><b>Combats gratuits par jour</b> (commande !combat)<br>
     <small>0 = désactivés. Le compteur repart de zéro chaque jour à minuit, heure de Paris.</small><br>
     <input name="n" type="number" min="0" max="50" value="${esc(v.combats_gratuits_par_jour??1)}" style="width:90px"></label><button>Enregistrer</button></form>
    <h3>Recyclage des doublons</h3><form class="f" id="frc"><small>Ce que rapporte chaque exemplaire en trop. Les fragments sont prêts pour un futur craft : laisse 0 tant qu'il n'existe pas.</small>
    <table><tr><th></th><th>Gold</th><th>Fragments</th></tr>${[['commun','Commun'],['rare','Rare'],['epique','Épique'],['legendaire','Légendaire'],['ggez','GGEZ']].map(([k,n],i)=>`<tr><td>${n}</td><td><input name="g_${k}" type="number" min="0" value="${esc(v['recyclage_gold_'+k]??[5,10,35,80,80][i])}" style="width:80px"></td><td><input name="f_${k}" type="number" min="0" value="${esc(v['recyclage_fragments_'+k]??0)}" style="width:80px"></td></tr>`).join('')}</table><button>Enregistrer le recyclage</button></form>
    <h3>Tests</h3><div class="f"><button class="sec" id="rzc">Remettre à zéro les combats gratuits du jour (tous les joueurs)</button></div>`;
+  $('#optim').onclick=async()=>{if(!confirm('Optimiser toutes les images déjà en ligne ? Les anciens fichiers seront remplacés par des versions WebP plus légères.'))return;const b=$('#optim'),L=$('#optlog');b.disabled=true;L.textContent='';await optimiserImages(t=>{L.textContent+=t+'\n';L.scrollTop=1e9});b.disabled=false};
   $('#fr').onsubmit=async e=>{e.preventDefault();const n=Math.max(0,Math.min(50,parseInt(e.target.n.value,10)||0));
     await q(sb.from('reglages_jeu').upsert({cle:'combats_gratuits_par_jour',valeur:String(n)}));alert('Enregistré : '+n+' combat'+(n>1?'s':'')+' gratuit'+(n>1?'s':'')+' par jour.');aReglages()};
   $('#frc').onsubmit=async e=>{e.preventDefault();const f=e.target,rows=[];
