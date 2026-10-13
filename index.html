@@ -602,7 +602,11 @@ const vImg=c=>{const v=(c.variantes_carte||[]).find(x=>x.nom=='Standard'&&x.imag
 async function vVotes(box){
   if(!vCartes){const r=await sb.from('cartes').select('id,nom,type,atq,pv,actif,passif,ultime,effet,raretes(nom,couleur,poids),variantes_carte(nom,image_path)').eq('actif',true).order('nom');
     if(r.error){box.innerHTML='<p class="ko">Impossible de charger les cartes.</p>';return}
-    const ord={combattant:0,magie:1,piege:2};vCartes=(r.data||[]).sort((a,b)=>(ord[a.type]-ord[b.type])||a.nom.localeCompare(b.nom,'fr'))}
+    let L=r.data||[];
+    if(!isAdmin){   // joueurs : uniquement les cartes qu'ils possèdent (toutes les cartes du jeu restent réservées à l'admin)
+      const cj=await sb.from('collection_joueur').select('quantite,variantes_carte(carte_id)').eq('joueur_id',user.id);
+      const mien=new Set((cj.data||[]).filter(x=>x.quantite>0&&x.variantes_carte).map(x=>x.variantes_carte.carte_id));L=L.filter(c=>mien.has(c.id))}
+    const ord={combattant:0,magie:1,piege:2};vCartes=L.sort((a,b)=>(ord[a.type]-ord[b.type])||a.nom.localeCompare(b.nom,'fr'))}
   const mv=await sb.rpc('mes_votes'),rs=await sb.rpc('resultats_votes',{p_decalage:vSem});
   if(mv.error||rs.error){box.innerHTML='<p class="ko">Votes indisponibles pour le moment (l\'admin doit d\'abord lancer 11-votes.sql dans Supabase).</p>';return}
   const mes={};(mv.data||[]).forEach(v=>{(mes[v.carte_id]=mes[v.carte_id]||{})[v.aspect]=v.sens});
@@ -610,10 +614,10 @@ async function vVotes(box){
   const liste=vCartes.filter(c=>(vFiltre=='tout'||c.type==vFiltre)&&(!vRech||c.nom.toLowerCase().includes(vRech.toLowerCase())));
   const c=vSel&&byId[vSel];
   // résultats agrégés
-  const R={};(rs.data||[]).forEach(x=>{const o=R[x.carte_id]=R[x.carte_id]||{nom:x.carte_nom,votants:+x.votants,a:{}};(o.a[x.aspect]=o.a[x.aspect]||{nerf:0,up:0,rework:0})[x.sens]=+x.nb});
+  const R={};(rs.data||[]).filter(x=>isAdmin||byId[x.carte_id]).forEach(x=>{const o=R[x.carte_id]=R[x.carte_id]||{nom:x.carte_nom,votants:+x.votants,a:{}};(o.a[x.aspect]=o.a[x.aspect]||{nerf:0,up:0,rework:0})[x.sens]=+x.nb});
   const resL=Object.entries(R).sort((a,b)=>b[1].votants-a[1].votants);
   const labA=(cid,k)=>{const cc=byId[cid];const a=cc&&vAspects(cc).find(z=>z.k==k);return a?a.l:({atq:'ATQ',pv:'PV',ultime:'Ultime',effet:'Effet'}[k]||'Passif')};
-  box.innerHTML=`<p><small>Choisis jusqu'à <b>5 cartes par semaine</b> et dis ce que tu voudrais voir changer : <b>nerf</b> (plus faible), <b>up</b> (plus forte) ou <b>rework</b> (à repenser). Les votes repartent à zéro chaque lundi. Il te reste <b>${reste}</b> carte${reste>1?'s':''} à voter cette semaine.</small></p>
+  box.innerHTML=`${!isAdmin&&!vCartes.length?'<p class="ko">Tu n\'as encore aucune carte : ouvre des boosters pour pouvoir voter sur les tiennes.</p>':''}<p><small>Choisis parmi <b>tes cartes</b> jusqu'à <b>5 par semaine</b> et dis ce que tu voudrais voir changer : <b>nerf</b> (plus faible), <b>up</b> (plus forte) ou <b>rework</b> (à repenser). Les votes repartent à zéro chaque lundi. Il te reste <b>${reste}</b> carte${reste>1?'s':''} à voter cette semaine.</small></p>
    <div class="vbar"><input id="vq" placeholder="Rechercher une carte…" value="${esc(vRech)}"><select id="vt">${[['tout','Toutes'],['combattant','Combattants'],['magie','Magies'],['piege','Pièges']].map(([k,l])=>`<option value="${k}" ${k==vFiltre?'selected':''}>${l}</option>`).join('')}</select></div>
    <div class="vstrip">${liste.map(x=>{const u=vImg(x),g=(x.raretes&&x.raretes.couleur)||'#555';return`<div class="vc${x.id==vSel?' sel':''}" data-vc="${x.id}" style="--g:${g}">${mes[x.id]?'<div class="ck">✓</div>':''}${u?`<img src="${esc(u)}" alt="" loading="lazy">`:'<div class="ph"></div>'}<span>${esc(x.nom)}</span></div>`}).join('')||'<small>Aucune carte.</small>'}</div>
    ${c?`<div class="pn vsel">${vImg(c)?`<img src="${esc(vImg(c))}" alt="">`:''}<div class="vf"><h4>${esc(c.nom)}</h4><small>Pour chaque ligne, choisis ce que tu voudrais (ou rien).</small>
