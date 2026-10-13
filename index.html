@@ -178,7 +178,7 @@ async function init(){
   user=session.user;
   joueur=await q(sb.from('joueurs').select('*').eq('id',user.id).single());
   isAdmin=await q(sb.rpc('is_admin'));
-  header();show(tab);
+  header();lireAncre();show(tab);
   // Gold à jour sans recharger la page : petite lecture toutes les 45 s, seulement quand l'onglet du navigateur est visible
   setInterval(async()=>{if(document.hidden||!user)return;const r=await sb.from('joueurs').select('monnaie,fragments').eq('id',user.id).single();
     if(!r.error&&r.data&&(r.data.monnaie!==joueur.monnaie||r.data.fragments!==joueur.fragments)){joueur={...joueur,...r.data};header()}},45000);
@@ -188,8 +188,14 @@ function header(){
   $('#out').onclick=async()=>{await sb.auth.signOut();location.reload()};
 }
 async function refreshJoueur(){joueur=await q(sb.from('joueurs').select('*').eq('id',user.id).single());header()}
+// L'onglet ouvert est gardé dans l'adresse (#classement, #admin/joueurs…) : un rafraîchissement reste sur la même page
+const VUES=['collection','boutique','deck','dos','historique','profil','classement','regles','propos','patch','admin'];
+function lireAncre(){const [t,s]=decodeURIComponent(location.hash.slice(1)).split('/');if(VUES.includes(t)&&(t!=='admin'||isAdmin)){tab=t;if(t==='admin'&&s)sub=s}}
+function ecrireAncre(){const a='#'+tab+(tab==='admin'?'/'+sub:'');if(location.hash!==a)history.replaceState(null,'',a)}
+window.addEventListener('hashchange',()=>{if(!user)return;const av=tab+'/'+sub;lireAncre();if(tab+'/'+sub!==av)show(tab)});
 function show(t){
-  tab=t;const T={...TABS};if(isAdmin)T.admin='⚙️ Admin';
+  if(!VUES.includes(t)||(t==='admin'&&!isAdmin))t='profil';
+  tab=t;ecrireAncre();const T={...TABS};if(isAdmin)T.admin='⚙️ Admin';
   $('#nav').innerHTML=Object.entries(T).map(([k,v])=>`<button class="${k==t?'on':'sec'}" data-t="${k}">${v}</button>`).join('');
   $('#nav').querySelectorAll('button').forEach(b=>b.onclick=()=>show(b.dataset.t));
   ({collection:vCollection,boutique:vBoutique,deck:vDeck,dos:vDos,historique:vHistorique,profil:vProfil,classement:vClassement,regles:vRegles,propos:vPropos,patch:vPatch,admin:vAdmin})[t]();
@@ -935,8 +941,9 @@ function vRegles(){
 /* ---------- Admin ---------- */
 async function vAdmin(){
   const S={cartes:'Cartes',collections:'Collections',boosters:'Boosters',effets:'Effets',raretes:'Raretés',cadeaux:'Cadeaux',dos:'Dos de cartes',reglages:'Réglages',joueurs:'Joueurs',votes:'🗳️ Votes',propos:'🎨 Propositions'};
+  if(!(sub in S)){sub='cartes';ecrireAncre()}
   main.innerHTML=`<div class="row">${Object.entries(S).map(([k,v])=>`<button class="${k==sub?'on':'sec'}" data-s="${k}">${v}</button>`).join('')}</div><div id="sub"></div>`;
-  main.querySelectorAll('button[data-s]').forEach(b=>b.onclick=()=>{sub=b.dataset.s;vAdmin()});
+  main.querySelectorAll('button[data-s]').forEach(b=>b.onclick=()=>{sub=b.dataset.s;ecrireAncre();vAdmin()});
   ({cartes:aCartes,collections:aCollections,boosters:aBoosters,effets:aEffets,raretes:aRaretes,cadeaux:aCadeaux,dos:aDos,reglages:aReglages,joueurs:aJoueurs,votes:aVotes,propos:aPropos})[sub]();
 }
 // Images allégées : converties en WebP (transparence conservée) et réduites à 1200 px de haut maximum ; gardées 1 an en cache.

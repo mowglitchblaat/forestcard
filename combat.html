@@ -116,6 +116,7 @@ canvas.fx.gel{box-shadow:inset 0 0 40px 12px rgba(150,220,255,.8)}
 
 .cw.rr-ul::before{inset:-5px;border-radius:17px;background:conic-gradient(from var(--ang),#ff3b6b,#ffb703,#5eead4,#60a5fa,#c084fc,#ff3b6b);animation:cbglow 2s ease-in-out infinite,cbspin 3.4s linear infinite}
 .cw.rr-ul{--g1:rgba(255,120,200,.45);--g2:rgba(120,200,255,.9)}
+.cw.brise::before{opacity:0!important;animation:none!important;transition:opacity .15s}   /* carte brisée : le contour de rareté part avec les éclats */
 .cw.rr-ul .card .shn{background:linear-gradient(115deg,transparent 30%,rgba(255,60,120,.4) 40%,rgba(255,220,60,.42) 47%,rgba(80,255,200,.42) 54%,rgba(100,160,255,.42) 61%,transparent 70%);mix-blend-mode:color-dodge;animation-duration:2.6s}
 </style></head><body>
 <div id="scene"><div class="p" id="p0"></div>
@@ -802,9 +803,13 @@ function briser(c,el){const card=el||$('#p'+c+' .cw .card'),K=el?(r=>({x:r.left,
    for(const pts of cr){const n=p*(pts.length-1),w=Math.floor(n);x.moveTo(pts[0][0],pts[0][1]);for(let i=1;i<=w;i++)x.lineTo(pts[i][0],pts[i][1]);if(w<pts.length-1){const f=n-w;x.lineTo(pts[w][0]+(pts[w+1][0]-pts[w][0])*f,pts[w][1]+(pts[w+1][1]-pts[w][1])*f)}}x.stroke()}});
  // texture de la carte (image ou texte), dessinée une seule fois
  const m=/url\(["']?(.*?)["']?\)/.exec(card.style.backgroundImage||''),img=m?new Image():null,txt=card.textContent.trim(),tw=Math.round(K.w),th=Math.round(K.h),tex=document.createElement('canvas');tex.width=tw;tex.height=th;
+ const cwR=card.closest('.cw'),rarete=!el&&cwR&&cwR.classList.contains('rr'),gcol=rarete?(getComputedStyle(cwR).getPropertyValue('--g').trim()||'#fbbf24'):null,ulti=rarete&&cwR.classList.contains('rr-ul');
  const paint=()=>{const g=tex.getContext('2d');g.clearRect(0,0,tw,th);g.save();rr(g,0,0,tw,th,12);g.clip();g.fillStyle='#1b2a22';g.fillRect(0,0,tw,th);
   if(img&&img.naturalWidth){const s=Math.max(tw/img.naturalWidth,th/img.naturalHeight),w=img.naturalWidth*s,h=img.naturalHeight*s;g.drawImage(img,(tw-w)/2,(th-h)/2,w,h)}
-  else if(txt){g.fillStyle='#fff';g.font=`700 ${Math.round(tw*.07)}px system-ui,sans-serif`;g.textAlign='center';g.textBaseline='middle';g.fillText(txt,tw/2,th/2)}g.restore()};
+  else if(txt){g.fillStyle='#fff';g.font=`700 ${Math.round(tw*.07)}px system-ui,sans-serif`;g.textAlign='center';g.textBaseline='middle';g.fillText(txt,tw/2,th/2)}
+  if(gcol){let st=gcol;if(ulti){const lg=g.createLinearGradient(0,0,tw,th);['#ff3b6b','#ffb703','#5eead4','#60a5fa','#c084fc'].forEach((c,i)=>lg.addColorStop(i/4,c));st=lg}   // contour de rareté peint sur le bord : il se brise avec la carte
+   g.lineWidth=Math.max(4,tw*.022);g.strokeStyle=st;g.shadowColor=ulti?'#fff':gcol;g.shadowBlur=tw*.04;rr(g,g.lineWidth/2,g.lineWidth/2,tw-g.lineWidth,th-g.lineWidth,12);g.stroke()}
+  g.restore()};
  if(img){img.onload=paint;img.src=m[1]}
  setTimeout(()=>{paint();
   const NX=5,NY=7,pt=[];for(let j=0;j<=NY;j++){pt[j]=[];for(let i=0;i<=NX;i++)pt[j][i]=[i/NX*tw+(i&&i<NX?R(-.06,.06)*tw:0),j/NY*th+(j&&j<NY?R(-.05,.05)*th:0)]}
@@ -812,7 +817,7 @@ function briser(c,el){const card=el||$('#p'+c+' .cw .card'),K=el?(r=>({x:r.left,
    const gx=(tri[0][0]+tri[1][0]+tri[2][0])/3,gy=(tri[0][1]+tri[1][1]+tri[2][1])/3,xs=tri.map(p=>p[0]),ys=tri.map(p=>p[1]),bx=Math.max(0,Math.floor(Math.min(...xs))-1),by=Math.max(0,Math.floor(Math.min(...ys))-1),
     vx=(gx/tw-.5)*2,vy=(gy/th-.5)*2;
    SH.push({tri,gx,gy,bx,by,bw:Math.min(tw-bx,Math.ceil(Math.max(...xs))-bx+2),bh:Math.min(th-by,Math.ceil(Math.max(...ys))-by+2),dx:vx*K.w*R(.6,1.2)+R(-.1,.1)*K.w,up:-K.h*R(.05,.3)*(vy<0?1.4:.6),dn:K.h*R(.6,1.3),rz:R(-4.2,4.2),de:Math.hypot(vx,vy)*.1,du:R(1.2,1.8)})}}
-  card.classList.remove('tremble');card.style.visibility='hidden';
+  card.classList.remove('tremble');card.style.visibility='hidden';if(cwR&&!el)cwR.classList.add('brise');
   addFx(2.3,(x,t)=>{for(const s of SH){const p=(t-s.de)/s.du;if(p>=1)continue;let ox=0,oy=0,rot=0,al=1;
     if(p>0){if(p<.3){const q=p/.3,e=1-Math.pow(1-q,3);ox=s.dx*.55*e;oy=s.up*e;rot=s.rz*.5*e}else{const q=(p-.3)/.7;ox=s.dx*(.55+.45*q);oy=s.up+(s.dn-s.up)*q*q;rot=s.rz*(.5+.5*q);al=1-q}}
     x.save();x.translate(K.x+s.gx+ox,K.y+s.gy+oy);x.rotate(rot);x.translate(-s.gx,-s.gy);x.beginPath();x.moveTo(s.tri[0][0],s.tri[0][1]);x.lineTo(s.tri[1][0],s.tri[1][1]);x.lineTo(s.tri[2][0],s.tri[2][1]);x.closePath();x.clip();
@@ -915,7 +920,7 @@ function reforme(c){const cw=$('#p'+c+' .cw'),card=cw.querySelector('.card'),K=r
  paint();if(img){img.onload=paint;img.src=m[1]}
  const NX=5,NY=7,T=[];for(let j=0;j<NY;j++)for(let i=0;i<NX;i++){const w=tw/NX,h=th/NY,vx=(i/(NX-1)-.5)*2,vy=(j/(NY-1)-.5)*2,a=Math.atan2(vy,vx)+R(-.6,.6),d=K.w*R(.7,1.5);
   T.push({sx:i*w,sy:j*h,w,h,hx:K.x+i*w+w/2,hy:K.y+j*h+h/2,ox:Math.cos(a)*d,oy:Math.sin(a)*d-K.h*R(0,.3),rz:R(-3,3),de:R(0,.45),du:R(.7,1)})}
- card.style.visibility='hidden';setTimeout(()=>{card.style.visibility='visible'},1550);
+ card.style.visibility='hidden';setTimeout(()=>{card.style.visibility='visible';cw.classList.remove('brise')},1550);
  addFx(2.1,(x,t)=>{x.globalCompositeOperation='lighter';orb(x,K.cx,K.cy,K.h*.7,`rgba(140,255,170,${.45*Math.sin(Math.PI*cl(t/2.1))})`,'rgba(60,200,120,0)');x.globalCompositeOperation='source-over';
   if(t<1.55)for(const q of T){const p=cl((t-q.de)/q.du);if(p<=0)continue;const r=1-ez(p);x.save();x.globalAlpha=Math.min(1,p*2.2);x.translate(q.hx+q.ox*r,q.hy+q.oy*r);x.rotate(q.rz*r);x.drawImage(tex,q.sx,q.sy,q.w+1,q.h+1,-q.w/2,-q.h/2,q.w+1,q.h+1);x.restore()}
   if(t>1.4){const u=cl((t-1.4)/.65);x.globalCompositeOperation='lighter';orb(x,K.cx,K.cy,K.w*(.35+.8*u),`rgba(255,255,215,${.8*(1-u)})`,'rgba(150,255,170,0)');x.strokeStyle=`rgba(190,255,200,${1-u})`;x.lineWidth=6;x.beginPath();x.arc(K.cx,K.cy,K.w*.7*u,0,7);x.stroke()}})}
