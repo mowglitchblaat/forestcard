@@ -1,13 +1,14 @@
 [
   {
     "date": "2026-10-13",
-    "intro": "Grosse mise à jour des combats : prolongations, magies et pièges corrigés, nouvelles animations.",
+    "intro": "Grosse mise à jour des combats et du site : prolongations, magies et pièges corrigés, nouvelles animations, votes et propositions de splash art.",
     "groupes": [
       {
         "titre": "Combat",
         "points": [
-          "Plus de victoire aux PV : sans KO au dernier tour, c'est la prolongation avec 3 nouvelles cartes du deck, jusqu'au KO.",
-          "Double KO : les deux cartes se brisent, match nul."
+          "Plus de victoire aux PV : sans KO au dernier tour, c'est la prolongation avec 3 nouvelles cartes du deck.",
+          "Double KO : les deux cartes se brisent, match nul.",
+          "Les prolongations sont limitées à 3 : ensuite, la carte qui a le plus de PV gagne (PV égaux = match nul)."
         ]
       },
       {
@@ -27,7 +28,9 @@
       {
         "titre": "Site",
         "points": [
-          "Nouvel onglet Patch notes : notes techniques et équilibrage des cartes."
+          "Nouvel onglet Patch notes : notes techniques et équilibrage des cartes.",
+          "Nouvel onglet Votes : chaque semaine, choisis jusqu'à 5 cartes à nerf, up ou rework et suis les résultats ; les plus votées remontent directement à l'admin.",
+          "Nouvel onglet Propositions : propose ton splash art (type, rareté, collection ou idée de collection), validé par l'admin avant d'arriver en jeu."
         ]
       }
     ]
