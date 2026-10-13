@@ -164,6 +164,9 @@ code.cmd{color:#fbbf24;font-weight:700}
 <script>
 const sb=supabase.createClient('https://bjsvqikjnvaomyoifiml.supabase.co','sb_publishable_-3cPqDCyE-zhb3z5r6dPhg_DJFKGAI6');
 const $=s=>document.querySelector(s),main=$('#main');
+// Version des fichiers servis par le site (cadres, écriteaux…) : à changer quand on remplace un de ces fichiers, pour forcer les navigateurs à le recharger
+const VERSION_FICHIERS='2026-10-13';
+const vf=u=>u+(u.includes('?')?'&':'?')+'v='+VERSION_FICHIERS;
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 /* ---------- Fenêtres maison (remplacent alert / confirm / prompt du navigateur) ---------- */
@@ -788,12 +791,12 @@ async function vPropos(){
   const tierP=id=>{const r=R.rar.find(x=>x.id==id);const n=String((r&&r.nom)||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();return['ggez','legendaire','epique','rare','commun'].find(k=>n.includes(k))||'commun'};
   // Cadre à utiliser : celui du type et de la rareté ; s'il n'existe pas encore, la rareté juste en dessous du même type, puis le cadre combattant
   const RG=['ggez','legendaire','epique','rare','commun'];
-  const cadresAEssayer=()=>{const t=f.type.value,i=RG.indexOf(tierP(f.rar.value)),L=RG.slice(i).map(r=>`cadres/${t}-${r}.png`);if(t!=='combattant')L.push(`cadres/combattant-${RG[i]}.png`);return L};
+  const cadresAEssayer=()=>{const t=f.type.value,i=RG.indexOf(tierP(f.rar.value)),L=RG.slice(i).map(r=>vf(`cadres/${t}-${r}.png`));if(t!=='combattant')L.push(vf(`cadres/combattant-${RG[i]}.png`));return L};
   let jeton=0;
   const chargeCadre=()=>{const L=cadresAEssayer(),moi=++jeton;let k=0;const im=new Image();im.onload=()=>{if(moi!==jeton)return;ED.cadre=im;dessine()};im.onerror=()=>{if(moi!==jeton)return;if(++k<L.length)im.src=L[k];else{ED.cadre=null;dessine()}};im.src=L[0];
     const r=R.rar.find(x=>x.id==f.rar.value);cv.style.setProperty('--g',(r&&r.couleur)||'#7c3aed');
     ED.ecr=null;$('#pstats').style.display=f.type.value==='combattant'?'':'none';
-    if(f.type.value==='combattant'&&ECR[tierP(f.rar.value)]){const e=new Image();e.onload=()=>{if(moi!==jeton)return;ED.ecr=e;dessine()};e.src=`cadres/ecriteau-${tierP(f.rar.value)}.png`}};
+    if(f.type.value==='combattant'&&ECR[tierP(f.rar.value)]){const e=new Image();e.onload=()=>{if(moi!==jeton)return;ED.ecr=e;dessine()};e.src=vf(`cadres/ecriteau-${tierP(f.rar.value)}.png`)}};
   // Écriteaux (combattants) : position du bandeau sur la carte de 2070 px de haut, et couleur du texte lisible dessus
   const ECR={ggez:{y0:1294,y1:1789,tx:'#ffffff',ct:'#6b21a8'},legendaire:{y0:1350,y1:1847,tx:'#ffffff',ct:'#7a4504'},epique:{y0:1200,y1:1708,tx:'#ffffff',ct:'#3b0764'},rare:{y0:1094,y1:1650,tx:'#ffffff',ct:'#1e3a8a'}};   // police : sans serif en gras, remplissage + contour
   function texte(x,t,cx,cy,maxW,taille,col,contour,font){let s=taille;x.font=`900 ${s}px ${font}`;while(x.measureText(t).width>maxW&&s>20){s-=4;x.font=`900 ${s}px ${font}`}
