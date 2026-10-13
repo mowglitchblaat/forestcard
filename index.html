@@ -55,6 +55,9 @@ form.f select{max-width:100%;min-width:0}form.f>*{min-width:0}
 .ppc .idc{color:#fbbf24}.ppc small{color:#aaa}.ppc .row{gap:6px;flex-wrap:wrap}
 .bcol{display:flex;flex-wrap:wrap;gap:4px;margin:2px 0}.bcol span{font-size:11px;padding:2px 7px;border-radius:9px;background:#2a2a38;border:1px solid #3a3a4a}
 .bdet{font-size:12px;margin:4px 0}.bdet summary{cursor:pointer;color:#c4b5fd;font-weight:600}.bdet .bc{margin:6px 0 2px;font-weight:700}.bdet .br{display:flex;flex-wrap:wrap;gap:4px}.bdet .br span{padding:1px 7px;border-radius:9px;border:1px solid var(--g);color:var(--g)}
+.prog{background:#1d1d27;border:1px solid #2c2c38;border-radius:10px;padding:10px 14px;margin:8px 0 12px}.prog .top{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px}.prog .top b{font-size:18px}
+.pbar{height:10px;border-radius:6px;background:#2a2a38;overflow:hidden;margin:6px 0}.pbar i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#7c3aed,#c084fc)}
+.prog details summary{cursor:pointer;color:#c4b5fd;font-size:13px;font-weight:600}.pcol{margin:8px 0}.pcol .pbar{height:6px;margin:3px 0}.pcol .pbar i{background:linear-gradient(90deg,#16a34a,#4ade80)}.prr{display:flex;flex-wrap:wrap;gap:4px}.prr span{font-size:11px;padding:1px 7px;border-radius:9px;border:1px solid var(--g);color:var(--g)}
 .hc{background:#1d1d27;border:1px solid #2c2c38;border-left:4px solid #444;border-radius:10px;padding:10px 14px;margin:10px 0}
 .hc.victoire{border-left-color:#4ade80}.hc.defaite{border-left-color:#f87171}.hc.nul{border-left-color:#9ca3af}
 .hc .top{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
@@ -451,8 +454,24 @@ async function vCollection(){
   apercu=false;await loadColl();await loadDecks();
   if(!collData.length&&!isAdmin){main.innerHTML='<p>Tu n\'as encore aucune carte. Achète un booster dans la boutique, puis ouvre-le en live avec !booster.</p>';return}
   await chargerPrix();
-  main.innerHTML='<div id="dbar" class="dbar"></div><div class="row" id="rbar"></div><div class="row" id="flt"></div><div class="row" id="fcol"></div><div class="cgrid" id="gr"></div>';
-  drawColl();
+  main.innerHTML='<div id="dbar" class="dbar"></div><div id="prog"></div><div class="row" id="rbar"></div><div class="row" id="flt"></div><div class="row" id="fcol"></div><div class="cgrid" id="gr"></div>';
+  drawColl();progression();
+}
+// Progression : cartes différentes possédées / cartes du jeu (au total, par collection, par rareté) — seuls des nombres sont montrés
+async function progression(){
+  const box=$('#prog');if(!box)return;
+  const r=await sb.from('cartes').select('id,collections(nom),raretes(nom,couleur,poids)').eq('actif',true);
+  if(r.error||!r.data||!r.data.length){box.innerHTML='';return}
+  const own=new Set();if(!apercu)collData.forEach(x=>{if(x.quantite>0)own.add(x.variantes_carte.cartes.id)});
+  const T=r.data,tot=T.length,moi=T.filter(c=>own.has(c.id)).length,pc=n=>tot?Math.round(100*n/tot):0;
+  const C={};T.forEach(c=>{const k=(c.collections&&c.collections.nom)||'Communes',o=C[k]=C[k]||{n:0,m:0,r:{}};o.n++;const ok=own.has(c.id);if(ok)o.m++;
+    const rn=(c.raretes&&c.raretes.nom)||'?',rr=o.r[rn]=o.r[rn]||{n:0,m:0,col:(c.raretes&&c.raretes.couleur)||'#aaa',p:+((c.raretes&&c.raretes.poids)||0)};rr.n++;if(ok)rr.m++});
+  const cols=Object.entries(C).sort((a,b)=>(a[0]=='Communes')-(b[0]=='Communes')||a[0].localeCompare(b[0],'fr'));
+  box.innerHTML=`<div class="prog"><div class="top"><span>📚 Ma collection : <b>${moi} / ${tot}</b> cartes (${pc(moi)} %)</span><span>${tot-moi?`Il t'en manque <b>${tot-moi}</b>`:'🎉 Collection complète !'}</span></div>
+   <div class="pbar"><i style="width:${pc(moi)}%"></i></div>
+   <details><summary>Détail par collection et par rareté</summary>${cols.map(([k,o])=>`<div class="pcol"><div class="top"><span>${esc(k)}</span><small>${o.m} / ${o.n}${o.n-o.m?` · il en manque ${o.n-o.m}`:' · complète ✓'}</small></div>
+    <div class="pbar"><i style="width:${o.n?Math.round(100*o.m/o.n):0}%"></i></div>
+    <div class="prr">${Object.entries(o.r).sort((a,b)=>a[1].p-b[1].p).map(([rn,x])=>`<span style="--g:${esc(x.col)}">${esc(rn)} ${x.m}/${x.n}</span>`).join('')}</div></div>`).join('')}</details></div>`;
 }
 function drawColl(){
   curView=drawColl;
@@ -465,7 +484,7 @@ function drawColl(){
   $('#gr').innerHTML=L.map(cardHTML).join('');
   const AP=isAdmin?`<button id="apv" class="${apercu?'on':'sec'}" title="Réservé à l'admin : montre toutes les cartes du jeu pour voir à quoi ressemble la collection. Rien n'est donné.">👁 ${apercu?'Aperçu actif : toutes les cartes du jeu':'Aperçu : voir toutes les cartes du jeu'}</button>`:'';
   const T=gainTotal();$('#rbar').innerHTML=AP+(T.n?`<button id="recall" class="sec">♻ Recycler tous mes doublons (${T.n}) · ${gainTxt(T)}</button><small style="color:#9a9aa8">Tu gardes toujours 1 exemplaire de chaque carte.</small>`:'<small style="color:#9a9aa8">♻ Aucun doublon à recycler pour le moment.</small>');
-  const apb=$('#apv');if(apb)apb.onclick=async()=>{apercu=!apercu;await loadColl();drawColl()};
+  const apb=$('#apv');if(apb)apb.onclick=async()=>{apercu=!apercu;await loadColl();drawColl();progression()};
   bindToggle(drawColl);bindOpen(L,drawColl);bindRecycle();updBar();
 }
 
