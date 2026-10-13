@@ -154,6 +154,10 @@ code.cmd{color:#fbbf24;font-weight:700}
 .ct[data-t=ul] .ci::after{opacity:1;background:linear-gradient(115deg,transparent 30%,rgba(255,60,120,.38) 40%,rgba(255,220,60,.4) 47%,rgba(80,255,200,.4) 54%,rgba(100,160,255,.4) 61%,transparent 70%);mix-blend-mode:color-dodge;animation:ctshine 3s ease-in-out infinite;animation-delay:calc(min(var(--i,0),14)*300ms + .6s)}
 .cmb[data-t=ul] .ho{opacity:.7}
 .cmb[data-t=ul]{border-color:transparent;background:linear-gradient(160deg,color-mix(in srgb,var(--g) 14%,#1b1b25),#12121a 65%) padding-box,conic-gradient(from var(--ang),#ff3b6b,#ffb703,#5eead4,#60a5fa,#c084fc,#ff3b6b) border-box;animation:ctpop .45s cubic-bezier(.2,.9,.3,1.25) backwards,ctspin 4s linear infinite}
+.uim{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px;animation:uif .15s}
+.uib{background:#1d1d27;border:1px solid #3a3a4a;border-radius:12px;padding:18px 20px;max-width:440px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.uit{white-space:pre-wrap;line-height:1.45;margin-bottom:14px}.uii{width:100%;box-sizing:border-box;margin-bottom:14px}.uia{display:flex;justify-content:flex-end;gap:8px}
+@keyframes uif{from{opacity:0}to{opacity:1}}
 </style></head><body>
 <header><h1>🃏 Jeu de cartes</h1><div id="me"></div></header>
 <nav id="nav"></nav><main id="main"></main>
@@ -161,8 +165,23 @@ code.cmd{color:#fbbf24;font-weight:700}
 const sb=supabase.createClient('https://bjsvqikjnvaomyoifiml.supabase.co','sb_publishable_-3cPqDCyE-zhb3z5r6dPhg_DJFKGAI6');
 const $=s=>document.querySelector(s),main=$('#main');
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ---------- Fenêtres maison (remplacent alert / confirm / prompt du navigateur) ---------- */
+function uiBoite(msg,{ok='OK',annuler=null,saisie=null,danger=false}={}){return new Promise(res=>{
+  const fond=document.createElement('div');fond.className='uim';
+  fond.innerHTML=`<div class="uib" role="dialog" aria-modal="true"><div class="uit"></div>${saisie!==null?'<input class="uii">':''}<div class="uia">${annuler?`<button class="sec" data-r="0">${esc(annuler)}</button>`:''}<button data-r="1" ${danger?'style="background:#b91c1c;border-color:#b91c1c"':''}>${esc(ok)}</button></div></div>`;
+  fond.querySelector('.uit').textContent=String(msg??'');
+  const inp=fond.querySelector('.uii');if(inp)inp.value=saisie||'';
+  const fin=v=>{document.removeEventListener('keydown',kb);fond.remove();res(v)};
+  const kb=e=>{if(e.key==='Escape')fin(annuler?(saisie!==null?null:false):true);if(e.key==='Enter')fin(saisie!==null?inp.value:true)};
+  fond.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>fin(b.dataset.r==='1'?(saisie!==null?inp.value:true):(saisie!==null?null:false)));
+  fond.onclick=e=>{if(e.target===fond&&annuler)fin(saisie!==null?null:false)};
+  document.addEventListener('keydown',kb);document.body.appendChild(fond);(inp||fond.querySelector('[data-r="1"]')).focus()})}
+const uiAlert=m=>uiBoite(m);
+const uiConfirm=(m,o={})=>uiBoite(m,{ok:'Confirmer',annuler:'Annuler',danger:/définiti|supprim|vider|retirer|remise? à zéro|TOUS/i.test(String(m)),...o});
+const uiPrompt=(m,v='')=>uiBoite(m,{ok:'Valider',annuler:'Annuler',saisie:v});
 const img=p=>p?sb.storage.from('cartes').getPublicUrl(p).data.publicUrl:'';
-async function q(p){const r=await p;if(r.error){alert(r.error.message);throw r.error}return r.data}
+async function q(p){const r=await p;if(r.error){uiAlert(r.error.message);throw r.error}return r.data}
 let user,joueur,isAdmin,tab='profil',sub='cartes',B={};   // ouverture sur le profil : pas d'images à charger (économise le quota Supabase)
 const opts=(a,l='nom')=>a.map(x=>`<option value="${x.id}">${esc(x[l])}</option>`).join('');
 const TABS={collection:'Ma collection',boutique:'Boutique',deck:'Mon deck',dos:'Dos de cartes',historique:'Historique',profil:'Profils',classement:'🏆 Classement',regles:'Comment jouer',propos:'🎨 Propositions',patch:'📜 Patch notes'};
@@ -210,14 +229,14 @@ let apercu=false;   // admin : voir toutes les cartes du jeu (rien n'est donné)
 async function chargerApercu(){
   const sel=c=>sb.from('variantes_carte').select('id,nom,image_path,cartes(id,nom,type,'+c+'collections(nom),raretes(nom,couleur,poids))');
   let r=await sel('atq,pv,description,passif,ultime,effet,');if(r.error)r=await sel('');
-  if(r.error){alert(r.error.message);throw r.error}
+  if(r.error){uiAlert(r.error.message);throw r.error}
   return r.data.filter(v=>v.cartes&&v.cartes.raretes).map(v=>({quantite:0,apercu:true,variantes_carte:v}));
 }
 async function loadColl(){
   if(apercu&&isAdmin){collData=await chargerApercu();collData.sort(cmpColl);typeOf={};collData.forEach(x=>{const c=x.variantes_carte.cartes;typeOf[c.id]=c.type});if(!deck){const dk=await q(sb.from('deck').select('carte_id').eq('joueur_id',user.id));deck=new Set(dk.map(x=>x.carte_id))}return}
   let r=await sb.from('collection_joueur').select('quantite,variantes_carte(id,nom,image_path,cartes(id,nom,type,atq,pv,description,passif,ultime,effet,collections(nom),raretes(nom,couleur,poids)))').eq('joueur_id',user.id);
   if(r.error)r=await sb.from('collection_joueur').select('quantite,variantes_carte(id,nom,image_path,cartes(id,nom,type,collections(nom),raretes(nom,couleur,poids)))').eq('joueur_id',user.id);
-  if(r.error){alert(r.error.message);throw r.error}
+  if(r.error){uiAlert(r.error.message);throw r.error}
   collData=r.data;
   collData.sort(cmpColl);   // légendaire en premier, puis épique, rare, commun
   typeOf={};collData.forEach(x=>{const c=x.variantes_carte.cartes;typeOf[c.id]=c.type});
@@ -232,23 +251,23 @@ function updBar(){
    :`<small>Decks multiples indisponibles pour le moment (l'admin doit lancer 09-decks-multiples.sql dans Supabase).</small>`}`;
   $('#sv').onclick=async()=>{
     const {error}=await sb.rpc('enregistrer_deck',{p_cartes:[...deck]});
-    alert(error?({DECK_TAILLE_INVALIDE:'Il faut 9 ou 10 cartes.',DECK_COMPOSITION_INVALIDE:'Il faut au moins 3 cartes de chaque type.'}[error.message]||error.message):'Deck de combat enregistré !');};
+    uiAlert(error?({DECK_TAILLE_INVALIDE:'Il faut 9 ou 10 cartes.',DECK_COMPOSITION_INVALIDE:'Il faut au moins 3 cartes de chaque type.'}[error.message]||error.message):'Deck de combat enregistré !');};
   $('#clr').onclick=()=>{deck.clear();selDeck='';if(curView)curView();else updBar()};
   if(!decksOK)return;
   $('#dsel').onchange=e=>{selDeck=e.target.value;updBar()};
   $('#dld').onclick=()=>{const d=savedDecks.find(x=>String(x.id)===String(selDeck));if(!d)return;
     const own=new Set(collData.map(x=>x.variantes_carte.cartes.id)),ids=(d.cartes||[]).filter(i=>own.has(i));
-    if(ids.length<(d.cartes||[]).length)alert((d.cartes.length-ids.length)+' carte(s) de ce deck ne sont plus dans ta collection : elles n\'ont pas été chargées.');
+    if(ids.length<(d.cartes||[]).length)uiAlert((d.cartes.length-ids.length)+' carte(s) de ce deck ne sont plus dans ta collection : elles n\'ont pas été chargées.');
     deck=new Set(ids);if(curView)curView();else updBar()};
   $('#dsa').onclick=async()=>{
-    if(!deck.size){alert('Ajoute d\'abord des cartes au deck.');return}
-    const cur=savedDecks.find(x=>String(x.id)===String(selDeck)),nom=(prompt('Nom du deck (le même nom remplace un deck existant) :',cur?cur.nom:'')||'').trim();
+    if(!deck.size){uiAlert('Ajoute d\'abord des cartes au deck.');return}
+    const cur=savedDecks.find(x=>String(x.id)===String(selDeck)),nom=(await uiPrompt('Nom du deck (le même nom remplace un deck existant) :',cur?cur.nom:'')||'').trim();
     if(!nom)return;
     const {data,error}=await sb.rpc('sauver_deck',{p_nom:nom,p_cartes:[...deck]});
-    if(error){alert(({TROP_DE_DECKS:'Tu as déjà 10 decks enregistrés : supprime-en un d\'abord.',NOM_INVALIDE:'Le nom doit faire entre 1 et 30 caractères.',DECK_TROP_GRAND:'Un deck contient 10 cartes au maximum.'}[error.message])||error.message);return}
+    if(error){uiAlert(({TROP_DE_DECKS:'Tu as déjà 10 decks enregistrés : supprime-en un d\'abord.',NOM_INVALIDE:'Le nom doit faire entre 1 et 30 caractères.',DECK_TROP_GRAND:'Un deck contient 10 cartes au maximum.'}[error.message])||error.message);return}
     await loadDecks();selDeck=String(data);updBar()};
-  $('#ddl').onclick=async()=>{const d=savedDecks.find(x=>String(x.id)===String(selDeck));if(!d||!confirm('Supprimer le deck « '+d.nom+' » ?'))return;
-    const {error}=await sb.rpc('supprimer_deck',{p_id:+selDeck});if(error){alert(error.message);return}
+  $('#ddl').onclick=async()=>{const d=savedDecks.find(x=>String(x.id)===String(selDeck));if(!d||!(await uiConfirm('Supprimer le deck « '+d.nom+' » ?')))return;
+    const {error}=await sb.rpc('supprimer_deck',{p_id:+selDeck});if(error){uiAlert(error.message);return}
     selDeck='';await loadDecks();updBar()};
 }
 /* FX-BEGIN */
@@ -382,11 +401,11 @@ const gainDe=x=>{const p=(PRIX||PRIX_DEF)[rangDe(x)]||PRIX_DEF.commun,n=surplus(
 const gainTxt=g=>`+${g.gold} gold`+(g.fragments?` · +${g.fragments} fragment${g.fragments>1?'s':''}`:'');
 function gainTotal(){return collData.reduce((a,x)=>{const g=gainDe(x);a.n+=g.n;a.gold+=g.gold;a.fragments+=g.fragments;return a},{n:0,gold:0,fragments:0})}
 async function recycler(varianteId,msg){
-  if(!confirm(msg))return;
+  if(!(await uiConfirm(msg)))return;
   const r=await sb.rpc('recycler_doublons',varianteId?{p_variante:varianteId}:{});
-  if(r.error){alert(String(r.error.message).includes('RIEN_A_RECYCLER')?'Aucun doublon à recycler.':r.error.message);return}
+  if(r.error){uiAlert(String(r.error.message).includes('RIEN_A_RECYCLER')?'Aucun doublon à recycler.':r.error.message);return}
   await Promise.all([loadColl(),refreshJoueur()]);mdClose();if(curView)curView();
-  const d=r.data||{};alert(`♻ ${d.cartes} carte${d.cartes>1?'s':''} recyclée${d.cartes>1?'s':''} : +${d.gold} gold`+(d.fragments?` et +${d.fragments} fragment${d.fragments>1?'s':''}`:'')+'.')}
+  const d=r.data||{};uiAlert(`♻ ${d.cartes} carte${d.cartes>1?'s':''} recyclée${d.cartes>1?'s':''} : +${d.gold} gold`+(d.fragments?` et +${d.fragments} fragment${d.fragments>1?'s':''}`:'')+'.')}
 function bindRecycle(){main.querySelectorAll('button[data-rec]').forEach(b=>b.onclick=()=>{const v=+b.dataset.rec,x=collData.find(y=>y.variantes_carte.id===v);if(!x)return;const g=gainDe(x);
   recycler(v,`Recycler ${g.n} exemplaire${g.n>1?'s':''} en trop de « ${x.variantes_carte.cartes.nom} » ?\nTu en gardes 1. Tu reçois ${gainTxt(g).replace(/\+/g,'')}.`)});
   const all=$('#recall');if(all)all.onclick=()=>{const t=gainTotal();recycler(null,`Recycler tous tes doublons (${t.n} carte${t.n>1?'s':''}) ?\nTu gardes 1 exemplaire de chaque carte. Tu reçois ${gainTxt(t).replace(/\+/g,'')}.`)}}
@@ -436,7 +455,7 @@ function mdDraw(){
   const mr=box.querySelector('[data-mrec]');if(mr)mr.onclick=()=>{const g=gainDe(x);recycler(v.id,`Recycler ${g.n} exemplaire${g.n>1?'s':''} en trop de « ${c.nom} » ?\nTu en gardes 1. Tu reçois ${gainTxt(g).replace(/\+/g,'')}.`)};
   box.querySelector('[data-mdeck]').onclick=()=>{
     if(deck.has(c.id))deck.delete(c.id);
-    else if(deck.size>=10){alert('Deck complet : 10 cartes maximum.');return}
+    else if(deck.size>=10){uiAlert('Deck complet : 10 cartes maximum.');return}
     else deck.add(c.id);
     if(mdRedraw)mdRedraw();mdDraw()};
   const tilt=box.querySelector('.fi'),fp=box.querySelector('.fp');
@@ -455,7 +474,7 @@ function bindOpen(L,redraw){main.querySelectorAll('.ct').forEach(t=>t.querySelec
 function bindToggle(redraw){
   main.querySelectorAll('button[data-c]').forEach(b=>b.onclick=()=>{const id=+b.dataset.c;
     if(deck.has(id))deck.delete(id);
-    else if(deck.size>=10){alert('Deck complet : 10 cartes maximum.');return}
+    else if(deck.size>=10){uiAlert('Deck complet : 10 cartes maximum.');return}
     else deck.add(id);
     redraw();});
 }
@@ -512,7 +531,7 @@ async function vBoutique(){
   <h3>Acheter</h3><div class="grid">${t.map(b=>`<div class="card">${b.image_path?`<img src="${img(b.image_path)}">`:''}<b>${esc(b.nom)}</b><small>${b.nb_cartes} cartes</small>${contenu(b.id)}${(ved[b.id]||[]).map(v=>`<div style="margin:6px 0;text-align:center"><small>⭐ À l'affiche</small><br>${v.image_path?`<img src="${img(v.image_path)}" style="width:90px;border-radius:6px;box-shadow:0 0 12px ${esc(v.couleur||'#fff')}">`:''}<br><small>${esc(v.nom)}</small></div>`).join('')}<button data-id="${b.id}">Acheter · 💰 ${b.prix}</button></div>`).join('')}</div>`;
   main.querySelectorAll('button[data-id]').forEach(b=>b.onclick=async()=>{
     const {error}=await sb.rpc('acheter_booster',{p_type_id:+b.dataset.id});
-    if(error)alert(error.message.includes('MONNAIE')?'Pas assez de monnaie.':error.message);
+    if(error)uiAlert(error.message.includes('MONNAIE')?'Pas assez de monnaie.':error.message);
     await refreshJoueur();vBoutique();});
 }
 
@@ -633,7 +652,7 @@ async function vPatch(){
   const G={};E.forEach(x=>{const k=x.cree_le.slice(0,10);(G[k]=G[k]||[]).push(x)});
   const cls=c=>c.sens>0?'up':c.sens<0?'dn':'';
   box.innerHTML=`<p><small>Chaque modification de carte faite par l'admin, avec la valeur avant et après.</small></p>`+Object.entries(G).map(([d,l])=>`<div class="pn"><h4>${esc(jour(d))}</h4>${l.map(x=>`<div class="eq"><span class="nm">${esc(x.carte_nom)}</span><span class="ch">${(x.changements||[]).map(c=>c.avant==null?`<div><span class="nw">${esc(c.champ)}</span>${c.apres?` : ${esc(c.apres)}`:''}</div>`:`<div>${esc(c.champ)} : ${c.avant?`<span class="av">${esc(c.avant)}</span>`:'<span style="color:#9ca3af">aucun</span>'} → <span class="${cls(c)}">${esc(c.apres||'aucun')}</span></div>`).join('')}</span>${isAdmin?`<button class="sec" data-eqdel="${x.id}" title="Retirer cette ligne">🗑️</button>`:''}</div>`).join('')}</div>`).join('');
-  box.querySelectorAll('[data-eqdel]').forEach(b=>b.onclick=async()=>{if(!confirm('Retirer cette ligne des patch notes ?'))return;const d=await sb.from('equilibrage').delete().eq('id',b.dataset.eqdel);if(d.error)alert(d.error.message);vPatch()});
+  box.querySelectorAll('[data-eqdel]').forEach(b=>b.onclick=async()=>{if(!(await uiConfirm('Retirer cette ligne des patch notes ?')))return;const d=await sb.from('equilibrage').delete().eq('id',b.dataset.eqdel);if(d.error)uiAlert(d.error.message);vPatch()});
 }
 // Votes : chaque joueur choisit jusqu'à 5 cartes par semaine et indique pour chacune ce qu'il voudrait voir changer (nerf / up / rework)
 let vCartes=null,vSel=null,vFiltre='tout',vRech='',vSem=0;
@@ -677,9 +696,9 @@ async function vVotes(box){
   box.querySelectorAll('[data-vc]').forEach(d=>d.onclick=()=>{vSel=+d.dataset.vc;vVotes(box)});
   box.querySelectorAll('[data-sem]').forEach(b=>b.onclick=()=>{vSem=+b.dataset.sem;vVotes(box)});
   box.querySelectorAll('.vrow button').forEach(b=>b.onclick=()=>{const on=b.classList.contains('on');b.parentElement.querySelectorAll('button').forEach(x=>x.classList.remove('on'));if(!on)b.classList.add('on')});
-  const envoyer=async choix=>{const r=await sb.rpc('voter_carte',{p_carte:c.id,p_choix:choix});if(r.error){alert(r.error.message);return}vVotes(box)};
+  const envoyer=async choix=>{const r=await sb.rpc('voter_carte',{p_carte:c.id,p_choix:choix});if(r.error){uiAlert(r.error.message);return}vVotes(box)};
   const ok=$('#vok');if(ok)ok.onclick=()=>{const ch=[...box.querySelectorAll('.vrow')].map(rw=>{const b=rw.querySelector('button.on');return b?{aspect:rw.dataset.k,sens:b.dataset.s}:null}).filter(Boolean);
-    if(!ch.length){alert('Choisis au moins une ligne (nerf, up ou rework).');return}envoyer(ch)};
+    if(!ch.length){uiAlert('Choisis au moins une ligne (nerf, up ou rework).');return}envoyer(ch)};
   const del=$('#vdel');if(del)del.onclick=()=>envoyer([]);
 }
 
@@ -791,7 +810,7 @@ async function vPropos(){
       if(p!=='')texte(x,p,W*.87,H*.925,W*.2,140*k,'#3ba4ff','#ffffff',SF)}}
   function dessine(){rendre(cv,cv.width,cv.height)}
   chargeCadre();
-  f.file.onchange=()=>{const fi=f.file.files[0];if(!fi)return;if(fi.size>8*1024*1024){alert('Image trop lourde (8 Mo maximum).');f.file.value='';return}
+  f.file.onchange=()=>{const fi=f.file.files[0];if(!fi)return;if(fi.size>8*1024*1024){uiAlert('Image trop lourde (8 Mo maximum).');f.file.value='';return}
     const im=new Image();im.onload=()=>{ED.art=im;ED.z=1;ED.x=0;ED.y=0;zm.value=100;$('#paide').textContent='Glisse le dessin pour le placer, et règle le zoom.';$('#pcentre').style.display='';dessine()};im.src=URL.createObjectURL(fi)};
   zm.oninput=()=>{ED.z=+zm.value/100;dessine()};
   $('#pcentre').onclick=()=>{ED.x=0;ED.y=0;ED.z=1;zm.value=100;dessine()};
@@ -801,19 +820,19 @@ async function vPropos(){
    cv.onwheel=e=>{if(!ED.art)return;e.preventDefault();zm.value=Math.max(100,Math.min(400,+zm.value-Math.sign(e.deltaY)*10));zm.oninput()}}
   f.rar.onchange=chargeCadre;f.type.onchange=chargeCadre;f.nom.oninput=f.atq.oninput=f.pv.oninput=dessine;f.col.onchange=()=>{$('#pcolid').style.display=f.col.value=='autre'?'':'none'};if(!R.col.length){f.col.value='autre';f.col.onchange()}
   f.onsubmit=async e=>{e.preventDefault();const fi=f.file.files[0];if(!fi)return;const autre=f.col.value=='autre';
-    if(autre&&!f.colidee.value.trim()){alert('Écris ton idée de collection.');return}
+    if(autre&&!f.colidee.value.trim()){uiAlert('Écris ton idée de collection.');return}
     const btn=$('#pbtn');btn.disabled=true;btn.textContent='Envoi…';
     const fiL=await alleger(fi,1600,.9),path=user.id+'/'+crypto.randomUUID()+'.'+(fiL.type==='image/webp'?'webp':((fi.name.split('.').pop()||'png').toLowerCase()));
     const up=await sb.storage.from('propositions').upload(path,fiL,{contentType:fiL.type||fi.type,cacheControl:CACHE_1AN});
-    if(up.error){alert(up.error.message);btn.disabled=false;btn.textContent='Envoyer ma proposition';return}
+    if(up.error){uiAlert(up.error.message);btn.disabled=false;btn.textContent='Envoyer ma proposition';return}
     let pc=null;try{const big=document.createElement('canvas');big.width=1488;big.height=2070;rendre(big,1488,2070);
       const bl=await new Promise(ok=>big.toBlob(ok,'image/webp',.9));if(bl){pc=user.id+'/'+crypto.randomUUID()+'-carte.webp';const u2=await sb.storage.from('propositions').upload(pc,bl,{contentType:'image/webp',cacheControl:CACHE_1AN});if(u2.error)pc=null}}catch(x){pc=null}
     const args={p_image:path,p_nom:f.nom.value,p_type:f.type.value,p_rarete:+f.rar.value||null,p_collection:autre?null:+f.col.value,p_collection_idee:autre?f.colidee.value:null,p_idee:f.idee.value};if(pc)args.p_image_carte=pc;
     if(f.type.value==='combattant'){if(f.atq.value!=='')args.p_atq=+f.atq.value;if(f.pv.value!=='')args.p_pv=+f.pv.value}
     const r=await sb.rpc('proposer_carte',args);
-    if(r.error){await sb.storage.from('propositions').remove([path,...(pc?[pc]:[])]);alert(r.error.message);btn.disabled=false;btn.textContent='Envoyer ma proposition';return}
+    if(r.error){await sb.storage.from('propositions').remove([path,...(pc?[pc]:[])]);uiAlert(r.error.message);btn.disabled=false;btn.textContent='Envoyer ma proposition';return}
     vPropos()};
-  main.querySelectorAll('[data-pdel]').forEach(b=>b.onclick=async()=>{if(!confirm('Retirer cette proposition ?'))return;const d=await sb.from('propositions').delete().eq('id',b.dataset.pdel);if(d.error){alert(d.error.message);return}await sb.storage.from('propositions').remove([b.dataset.path,b.dataset.path2].filter(Boolean));vPropos()});
+  main.querySelectorAll('[data-pdel]').forEach(b=>b.onclick=async()=>{if(!(await uiConfirm('Retirer cette proposition ?')))return;const d=await sb.from('propositions').delete().eq('id',b.dataset.pdel);if(d.error){uiAlert(d.error.message);return}await sb.storage.from('propositions').remove([b.dataset.path,b.dataset.path2].filter(Boolean));vPropos()});
   main.querySelectorAll('[data-zoom]').forEach(i=>i.onclick=()=>window.open(i.dataset.zoom,'_blank'));
 }
 
@@ -837,10 +856,10 @@ async function aPropos(){
   box.querySelectorAll('[data-apf]').forEach(b=>b.onclick=()=>{apFiltre=b.dataset.apf;aPropos()});
   box.querySelectorAll('[data-zoom]').forEach(i=>i.onclick=()=>window.open(i.dataset.zoom,'_blank'));
   box.querySelectorAll('[data-aps]').forEach(b=>b.onclick=async()=>{const id=b.dataset.id,note=box.querySelector(`[data-note="${id}"]`).value.trim()||null;
-    const u=await sb.from('propositions').update({statut:b.dataset.aps,note_admin:note}).eq('id',id);if(u.error){alert(u.error.message);return}aPropos()});
+    const u=await sb.from('propositions').update({statut:b.dataset.aps,note_admin:note}).eq('id',id);if(u.error){uiAlert(u.error.message);return}aPropos()});
   box.querySelectorAll('[data-note]').forEach(i=>i.onchange=async()=>{await sb.from('propositions').update({note_admin:i.value.trim()||null}).eq('id',i.dataset.note)});
-  box.querySelectorAll('[data-apdel]').forEach(b=>b.onclick=async()=>{if(!confirm('Supprimer définitivement cette proposition et son image ?'))return;
-    const d=await sb.from('propositions').delete().eq('id',b.dataset.apdel);if(d.error){alert(d.error.message);return}await sb.storage.from('propositions').remove([b.dataset.path,b.dataset.path2].filter(Boolean));aPropos()});
+  box.querySelectorAll('[data-apdel]').forEach(b=>b.onclick=async()=>{if(!(await uiConfirm('Supprimer définitivement cette proposition et son image ?')))return;
+    const d=await sb.from('propositions').delete().eq('id',b.dataset.apdel);if(d.error){uiAlert(d.error.message);return}await sb.storage.from('propositions').remove([b.dataset.path,b.dataset.path2].filter(Boolean));aPropos()});
 }
 
 /* ---------- Comment jouer ---------- */
@@ -1153,7 +1172,7 @@ async function aCartes(){
     const on=b.dataset.v!=='true';await q(sb.from('cartes').update({actif:on}).eq('id',b.dataset.a));
     const o=await sb.from('cartes').select('*').eq('id',b.dataset.a).single();if(o.data)noteEquilibrage({...o.data,actif:!on},o.data);aCartes();});
   $('#sub').querySelectorAll('button[data-del]').forEach(b=>b.onclick=async()=>{
-    if(!confirm('Supprimer définitivement « '+b.dataset.nom+' » ?\nElle disparaîtra aussi des collections et des decks des joueurs.'))return;
+    if(!(await uiConfirm('Supprimer définitivement « '+b.dataset.nom+' » ?\nElle disparaîtra aussi des collections et des decks des joueurs.')))return;
     const chemins=await q(sb.rpc('supprimer_carte',{p_carte_id:+b.dataset.del}));
     if(chemins&&chemins.length){try{await sb.storage.from('cartes').remove(chemins)}catch(x){}}
     aCartes();});
@@ -1168,7 +1187,7 @@ async function aCollections(){
   $('#sub').querySelectorAll('tr[data-id]').forEach(tr=>{const b=tr.querySelectorAll('button');
     b[0].onclick=async()=>{const nom=tr.querySelector('input').value.trim();if(!nom)return;
       await q(tr.dataset.id=='new'?sb.from('collections').insert({nom}):sb.from('collections').update({nom}).eq('id',tr.dataset.id));aCollections();};
-    if(b[1])b[1].onclick=async()=>{if(!confirm('Supprimer cette collection ?'))return;
+    if(b[1])b[1].onclick=async()=>{if(!(await uiConfirm('Supprimer cette collection ?')))return;
       await q(sb.from('collections').delete().eq('id',tr.dataset.id));aCollections();};});
 }
 
@@ -1220,7 +1239,7 @@ async function aBoosters(){
        if(vs.length)await q(sb.from('boosters_vedettes').insert(vs))}
      aBoosters();}catch(x){}});
   $('#sub').querySelectorAll('button[data-del]').forEach(x=>x.onclick=async()=>{
-    if(!confirm('Supprimer « '+x.dataset.nom+' » ?\nLes boosters non ouverts de ce type chez les joueurs seront perdus.\n(Pour seulement le retirer de la boutique, décoche « En vente ».)'))return;
+    if(!(await uiConfirm('Supprimer « '+x.dataset.nom+' » ?\nLes boosters non ouverts de ce type chez les joueurs seront perdus.\n(Pour seulement le retirer de la boutique, décoche « En vente ».)')))return;
     await q(sb.from('types_boosters').delete().eq('id',x.dataset.del));aBoosters();});
 }
 
@@ -1241,7 +1260,7 @@ async function aEffets(){
     const cle='perso_'+f.lib.value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
     try{await q(sb.from('effets_perso').insert({categorie:f.cat.value,cle,libelle:f.lib.value.trim(),params}));aEffets();}catch(x){}};
   $('#sub').querySelectorAll('button[data-id]').forEach(b=>b.onclick=async()=>{
-    if(!confirm('Retirer cet effet de la liste ? (Les cartes déjà créées avec cet effet le gardent.)'))return;
+    if(!(await uiConfirm('Retirer cet effet de la liste ? (Les cartes déjà créées avec cet effet le gardent.)')))return;
     await q(sb.from('effets_perso').delete().eq('id',b.dataset.id));aEffets();});
 }
 
@@ -1263,7 +1282,7 @@ async function aCadeaux(){
    <select name="t">${opts(t)}</select><input name="n" type="number" min="1" value="1"><button>Offrir</button></form>`;
   $('#fg').onsubmit=async e=>{e.preventDefault();const f=e.target;
     const {error}=await sb.rpc('offrir_boosters',{p_joueur:f.j.value||null,p_type_id:+f.t.value,p_quantite:+f.n.value});
-    alert(error?error.message:'Boosters offerts !');};
+    uiAlert(error?error.message:'Boosters offerts !');};
 }
 
 /* ---------- Admin : gérer les cartes et boosters des membres ---------- */
@@ -1280,26 +1299,26 @@ async function aJoueurs(){
    <h3>Stats seulement</h3><p><small>Remet à zéro victoires, défaites, séries, records, boosters ouverts, cartes les plus jouées et historique des combats, sans toucher aux cartes. (Il faut avoir lancé 13-reset-stats.sql dans Supabase.)</small></p>
    <div class="f"><button class="sec" id="rsj">Stats du joueur choisi à zéro</button><button id="rsa" style="background:#b91c1c">Stats de TOUS les joueurs à zéro</button></div>`;
   const opt=()=>({p_boosters:$('#rzb').checked,p_monnaie:$('#rzm').value===''?null:+$('#rzm').value});
-  const fini=async m=>{collData=[];deck=null;await refreshJoueur();alert(m);aJoueurs()};
-  const stats=async id=>{const r=await sb.rpc('admin_reset_stats',{p_joueur:id,p_historique:true});if(r.error){alert('Stats non remises à zéro : '+r.error.message+'\n(As-tu lancé 13-reset-stats.sql ?)');return ''}return '\n'+r.data};
-  $('#rsj').onclick=async()=>{const id=$('#jsel').value;if(!id)return alert('Choisis d\'abord un joueur.');const p=j.find(x=>x.id==id);
-    if(!confirm('Remettre à zéro les stats et l\'historique de '+p.pseudo+' ?\nC\'est définitif.'))return;const m=await stats(id);if(m)fini('Stats remises à zéro.'+m)};
-  $('#rsa').onclick=async()=>{if(prompt('Cela remet à zéro les stats, le classement et l\'historique de TOUS les joueurs. Tape STATS pour confirmer :')!=='STATS')return;
+  const fini=async m=>{collData=[];deck=null;await refreshJoueur();uiAlert(m);aJoueurs()};
+  const stats=async id=>{const r=await sb.rpc('admin_reset_stats',{p_joueur:id,p_historique:true});if(r.error){uiAlert('Stats non remises à zéro : '+r.error.message+'\n(As-tu lancé 13-reset-stats.sql ?)');return ''}return '\n'+r.data};
+  $('#rsj').onclick=async()=>{const id=$('#jsel').value;if(!id)return uiAlert('Choisis d\'abord un joueur.');const p=j.find(x=>x.id==id);
+    if(!(await uiConfirm('Remettre à zéro les stats et l\'historique de '+p.pseudo+' ?\nC\'est définitif.')))return;const m=await stats(id);if(m)fini('Stats remises à zéro.'+m)};
+  $('#rsa').onclick=async()=>{if(await uiPrompt('Cela remet à zéro les stats, le classement et l\'historique de TOUS les joueurs. Tape STATS pour confirmer :')!=='STATS')return;
     const m=await stats(null);if(m)fini('Stats de tous les joueurs remises à zéro.'+m)};
   async function load(){
     const id=$('#jsel').value;if(!id){$('#jbox').innerHTML='';return}
     const d=await q(sb.rpc('admin_collection',{p_joueur:id})),p=j.find(x=>x.id==id),tot=d.reduce((s,x)=>s+x.quantite,0);
     $('#jbox').innerHTML=`<p><b>${esc(p.pseudo)}</b> · 💰 ${p.monnaie} · ${tot} carte(s)</p>`+(d.length?`<table><tr><th>Carte</th><th>Type</th><th>Version</th><th>Qté</th><th></th></tr>${d.map(x=>`<tr><td>${esc(x.carte)}</td><td>${esc(x.type)}</td><td>${esc(x.variante)}</td><td>${x.quantite}</td><td><button class="sec" data-r="${x.variante_id}" data-n="1">−1</button> <button class="sec" data-r="${x.variante_id}">Tout retirer</button></td></tr>`).join('')}</table>`:'<p><small>Aucune carte dans la collection.</small></p>');
     $('#jbox').querySelectorAll('button[data-r]').forEach(b=>b.onclick=async()=>{
-      if(!b.dataset.n&&!confirm('Retirer toutes les copies de cette carte à ce joueur ?'))return;
+      if(!b.dataset.n&&!(await uiConfirm('Retirer toutes les copies de cette carte à ce joueur ?')))return;
       await q(sb.rpc('admin_retirer_carte',{p_joueur:id,p_variante:b.dataset.r,p_quantite:b.dataset.n?+b.dataset.n:null}));
       collData=[];deck=null;load()});
   }
   $('#jsel').onchange=load;
-  $('#rzj').onclick=async()=>{const id=$('#jsel').value;if(!id)return alert('Choisis d\'abord un joueur.');
-    const p=j.find(x=>x.id==id);if(!confirm('Vider la collection et le deck de '+p.pseudo+($('#rzb').checked?' ainsi que ses boosters non ouverts':'')+($('#rzs').checked?', et remettre ses stats à zéro':'')+' ?\nC\'est définitif.'))return;
+  $('#rzj').onclick=async()=>{const id=$('#jsel').value;if(!id)return uiAlert('Choisis d\'abord un joueur.');
+    const p=j.find(x=>x.id==id);if(!(await uiConfirm('Vider la collection et le deck de '+p.pseudo+($('#rzb').checked?' ainsi que ses boosters non ouverts':'')+($('#rzs').checked?', et remettre ses stats à zéro':'')+' ?\nC\'est définitif.')))return;
     await q(sb.rpc('admin_vider_joueur',{p_joueur:id,...opt()}));fini('Joueur remis à zéro.'+($('#rzs').checked?await stats(id):''))};
-  $('#rza').onclick=async()=>{if(prompt('Cela vide les cartes de TOUS les joueurs, toi compris. Tape VIDER pour confirmer :')!=='VIDER')return;
+  $('#rza').onclick=async()=>{if(await uiPrompt('Cela vide les cartes de TOUS les joueurs, toi compris. Tape VIDER pour confirmer :')!=='VIDER')return;
     await q(sb.rpc('admin_vider_joueur',{p_joueur:null,...opt()}));fini('Tous les joueurs ont été remis à zéro.'+($('#rzs').checked?await stats(null):''))};
 }
 
@@ -1313,7 +1332,7 @@ async function vDos(){
   main.innerHTML=`<p><small>Ton dos de carte s'affiche sur ton piège face cachée pendant les combats en direct. Les dos spéciaux sont offerts par le streamer.</small></p>
   <div class="cgrid">${tuile('','Dos standard',null,aucun,'Dos du jeu')}${L.map(x=>tuile(x.id,x.nom,x.image,x.actif,x.par_defaut?'Dos de base':'Offert')).join('')}</div>`;
   main.querySelectorAll('button[data-d]').forEach(b=>b.onclick=async()=>{
-    const e=await sb.rpc('choisir_dos',{p_dos:b.dataset.d||null});if(e.error)return alert(e.error.message);_dosC=null;vDos()});
+    const e=await sb.rpc('choisir_dos',{p_dos:b.dataset.d||null});if(e.error)return uiAlert(e.error.message);_dosC=null;vDos()});
 }
 
 /* ---------- Admin : dos de cartes (stock et cadeaux) ---------- */
@@ -1341,12 +1360,12 @@ async function aDos(){
   $('#sub').querySelectorAll('.cw[data-id]').forEach(c=>{const id=c.dataset.id,x=d.find(z=>z.id==id);
     c.querySelector('[data-a=offrir]').onclick=async()=>{
       const n=await q(sb.rpc('admin_offrir_dos',{p_dos:id,p_joueur:c.querySelector('[data-o]').value||null}));
-      alert(n?n+' joueur(s) ont reçu ce dos.':'Rien à faire : le ou les joueurs ont déjà ce dos.');aDos()};
+      uiAlert(n?n+' joueur(s) ont reçu ce dos.':'Rien à faire : le ou les joueurs ont déjà ce dos.');aDos()};
     c.querySelector('[data-a=base]').onclick=async()=>{
       await q(sb.from('dos_cartes').update({par_defaut:false}).eq('par_defaut',true));
       if(!x.par_defaut)await q(sb.from('dos_cartes').update({par_defaut:true}).eq('id',id));aDos()};
     c.querySelector('[data-a=suppr]').onclick=async()=>{
-      if(!confirm('Supprimer ce dos ? Les joueurs qui l\'utilisent reviendront au dos standard.'))return;
+      if(!(await uiConfirm('Supprimer ce dos ? Les joueurs qui l\'utilisent reviendront au dos standard.')))return;
       await q(sb.from('dos_cartes').delete().eq('id',id));aDos()};
     c.querySelectorAll('a[data-r]').forEach(a=>a.onclick=async ev=>{ev.preventDefault();
       await q(sb.rpc('admin_retirer_dos',{p_dos:id,p_joueur:a.dataset.r}));aDos()})});
@@ -1367,23 +1386,23 @@ async function aReglages(){
    <table><tr><th></th><th>Gold</th><th>Fragments</th></tr>${[['commun','Commun'],['rare','Rare'],['epique','Épique'],['legendaire','Légendaire'],['ggez','GGEZ']].map(([k,n],i)=>`<tr><td>${n}</td><td><input name="g_${k}" type="number" min="0" value="${esc(v['recyclage_gold_'+k]??[5,10,35,80,80][i])}" style="width:80px"></td><td><input name="f_${k}" type="number" min="0" value="${esc(v['recyclage_fragments_'+k]??0)}" style="width:80px"></td></tr>`).join('')}</table><button>Enregistrer le recyclage</button></form>
    <h3>Tests</h3><div class="f"><button class="sec" id="rzc">Remettre à zéro les combats gratuits du jour (tous les joueurs)</button></div>`;
   $('#optdel').onclick=async()=>{const K=[];try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k.startsWith('optim|'))K.push(k)}}catch(e){}
-    if(!K.length)return alert('Aucun original à supprimer depuis ce navigateur.');if(!confirm('Supprimer définitivement les '+K.length+' image(s) d\'origine ?\nTu ne pourras plus revenir en arrière.'))return;
+    if(!K.length)return uiAlert('Aucun original à supprimer depuis ce navigateur.');if(!(await uiConfirm('Supprimer définitivement les '+K.length+' image(s) d\'origine ?\nTu ne pourras plus revenir en arrière.')))return;
     const P=K.map(k=>localStorage.getItem(k)).filter(Boolean),L=$('#optlog');L.textContent='';let n=0;
     for(let i=0;i<P.length;i+=50){const r=await sb.storage.from('cartes').remove(P.slice(i,i+50));if(r.error)L.textContent+='✗ '+r.error.message+'\n';else n+=(r.data||[]).length}
     K.forEach(k=>{try{localStorage.removeItem(k)}catch(e){}});L.textContent+=n+' original(aux) supprimé(s).'};
   $('#optback').onclick=async()=>{const K=[];try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k.startsWith('optim|'))K.push(k)}}catch(e){}
-    if(!K.length)return alert('Aucune optimisation à annuler depuis ce navigateur.');if(!confirm('Remettre les '+K.length+' image(s) d\'origine ?'))return;
+    if(!K.length)return uiAlert('Aucune optimisation à annuler depuis ce navigateur.');if(!(await uiConfirm('Remettre les '+K.length+' image(s) d\'origine ?')))return;
     const L=$('#optlog');L.textContent='';let n=0;for(const k of K){const [,tab,id,col]=k.split('|');const p=localStorage.getItem(k);
       const r=await sb.from(tab).update({[col]:p}).eq('id',id);if(r.error)L.textContent+='✗ '+k+' : '+r.error.message+'\n';else{n++;localStorage.removeItem(k)}}
     L.textContent+=n+' image(s) remise(s) à l\'original.'};
-  $('#optim').onclick=async()=>{if(!confirm('Optimiser toutes les images déjà en ligne ? Les anciens fichiers seront remplacés par des versions WebP plus légères.'))return;const b=$('#optim'),L=$('#optlog');b.disabled=true;L.textContent='';await optimiserImages(t=>{L.textContent+=t+'\n';L.scrollTop=1e9});b.disabled=false};
+  $('#optim').onclick=async()=>{if(!(await uiConfirm('Optimiser toutes les images déjà en ligne ? Les anciens fichiers seront remplacés par des versions WebP plus légères.')))return;const b=$('#optim'),L=$('#optlog');b.disabled=true;L.textContent='';await optimiserImages(t=>{L.textContent+=t+'\n';L.scrollTop=1e9});b.disabled=false};
   $('#fr').onsubmit=async e=>{e.preventDefault();const n=Math.max(0,Math.min(50,parseInt(e.target.n.value,10)||0));
-    await q(sb.from('reglages_jeu').upsert({cle:'combats_gratuits_par_jour',valeur:String(n)}));alert('Enregistré : '+n+' combat'+(n>1?'s':'')+' gratuit'+(n>1?'s':'')+' par jour.');aReglages()};
+    await q(sb.from('reglages_jeu').upsert({cle:'combats_gratuits_par_jour',valeur:String(n)}));uiAlert('Enregistré : '+n+' combat'+(n>1?'s':'')+' gratuit'+(n>1?'s':'')+' par jour.');aReglages()};
   $('#frc').onsubmit=async e=>{e.preventDefault();const f=e.target,rows=[];
     for(const k of['commun','rare','epique','legendaire','ggez']){rows.push({cle:'recyclage_gold_'+k,valeur:String(Math.max(0,parseInt(f['g_'+k].value,10)||0))},{cle:'recyclage_fragments_'+k,valeur:String(Math.max(0,parseInt(f['f_'+k].value,10)||0))})}
-    await q(sb.from('reglages_jeu').upsert(rows));PRIX=null;alert('Prix de recyclage enregistrés.');aReglages()};
-  $('#rzc').onclick=async()=>{if(!confirm('Remettre à zéro le compteur de combats gratuits de tous les joueurs ?'))return;
-    await q(sb.rpc('admin_reset_combats_jour'));alert('Compteurs remis à zéro.')};
+    await q(sb.from('reglages_jeu').upsert(rows));PRIX=null;uiAlert('Prix de recyclage enregistrés.');aReglages()};
+  $('#rzc').onclick=async()=>{if(!(await uiConfirm('Remettre à zéro le compteur de combats gratuits de tous les joueurs ?')))return;
+    await q(sb.rpc('admin_reset_combats_jour'));uiAlert('Compteurs remis à zéro.')};
 }
 
 sb.auth.onAuthStateChange((ev)=>{if(ev==='SIGNED_IN'&&!user)init()});
