@@ -265,7 +265,7 @@ function fxPassif(p){
     case 'vol_pct_atq':return `${c} % de chances de se soigner de ${nz(p.pctatq)} % des dégâts infligés`;
     case 'brulure':return `${c} % de chances de brûler la cible (${nz(p.pctpv)} % de ses PV max par tour, ${trs(T)})`;
     case 'poison':return `${c} % de chances d'empoisonner la cible (${nz(p.degtour)} dégâts par tour, ${trs(T)})`;
-    case 'malediction':return `${c} % de chances de maudire la cible (ATQ −${v} par tour, ${trs(T)})`;
+    case 'malediction':return `${c} % de chances de maudire la cible (ATQ −${v} par tour, ${trs(T)}, puis l'ATQ revient petit à petit)`;
     case 'enchainement':return `${c} % de chances de frapper une fois de plus, puis retente${nz(p.max)>0?` (${p.max} frappes en plus au maximum)`:''}`;
     case 'saignement':return `${c} % de chances de faire saigner la cible (${nz(p.pctpv)} % des PV max par tour, soins −${nz(p.reducsoin)} %, ${trs(T)})`;
     case 'gel':return `${c} % de chances de geler la cible (${nz(p.annul)} % d'attaque annulée, ${nz(p.stunch)} % d'être étourdie, ${trs(T)})`;
@@ -299,7 +299,7 @@ function fxEffet(e){
     case 'echange_atq_def':return[`Échange l'ATQ et les PV ${(e.ciblem||e.cible)==='soi'?'de sa carte':"de l'adversaire"}`];
     case 'echange_pv':return["Échange ses PV avec ceux de l'adversaire"];
     case 'echange_tout':return["Échange ATQ et PV avec l'adversaire"];
-    case 'malediction':return[`Maudit ${ci} : ATQ −${v} par tour pendant ${trs(T)}`];
+    case 'malediction':return[`Maudit ${ci} : ATQ −${v} par tour pendant ${trs(T)}, puis l'ATQ revient petit à petit`];
     case 'saignement':return[`Fait saigner ${ci} : ${nz(e.pctpv)} % des PV max par tour, soins −${nz(e.reducsoin)} %, ${trs(T)}`];
     case 'gel':return[`Gèle ${ci} (${nz(e.annul)} % d'attaque annulée, ${nz(e.stunch)} % d'étourdissement, ${trs(T)})`];
     case 'fracture':return[`Fracture ${ci} (${nz(e.fchance)} % de se blesser de ${nz(e.degfrac)} PV en attaquant, ${trs(T)})`];

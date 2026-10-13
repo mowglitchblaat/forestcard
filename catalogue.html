@@ -108,7 +108,7 @@ function core(e,pas){   // texte de l'effet (sans le « donne à l'attaque de ba
   case'vol_pct_atq':return`${P}voler ${e.pctatq} % de l'ATQ infligée en PV`;
   case'brulure':return`${P}brûler : ${e.pctpv} % des PV max par tour pendant ${T(e.tours)}`;
   case'poison':return`${P}empoisonner : ${e.degtour} dégâts par tour pendant ${T(e.tours)}`;
-  case'malediction':return ch?`${P}maudire : ATQ −${e.val} par tour pendant ${T(e.tours)}`:`Malédiction sur ${tgt(e,'adversaire')} : ATQ −${e.val} par tour pendant ${T(e.tours)}`;
+  case'malediction':return(ch?`${P}maudire : ATQ −${e.val} par tour pendant ${T(e.tours)}`:`Malédiction sur ${tgt(e,'adversaire')} : ATQ −${e.val} par tour pendant ${T(e.tours)}`)+", puis l'ATQ revient petit à petit";
   case'enchainement':return`${P}frapper une fois de plus, puis retente (jusqu'à ${e.max>0?e.max:10} frappes en plus)`;
   case'saignement':return ch?`${P}faire saigner : ${e.pctpv} % des PV max par tour, soins −${e.reducsoin||0} %, ${T(e.tours)}`:`Saignement sur ${tgt(e,'adversaire')} : ${e.pctpv} % des PV max par tour, soins −${e.reducsoin||0} %, ${T(e.tours)}`;
   case'gel':return ch?`${P}geler : ${e.annul||0} % d'attaque annulée, ${e.stunch||0} % d'être étourdi, ${T(e.tours)}`:`Gel de ${tgt(e,'adversaire')} : ${e.annul||0} % d'attaque annulée, ${e.stunch||0} % d'être étourdi, ${T(e.tours)}`;
