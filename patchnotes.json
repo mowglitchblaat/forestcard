@@ -1,8 +1,16 @@
 [
   {
     "date": "2026-10-13",
-    "intro": "Corrections des magies et des pièges, et nouvelles animations de vol et de réanimation.",
+    "intro": "Corrections des magies et des pièges, prolongations en cas de combat sans KO, et nouvelles animations.",
     "groupes": [
+      {
+        "titre": "Combat",
+        "points": [
+          "Fin des combats gagnés aux PV : si aucune carte n'est tombée au dernier tour, c'est la prolongation ! Chaque joueur tire 3 nouvelles cartes de son deck (un combattant, une magie, un piège) et le combat continue jusqu'au KO.",
+          "Les nouvelles cartes sont tirées parmi celles qui n'ont pas encore été jouées pendant le combat.",
+          "Si les deux cartes tombent en même temps, elles se brisent toutes les deux : match nul."
+        ]
+      },
       {
         "titre": "Magies",
         "points": [

@@ -5,7 +5,7 @@
 (function(g){
 const canon=e=>e&&typeof e.type==='string'&&e.type.indexOf('perso_')===0&&/etourd/.test(e.type)?{...e,type:'etourdir_effet'}:e;   // effet « perso » étourdissement : exécuté comme l'étourdissement du moteur
 const canonP=p=>p&&typeof p.type==='string'&&p.type.indexOf('perso_')===0&&/etourd/.test(p.type)?{...p,type:'etourdir'}:p;
-const REG={maxTours:10,gain:50,perte:10,nul:20,plafondEsquive:75};
+const REG={maxTours:10,gain:50,perte:10,nul:20,plafondEsquive:75,maxProlong:5};
 const VM={nom:'Aucune magie',effet:null,vide:1},VP={nom:'Aucun piège',effet:null,vide:1};
 const rng=s=>()=>{s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
 const rd=Math.round;
@@ -13,10 +13,10 @@ const rd=Math.round;
 function simuler(pA,pB,opt={}){
  const seed=opt.seed??(Math.random()*1e9|0),r=rng(seed),reg={...REG,...opt.regles},J=[];
  const roll=p=>r()*100<(p||0);
- const tire=(deck,t)=>{const l=deck.filter(c=>c.type===t);return l[Math.floor(r()*l.length)]};
+ const tire=(deck,t,ex,cur)=>{let l=deck.filter(c=>c.type===t);if(ex){const l2=l.filter(c=>!ex.includes(c)),l3=l.filter(c=>!(cur||[]).includes(c));if(l2.length)l=l2;else if(l3.length)l=l3}return l[Math.floor(r()*l.length)]};   // prolongation : d'abord des cartes jamais jouées, sinon au moins différentes de celles en jeu
  const normPas=p=>!p?[]:p.briques?p.briques.filter(b=>b&&b.type).map(canonP):(p.type?[canonP(p)]:[]);   // passif unique (ancien format) ou plusieurs passifs { briques:[…] }
- const nw=p=>{const c=tire(p.deck,'combattant');if(!c)throw new Error(p.pseudo+" n'a aucun combattant dans son deck");const pl=normPas(c.passif);
-  return{pseudo:p.pseudo,deck:p.deck,dos:p.dos||null,card:c,mag:tire(p.deck,'magie')||VM,pie:tire(p.deck,'piege')||VP,atq:c.atq,pv:c.pv,max:c.pv,pl:pl,ult:c.ultime,
+ const nw=(p,ex,cur)=>{const c=tire(p.deck,'combattant',ex,cur);if(!c)throw new Error(p.pseudo+" n'a aucun combattant dans son deck");const pl=normPas(c.passif);
+  return{pseudo:p.pseudo,deck:p.deck,dos:p.dos||null,card:c,mag:tire(p.deck,'magie',ex,cur)||VM,pie:tire(p.deck,'piege',ex,cur)||VP,atq:c.atq,pv:c.pv,max:c.pv,pl:pl,ult:c.ultime,
    uh:[{u:c.ultime,uses:0,last:-99}],magOn:1,pieOn:1,decl:0,mdelta:[],st:{rage:[],fat:[],pcnt:[],rUsed:[],reanL:[],purs:[],hots:[],cl:0,bleeds:[],frost:[],fract:[],stun:0,skip:0,dbl:0,dots:[],curses:[],atkfx:[],esqb:0,ren:[],insens:0,prog:[],evite:pl.some(p=>p.type==='evite_mort'),mortUsed:0,bonus:0},
    cum:0,coups:0,rt:0,uses:0,last:-99,pend:0}};
  const S=[nw(pA),nw(pB)],id=s=>S.indexOf(s),adv=s=>S[1-id(s)],nom=s=>s.card.nom;
@@ -344,14 +344,29 @@ function simuler(pA,pB,opt={}){
  }
  // ---- Déroulé ----
  const first=r()<.5?0:1,ordre=[S[first],S[1-first]];
- L('debut','Le combat commence !',{joueurs:S.map(s=>({pseudo:s.pseudo,dos:s.dos,carte:s.card.nom,image:s.card.image||null,imageCombat:s.card.imageCombat||null,rar:s.card.rar||null,magie:s.mag.nom,piege:s.pie.nom,magieImg:s.mag.image||null,piegeImg:s.pie.image||null,ids:[s.card.id,s.mag.id,s.pie.id]})),premier:first});
+ const infos=()=>S.map(s=>({pseudo:s.pseudo,dos:s.dos,carte:s.card.nom,image:s.card.image||null,imageCombat:s.card.imageCombat||null,rar:s.card.rar||null,magie:s.mag.nom,piege:s.pie.nom,magieImg:s.mag.image||null,piegeImg:s.pie.image||null,ids:[s.card.id,s.mag.id,s.pie.id]}));
+ const USED=S.map(s=>[s.card,s.mag,s.pie]);   // cartes déjà jouées par chaque joueur (évitées lors des prolongations)
+ L('debut','Le combat commence !',{joueurs:infos(),premier:first});
  // Annulation de magie : réglée AVANT que les magies agissent, pour qu'aucun de leurs effets ne passe (la 1re carte qui joue a la priorité si les deux annulent)
  const aMag=e=>!!e&&(e.type==='annule_magies'||(e.briques||[]).some(b=>b&&b.type==='annule_magies'));
  const tAnn=e=>{const b=e.type==='annule_magies'?e:(e.briques||[]).find(b=>b&&b.type==='annule_magies');return Math.max(0,parseInt(b&&b.tours,10)||0)};   // 0 ou vide = jusqu'à la fin du combat
- ordre.forEach(s=>{const x=adv(s);if(s.magOn&&aMag(s.mag.effet)&&x.magOn){x.magOn=0;x.magAnn=1;x.magAnnT=tAnn(s.mag.effet);x.magNew=1}});
- ordre.forEach(s=>{if(s.mag.effet&&s.magAnn!==1&&s.magAnn!==2){L('magie',`Magie de ${s.pseudo} : ${s.mag.nom}`,{c:id(s),carte:s.mag.nom,img:s.mag.image||null});fx(s.mag.effet,s,adv(s),true);S.forEach(k=>k.pend=1)}});
- for(tour=1;tour<=reg.maxTours&&!over();tour++){
-  for(let oi=0;oi<2;oi++){const a=ordre[oi];if(over())break;L('tour',`Tour ${(tour-1)*2+oi+1}`,{c:id(a)});debutTour(a);if(over())break;ultime(a);if(over())break;attaque(a);if(over())break;passifsTour(a);if(over())break;statutsCarte(a);if(over())break;finTourCarte(a)}
+ const magies=()=>{
+  ordre.forEach(s=>{const x=adv(s);if(s.magOn&&aMag(s.mag.effet)&&x.magOn){x.magOn=0;x.magAnn=1;x.magAnnT=tAnn(s.mag.effet);x.magNew=1}});
+  ordre.forEach(s=>{if(s.mag.effet&&s.magAnn!==1&&s.magAnn!==2){L('magie',`Magie de ${s.pseudo} : ${s.mag.nom}`,{c:id(s),carte:s.mag.nom,img:s.mag.image||null});fx(s.mag.effet,s,adv(s),true);S.forEach(k=>k.pend=1)}})};
+ magies();
+ // Prolongation : au dernier tour, si aucune carte n'est tombée, chaque joueur tire 3 nouvelles cartes de son deck (1 combattant, 1 magie, 1 piège) et le combat continue, jusqu'au KO.
+ // Sécurité : après reg.maxProlong prolongations (5 par défaut), la carte qui a le plus de PV l'emporte.
+ const MAXP=reg.maxProlong??5;let manche=0,base=0;
+ for(;;){
+  for(tour=1;tour<=reg.maxTours&&!over();tour++){
+   for(let oi=0;oi<2;oi++){const a=ordre[oi];if(over())break;L('tour',`Tour ${base+(tour-1)*2+oi+1}`,{c:id(a)});debutTour(a);if(over())break;ultime(a);if(over())break;attaque(a);if(over())break;passifsTour(a);if(over())break;statutsCarte(a);if(over())break;finTourCarte(a)}
+  }
+  if(over()||manche>=MAXP)break;
+  manche++;base+=reg.maxTours*2;tour=0;
+  const P=[pA,pB];[0,1].forEach(i=>{const o=S[i],n=nw(P[i],USED[i],[o.card,o.mag,o.pie]);USED[i].push(n.card,n.mag,n.pie);S[i]=n;if(n.mag.vide)n.magOn=0;if(n.pie.vide)n.pieOn=0});
+  ordre[0]=S[first];ordre[1]=S[1-first];pendRev=[];pendEv=[];
+  L('prolongation',`Prolongation${manche>1?' '+manche:''} ! Chacun tire 3 nouvelles cartes`,{joueurs:infos(),premier:first,manche});
+  magies();
  }
  const dead=S.map(s=>s.pv<=0);let w=null;
  if(dead[0]!==dead[1])w=dead[0]?1:0;else if(!dead[0]&&S[0].pv!==S[1].pv)w=S[0].pv>S[1].pv?0:1;
