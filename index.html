@@ -821,7 +821,7 @@ function vRegles(){
   const col=k=>({y:'#fbbf24',v:'#4ade80',b:'#60a5fa',r:'#f87171',p:'#c4b5fd'}[k]);
   const h=(t,k,sub)=>`<h3>${t.replace(/(\S+)$/,`<span style="color:${col(k)}">$1</span>`)}</h3>${sub?`<p class="sub">${sub}</p>`:''}`;
   main.innerHTML=`<div class="rg">
-  <div class="row"><h2 style="margin:0">Forest Card — Comment jouer</h2><a href="Forest-Card-presentation.pdf" target="_blank" rel="noopener"><button class="sec">📄 Présentation (PDF)</button></a></div>
+  <h2 style="margin:0">Forest Card — Comment jouer</h2>
   <p>Le jeu de cartes à collectionner de la chaîne : ouvre des boosters, compose ton deck et affronte les autres viewers en direct.</p>
 
   ${h('Le principe en 4 étapes','y','Tout se joue entre le site et le live.')}
