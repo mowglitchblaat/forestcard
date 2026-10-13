@@ -22,11 +22,11 @@ async function lire(table, colonnes) {
   return lignes.flatMap(l => colonnes.map(c => l[c])).filter(Boolean);
 }
 
-const chemins = new Set();
+const chemins = new Set(), rapport = { tables: {} };
 let erreurs = 0;
 for (const [t, c] of [['variantes_carte', ['image_path', 'image_combat']], ['types_boosters', ['image_path']], ['dos_cartes', ['image']]]) {
-  try { (await lire(t, c)).forEach(p => chemins.add(p)); }
-  catch (e) { console.error('✗', e.message); erreurs++; }
+  try { const l = await lire(t, c); l.forEach(p => chemins.add(p)); rapport.tables[t] = l.length; }
+  catch (e) { console.error('✗', e.message); erreurs++; rapport.tables[t] = 'illisible : ' + e.message.slice(0, 200); }
 }
 if (erreurs === 3) {
   console.error('Aucune table lisible : ajoute la clé secrète Supabase dans GitHub (Settings → Secrets and variables → Actions → SUPABASE_SERVICE_KEY).');
@@ -55,6 +55,7 @@ for (const p of [...chemins].sort()) {
 fs.mkdirSync(DOSSIER, { recursive: true });
 // la liste reprend tout ce qui est déjà dans img/ (même si une table n'a pas pu être lue cette fois) : les noms ne sont jamais réutilisés
 const tout = fs.readdirSync(DOSSIER, { recursive: true }).map(f => f.split(path.sep).join('/'))
-  .filter(f => f !== 'liste.json' && fs.statSync(path.join(DOSSIER, f)).isFile());
+  .filter(f => f !== 'liste.json' && f !== 'rapport.json' && fs.statSync(path.join(DOSSIER, f)).isFile());
 fs.writeFileSync(path.join(DOSSIER, 'liste.json'), JSON.stringify([...new Set([...tout, ...dispo])].sort()));
 console.log(`${chemins.size} image(s) utilisée(s) : ${copiees} copiée(s), ${deja} déjà présente(s), ${ratees} en échec${erreurs ? `, ${erreurs} table(s) illisible(s)` : ''}.`);
+fs.writeFileSync(path.join(DOSSIER, 'rapport.json'), JSON.stringify({ ...rapport, copiees, deja, ratees }, null, 1));
