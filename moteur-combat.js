@@ -5,7 +5,7 @@
 (function(g){
 const canon=e=>e&&typeof e.type==='string'&&e.type.indexOf('perso_')===0&&/etourd/.test(e.type)?{...e,type:'etourdir_effet'}:e;   // effet « perso » étourdissement : exécuté comme l'étourdissement du moteur
 const canonP=p=>p&&typeof p.type==='string'&&p.type.indexOf('perso_')===0&&/etourd/.test(p.type)?{...p,type:'etourdir'}:p;
-const REG={maxTours:10,gain:50,perte:10,nul:20,plafondEsquive:75,maxProlong:5};
+const REG={maxTours:10,gain:50,perte:10,nul:20,plafondEsquive:75,maxProlong:3};
 const VM={nom:'Aucune magie',effet:null,vide:1},VP={nom:'Aucun piège',effet:null,vide:1};
 const rng=s=>()=>{s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
 const rd=Math.round;
@@ -355,8 +355,8 @@ function simuler(pA,pB,opt={}){
   ordre.forEach(s=>{if(s.mag.effet&&s.magAnn!==1&&s.magAnn!==2){L('magie',`Magie de ${s.pseudo} : ${s.mag.nom}`,{c:id(s),carte:s.mag.nom,img:s.mag.image||null});fx(s.mag.effet,s,adv(s),true);S.forEach(k=>k.pend=1)}})};
  magies();
  // Prolongation : au dernier tour, si aucune carte n'est tombée, chaque joueur tire 3 nouvelles cartes de son deck (1 combattant, 1 magie, 1 piège) et le combat continue, jusqu'au KO.
- // Sécurité : après reg.maxProlong prolongations (5 par défaut), la carte qui a le plus de PV l'emporte.
- const MAXP=reg.maxProlong??5;let manche=0,base=0;
+ // Après reg.maxProlong prolongations (3 par défaut), la carte qui a le plus de PV l'emporte (PV égaux = match nul).
+ const MAXP=reg.maxProlong??3;let manche=0,base=0;
  for(;;){
   for(tour=1;tour<=reg.maxTours&&!over();tour++){
    for(let oi=0;oi<2;oi++){const a=ordre[oi];if(over())break;L('tour',`Tour ${base+(tour-1)*2+oi+1}`,{c:id(a)});debutTour(a);if(over())break;ultime(a);if(over())break;attaque(a);if(over())break;passifsTour(a);if(over())break;statutsCarte(a);if(over())break;finTourCarte(a)}

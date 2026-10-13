@@ -37,6 +37,14 @@ table{border-collapse:collapse;width:100%}td,th{padding:6px;border-bottom:1px so
 form.f select{max-width:100%;min-width:0}form.f>*{min-width:0}
 .pn{background:#1d1d27;border:1px solid #2c2c38;border-radius:10px;padding:12px 16px;margin:12px 0}.pn h4{margin:0 0 6px}.pn h5{margin:10px 0 4px;color:#c4b5fd;font-size:13px;text-transform:uppercase;letter-spacing:.04em}.pn ul{margin:0;padding-left:20px}.pn li{margin:3px 0;line-height:1.45}
 .eq{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;padding:6px 0;border-top:1px solid #2c2c38}.eq:first-of-type{border-top:0}.eq .nm{font-weight:700;min-width:140px}.eq .ch{flex:1;min-width:220px;display:flex;flex-direction:column;align-items:flex-start;text-align:left}.eq .ch div{margin:2px 0}.eq .av{color:#9ca3af;text-decoration:line-through}.eq .up{color:#4ade80}.eq .dn{color:#f87171}.eq .nw{color:#fbbf24}
+.vbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:6px 0}.vbar input,.vbar select{max-width:220px}
+.vstrip{display:flex;gap:12px;overflow-x:auto;padding:10px 4px 14px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
+.vc{flex:none;width:92px;cursor:pointer;text-align:center;font-size:12px;scroll-snap-align:start;position:relative}.vc img,.vc .ph{width:92px;aspect-ratio:5/7;object-fit:cover;border-radius:6px;display:block;box-shadow:0 0 8px var(--g,#555);background:#262633}
+.vc.sel img,.vc.sel .ph{outline:3px solid #a78bfa;outline-offset:2px}.vc .ck{position:absolute;top:4px;right:4px;background:#7c3aed;border-radius:50%;width:22px;height:22px;line-height:22px;font-size:13px}.vc span{display:block;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vsel{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start}.vsel>img{width:150px;border-radius:8px}.vsel .vf{flex:1;min-width:260px}
+.vrow{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:7px 0;border-top:1px solid #2c2c38}.vrow .lb{flex:1;min-width:200px}
+.vrow button{padding:4px 10px}.vrow button.nerf.on{background:#b91c1c;border-color:#b91c1c}.vrow button.up.on{background:#15803d;border-color:#15803d}.vrow button.rework.on{background:#b45309;border-color:#b45309}
+.vres{display:flex;gap:6px 14px;flex-wrap:wrap;font-size:13px;color:#ccc}.vres b{color:#fff}
 .hc{background:#1d1d27;border:1px solid #2c2c38;border-left:4px solid #444;border-radius:10px;padding:10px 14px;margin:10px 0}
 .hc.victoire{border-left-color:#4ade80}.hc.defaite{border-left-color:#f87171}.hc.nul{border-left-color:#9ca3af}
 .hc .top{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
@@ -272,7 +280,7 @@ function fxEffet(e){
     case 'annule_attaque':return["Annule la prochaine attaque de l'adversaire"];
     case 'renvoi':return[`Renvoie ${v} % des dégâts reçus pendant ${trs(T)}`];
     case 'insensible_piege':return[`Insensible aux pièges pendant ${trs(T)}`];
-    case 'annule_magies':return[+T>0?`Annule la magie de l'adversaire pendant ${trs(T)}`:"Annule la magie de l'adversaire jusqu'à la fin du combat"];
+    case 'annule_magies':return[nz(e.tours)>0?`Annule la magie de l'adversaire pendant ${trs(nz(e.tours))}`:"Annule la magie de l'adversaire jusqu'à la fin du combat"];
     case 'degats_tours':return[`Inflige ${v} dégâts après ${trs(T)}`];
     case 'double_degats':return[`Double ses dégâts pendant ${trs(T)}`];
     case 'echange_atq':return["Échange son ATQ avec celle de l'adversaire"];
@@ -548,10 +556,11 @@ async function vHistorique(){
 /* ---------- Patch notes ---------- */
 let pnTab='tech';
 async function vPatch(){
-  const T={tech:'🛠️ Notes techniques',equi:'⚖️ Équilibrage'};
+  const T={tech:'🛠️ Notes techniques',equi:'⚖️ Équilibrage',votes:'🗳️ Votes'};
   main.innerHTML=`<h3>Patch notes</h3><div class="row">${Object.entries(T).map(([k,v])=>`<button class="${k==pnTab?'on':'sec'}" data-pn="${k}">${v}</button>`).join('')}</div><div id="pnb"><p><small>Chargement…</small></p></div>`;
   main.querySelectorAll('[data-pn]').forEach(b=>b.onclick=()=>{pnTab=b.dataset.pn;vPatch()});
   const box=$('#pnb'),jour=d=>{const s=new Date(d+(d.length==10?'T12:00:00':'')).toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});return s.charAt(0).toUpperCase()+s.slice(1)};
+  if(pnTab=='votes'){await vVotes(box);return}
   if(pnTab=='tech'){
     let L=[];try{const r=await fetch('patchnotes.json?'+Date.now());L=await r.json()}catch(x){box.innerHTML='<p class="ko">Notes indisponibles pour le moment.</p>';return}
     L.sort((a,b)=>a.date<b.date?1:-1);
@@ -567,6 +576,50 @@ async function vPatch(){
   box.innerHTML=`<p><small>Chaque modification de carte faite par l'admin, avec la valeur avant et après.</small></p>`+Object.entries(G).map(([d,l])=>`<div class="pn"><h4>${esc(jour(d))}</h4>${l.map(x=>`<div class="eq"><span class="nm">${esc(x.carte_nom)}</span><span class="ch">${(x.changements||[]).map(c=>c.avant==null?`<div><span class="nw">${esc(c.champ)}</span>${c.apres?` : ${esc(c.apres)}`:''}</div>`:`<div>${esc(c.champ)} : ${c.avant?`<span class="av">${esc(c.avant)}</span>`:'<span style="color:#9ca3af">aucun</span>'} → <span class="${cls(c)}">${esc(c.apres||'aucun')}</span></div>`).join('')}</span>${isAdmin?`<button class="sec" data-eqdel="${x.id}" title="Retirer cette ligne">🗑️</button>`:''}</div>`).join('')}</div>`).join('');
   box.querySelectorAll('[data-eqdel]').forEach(b=>b.onclick=async()=>{if(!confirm('Retirer cette ligne des patch notes ?'))return;const d=await sb.from('equilibrage').delete().eq('id',b.dataset.eqdel);if(d.error)alert(d.error.message);vPatch()});
 }
+// Votes : chaque joueur choisit jusqu'à 5 cartes par semaine et indique pour chacune ce qu'il voudrait voir changer (nerf / up / rework)
+let vCartes=null,vSel=null,vFiltre='tout',vRech='',vSem=0;
+const SENS={nerf:'⬇️ Nerf',up:'⬆️ Up',rework:'🔁 Rework'};
+function vAspects(c){const A=[];
+  if(c.type=='combattant'){A.push({k:'atq',l:`ATQ (${c.atq??'?'})`},{k:'pv',l:`PV / défense (${c.pv??'?'})`});
+    const P=c.passif?(c.passif.briques?c.passif.briques.filter(b=>b&&b.type):(c.passif.type?[c.passif]:[])):[];
+    P.forEach((p,i)=>A.push({k:'passif:'+i,l:'Passif : '+fxPassif(p)}));
+    if(c.ultime&&(c.ultime.type||c.ultime.briques))A.push({k:'ultime',l:'Ultime : '+fxEffet(c.ultime).join(' · ')})}
+  else A.push({k:'effet',l:(c.type=='piege'?'Piège : ':'Effet : ')+(txtEq.effet(c)||'—')});
+  return A}
+const vImg=c=>{const v=(c.variantes_carte||[]).find(x=>x.nom=='Standard'&&x.image_path)||(c.variantes_carte||[]).find(x=>x.image_path);return v?img(v.image_path):''};
+async function vVotes(box){
+  if(!vCartes){const r=await sb.from('cartes').select('id,nom,type,atq,pv,actif,passif,ultime,effet,raretes(nom,couleur,poids),variantes_carte(nom,image_path)').eq('actif',true).order('nom');
+    if(r.error){box.innerHTML='<p class="ko">Impossible de charger les cartes.</p>';return}
+    const ord={combattant:0,magie:1,piege:2};vCartes=(r.data||[]).sort((a,b)=>(ord[a.type]-ord[b.type])||a.nom.localeCompare(b.nom,'fr'))}
+  const mv=await sb.rpc('mes_votes'),rs=await sb.rpc('resultats_votes',{p_decalage:vSem});
+  if(mv.error||rs.error){box.innerHTML='<p class="ko">Votes indisponibles pour le moment (l\'admin doit d\'abord lancer 11-votes.sql dans Supabase).</p>';return}
+  const mes={};(mv.data||[]).forEach(v=>{(mes[v.carte_id]=mes[v.carte_id]||{})[v.aspect]=v.sens});
+  const reste=Math.max(0,5-Object.keys(mes).length),byId={};vCartes.forEach(c=>byId[c.id]=c);
+  const liste=vCartes.filter(c=>(vFiltre=='tout'||c.type==vFiltre)&&(!vRech||c.nom.toLowerCase().includes(vRech.toLowerCase())));
+  const c=vSel&&byId[vSel];
+  // résultats agrégés
+  const R={};(rs.data||[]).forEach(x=>{const o=R[x.carte_id]=R[x.carte_id]||{nom:x.carte_nom,votants:+x.votants,a:{}};(o.a[x.aspect]=o.a[x.aspect]||{nerf:0,up:0,rework:0})[x.sens]=+x.nb});
+  const resL=Object.entries(R).sort((a,b)=>b[1].votants-a[1].votants);
+  const labA=(cid,k)=>{const cc=byId[cid];const a=cc&&vAspects(cc).find(z=>z.k==k);return a?a.l:({atq:'ATQ',pv:'PV',ultime:'Ultime',effet:'Effet'}[k]||'Passif')};
+  box.innerHTML=`<p><small>Choisis jusqu'à <b>5 cartes par semaine</b> et dis ce que tu voudrais voir changer : <b>nerf</b> (plus faible), <b>up</b> (plus forte) ou <b>rework</b> (à repenser). Les votes repartent à zéro chaque lundi. Il te reste <b>${reste}</b> carte${reste>1?'s':''} à voter cette semaine.</small></p>
+   <div class="vbar"><input id="vq" placeholder="Rechercher une carte…" value="${esc(vRech)}"><select id="vt">${[['tout','Toutes'],['combattant','Combattants'],['magie','Magies'],['piege','Pièges']].map(([k,l])=>`<option value="${k}" ${k==vFiltre?'selected':''}>${l}</option>`).join('')}</select></div>
+   <div class="vstrip">${liste.map(x=>{const u=vImg(x),g=(x.raretes&&x.raretes.couleur)||'#555';return`<div class="vc${x.id==vSel?' sel':''}" data-vc="${x.id}" style="--g:${g}">${mes[x.id]?'<div class="ck">✓</div>':''}${u?`<img src="${esc(u)}" alt="" loading="lazy">`:'<div class="ph"></div>'}<span>${esc(x.nom)}</span></div>`}).join('')||'<small>Aucune carte.</small>'}</div>
+   ${c?`<div class="pn vsel">${vImg(c)?`<img src="${esc(vImg(c))}" alt="">`:''}<div class="vf"><h4>${esc(c.nom)}</h4><small>Pour chaque ligne, choisis ce que tu voudrais (ou rien).</small>
+     ${vAspects(c).map(a=>`<div class="vrow" data-k="${esc(a.k)}"><span class="lb">${esc(a.l)}</span>${Object.entries(SENS).map(([s,l])=>`<button class="sec ${s}${mes[c.id]&&mes[c.id][a.k]==s?' on':''}" data-s="${s}">${l}</button>`).join('')}</div>`).join('')}
+     <div class="row" style="margin-top:10px"><button id="vok">${mes[c.id]?'Mettre à jour mon vote':'Valider mon vote'}</button>${mes[c.id]?'<button class="sec" id="vdel">Retirer mon vote</button>':''}</div></div></div>`:'<p><small>Clique sur une carte pour voter.</small></p>'}
+   <div class="vbar" style="margin-top:18px"><h3 style="margin:0">Résultats</h3><button class="${vSem==0?'on':'sec'}" data-sem="0">Cette semaine</button><button class="${vSem==1?'on':'sec'}" data-sem="1">Semaine dernière</button></div>
+   ${resL.length?resL.map(([cid,o])=>`<div class="pn"><h4>${esc(o.nom)} <small style="color:#aaa;font-weight:400">· ${o.votants} votant${o.votants>1?'s':''}</small></h4>${Object.entries(o.a).map(([k,n])=>`<div class="vres"><b>${esc(labA(cid,k))}</b><span>⬇️ ${n.nerf}</span><span>⬆️ ${n.up}</span><span>🔁 ${n.rework}</span></div>`).join('')}</div>`).join(''):'<p><small>Aucun vote pour cette semaine.</small></p>'}`;
+  const q=$('#vq');q.oninput=()=>{vRech=q.value;clearTimeout(q._t);q._t=setTimeout(()=>{vVotes(box).then(()=>{const n=$('#vq');if(n){n.focus();n.setSelectionRange(n.value.length,n.value.length)}})},300)};
+  $('#vt').onchange=e=>{vFiltre=e.target.value;vVotes(box)};
+  box.querySelectorAll('[data-vc]').forEach(d=>d.onclick=()=>{vSel=+d.dataset.vc;vVotes(box)});
+  box.querySelectorAll('[data-sem]').forEach(b=>b.onclick=()=>{vSem=+b.dataset.sem;vVotes(box)});
+  box.querySelectorAll('.vrow button').forEach(b=>b.onclick=()=>{const on=b.classList.contains('on');b.parentElement.querySelectorAll('button').forEach(x=>x.classList.remove('on'));if(!on)b.classList.add('on')});
+  const envoyer=async choix=>{const r=await sb.rpc('voter_carte',{p_carte:c.id,p_choix:choix});if(r.error){alert(r.error.message);return}vVotes(box)};
+  const ok=$('#vok');if(ok)ok.onclick=()=>{const ch=[...box.querySelectorAll('.vrow')].map(rw=>{const b=rw.querySelector('button.on');return b?{aspect:rw.dataset.k,sens:b.dataset.s}:null}).filter(Boolean);
+    if(!ch.length){alert('Choisis au moins une ligne (nerf, up ou rework).');return}envoyer(ch)};
+  const del=$('#vdel');if(del)del.onclick=()=>envoyer([]);
+}
+
 // Équilibrage : enregistre automatiquement ce qui change sur une carte (appelé par l'admin). Ne bloque jamais l'enregistrement de la carte.
 const txtEq={
   passif:c=>{const P=c.passif?(c.passif.briques?c.passif.briques.filter(b=>b&&b.type):(c.passif.type?[c.passif]:[])):[];return P.map(fxPassif).join(' · ')},
