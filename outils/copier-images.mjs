@@ -24,12 +24,20 @@ async function lire(table, colonnes) {
 
 const chemins = new Set(), rapport = { tables: {} };
 let erreurs = 0;
-for (const [t, c] of [['variantes_carte', ['image_path', 'image_combat']], ['types_boosters', ['image_path']], ['dos_cartes', ['image']]]) {
+// 1) liste fournie par Supabase (15-images-github.sql) : seulement les cartes actives, sans clé secrète
+let viaRpc = false;
+try {
+  const r = await fetch(`${SB}/rest/v1/rpc/chemins_images`, { method: 'POST', headers: { ...entetes, 'Content-Type': 'application/json' }, body: '{}' });
+  if (r.ok) { const l = (await r.json()).map(x => typeof x === 'string' ? x : Object.values(x)[0]).filter(Boolean); l.forEach(p => chemins.add(p)); rapport.tables.chemins_images = l.length; viaRpc = true; }
+  else rapport.tables.chemins_images = 'indisponible (' + r.status + ') : lance 15-images-github.sql dans Supabase';
+} catch (e) { rapport.tables.chemins_images = 'erreur : ' + e.message; }
+// 2) sinon : lecture directe des tables (demande la clé secrète en secret GitHub)
+if (!viaRpc) for (const [t, c] of [['variantes_carte', ['image_path', 'image_combat']], ['types_boosters', ['image_path']], ['dos_cartes', ['image']]]) {
   try { const l = await lire(t, c); l.forEach(p => chemins.add(p)); rapport.tables[t] = l.length; }
   catch (e) { console.error('✗', e.message); erreurs++; rapport.tables[t] = 'illisible : ' + e.message.slice(0, 200); }
 }
-if (erreurs === 3) {
-  console.error('Aucune table lisible : ajoute la clé secrète Supabase dans GitHub (Settings → Secrets and variables → Actions → SUPABASE_SERVICE_KEY).');
+if (!viaRpc && erreurs === 3) {
+  console.error('Aucune image lisible : lance 15-images-github.sql dans Supabase (SQL Editor).');
   process.exit(1);
 }
 
