@@ -325,7 +325,7 @@ function fxEffet(e){
 function fxCond(c){
   if(!c||!c.type)return'';
   switch(c.type){
-    case 'adv_attaque':return `Quand l'adversaire a attaqué ${nz(c.coups)||1} fois`;
+    case 'adv_attaque':return (nz(c.coups)||1)>1?`Toutes les ${nz(c.coups)} attaques de l'adversaire`:"À chaque attaque de l'adversaire";
     case 'adv_ultime':return "Quand l'adversaire utilise son ultime";
     case 'proprio_pv_sous':return `Quand le propriétaire passe sous ${nz(c.seuilpv)} % de PV`;
     case 'adv_pv_bas':return `Quand l'adversaire passe sous ${nz(c.seuilpv)} % de PV`;

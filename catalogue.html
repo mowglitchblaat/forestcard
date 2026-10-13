@@ -148,7 +148,7 @@ function line(e,pas){
  return `<span class="ch c-${catOf(e.type)}">${esc(pre+core(base,pas&&!pre))}</span>`;
 }
 function lines(e,pas){if(!e)return'';return e.briques?e.briques.map(b=>lines(b,pas)).join(''):line(e,pas)}
-const CL={adv_attaque:c=>`l'adversaire a attaqué ${c.coups||'X'} fois`,adv_ultime:()=>"l'adversaire utilise son ultime",proprio_pv_sous:c=>`le propriétaire passe sous ${c.seuilpv} % de PV`,adv_pv_bas:c=>`l'adversaire passe sous ${c.seuilpv} % de PV`,adv_soigne:()=>"l'adversaire se soigne",proprio_soigne:()=>"le propriétaire se soigne",proprio_meurt:()=>"le propriétaire meurt"};
+const CL={adv_attaque:c=>(+c.coups||1)>1?`l'adversaire a attaqué ${c.coups} fois (puis toutes les ${c.coups} attaques)`:"l'adversaire attaque (à chaque attaque)",adv_ultime:()=>"l'adversaire utilise son ultime",proprio_pv_sous:c=>`le propriétaire passe sous ${c.seuilpv} % de PV`,adv_pv_bas:c=>`l'adversaire passe sous ${c.seuilpv} % de PV`,adv_soigne:()=>"l'adversaire se soigne",proprio_soigne:()=>"le propriétaire se soigne",proprio_meurt:()=>"le propriétaire meurt"};
 function ultTxt(u){
  if(!u||(!u.type&&!u.briques))return'';
  const w=[];if(u.apres_tours)w.push(`à partir du tour ${u.apres_tours}`);if(u.sur_carte)w.push('dès qu\'une magie ou un piège est joué');

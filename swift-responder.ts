@@ -85,7 +85,8 @@ function simuler(pA,pB,opt={}){
   const e=o.pie.effet;if(!o.pieOn||!e||!e.condition||o.decl>=(e.declenchements||1))return;
   if(ev.t==='mort'){const ie=e.effet&&(e.effet.type==='mort_evitee'||(e.effet.briques||[]).some(b=>b.type==='mort_evitee'));if(ev.only&&!ie)return;if(ev.skip&&ie)return}
   const c=e.condition,x=adv(o),ia=1-i;
-  const ok={adv_attaque:ev.t==='attaque'&&ev.by===ia&&x.coups===c.coups,adv_ultime:ev.t==='ultime'&&ev.by===ia,
+  const ok={adv_attaque:ev.t==='attaque'&&ev.by===ia&&x.coups>0&&x.coups%Math.max(1,parseInt(c.coups,10)||1)===0,   // toutes les N attaques de l'adversaire (N, 2N, 3N…), jusqu'au nombre de déclenchements max
+  adv_ultime:ev.t==='ultime'&&ev.by===ia,
    proprio_pv_sous:ev.t==='pv'&&o.pv>0&&o.pv/o.max*100<c.seuilpv,adv_pv_bas:ev.t==='pv'&&x.pv>0&&x.pv/x.max*100<c.seuilpv,
    adv_soigne:ev.t==='soin'&&ev.who===ia,proprio_soigne:ev.t==='soin'&&ev.who===i,proprio_meurt:ev.t==='mort'&&ev.who===i}[c.type];
   if(!ok)return;
