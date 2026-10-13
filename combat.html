@@ -113,6 +113,10 @@ canvas.fx.gel{box-shadow:inset 0 0 40px 12px rgba(150,220,255,.8)}
 .p.idle .cw{filter:brightness(.72) saturate(.85)}
 .cw{transition:filter .4s}
 .nm{font-size:2vh;font-weight:600;opacity:.9}
+
+.cw.rr-ul::before{inset:-5px;border-radius:17px;background:conic-gradient(from var(--ang),#ff3b6b,#ffb703,#5eead4,#60a5fa,#c084fc,#ff3b6b);animation:cbglow 2s ease-in-out infinite,cbspin 3.4s linear infinite}
+.cw.rr-ul{--g1:rgba(255,120,200,.45);--g2:rgba(120,200,255,.9)}
+.cw.rr-ul .card .shn{background:linear-gradient(115deg,transparent 30%,rgba(255,60,120,.4) 40%,rgba(255,220,60,.42) 47%,rgba(80,255,200,.42) 54%,rgba(100,160,255,.42) 61%,transparent 70%);mix-blend-mode:color-dodge;animation-duration:2.6s}
 </style></head><body>
 <div id="scene"><div class="p" id="p0"></div>
 <div id="mid"><div id="tour"></div><div id="ban"></div></div><div class="p" id="p1"></div></div>
@@ -485,12 +489,12 @@ function retourner(el,milieu){return new Promise(res=>{if(!el||!el.animate){mili
   el.animate([{transform:'perspective(900px) rotateY(-90deg)'},{transform:'perspective(900px) rotateY(0)'}],{duration:d,easing:'ease-out'}).onfinish=()=>res()}})}
 function faceMagie(i){const m=$('#m'+i),j=JOUEURS[i];if(!m||!j||!m.classList.contains('back'))return;m.classList.remove('back','dos','mag');m.style.backgroundImage=j.magieImg?`url('${STORAGE+j.magieImg}')`:'';m.textContent=j.magieImg?'':j.magie}
 function mini(img,txt){return img?`style="background-image:url('${STORAGE+img}')"`:''}
-const RANGS_RAR=['legendaire','epique','rare','commun'];
-function tierRar(r){const n=String((r&&r.nom)||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(),k=RANGS_RAR.findIndex(x=>n.includes(x));return r?['lg','ep','ra','co'][k]||'ra':'co'}
+const RANGS_RAR=['ggez','legendaire','epique','rare','commun'];
+function tierRar(r){const n=String((r&&r.nom)||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z]/g,''),k=RANGS_RAR.findIndex(x=>n.includes(x));return r?['ul','lg','ep','ra','co'][k]||'ra':'co'}
 let JOUEURS=[];
 const dosCSS=j=>j.dos?`background-image:url('${STORAGE+j.dos}')`:'';
 function panneau(i,j){const im=j.imageCombat||j.image,t=tierRar(j.rar),col=(j.rar&&j.rar.couleur)||'#888',magV=/^Aucun/.test(j.magie);JOUEURS[i]=j;
- $('#p'+i).innerHTML=`<div class="pj">${String(j.pseudo).replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div><div class="cw${t!=='co'?' rr rr-'+t:''}" style="--g:${col}"><div class="card" ${im?`style="background-image:url('${STORAGE+im}')"`:''}>${im?'':j.carte}<div class="dosf" style="${dosCSS(j)}">${j.dos?'':'🌲'}</div>${t==='ep'||t==='lg'?'<span class="shn"></span>':''}${j.imageCombat?'<span class="sv sva" data-v=""></span><span class="sv svp" data-v=""></span>':''}</div></div>
+ $('#p'+i).innerHTML=`<div class="pj">${String(j.pseudo).replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div><div class="cw${t!=='co'?' rr rr-'+t:''}" style="--g:${col}"><div class="card" ${im?`style="background-image:url('${STORAGE+im}')"`:''}>${im?'':j.carte}<div class="dosf" style="${dosCSS(j)}">${j.dos?'':'🌲'}</div>${t==='ep'||t==='lg'||t==='ul'?'<span class="shn"></span>':''}${j.imageCombat?'<span class="sv sva" data-v=""></span><span class="sv svp" data-v=""></span>':''}</div></div>
  <div class="nm">${j.carte}</div><div class="bar"><i></i></div><div class="pv"></div>
  <div class="mp"><div class="mw"><div class="mini${magV?' vide':' back dos mag'}" id="m${i}" ${magV?mini(j.magieImg):`style="${dosCSS(j)}"`}>${magV?(j.magieImg?'':j.magie):(j.dos?'':'?')}</div><small>Magie</small></div>
  <div class="mw"><div class="mini back${/^Aucun/.test(j.piege)?' vide':''}${j.dos?' dos':''}" id="g${i}" ${j.dos?`style="background-image:url('${STORAGE+j.dos}')"`:''}>${j.dos?'':'?'}</div><small>Piège</small></div></div>`}
