@@ -143,7 +143,7 @@ function core(e,pas){   // texte de l'effet (sans le « donne à l'attaque de ba
 }
 function line(e,pas){
  if(!e||!e.type)return'';
- if(/^perso_/.test(e.type)&&/etourd/.test(e.type))e={...e,type:pas?'etourdir':'etourdir_effet'};   // effet perso d'étourdissement : décrit comme celui du moteur
+ if(/^perso_/.test(e.type)&&/etourd/.test(e.type))e={...e,type:pas?'etourdir':'etourdir_effet',chance:(e.chance==null||e.chance==='')&&e.val!=null&&e.val!==''?e.val:e.chance};   // effet perso d'étourdissement : décrit comme celui du moteur
  const base=String(e.type).startsWith('atk_')?{...e,type:e.type.slice(4)}:e,pre=e.type.startsWith('atk_')?"Attaque de base : ":'';
  return `<span class="ch c-${catOf(e.type)}">${esc(pre+core(base,pas&&!pre))}</span>`;
 }
@@ -169,7 +169,7 @@ function cardHTML(c,img){
   secs=`<div class="sec"><h4>Effet</h4>${lines(c.effet,false)||'<span class="none">aucun</span>'}</div>`;
  }else{
   const e=c.effet||{},cd=e.condition,ct=cd&&CL[cd.type]?CL[cd.type](cd):'?';
-  secs=`<div class="sec"><h4>Piège</h4><div class="cond">Quand ${esc(ct)}${e.declenchements>1?` · jusqu'à ${e.declenchements} déclenchements`:''}</div>${lines(e.effet,false)||'<span class="none">aucun effet</span>'}</div>`;
+  secs=`<div class="sec"><h4>Piège</h4><div class="cond">Quand ${esc(ct)}${` · ${e.declenchements>1?`jusqu'à ${e.declenchements} déclenchements`:'1 seul déclenchement'}`}</div>${lines(e.effet,false)||'<span class="none">aucun effet</span>'}</div>`;
  }
  return `<div class="card${c.actif===false?' off':''}">${img&&im?.image_path?`<img loading="lazy" src="${STORAGE+esc(im.image_path)}" alt="">`:''}
   <div class="body"><div class="top"><div><div class="nom">${esc(c.nom)}</div><div class="meta">${ty} · ${col} ${rar}${c.actif===false?' · <b>inactive</b>':''}</div></div>${st}</div>${secs}${c.description?`<div class="desc">${esc(c.description)}</div>`:''}</div></div>`;

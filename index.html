@@ -242,7 +242,7 @@ const nz=v=>+v||0,trs=t=>`${t} tour${t>1?'s':''}`,sgn=v=>(v>0?'+':'')+v,upc=u=>u
 const ciblT=e=>(e.ciblem||e.cible)==='soi'?'sa propre carte':"l'adversaire";
 const cat=t=>{const L=typeof MAG!=='undefined'&&(MAG[t]||ULT[t]||PAS[t]);return L?L[0]:String(t||'Effet')};
 // Effets « perso » d'étourdissement (créés dans l'onglet Effets) : décrits comme l'étourdissement du moteur, qui les exécute ainsi
-const canonFx=(e,pas)=>e&&typeof e.type==='string'&&/^perso_/.test(e.type)&&/etourd/.test(e.type)?{...e,type:pas?'etourdir':'etourdir_effet'}:e;
+const canonFx=(e,pas)=>e&&typeof e.type==='string'&&/^perso_/.test(e.type)&&/etourd/.test(e.type)?{...e,type:pas?'etourdir':'etourdir_effet',chance:(e.chance==null||e.chance==='')&&e.val!=null&&e.val!==''?e.val:e.chance}:e;   // la « Valeur » saisie = la chance en %
 function fxPassif(p){
   p=canonFx(p,true);
   const c=p.chance==null||p.chance===''?100:nz(p.chance),t=nz(p.tours),v=nz(p.val),T=t||1;
@@ -347,7 +347,7 @@ function lignesCarte(c){
     const it=fxEffet(c.effet);if(it.length)L.push({ico:'✨',t:'Effet de la magie',items:it});
   }else if(c.type==='piege'&&c.effet){
     const e=c.effet,it=fxEffet(e.effet);
-    if(it.length||e.condition)L.push({ico:'🪤',t:'Piège',meta:(fxCond(e.condition)||'Piège caché')+(nz(e.declenchements)>1?` (jusqu'à ${e.declenchements} fois)`:''),items:it});
+    if(it.length||e.condition)L.push({ico:'🪤',t:'Piège',meta:(fxCond(e.condition)||'Piège caché')+` · ${nz(e.declenchements)>1?`jusqu'à ${e.declenchements} déclenchements`:'1 seul déclenchement'}`,items:it});
   }
   return L;
 }
