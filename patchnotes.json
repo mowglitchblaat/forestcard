@@ -1,0 +1,38 @@
+[
+  {
+    "date": "2026-10-13",
+    "intro": "Corrections des magies et des pièges, et nouvelles animations de vol et de réanimation.",
+    "groupes": [
+      {
+        "titre": "Magies",
+        "points": [
+          "Une magie qui annule la magie adverse ne laisse plus passer aucun effet, même quand la magie annulée en a plusieurs (poison, malédiction, renvoi, dégâts doublés…).",
+          "L'annulation est réglée avant que les magies agissent : peu importe qui joue en premier. Si les deux joueurs annulent, celui qui joue en premier a la priorité.",
+          "Le nombre de tours de l'annulation est maintenant pris en compte : 0 = jusqu'à la fin du combat, X = la magie adverse revient après X tours.",
+          "Si une magie est annulée en plein combat, tous ses effets encore actifs sont retirés."
+        ]
+      },
+      {
+        "titre": "Pièges",
+        "points": [
+          "Après « Insensible aux pièges », la croix rouge sur le piège bloqué s'enlève à la fin de la durée, s'il peut encore se déclencher.",
+          "Un piège détruit se brise comme une carte vaincue, au lieu d'être barré.",
+          "Un piège de réanimation reste caché jusqu'au bout : la carte se brise, se reforme, puis le piège se révèle. Ses autres effets arrivent juste après."
+        ]
+      },
+      {
+        "titre": "Vol de cartes",
+        "points": [
+          "Une magie ou un piège volé s'envole de chez l'adversaire et vient se poser du côté du voleur, à la place de la carte qui a volé.",
+          "Un piège qui vole une magie est consommé : la magie volée prend sa place."
+        ]
+      },
+      {
+        "titre": "Site",
+        "points": [
+          "Nouvel onglet Patch notes, avec les notes techniques et l'équilibrage des cartes."
+        ]
+      }
+    ]
+  }
+]

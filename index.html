@@ -35,6 +35,8 @@ table{border-collapse:collapse;width:100%}td,th{padding:6px;border-bottom:1px so
 .mk{min-width:0}.mk>select{width:100%;max-width:100%;text-overflow:ellipsis}
 .mk .row{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end}.mk .row label{flex:1 1 130px;min-width:0}.mk .row input,.mk .row select{width:100%;min-width:0;max-width:100%}
 form.f select{max-width:100%;min-width:0}form.f>*{min-width:0}
+.pn{background:#1d1d27;border:1px solid #2c2c38;border-radius:10px;padding:12px 16px;margin:12px 0}.pn h4{margin:0 0 6px}.pn h5{margin:10px 0 4px;color:#c4b5fd;font-size:13px;text-transform:uppercase;letter-spacing:.04em}.pn ul{margin:0;padding-left:20px}.pn li{margin:3px 0;line-height:1.45}
+.eq{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;padding:6px 0;border-top:1px solid #2c2c38}.eq:first-of-type{border-top:0}.eq .nm{font-weight:700;min-width:140px}.eq .ch{flex:1;min-width:220px;display:flex;flex-direction:column;align-items:flex-start;text-align:left}.eq .ch div{margin:2px 0}.eq .av{color:#9ca3af;text-decoration:line-through}.eq .up{color:#4ade80}.eq .dn{color:#f87171}.eq .nw{color:#fbbf24}
 .hc{background:#1d1d27;border:1px solid #2c2c38;border-left:4px solid #444;border-radius:10px;padding:10px 14px;margin:10px 0}
 .hc.victoire{border-left-color:#4ade80}.hc.defaite{border-left-color:#f87171}.hc.nul{border-left-color:#9ca3af}
 .hc .top{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
@@ -142,7 +144,7 @@ const img=p=>p?sb.storage.from('cartes').getPublicUrl(p).data.publicUrl:'';
 async function q(p){const r=await p;if(r.error){alert(r.error.message);throw r.error}return r.data}
 let user,joueur,isAdmin,tab='collection',sub='cartes',B={};
 const opts=(a,l='nom')=>a.map(x=>`<option value="${x.id}">${esc(x[l])}</option>`).join('');
-const TABS={collection:'Ma collection',boutique:'Boutique',deck:'Mon deck',dos:'Dos de cartes',historique:'Historique',profil:'Profils',regles:'Comment jouer'};
+const TABS={collection:'Ma collection',boutique:'Boutique',deck:'Mon deck',dos:'Dos de cartes',historique:'Historique',profil:'Profils',regles:'Comment jouer',patch:'📜 Patch notes'};
 
 async function init(){
   const {data:{session}}=await sb.auth.getSession();
@@ -166,7 +168,7 @@ function show(t){
   tab=t;const T={...TABS};if(isAdmin)T.admin='⚙️ Admin';
   $('#nav').innerHTML=Object.entries(T).map(([k,v])=>`<button class="${k==t?'on':'sec'}" data-t="${k}">${v}</button>`).join('');
   $('#nav').querySelectorAll('button').forEach(b=>b.onclick=()=>show(b.dataset.t));
-  ({collection:vCollection,boutique:vBoutique,deck:vDeck,dos:vDos,historique:vHistorique,profil:vProfil,regles:vRegles,admin:vAdmin})[t]();
+  ({collection:vCollection,boutique:vBoutique,deck:vDeck,dos:vDos,historique:vHistorique,profil:vProfil,regles:vRegles,patch:vPatch,admin:vAdmin})[t]();
 }
 
 /* ---------- Collection ---------- */
@@ -543,6 +545,51 @@ async function vHistorique(){
     box.style.display='block';b.textContent='Masquer le déroulé'});
 }
 
+/* ---------- Patch notes ---------- */
+let pnTab='tech';
+async function vPatch(){
+  const T={tech:'🛠️ Notes techniques',equi:'⚖️ Équilibrage'};
+  main.innerHTML=`<h3>Patch notes</h3><div class="row">${Object.entries(T).map(([k,v])=>`<button class="${k==pnTab?'on':'sec'}" data-pn="${k}">${v}</button>`).join('')}</div><div id="pnb"><p><small>Chargement…</small></p></div>`;
+  main.querySelectorAll('[data-pn]').forEach(b=>b.onclick=()=>{pnTab=b.dataset.pn;vPatch()});
+  const box=$('#pnb'),jour=d=>{const s=new Date(d+(d.length==10?'T12:00:00':'')).toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});return s.charAt(0).toUpperCase()+s.slice(1)};
+  if(pnTab=='tech'){
+    let L=[];try{const r=await fetch('patchnotes.json?'+Date.now());L=await r.json()}catch(x){box.innerHTML='<p class="ko">Notes indisponibles pour le moment.</p>';return}
+    L.sort((a,b)=>a.date<b.date?1:-1);
+    box.innerHTML=`<p><small>Les réglages et corrections du jeu, publiés une fois par jour.</small></p>`+(L.length?L.map(n=>`<div class="pn"><h4>${esc(jour(n.date))}</h4>${n.intro?`<p style="margin:0 0 6px;color:#ccc">${esc(n.intro)}</p>`:''}
+      ${(n.groupes||[]).map(g=>`<h5>${esc(g.titre)}</h5><ul>${g.points.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`).join('')}</div>`).join(''):'<p><small>Aucune note pour l\'instant.</small></p>');
+    return}
+  const r=await sb.from('equilibrage').select('*').order('cree_le',{ascending:false}).limit(300);
+  if(r.error){box.innerHTML='<p class="ko">Équilibrage indisponible pour le moment (l\'admin doit d\'abord lancer 10-equilibrage.sql dans Supabase).</p>';return}
+  const E=r.data||[];
+  if(!E.length){box.innerHTML='<p><small>Aucun changement d\'équilibrage enregistré pour l\'instant. Chaque modification de carte apparaîtra ici automatiquement.</small></p>';return}
+  const G={};E.forEach(x=>{const k=x.cree_le.slice(0,10);(G[k]=G[k]||[]).push(x)});
+  const cls=c=>c.sens>0?'up':c.sens<0?'dn':'';
+  box.innerHTML=`<p><small>Chaque modification de carte faite par l'admin, avec la valeur avant et après.</small></p>`+Object.entries(G).map(([d,l])=>`<div class="pn"><h4>${esc(jour(d))}</h4>${l.map(x=>`<div class="eq"><span class="nm">${esc(x.carte_nom)}</span><span class="ch">${(x.changements||[]).map(c=>c.avant==null?`<div><span class="nw">${esc(c.champ)}</span>${c.apres?` : ${esc(c.apres)}`:''}</div>`:`<div>${esc(c.champ)} : ${c.avant?`<span class="av">${esc(c.avant)}</span>`:'<span style="color:#9ca3af">aucun</span>'} → <span class="${cls(c)}">${esc(c.apres||'aucun')}</span></div>`).join('')}</span>${isAdmin?`<button class="sec" data-eqdel="${x.id}" title="Retirer cette ligne">🗑️</button>`:''}</div>`).join('')}</div>`).join('');
+  box.querySelectorAll('[data-eqdel]').forEach(b=>b.onclick=async()=>{if(!confirm('Retirer cette ligne des patch notes ?'))return;const d=await sb.from('equilibrage').delete().eq('id',b.dataset.eqdel);if(d.error)alert(d.error.message);vPatch()});
+}
+// Équilibrage : enregistre automatiquement ce qui change sur une carte (appelé par l'admin). Ne bloque jamais l'enregistrement de la carte.
+const txtEq={
+  passif:c=>{const P=c.passif?(c.passif.briques?c.passif.briques.filter(b=>b&&b.type):(c.passif.type?[c.passif]:[])):[];return P.map(fxPassif).join(' · ')},
+  ultime:c=>{const u=c.ultime;if(!u||!(u.type||u.briques))return'';return fxEffet(u).join(' · ')+' ('+fxTrigUlt(u)+')'},
+  effet:c=>{if(c.type=='magie')return c.effet?fxEffet(c.effet).join(' · '):'';const e=c.effet;if(!e)return'';return(fxCond(e.condition)||'Piège caché')+' : '+fxEffet(e.effet).join(' · ')+(nz(e.declenchements)>1?` (jusqu'à ${e.declenchements} fois)`:'')}};
+async function noteEquilibrage(avant,apres){
+  try{
+    let rn={};const rr=await sb.from('raretes').select('id,nom');(rr.data||[]).forEach(x=>rn[x.id]=x.nom);
+    const ch=[],num=(k,lab)=>{const a=avant?avant[k]:null,b=apres[k];if(a!==b&&!(a==null&&b==null))ch.push({champ:lab,avant:a==null?null:String(a),apres:b==null?'':String(b),sens:a==null||b==null?0:Math.sign(b-a)})};
+    if(!avant){ch.push({champ:'Nouvelle carte',avant:null,apres:[rn[apres.rarete_id],apres.type=='combattant'?`ATQ ${apres.atq??'?'} · PV ${apres.pv??'?'}`:apres.type].filter(Boolean).join(' · ')})}
+    else{
+      if(avant.nom!==apres.nom)ch.push({champ:'Nom',avant:avant.nom,apres:apres.nom,sens:0});
+      if(avant.rarete_id!==apres.rarete_id)ch.push({champ:'Rareté',avant:rn[avant.rarete_id]||'?',apres:rn[apres.rarete_id]||'?',sens:0});
+      if(apres.type=='combattant'||avant.type=='combattant'){num('atq','ATQ');num('pv','PV')}
+      ['passif','ultime','effet'].forEach(k=>{if(JSON.stringify(avant[k]??null)!==JSON.stringify(apres[k]??null)){const t=apres.type||avant.type,c0={...avant,type:t},c1={...apres,type:t};
+        ch.push({champ:{passif:'Passif',ultime:'Ultime',effet:t=='piege'?'Piège':'Effet'}[k],avant:txtEq[k](c0)||null,apres:txtEq[k](c1),sens:0});if(ch[ch.length-1].avant==null)ch[ch.length-1].avant=''}});
+      if(!!avant.actif!==!!apres.actif)ch.push({champ:'Disponible',avant:avant.actif?'Oui':'Non',apres:apres.actif?'Oui':'Non',sens:0});
+    }
+    if(!ch.length)return;
+    await sb.from('equilibrage').insert({carte_id:apres.id??avant?.id??null,carte_nom:apres.nom||avant?.nom||'?',carte_type:apres.type||avant?.type||null,changements:ch});
+  }catch(x){}
+}
+
 /* ---------- Comment jouer ---------- */
 function vRegles(){
   const c=(t,body)=>`<div class="stat"><h4>${t}</h4>${body}</div>`,ul=a=>'<ul>'+a.map(x=>`<li>${x}</li>`).join('')+'</ul>';
@@ -718,7 +765,7 @@ const MAG={atq_mod:["Modifie l'ATQ (négatif = baisse)",'cible','val','u'],pv_mo
  vol_ultime:["Vole l'ultime de l'adversaire"]};
 const CON={adv_attaque:["L'adversaire a attaqué X fois",'coups'],adv_ultime:["L'adversaire utilise son ultime"],proprio_pv_sous:['Le propriétaire passe sous X % de PV','seuilpv'],
  adv_pv_bas:["L'adversaire passe sous X % de PV",'seuilpv'],adv_soigne:["L'adversaire se soigne"],proprio_soigne:['Le propriétaire se soigne'],proprio_meurt:['Le propriétaire meurt']};
-let editId=null;
+let editId=null,editOld=null;
 const OL={aucune:'Aucune condition : évite la mort une fois',pv_max:'Ses PV max sont au moins égaux au seuil',degats_infliges:'Il a déjà infligé au moins le seuil en dégâts (total)'};
 function mk(el,cat){
   el.classList.add('mk');el.innerHTML=`<select><option value="">— Aucun —</option>${Object.entries(cat).map(([k,v])=>`<option value="${k}">${v[0]}</option>`).join('')}</select><div class="row"></div>`;
@@ -745,7 +792,7 @@ function mkMulti(el,cat,lab,rem){
 }
 
 async function aCartes(){
-  editId=null;
+  editId=null;editOld=null;
   const [col,rar,cartes]=await Promise.all([q(sb.from('collections').select('*')),q(sb.from('raretes').select('*').order('ordre')),
     q(sb.from('cartes').select('id,nom,type,actif,raretes(nom,poids),collections(nom),variantes_carte(id)').order('id',{ascending:false}))]);
   cartes.sort(cmpCartes);   // légendaire en premier, puis épique, rare, commun ; par nom à rareté égale
@@ -794,13 +841,13 @@ async function aCartes(){
      const cb=t=='combattant';
      const row={nom:v('nom'),type:t,collection_id:v('col')||null,rarete_id:+v('rar'),atq:cb&&v('atq')!==''?+v('atq'):null,pv:cb&&v('pv')!==''?+v('pv'):null,
       description:v('desc')||null,actif:f.actif.checked,ultime:ult,passif:pas,effet:eff};
-     if(editId){delete row.type;await q(sb.from('cartes').update(row).eq('id',editId));
+     if(editId){delete row.type;await q(sb.from('cartes').update(row).eq('id',editId));if(editOld)noteEquilibrage(editOld,{...editOld,...row,id:editId});
       if(f.file.files[0]||f.filec.files[0]){const path=f.file.files[0]?await upload(f.file.files[0]):null,pc=f.filec.files[0]?await upload(f.filec.files[0]):null,ch={};if(path)ch.image_path=path;if(pc)ch.image_combat=pc;
        const vs=await q(sb.from('variantes_carte').select('id').eq('carte_id',editId).eq('nom','Standard').limit(1));
        if(vs.length)await q(sb.from('variantes_carte').update(ch).eq('id',vs[0].id));
        else await q(sb.from('variantes_carte').insert({carte_id:editId,nom:'Standard',poids:100,...ch}));}
       editId=null;aCartes();return}
-     const c=await q(sb.from('cartes').insert(row).select('id').single());
+     const c=await q(sb.from('cartes').insert(row).select('id').single());noteEquilibrage(null,{...row,id:c.id});
      const path=await upload(f.file.files[0]),pc=f.filec.files[0]?await upload(f.filec.files[0]):null;
      await q(sb.from('variantes_carte').insert({carte_id:c.id,nom:'Standard',image_path:path,poids:100,...(pc?{image_combat:pc}:{})}));
      aCartes();}catch(x){}};
@@ -809,7 +856,7 @@ async function aCartes(){
      await q(sb.from('variantes_carte').insert({carte_id:+f.carte.value,nom:f.nom.value,image_path:path,poids:+f.poids.value,...(pc?{image_combat:pc}:{})}));aCartes();}catch(x){}};
   $('#sub').querySelectorAll('button[data-edit]').forEach(b=>b.onclick=async()=>{
     const c=await q(sb.from('cartes').select('*').eq('id',b.dataset.edit).single()),f=fc;
-    editId=c.id;f.nom.value=c.nom;f.type.value=c.type;f.type.disabled=true;toggle();
+    editId=c.id;editOld=c;f.nom.value=c.nom;f.type.value=c.type;f.type.disabled=true;toggle();
     f.col.value=c.collection_id||'';f.rar.value=c.rarete_id;f.atq.value=c.atq??'';f.pv.value=c.pv??'';f.desc.value=c.description||'';f.actif.checked=c.actif;
     f.file.required=false;
     const u=c.ultime||{};B.ult.set(c.ultime);f.utours.value=u.apres_tours||'';f.ucarte.checked=!!u.sur_carte;f.uuses.value=u.utilisations??1;f.ucd.value=u.delai_tours??0;
@@ -819,7 +866,8 @@ async function aCartes(){
     fc.scrollIntoView({behavior:'smooth'});});
   $('#fcancel').onclick=()=>aCartes();
   $('#sub').querySelectorAll('button[data-a]').forEach(b=>b.onclick=async()=>{
-    await q(sb.from('cartes').update({actif:b.dataset.v!=='true'}).eq('id',b.dataset.a));aCartes();});
+    const on=b.dataset.v!=='true';await q(sb.from('cartes').update({actif:on}).eq('id',b.dataset.a));
+    const o=await sb.from('cartes').select('*').eq('id',b.dataset.a).single();if(o.data)noteEquilibrage({...o.data,actif:!on},o.data);aCartes();});
   $('#sub').querySelectorAll('button[data-del]').forEach(b=>b.onclick=async()=>{
     if(!confirm('Supprimer définitivement « '+b.dataset.nom+' » ?\nElle disparaîtra aussi des collections et des decks des joueurs.'))return;
     const chemins=await q(sb.rpc('supprimer_carte',{p_carte_id:+b.dataset.del}));
