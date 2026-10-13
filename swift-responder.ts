@@ -431,6 +431,29 @@ async function rest(chemin, opt = {}) {
   return { ok: r.ok, data };
 }
 const jourParis = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });   // AAAA-MM-JJ
+// Minuit (heure de Paris) du jour en cours, au format ISO avec décalage horaire (+01:00 l'hiver, +02:00 l'été)
+function debutJourParis() {
+  const j = jourParis(), midi = new Date(j + 'T12:00:00Z');
+  const h = parseInt(midi.toLocaleString('en-GB', { timeZone: 'Europe/Paris', hour: '2-digit', hour12: false }), 10);
+  const dec = h - 12;
+  return `${j}T00:00:00${dec >= 0 ? '+' : '-'}${String(Math.abs(dec)).padStart(2, '0')}:00`;
+}
+// Anti-farm : nombre maximum de combats entre deux mêmes joueurs par jour (Admin > Réglages, 0 = pas de limite)
+async function limiteMemeAdversaire() {
+  try {
+    const r = await rest('reglages_jeu?cle=eq.combats_meme_adversaire_par_jour&select=valeur');
+    if (r.ok && Array.isArray(r.data) && r.data[0]) { const n = parseInt(r.data[0].valeur, 10); if (Number.isFinite(n) && n >= 0) return n; }
+  } catch { /* réglage illisible : valeur par défaut */ }
+  return 3;
+}
+// Combats déjà joués aujourd'hui entre x et y, dans les deux sens (null si le compte est illisible : on ne bloque pas)
+async function combatsEntre(x, y) {
+  try {
+    const r = await rest(`historique_combats?select=id&cree_le=gte.${encodeURIComponent(debutJourParis())}` +
+      `&or=(and(joueur_a.eq.${x},joueur_b.eq.${y}),and(joueur_a.eq.${y},joueur_b.eq.${x}))`);
+    return r.ok && Array.isArray(r.data) ? r.data.length : null;
+  } catch { return null; }
+}
 
 // Rareté de chaque carte (couleur, nom) pour les effets de brillance pendant le combat — ne bloque jamais un combat en cas de souci
 async function ajouterRaretes(cartes) {
@@ -513,6 +536,23 @@ Deno.serve(async (req) => {
   if (!prep.ok) {
     const code = String((prep.data && prep.data.message) || '');
     return txt(ERREURS[code] || 'Impossible de lancer le combat (' + code + ').', 409);
+  }
+  // 1 bis) anti-farm : limite de combats contre le même adversaire par jour
+  const maxPaire = await limiteMemeAdversaire();
+  if (maxPaire > 0) {
+    // Adversaire tiré au hasard (!combat sans @) : on retente quelques fois pour tomber sur un autre joueur
+    for (let essai = 0; ; essai++) {
+      const n = await combatsEntre(prep.data.a.id, prep.data.b.id);
+      if (n === null || n < maxPaire) break;
+      if (mode === 'quotidien') await rpc('rendre_combat_quotidien', { p_joueur: prep.data.a.id });
+      if (b.adversaire || essai >= 4) {
+        return txt(`${prep.data.a.pseudo} et ${prep.data.b.pseudo} se sont déjà affrontés ${maxPaire} fois aujourd'hui : ` +
+          (b.adversaire ? "défie quelqu'un d'autre ou reviens demain !" : "aucun autre adversaire disponible pour l'instant, reviens plus tard !"), 409);
+      }
+      const p2 = await rpc('preparer_combat', argsPrep);
+      if (!p2.ok) { const code = String((p2.data && p2.data.message) || ''); return txt(ERREURS[code] || 'Impossible de lancer le combat (' + code + ').', 409); }
+      prep = p2;
+    }
   }
   const { a, b: adv } = prep.data;
 

@@ -3,6 +3,21 @@
 Schéma tiré directement du moteur (`moteur-combat.js`, identique dans `combat.html` et `swift-responder.ts`).
 **À mettre à jour à chaque changement de règle** — les tests (`npm test`) vérifient que le moteur respecte ces règles.
 
+## 0. Avant le combat (lancement depuis le chat)
+
+```mermaid
+flowchart TD
+  C0(["!combat (gratuit, adversaire au hasard)<br/>ou duel payant (@adversaire)"]) --> C1{"!combat : combats gratuits<br/>du jour épuisés ?"}
+  C1 -- oui --> CX(["Refusé : reviens demain"])
+  C1 -- non --> C2["Decks préparés, adversaire choisi"]
+  C2 --> C3{"Anti-farm : ces 2 joueurs se sont déjà<br/>affrontés N fois aujourd'hui ?<br/>(dans les 2 sens, réglage admin, 0 = sans limite)"}
+  C3 -- non --> C5([Le combat se joue : schéma 1])
+  C3 -- "oui, adversaire au hasard" --> C4{"Encore des essais ?<br/>(4 nouveaux tirages max)"}
+  C4 -- oui --> C2
+  C4 -- non --> CY(["Refusé, le combat gratuit n'est pas décompté"])
+  C3 -- "oui, duel visé" --> CZ(["Refusé : défie quelqu'un d'autre ou reviens demain"])
+```
+
 ## 1. Vue d'ensemble
 
 ```mermaid
