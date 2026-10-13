@@ -239,7 +239,7 @@ function updBar(){
 /* FX-BEGIN */
 /* ---------- Effets en texte clair (cartes de la collection) ---------- */
 const nz=v=>+v||0,trs=t=>`${t} tour${t>1?'s':''}`,sgn=v=>(v>0?'+':'')+v,upc=u=>u==='pct'?' %':'',tousT=t=>t>1?`tous les ${t} tours`:'à chaque tour';
-const ciblT=e=>(e.ciblem||e.cible)==='soi'?'sur soi':"sur l'adversaire";
+const ciblT=e=>(e.ciblem||e.cible)==='soi'?'sa propre carte':"l'adversaire";
 const cat=t=>{const L=typeof MAG!=='undefined'&&(MAG[t]||ULT[t]||PAS[t]);return L?L[0]:String(t||'Effet')};
 // Effets « perso » d'étourdissement (créés dans l'onglet Effets) : décrits comme l'étourdissement du moteur, qui les exécute ainsi
 const canonFx=(e,pas)=>e&&typeof e.type==='string'&&/^perso_/.test(e.type)&&/etourd/.test(e.type)?{...e,type:pas?'etourdir':'etourdir_effet'}:e;
@@ -356,7 +356,7 @@ const TIER=r=>['ul','lg','ep','ra','co'][rangRar(r)[0]]||'ra';
 const txOn=h=>{const m=/^#?([0-9a-f]{6})$/i.exec(String(h||'').trim());if(!m)return'#111';const n=parseInt(m[1],16);return(0.299*(n>>16)+0.587*((n>>8)&255)+0.114*(n&255))/255>.6?'#111':'#fff'};
 const KRX=/(?<![\p{L}])(?:([+\-−]?\d+(?:[.,]\d+)?\s?%)|(\d+\s?tours?)|(dégâts?|saign\p{L}*|brûl\p{L}*|poison\p{L}*|malédiction\p{L}*|fracture\p{L}*|renvo\p{L}*)|(soins?|soign\p{L}*|régénér\p{L}*|réanim\p{L}*|PV|récup\p{L}*|protég\p{L}*|évite la mort|purifi\p{L}*)|(étourd\p{L}*|gel\p{L}*|fatigu\p{L}*|insensib\p{L}*|vol(?:e|er|é|s)?|échang\p{L}*|annul\p{L}*)|(ATQ|attaq\p{L}*|frappe\p{L}*|rage)|([+\-−]?\d+))(?![\p{L}])/giu;
 const CK=['','k-p','k-t','k-d','k-h','k-s','k-a','k-n'];
-const cz=t=>String(t).replace(KRX,(m,...g)=>{const k=g.slice(0,7).findIndex(x=>x!==undefined);return`<span class="${CK[k+1]}">${m}</span>`});   // le texte est déjà échappé : on ne touche qu'aux mots clés
+const cz=t=>String(t).split(/(&#?\w+;)/).map((s,i)=>i%2?s:s.replace(KRX,(m,...g)=>{const k=g.slice(0,7).findIndex(x=>x!==undefined);return`<span class="${CK[k+1]}">${m}</span>`})).join('');   // les caractères échappés (&#39; = apostrophe…) ne sont jamais colorés, sinon ils s'affichent cassés   // le texte est déjà échappé : on ne touche qu'aux mots clés
 /* ---------- Recyclage des doublons ---------- */
 const PRIX_DEF={commun:{gold:5,fragments:0},rare:{gold:10,fragments:0},epique:{gold:35,fragments:0},legendaire:{gold:80,fragments:0},ggez:{gold:80,fragments:0}};
 let PRIX=null;
