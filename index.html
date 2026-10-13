@@ -580,7 +580,7 @@ async function vPatch(){
       ${(n.groupes||[]).map(g=>`<h5>${esc(g.titre)}</h5><ul>${g.points.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`).join('')}</div>`).join(''):'<p><small>Aucune note pour l\'instant.</small></p>');
     return}
   const r=await sb.from('equilibrage').select('*').order('cree_le',{ascending:false}).limit(300);
-  if(r.error){box.innerHTML='<p class="ko">Équilibrage indisponible pour le moment (l\'admin doit d\'abord lancer 10-equilibrage.sql dans Supabase).</p>';return}
+  if(r.error){box.innerHTML='<p class="ko">Équilibrage indisponible pour le moment (l\'admin doit d\'abord lancer 10-equilibrage.sql dans Supabase).</p>'+(isAdmin?`<p><small>Détail technique : ${esc(r.error.message||'')}</small></p>`:'');return}
   const E=r.data||[];
   if(!E.length){box.innerHTML='<p><small>Aucun changement d\'équilibrage enregistré pour l\'instant. Chaque modification de carte apparaîtra ici automatiquement.</small></p>';return}
   const G={};E.forEach(x=>{const k=x.cree_le.slice(0,10);(G[k]=G[k]||[]).push(x)});
@@ -608,7 +608,7 @@ async function vVotes(box){
       const mien=new Set((cj.data||[]).filter(x=>x.quantite>0&&x.variantes_carte).map(x=>x.variantes_carte.carte_id));L=L.filter(c=>mien.has(c.id))}
     const ord={combattant:0,magie:1,piege:2};vCartes=L.sort((a,b)=>(ord[a.type]-ord[b.type])||a.nom.localeCompare(b.nom,'fr'))}
   const mv=await sb.rpc('mes_votes'),rs=await sb.rpc('resultats_votes',{p_decalage:vSem});
-  if(mv.error||rs.error){box.innerHTML='<p class="ko">Votes indisponibles pour le moment (l\'admin doit d\'abord lancer 11-votes.sql dans Supabase).</p>';return}
+  if(mv.error||rs.error){box.innerHTML='<p class="ko">Votes indisponibles pour le moment (l\'admin doit d\'abord lancer 11-votes.sql dans Supabase).</p>'+(isAdmin?`<p><small>Détail technique : ${esc((mv.error||rs.error).message||'')}</small></p>`:'');return}
   const mes={};(mv.data||[]).forEach(v=>{(mes[v.carte_id]=mes[v.carte_id]||{})[v.aspect]=v.sens});
   const reste=Math.max(0,5-Object.keys(mes).length),byId={};vCartes.forEach(c=>byId[c.id]=c);
   const liste=vCartes.filter(c=>(vFiltre=='tout'||c.type==vFiltre)&&(!vRech||c.nom.toLowerCase().includes(vRech.toLowerCase())));
