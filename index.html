@@ -444,7 +444,7 @@ function mdDraw(){
   const mxA=Math.max(1,...collData.map(y=>nz(y.variantes_carte.cartes.atq))),mxP=Math.max(1,...collData.map(y=>nz(y.variantes_carte.cartes.pv)));
   box.dataset.t=TIER(c.raretes);box.style.setProperty('--g',col);box.style.setProperty('--tx',txOn(col));
   box.innerHTML=`<button class="cx" aria-label="Fermer">✕</button>
-   <div class="cmi"><div class="fp"><div class="fi"><div class="tilt face">${v.image_path?`<img src="${img(v.image_path)}" alt="${esc(c.nom)}">`:`<div style="aspect-ratio:5/7;display:flex;align-items:center;justify-content:center;font-weight:700;padding:14px;text-align:center">${esc(c.nom)}</div>`}<div class="ho"></div><div class="gl"></div></div><div class="bk" id="mbk">🌲<div class="gl"></div></div></div></div>
+   <div class="cmi"><div class="fp"><div class="fi"><div class="tilt face">${v.image_path?`<img loading="lazy" src="${img(v.image_path)}" alt="${esc(c.nom)}">`:`<div style="aspect-ratio:5/7;display:flex;align-items:center;justify-content:center;font-weight:700;padding:14px;text-align:center">${esc(c.nom)}</div>`}<div class="ho"></div><div class="gl"></div></div><div class="bk" id="mbk">🌲<div class="gl"></div></div></div></div>
     <div class="flb"><button class="sec" id="mflip">🔄 Retourner la carte</button><small id="mdosn"></small></div></div>
    <div class="cmd"><h2>${esc(c.nom)}</h2>
     <div class="pills"><span class="pl r">${esc(c.raretes.nom)}</span><span class="pl">${tl[0]} ${esc(tl[1])}</span><span class="pl">${esc(cn(x))}</span>${v.nom?`<span class="pl">${esc(v.nom)}</span>`:''}<span class="pl">${x.apercu?'Aperçu · non possédée':'Possédée ×'+x.quantite}</span></div>
@@ -531,7 +531,7 @@ async function vBoutique(){
     return`<div class="bcol">${L.map(c=>`<span>${esc(c.nom)}</span>`).join('')}</div>
      <details class="bdet"><summary>Détails du contenu (${tot} carte${tot>1?'s':''} possibles)</summary>${L.map(c=>`<div class="bc">${esc(c.nom)}</div><div class="br">${c.r.sort((x,y)=>(+x.rarete_poids)-(+y.rarete_poids)).map(r=>`<span style="--g:${esc(r.rarete_couleur||'#aaa')}">${r.nb} ${esc(r.rarete_nom)}</span>`).join('')}</div>`).join('')}</details>`};
   main.innerHTML=`<h3>Tes boosters non ouverts</h3><p>${s.length?s.map(x=>`${esc(x.types_boosters.nom)} ×${x.quantite}`).join(' · ')+'<br><small>Ouvre-les pendant le live avec !booster</small>':'Aucun'}</p>
-  <h3>Acheter</h3><div class="grid">${t.map(b=>`<div class="card">${b.image_path?`<img src="${img(b.image_path)}">`:''}<b>${esc(b.nom)}</b><small>${b.nb_cartes} cartes</small>${contenu(b.id)}${(ved[b.id]||[]).map(v=>`<div style="margin:6px 0;text-align:center"><small>⭐ À l'affiche</small><br>${v.image_path?`<img src="${img(v.image_path)}" style="width:90px;border-radius:6px;box-shadow:0 0 12px ${esc(v.couleur||'#fff')}">`:''}<br><small>${esc(v.nom)}</small></div>`).join('')}<button data-id="${b.id}">Acheter · 💰 ${b.prix}</button></div>`).join('')}</div>`;
+  <h3>Acheter</h3><div class="grid">${t.map(b=>`<div class="card">${b.image_path?`<img loading="lazy" src="${img(b.image_path)}">`:''}<b>${esc(b.nom)}</b><small>${b.nb_cartes} cartes</small>${contenu(b.id)}${(ved[b.id]||[]).map(v=>`<div style="margin:6px 0;text-align:center"><small>⭐ À l'affiche</small><br>${v.image_path?`<img loading="lazy" src="${img(v.image_path)}" style="width:90px;border-radius:6px;box-shadow:0 0 12px ${esc(v.couleur||'#fff')}">`:''}<br><small>${esc(v.nom)}</small></div>`).join('')}<button data-id="${b.id}">Acheter · 💰 ${b.prix}</button></div>`).join('')}</div>`;
   main.querySelectorAll('button[data-id]').forEach(b=>b.onclick=async()=>{
     const {error}=await sb.rpc('acheter_booster',{p_type_id:+b.dataset.id});
     if(error)uiAlert(error.message.includes('MONNAIE')?'Pas assez de monnaie.':error.message);
@@ -564,7 +564,7 @@ async function vProfil(id=user.id){
   const st=(l,v,s)=>`<div class="stat"><span>${l}</span><b>${v}</b>${s?`<span>${s}</span>`:''}</div>`;
   const cardTile=(l,x,u)=>{
     if(!x)return st(l,'—');
-    return `<div class="stat card2" style="--g:${esc(x.couleur||'#888')}">${x.image_path?`<img src="${img(x.image_path)}">`:''}<div><span>${l}</span><b style="font-size:18px">${esc(x.nom)}</b><span>${x.valeur} ${u}</span></div></div>`};
+    return `<div class="stat card2" style="--g:${esc(x.couleur||'#888')}">${x.image_path?`<img loading="lazy" src="${img(x.image_path)}">`:''}<div><span>${l}</span><b style="font-size:18px">${esc(x.nom)}</b><span>${x.valeur} ${u}</span></div></div>`};
   let coll='';
   if(mine){
     await loadColl();
@@ -689,7 +689,7 @@ async function vVotes(box){
   box.innerHTML=`${!isAdmin&&!vCartes.length?'<p class="ko">Tu n\'as encore aucune carte : ouvre des boosters pour pouvoir voter sur les tiennes.</p>':''}<p><small>Choisis parmi <b>tes cartes</b> jusqu'à <b>5 par semaine</b> et dis ce que tu voudrais voir changer : <b>nerf</b> (plus faible), <b>up</b> (plus forte) ou <b>rework</b> (à repenser). Les votes repartent à zéro chaque lundi. Il te reste <b>${reste}</b> carte${reste>1?'s':''} à voter cette semaine.</small></p>
    <div class="vbar"><input id="vq" placeholder="Rechercher une carte…" value="${esc(vRech)}"><select id="vt">${[['tout','Toutes'],['combattant','Combattants'],['magie','Magies'],['piege','Pièges']].map(([k,l])=>`<option value="${k}" ${k==vFiltre?'selected':''}>${l}</option>`).join('')}</select></div>
    <div class="vstrip">${liste.map(x=>{const u=vImg(x),g=(x.raretes&&x.raretes.couleur)||'#555';return`<div class="vc${x.id==vSel?' sel':''}" data-vc="${x.id}" style="--g:${g}">${mes[x.id]?'<div class="ck">✓</div>':''}${u?`<img src="${esc(u)}" alt="" loading="lazy">`:'<div class="ph"></div>'}<span>${esc(x.nom)}</span></div>`}).join('')||'<small>Aucune carte.</small>'}</div>
-   ${c?`<div class="pn vsel">${vImg(c)?`<img src="${esc(vImg(c))}" alt="">`:''}<div class="vf"><h4>${esc(c.nom)}</h4><small>Pour chaque ligne, choisis ce que tu voudrais (ou rien).</small>
+   ${c?`<div class="pn vsel">${vImg(c)?`<img loading="lazy" src="${esc(vImg(c))}" alt="">`:''}<div class="vf"><h4>${esc(c.nom)}</h4><small>Pour chaque ligne, choisis ce que tu voudrais (ou rien).</small>
      ${vAspects(c).map(a=>`<div class="vrow" data-k="${esc(a.k)}"><span class="lb">${esc(a.l)}</span>${Object.entries(SENS).map(([s,l])=>`<button class="sec ${s}${mes[c.id]&&mes[c.id][a.k]==s?' on':''}" data-s="${s}">${l}</button>`).join('')}</div>`).join('')}
      <div class="row" style="margin-top:10px"><button id="vok">${mes[c.id]?'Mettre à jour mon vote':'Valider mon vote'}</button>${mes[c.id]?'<button class="sec" id="vdel">Retirer mon vote</button>':''}</div></div></div>`:'<p><small>Clique sur une carte pour voter.</small></p>'}
    <div class="vbar" style="margin-top:18px"><h3 style="margin:0">Résultats</h3><button class="${vSem==0?'on':'sec'}" data-sem="0">Cette semaine</button><button class="${vSem==1?'on':'sec'}" data-sem="1">Semaine dernière</button></div>
@@ -744,7 +744,7 @@ async function aVotes(){
    <div class="vbar">${semL.map((l,i)=>`<button class="${i==avSem?'on':'sec'}" data-avs="${i}">${l}</button>`).join('')}</div>
    <p><small>${nbVotes} carte${nbVotes>1?'s':''} ont reçu des votes. Classement par nombre de votants ; dans chaque ligne, la case surlignée est l'avis majoritaire. « Modifier » ouvre directement la carte dans l'onglet Cartes (le changement apparaîtra tout seul dans l'onglet Équilibrage).</small></p>
    ${top.length?top.map((o,i)=>{const c=byId[o.id],u=c?vImg(c):'';
-     return`<div class="pn av10"><span class="rk">${i+1}</span>${u?`<img src="${esc(u)}" alt="">`:''}<div class="bd"><h4 style="margin:0">${esc(o.nom)} <small style="color:#aaa;font-weight:400">· ${o.votants} votant${o.votants>1?'s':''} · ${o.total} avis</small></h4>
+     return`<div class="pn av10"><span class="rk">${i+1}</span>${u?`<img loading="lazy" src="${esc(u)}" alt="">`:''}<div class="bd"><h4 style="margin:0">${esc(o.nom)} <small style="color:#aaa;font-weight:400">· ${o.votants} votant${o.votants>1?'s':''} · ${o.total} avis</small></h4>
       <table class="avt"><tr><td></td><td class="n">⬇️ Nerf</td><td class="n">⬆️ Up</td><td class="n">🔁 Rework</td></tr>
       ${Object.entries(o.a).sort((x,y)=>(y[1].nerf+y[1].up+y[1].rework)-(x[1].nerf+x[1].up+x[1].rework)).map(([k,n])=>{const m=Math.max(n.nerf,n.up,n.rework),t=s=>n[s]&&n[s]==m&&[n.nerf,n.up,n.rework].filter(v=>v==m).length==1?` top ${s}`:'';
         return`<tr><td>${esc(lab(c,k))}</td><td class="n${t('nerf')}">${n.nerf}</td><td class="n${t('up')}">${n.up}</td><td class="n${t('rework')}">${n.rework}</td></tr>`}).join('')}</table>
@@ -782,7 +782,7 @@ async function vPropos(){
      <label>Ton idée (facultatif)<textarea name="idee" maxlength="600" placeholder="Ambiance, histoire, capacités que tu imagines…"></textarea></label>
      <div class="row"><button id="pbtn" ${att>=3?'disabled':''}>${att>=3?'3 propositions déjà en attente':'Envoyer ma proposition'}</button></div>
     </form></div>
-   <h3>Mes propositions</h3>${L.length?`<div class="ppl">${L.map(x=>`<div class="ppc"><img src="${esc(pImg(x.image_carte||x.image_path))}" alt="" data-zoom="${esc(pImg(x.image_carte||x.image_path))}"><b>${esc(x.nom)}</b><span class="st ${x.statut}">${STP[x.statut]}</span>
+   <h3>Mes propositions</h3>${L.length?`<div class="ppl">${L.map(x=>`<div class="ppc"><img loading="lazy" src="${esc(pImg(x.image_carte||x.image_path))}" alt="" data-zoom="${esc(pImg(x.image_carte||x.image_path))}"><b>${esc(x.nom)}</b><span class="st ${x.statut}">${STP[x.statut]}</span>
      <small>${TYP[x.type]||''} · ${esc(rarN(x.rarete_id))} · ${x.collection_id?esc(colN(x)):`<span class="idc">Idée : ${esc(x.collection_idee||'')}</span>`}</small>${x.atq!=null||x.pv!=null?`<small>ATQ ${x.atq??'—'} · PV ${x.pv??'—'}</small>`:''}
      ${x.note_admin?`<small>💬 ${esc(x.note_admin)}</small>`:''}${x.statut=='attente'?`<button class="sec" data-pdel="${x.id}" data-path="${esc(x.image_path)}" data-path2="${esc(x.image_carte||'')}">Retirer</button>`:''}</div>`).join('')}</div>`:'<p><small>Tu n\'as encore rien proposé.</small></p>'}`;
   const f=$('#pform'),cv=$('#pcv'),zm=$('#pzoom');
@@ -848,7 +848,7 @@ async function aPropos(){
   const L=r.data||[],rar=id=>R.rar.find(x=>x.id==id)||{},colN=id=>(R.col.find(c=>c.id==id)||{}).nom||'?';
   box.innerHTML=`<h3>Propositions des joueurs</h3><div class="vbar">${[['attente','⏳ En attente'],['acceptee','✅ Acceptées'],['refusee','❌ Refusées'],['toutes','Toutes']].map(([k,l])=>`<button class="${k==apFiltre?'on':'sec'}" data-apf="${k}">${l}</button>`).join('')}</div>
    ${L.length?`<div class="ppl">${L.map(x=>{const rr=rar(x.rarete_id),u=pImg(x.image_path),uc=x.image_carte?pImg(x.image_carte):'';return`<div class="ppc" style="border-color:${esc(rr.couleur||'#2c2c38')}">
-    <img src="${esc(uc||u)}" alt="" data-zoom="${esc(uc||u)}">${uc?`<small><a href="${esc(u)}" target="_blank" style="color:#c4b5fd">Voir le dessin seul</a></small>`:''}<b>${esc(x.nom)}</b><span class="st ${x.statut}">${STP[x.statut]}</span>
+    <img loading="lazy" src="${esc(uc||u)}" alt="" data-zoom="${esc(uc||u)}">${uc?`<small><a href="${esc(u)}" target="_blank" style="color:#c4b5fd">Voir le dessin seul</a></small>`:''}<b>${esc(x.nom)}</b><span class="st ${x.statut}">${STP[x.statut]}</span>
     <small>Par <b style="color:#fff">${esc(x.pseudo||'?')}</b> · ${new Date(x.cree_le).toLocaleDateString('fr-FR')}</small>
     <small>${TYP[x.type]||''} · <span style="color:${esc(rr.couleur||'#ccc')}">${esc(rr.nom||'?')}</span> · ${x.collection_id?esc(colN(x.collection_id)):`<span class="idc">Nouvelle collection : ${esc(x.collection_idee||'')}</span>`}</small>
     ${x.atq!=null||x.pv!=null?`<small>Stats proposées : <b style="color:#ff6b6b">ATQ ${x.atq??'—'}</b> · <b style="color:#60a5fa">PV ${x.pv??'—'}</b></small>`:'<small>Pas de stats proposées</small>'}
@@ -1220,7 +1220,7 @@ async function aBoosters(){
      <label><input type="checkbox" name="actif" ${!x||x.actif?'checked':''}> En vente</label>
      <label><input type="checkbox" name="quotidien" ${x&&x.quotidien?'checked':''}> 🎁 Distribué par le booster quotidien</label></div>
     <small>Prix minimum ${PRIX_MIN} (un combat gagné rapporte 50). Le booster quotidien ne tire que parmi les boosters cochés « Distribué par le booster quotidien » : laisse décochés les boosters premium.</small>
-    ${x&&x.image_path?`<img src="${img(x.image_path)}" style="max-width:140px;border-radius:6px">`:''}<label><small>Image du booster (optionnel)</small><br><input name="file" type="file" accept="image/*"></label>
+    ${x&&x.image_path?`<img loading="lazy" src="${img(x.image_path)}" style="max-width:140px;border-radius:6px">`:''}<label><small>Image du booster (optionnel)</small><br><input name="file" type="file" accept="image/*"></label>
     <small>Collections présentes (les cartes communes sont toujours incluses)</small>
     <div class="row">${col.map(c=>`<label><input type="checkbox" name="c${c.id}" ${cs.has(c.id)?'checked':''}> ${esc(c.nom)}</label>`).join('')||'<small>Aucune collection</small>'}</div>
     <small>Modificateur de drop : s'ajoute au poids de la rareté pour ce booster (négatif possible)</small>
