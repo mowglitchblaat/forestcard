@@ -47,6 +47,11 @@ form.f select{max-width:100%;min-width:0}form.f>*{min-width:0}
 .vres{display:flex;gap:6px 14px;flex-wrap:wrap;font-size:13px;color:#ccc}.vres b{color:#fff}
 .av10{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}.av10 .rk{font-size:26px;font-weight:800;color:#a78bfa;min-width:34px}.av10 img{width:70px;border-radius:6px}.av10 .bd{flex:1;min-width:240px}
 .avt{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}.avt td{padding:3px 6px;border-top:1px solid #2c2c38}.avt td.n{text-align:center;width:78px;white-space:nowrap}.avt td.top{font-weight:800;border-radius:4px}.avt td.top.nerf{background:#7f1d1d}.avt td.top.up{background:#14532d}.avt td.top.rework{background:#78350f}
+.pf{display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start}.pf .apv{width:200px;aspect-ratio:5/7;border-radius:10px;background:#262633 center/cover;border:2px dashed #444;display:flex;align-items:center;justify-content:center;color:#888;font-size:13px;text-align:center;padding:10px;box-sizing:border-box}
+.pf .apv.ok{border:2px solid var(--g,#7c3aed);box-shadow:0 0 14px var(--g,#7c3aed);color:transparent}.pf form{flex:1;min-width:260px;display:flex;flex-direction:column;gap:10px}.pf label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:#ccc}.pf textarea{min-height:80px}
+.ppl{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}.ppc{background:#1d1d27;border:1px solid #2c2c38;border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px}
+.ppc img{width:100%;aspect-ratio:5/7;object-fit:cover;border-radius:8px;cursor:zoom-in}.ppc .st{font-size:12px;padding:2px 8px;border-radius:10px;align-self:flex-start}.st.attente{background:#3f3f46}.st.acceptee{background:#14532d}.st.refusee{background:#7f1d1d}
+.ppc .idc{color:#fbbf24}.ppc small{color:#aaa}.ppc .row{gap:6px;flex-wrap:wrap}
 .hc{background:#1d1d27;border:1px solid #2c2c38;border-left:4px solid #444;border-radius:10px;padding:10px 14px;margin:10px 0}
 .hc.victoire{border-left-color:#4ade80}.hc.defaite{border-left-color:#f87171}.hc.nul{border-left-color:#9ca3af}
 .hc .top{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
@@ -154,7 +159,7 @@ const img=p=>p?sb.storage.from('cartes').getPublicUrl(p).data.publicUrl:'';
 async function q(p){const r=await p;if(r.error){alert(r.error.message);throw r.error}return r.data}
 let user,joueur,isAdmin,tab='collection',sub='cartes',B={};
 const opts=(a,l='nom')=>a.map(x=>`<option value="${x.id}">${esc(x[l])}</option>`).join('');
-const TABS={collection:'Ma collection',boutique:'Boutique',deck:'Mon deck',dos:'Dos de cartes',historique:'Historique',profil:'Profils',regles:'Comment jouer',patch:'📜 Patch notes'};
+const TABS={collection:'Ma collection',boutique:'Boutique',deck:'Mon deck',dos:'Dos de cartes',historique:'Historique',profil:'Profils',regles:'Comment jouer',propos:'🎨 Propositions',patch:'📜 Patch notes'};
 
 async function init(){
   const {data:{session}}=await sb.auth.getSession();
@@ -178,7 +183,7 @@ function show(t){
   tab=t;const T={...TABS};if(isAdmin)T.admin='⚙️ Admin';
   $('#nav').innerHTML=Object.entries(T).map(([k,v])=>`<button class="${k==t?'on':'sec'}" data-t="${k}">${v}</button>`).join('');
   $('#nav').querySelectorAll('button').forEach(b=>b.onclick=()=>show(b.dataset.t));
-  ({collection:vCollection,boutique:vBoutique,deck:vDeck,dos:vDos,historique:vHistorique,profil:vProfil,regles:vRegles,patch:vPatch,admin:vAdmin})[t]();
+  ({collection:vCollection,boutique:vBoutique,deck:vDeck,dos:vDos,historique:vHistorique,profil:vProfil,regles:vRegles,propos:vPropos,patch:vPatch,admin:vAdmin})[t]();
 }
 
 /* ---------- Collection ---------- */
@@ -671,6 +676,73 @@ async function aVotes(){
     for(let k=0;k<40;k++){await new Promise(r=>setTimeout(r,100));const e=document.querySelector(`#sub button[data-edit="${id}"]`);if(e){e.click();return}}});
 }
 
+/* ---------- Propositions de cartes (joueurs) ---------- */
+const STP={attente:'⏳ En attente',acceptee:'✅ Acceptée',refusee:'❌ Refusée'},TYP={combattant:'Combattant',magie:'Magie',piege:'Piège'};
+const pImg=p=>p?sb.storage.from('propositions').getPublicUrl(p).data.publicUrl:'';
+let pRef=null;
+async function pRefs(){if(!pRef){const[r,c]=await Promise.all([sb.from('raretes').select('id,nom,couleur,poids'),sb.from('collections').select('id,nom')]);
+  pRef={rar:(r.data||[]).sort((a,b)=>(+b.poids||0)-(+a.poids||0)),col:(c.data||[]).sort((a,b)=>a.nom.localeCompare(b.nom,'fr'))}}return pRef}
+async function vPropos(){
+  const R=await pRefs(),mine=await sb.from('propositions').select('*').eq('joueur_id',user.id).order('cree_le',{ascending:false});
+  if(mine.error){main.innerHTML='<p class="ko">Propositions indisponibles pour le moment (l\'admin doit d\'abord lancer 12-propositions.sql dans Supabase).</p>';return}
+  const L=mine.data||[],att=L.filter(x=>x.statut=='attente').length;
+  const rarN=id=>(R.rar.find(x=>x.id==id)||{}).nom||'?',colN=x=>x.collection_id?((R.col.find(c=>c.id==x.collection_id)||{}).nom||'?'):null;
+  main.innerHTML=`<h3>Propose ta carte</h3><p><small>Envoie ton splash art et ton idée de carte : choisis son type, sa rareté et sa collection. L'admin regarde chaque proposition ; les meilleures pourront entrer dans le jeu ! (3 propositions en attente maximum, image de 8 Mo maximum.)</small></p>
+   <div class="pn pf"><div class="apv" id="apv">Aperçu de ton dessin</div>
+    <form id="pform">
+     <label>Ton splash art (PNG, JPG, WEBP)<input type="file" name="file" accept="image/png,image/jpeg,image/webp,image/gif" required></label>
+     <label>Nom de la carte<input name="nom" maxlength="60" required placeholder="Ex. : Le Wendigo des neiges"></label>
+     <div class="row" style="gap:10px"><label style="flex:1">Type<select name="type">${Object.entries(TYP).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select></label>
+      <label style="flex:1">Rareté<select name="rar">${R.rar.map(x=>`<option value="${x.id}">${esc(x.nom)}</option>`).join('')}</select></label></div>
+     <label>Collection<select name="col">${R.col.map(x=>`<option value="${x.id}">${esc(x.nom)}</option>`).join('')}<option value="autre">✏️ Autre : je propose une idée de collection</option></select></label>
+     <label id="pcolid" style="display:none">Ton idée de collection<input name="colidee" maxlength="80" placeholder="Ex. : Légendes du folklore"></label>
+     <label>Ton idée (facultatif)<textarea name="idee" maxlength="600" placeholder="Ambiance, histoire, capacités que tu imagines…"></textarea></label>
+     <div class="row"><button id="pbtn" ${att>=3?'disabled':''}>${att>=3?'3 propositions déjà en attente':'Envoyer ma proposition'}</button></div>
+    </form></div>
+   <h3>Mes propositions</h3>${L.length?`<div class="ppl">${L.map(x=>`<div class="ppc"><img src="${esc(pImg(x.image_path))}" alt="" data-zoom="${esc(pImg(x.image_path))}"><b>${esc(x.nom)}</b><span class="st ${x.statut}">${STP[x.statut]}</span>
+     <small>${TYP[x.type]||''} · ${esc(rarN(x.rarete_id))} · ${x.collection_id?esc(colN(x)):`<span class="idc">Idée : ${esc(x.collection_idee||'')}</span>`}</small>
+     ${x.note_admin?`<small>💬 ${esc(x.note_admin)}</small>`:''}${x.statut=='attente'?`<button class="sec" data-pdel="${x.id}" data-path="${esc(x.image_path)}">Retirer</button>`:''}</div>`).join('')}</div>`:'<p><small>Tu n\'as encore rien proposé.</small></p>'}`;
+  const f=$('#pform'),apv=$('#apv'),majG=()=>{const r=R.rar.find(x=>x.id==f.rar.value);apv.style.setProperty('--g',(r&&r.couleur)||'#7c3aed')};
+  f.file.onchange=()=>{const fi=f.file.files[0];if(!fi)return;if(fi.size>8*1024*1024){alert('Image trop lourde (8 Mo maximum).');f.file.value='';return}apv.style.backgroundImage=`url('${URL.createObjectURL(fi)}')`;apv.classList.add('ok');majG()};
+  f.rar.onchange=majG;f.col.onchange=()=>{$('#pcolid').style.display=f.col.value=='autre'?'':'none'};if(!R.col.length){f.col.value='autre';f.col.onchange()}
+  f.onsubmit=async e=>{e.preventDefault();const fi=f.file.files[0];if(!fi)return;const autre=f.col.value=='autre';
+    if(autre&&!f.colidee.value.trim()){alert('Écris ton idée de collection.');return}
+    const btn=$('#pbtn');btn.disabled=true;btn.textContent='Envoi…';
+    const path=user.id+'/'+crypto.randomUUID()+'.'+((fi.name.split('.').pop()||'png').toLowerCase());
+    const up=await sb.storage.from('propositions').upload(path,fi,{contentType:fi.type});
+    if(up.error){alert(up.error.message);btn.disabled=false;btn.textContent='Envoyer ma proposition';return}
+    const r=await sb.rpc('proposer_carte',{p_image:path,p_nom:f.nom.value,p_type:f.type.value,p_rarete:+f.rar.value||null,p_collection:autre?null:+f.col.value,p_collection_idee:autre?f.colidee.value:null,p_idee:f.idee.value});
+    if(r.error){await sb.storage.from('propositions').remove([path]);alert(r.error.message);btn.disabled=false;btn.textContent='Envoyer ma proposition';return}
+    vPropos()};
+  main.querySelectorAll('[data-pdel]').forEach(b=>b.onclick=async()=>{if(!confirm('Retirer cette proposition ?'))return;const d=await sb.from('propositions').delete().eq('id',b.dataset.pdel);if(d.error){alert(d.error.message);return}await sb.storage.from('propositions').remove([b.dataset.path]);vPropos()});
+  main.querySelectorAll('[data-zoom]').forEach(i=>i.onclick=()=>window.open(i.dataset.zoom,'_blank'));
+}
+
+/* ---------- Admin : propositions des joueurs ---------- */
+let apFiltre='attente';
+async function aPropos(){
+  const box=$('#sub'),R=await pRefs();
+  let qy=sb.from('propositions').select('*').order('cree_le',{ascending:false});if(apFiltre!='toutes')qy=qy.eq('statut',apFiltre);
+  const r=await qy;if(r.error){box.innerHTML='<p class="ko">Propositions indisponibles : lance d\'abord 12-propositions.sql dans Supabase.</p>';return}
+  const L=r.data||[],rar=id=>R.rar.find(x=>x.id==id)||{},colN=id=>(R.col.find(c=>c.id==id)||{}).nom||'?';
+  box.innerHTML=`<h3>Propositions des joueurs</h3><div class="vbar">${[['attente','⏳ En attente'],['acceptee','✅ Acceptées'],['refusee','❌ Refusées'],['toutes','Toutes']].map(([k,l])=>`<button class="${k==apFiltre?'on':'sec'}" data-apf="${k}">${l}</button>`).join('')}</div>
+   ${L.length?`<div class="ppl">${L.map(x=>{const rr=rar(x.rarete_id),u=pImg(x.image_path);return`<div class="ppc" style="border-color:${esc(rr.couleur||'#2c2c38')}">
+    <img src="${esc(u)}" alt="" data-zoom="${esc(u)}"><b>${esc(x.nom)}</b><span class="st ${x.statut}">${STP[x.statut]}</span>
+    <small>Par <b style="color:#fff">${esc(x.pseudo||'?')}</b> · ${new Date(x.cree_le).toLocaleDateString('fr-FR')}</small>
+    <small>${TYP[x.type]||''} · <span style="color:${esc(rr.couleur||'#ccc')}">${esc(rr.nom||'?')}</span> · ${x.collection_id?esc(colN(x.collection_id)):`<span class="idc">Nouvelle collection : ${esc(x.collection_idee||'')}</span>`}</small>
+    ${x.idee?`<div style="font-size:13px;white-space:pre-wrap">${esc(x.idee)}</div>`:''}
+    <input placeholder="Note pour le joueur (facultatif)" value="${esc(x.note_admin||'')}" data-note="${x.id}">
+    <div class="row">${x.statut!='acceptee'?`<button data-aps="acceptee" data-id="${x.id}">✅ Accepter</button>`:''}${x.statut!='refusee'?`<button class="sec" data-aps="refusee" data-id="${x.id}">❌ Refuser</button>`:''}${x.statut!='attente'?`<button class="sec" data-aps="attente" data-id="${x.id}">⏳ En attente</button>`:''}
+     <a href="${esc(u)}" download target="_blank"><button class="sec" title="Télécharger le dessin">⬇️</button></a><button class="sec" data-apdel="${x.id}" data-path="${esc(x.image_path)}" title="Supprimer">🗑️</button></div></div>`}).join('')}</div>`:'<p><small>Aucune proposition ici.</small></p>'}`;
+  box.querySelectorAll('[data-apf]').forEach(b=>b.onclick=()=>{apFiltre=b.dataset.apf;aPropos()});
+  box.querySelectorAll('[data-zoom]').forEach(i=>i.onclick=()=>window.open(i.dataset.zoom,'_blank'));
+  box.querySelectorAll('[data-aps]').forEach(b=>b.onclick=async()=>{const id=b.dataset.id,note=box.querySelector(`[data-note="${id}"]`).value.trim()||null;
+    const u=await sb.from('propositions').update({statut:b.dataset.aps,note_admin:note}).eq('id',id);if(u.error){alert(u.error.message);return}aPropos()});
+  box.querySelectorAll('[data-note]').forEach(i=>i.onchange=async()=>{await sb.from('propositions').update({note_admin:i.value.trim()||null}).eq('id',i.dataset.note)});
+  box.querySelectorAll('[data-apdel]').forEach(b=>b.onclick=async()=>{if(!confirm('Supprimer définitivement cette proposition et son image ?'))return;
+    const d=await sb.from('propositions').delete().eq('id',b.dataset.apdel);if(d.error){alert(d.error.message);return}await sb.storage.from('propositions').remove([b.dataset.path]);aPropos()});
+}
+
 /* ---------- Comment jouer ---------- */
 function vRegles(){
   const c=(t,body)=>`<div class="stat"><h4>${t}</h4>${body}</div>`,ul=a=>'<ul>'+a.map(x=>`<li>${x}</li>`).join('')+'</ul>';
@@ -768,10 +840,10 @@ function vRegles(){
 
 /* ---------- Admin ---------- */
 async function vAdmin(){
-  const S={cartes:'Cartes',collections:'Collections',boosters:'Boosters',effets:'Effets',raretes:'Raretés',cadeaux:'Cadeaux',dos:'Dos de cartes',reglages:'Réglages',joueurs:'Joueurs',votes:'🗳️ Votes'};
+  const S={cartes:'Cartes',collections:'Collections',boosters:'Boosters',effets:'Effets',raretes:'Raretés',cadeaux:'Cadeaux',dos:'Dos de cartes',reglages:'Réglages',joueurs:'Joueurs',votes:'🗳️ Votes',propos:'🎨 Propositions'};
   main.innerHTML=`<div class="row">${Object.entries(S).map(([k,v])=>`<button class="${k==sub?'on':'sec'}" data-s="${k}">${v}</button>`).join('')}</div><div id="sub"></div>`;
   main.querySelectorAll('button[data-s]').forEach(b=>b.onclick=()=>{sub=b.dataset.s;vAdmin()});
-  ({cartes:aCartes,collections:aCollections,boosters:aBoosters,effets:aEffets,raretes:aRaretes,cadeaux:aCadeaux,dos:aDos,reglages:aReglages,joueurs:aJoueurs,votes:aVotes})[sub]();
+  ({cartes:aCartes,collections:aCollections,boosters:aBoosters,effets:aEffets,raretes:aRaretes,cadeaux:aCadeaux,dos:aDos,reglages:aReglages,joueurs:aJoueurs,votes:aVotes,propos:aPropos})[sub]();
 }
 async function upload(file){
   const path=crypto.randomUUID()+'.'+(file.name.split('.').pop()||'png');
