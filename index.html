@@ -53,6 +53,8 @@ form.f select{max-width:100%;min-width:0}form.f>*{min-width:0}
 .ppl{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}.ppc{background:#1d1d27;border:1px solid #2c2c38;border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px}
 .ppc img{width:100%;aspect-ratio:5/7;object-fit:cover;border-radius:8px;cursor:zoom-in}.ppc .st{font-size:12px;padding:2px 8px;border-radius:10px;align-self:flex-start}.st.attente{background:#3f3f46}.st.acceptee{background:#14532d}.st.refusee{background:#7f1d1d}
 .ppc .idc{color:#fbbf24}.ppc small{color:#aaa}.ppc .row{gap:6px;flex-wrap:wrap}
+.bcol{display:flex;flex-wrap:wrap;gap:4px;margin:2px 0}.bcol span{font-size:11px;padding:2px 7px;border-radius:9px;background:#2a2a38;border:1px solid #3a3a4a}
+.bdet{font-size:12px;margin:4px 0}.bdet summary{cursor:pointer;color:#c4b5fd;font-weight:600}.bdet .bc{margin:6px 0 2px;font-weight:700}.bdet .br{display:flex;flex-wrap:wrap;gap:4px}.bdet .br span{padding:1px 7px;border-radius:9px;border:1px solid var(--g);color:var(--g)}
 .hc{background:#1d1d27;border:1px solid #2c2c38;border-left:4px solid #444;border-radius:10px;padding:10px 14px;margin:10px 0}
 .hc.victoire{border-left-color:#4ade80}.hc.defaite{border-left-color:#f87171}.hc.nul{border-left-color:#9ca3af}
 .hc .top{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
@@ -472,8 +474,14 @@ async function vBoutique(){
   const [t,s]=await Promise.all([q(sb.from('types_boosters').select('*').eq('actif',true)),
     q(sb.from('stock_boosters').select('quantite,types_boosters(nom)').eq('joueur_id',user.id).gt('quantite',0))]);
   const vv=await sb.rpc('vedettes_boosters'),ved={};(vv.data||[]).forEach(v=>(ved[v.type_id]=ved[v.type_id]||[]).push(v));
+  // Contenu de chaque booster : collections + nombre de cartes par rareté (aucun taux de drop, aucune carte révélée)
+  const cb=await sb.rpc('contenu_boosters'),CB={};(cb.data||[]).forEach(r=>{const b=CB[r.type_id]=CB[r.type_id]||{};const k=r.collection_id??'communes';(b[k]=b[k]||{nom:r.collection_nom,com:r.collection_id==null,r:[]}).r.push(r)});
+  const contenu=id=>{const b=CB[id];if(!b)return'';const L=Object.values(b).sort((x,y)=>(x.com-y.com)||x.nom.localeCompare(y.nom,'fr'));
+    const tot=L.reduce((s,c)=>s+c.r.reduce((a,r)=>a+(+r.nb),0),0);
+    return`<div class="bcol">${L.map(c=>`<span>${esc(c.nom)}</span>`).join('')}</div>
+     <details class="bdet"><summary>Détails du contenu (${tot} carte${tot>1?'s':''} possibles)</summary>${L.map(c=>`<div class="bc">${esc(c.nom)}</div><div class="br">${c.r.sort((x,y)=>(+x.rarete_poids)-(+y.rarete_poids)).map(r=>`<span style="--g:${esc(r.rarete_couleur||'#aaa')}">${r.nb} ${esc(r.rarete_nom)}</span>`).join('')}</div>`).join('')}</details>`};
   main.innerHTML=`<h3>Tes boosters non ouverts</h3><p>${s.length?s.map(x=>`${esc(x.types_boosters.nom)} ×${x.quantite}`).join(' · ')+'<br><small>Ouvre-les pendant le live avec !booster</small>':'Aucun'}</p>
-  <h3>Acheter</h3><div class="grid">${t.map(b=>`<div class="card">${b.image_path?`<img src="${img(b.image_path)}">`:''}<b>${esc(b.nom)}</b><small>${b.nb_cartes} cartes</small>${(ved[b.id]||[]).map(v=>`<div style="margin:6px 0;text-align:center"><small>⭐ À l'affiche</small><br>${v.image_path?`<img src="${img(v.image_path)}" style="width:90px;border-radius:6px;box-shadow:0 0 12px ${esc(v.couleur||'#fff')}">`:''}<br><small>${esc(v.nom)}</small></div>`).join('')}<button data-id="${b.id}">Acheter · 💰 ${b.prix}</button></div>`).join('')}</div>`;
+  <h3>Acheter</h3><div class="grid">${t.map(b=>`<div class="card">${b.image_path?`<img src="${img(b.image_path)}">`:''}<b>${esc(b.nom)}</b><small>${b.nb_cartes} cartes</small>${contenu(b.id)}${(ved[b.id]||[]).map(v=>`<div style="margin:6px 0;text-align:center"><small>⭐ À l'affiche</small><br>${v.image_path?`<img src="${img(v.image_path)}" style="width:90px;border-radius:6px;box-shadow:0 0 12px ${esc(v.couleur||'#fff')}">`:''}<br><small>${esc(v.nom)}</small></div>`).join('')}<button data-id="${b.id}">Acheter · 💰 ${b.prix}</button></div>`).join('')}</div>`;
   main.querySelectorAll('button[data-id]').forEach(b=>b.onclick=async()=>{
     const {error}=await sb.rpc('acheter_booster',{p_type_id:+b.dataset.id});
     if(error)alert(error.message.includes('MONNAIE')?'Pas assez de monnaie.':error.message);
