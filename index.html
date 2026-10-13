@@ -702,13 +702,15 @@ async function vPropos(){
      <label>Nom de la carte<input name="nom" maxlength="60" required placeholder="Ex. : Le Wendigo des neiges"></label>
      <div class="row" style="gap:10px"><label style="flex:1">Type<select name="type">${Object.entries(TYP).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select></label>
       <label style="flex:1">Rareté<select name="rar">${R.rar.map(x=>`<option value="${x.id}">${esc(x.nom)}</option>`).join('')}</select></label></div>
+     <div class="row" id="pstats" style="gap:10px"><label style="flex:1">ATQ (facultatif)<input name="atq" type="number" min="0" max="999" placeholder="Laisse vide si tu veux"></label>
+      <label style="flex:1">PV (facultatif)<input name="pv" type="number" min="1" max="9999" placeholder="Laisse vide si tu veux"></label></div>
      <label>Collection<select name="col">${R.col.map(x=>`<option value="${x.id}">${esc(x.nom)}</option>`).join('')}<option value="autre">✏️ Autre : je propose une idée de collection</option></select></label>
      <label id="pcolid" style="display:none">Ton idée de collection<input name="colidee" maxlength="80" placeholder="Ex. : Légendes du folklore"></label>
      <label>Ton idée (facultatif)<textarea name="idee" maxlength="600" placeholder="Ambiance, histoire, capacités que tu imagines…"></textarea></label>
      <div class="row"><button id="pbtn" ${att>=3?'disabled':''}>${att>=3?'3 propositions déjà en attente':'Envoyer ma proposition'}</button></div>
     </form></div>
    <h3>Mes propositions</h3>${L.length?`<div class="ppl">${L.map(x=>`<div class="ppc"><img src="${esc(pImg(x.image_carte||x.image_path))}" alt="" data-zoom="${esc(pImg(x.image_carte||x.image_path))}"><b>${esc(x.nom)}</b><span class="st ${x.statut}">${STP[x.statut]}</span>
-     <small>${TYP[x.type]||''} · ${esc(rarN(x.rarete_id))} · ${x.collection_id?esc(colN(x)):`<span class="idc">Idée : ${esc(x.collection_idee||'')}</span>`}</small>
+     <small>${TYP[x.type]||''} · ${esc(rarN(x.rarete_id))} · ${x.collection_id?esc(colN(x)):`<span class="idc">Idée : ${esc(x.collection_idee||'')}</span>`}</small>${x.atq!=null||x.pv!=null?`<small>ATQ ${x.atq??'—'} · PV ${x.pv??'—'}</small>`:''}
      ${x.note_admin?`<small>💬 ${esc(x.note_admin)}</small>`:''}${x.statut=='attente'?`<button class="sec" data-pdel="${x.id}" data-path="${esc(x.image_path)}" data-path2="${esc(x.image_carte||'')}">Retirer</button>`:''}</div>`).join('')}</div>`:'<p><small>Tu n\'as encore rien proposé.</small></p>'}`;
   const f=$('#pform'),cv=$('#pcv'),zm=$('#pzoom');
   // Éditeur : le dessin se place sous le cadre de la rareté choisie ; on le déplace et on zoome pour l'ajuster
@@ -719,10 +721,23 @@ async function vPropos(){
   const cadresAEssayer=()=>{const t=f.type.value,i=RG.indexOf(tierP(f.rar.value)),L=RG.slice(i).map(r=>`cadres/${t}-${r}.png`);if(t!=='combattant')L.push(`cadres/combattant-${RG[i]}.png`);return L};
   let jeton=0;
   const chargeCadre=()=>{const L=cadresAEssayer(),moi=++jeton;let k=0;const im=new Image();im.onload=()=>{if(moi!==jeton)return;ED.cadre=im;dessine()};im.onerror=()=>{if(moi!==jeton)return;if(++k<L.length)im.src=L[k];else{ED.cadre=null;dessine()}};im.src=L[0];
-    const r=R.rar.find(x=>x.id==f.rar.value);cv.style.setProperty('--g',(r&&r.couleur)||'#7c3aed')};
-  function rendre(c,W,H){const x=c.getContext('2d');x.clearRect(0,0,W,H);x.fillStyle='#14141c';x.fillRect(0,0,W,H);
+    const r=R.rar.find(x=>x.id==f.rar.value);cv.style.setProperty('--g',(r&&r.couleur)||'#7c3aed');
+    ED.ecr=null;$('#pstats').style.display=f.type.value==='combattant'?'':'none';
+    if(f.type.value==='combattant'&&ECR[tierP(f.rar.value)]){const e=new Image();e.onload=()=>{if(moi!==jeton)return;ED.ecr=e;dessine()};e.src=`cadres/ecriteau-${tierP(f.rar.value)}.png`}};
+  // Écriteaux (combattants) : position du bandeau sur la carte de 2070 px de haut, et couleur du texte lisible dessus
+  const ECR={ggez:{y0:1294,y1:1789,tx:'#2b1d45',ct:'rgba(255,255,255,.85)'},legendaire:{y0:1350,y1:1847,tx:'#2a1805',ct:'rgba(255,245,210,.85)'},epique:{y0:1200,y1:1708,tx:'#ffffff',ct:'rgba(40,10,60,.85)'},rare:{y0:1094,y1:1650,tx:'#ffffff',ct:'rgba(15,30,60,.85)'}};
+  function texte(x,t,cx,cy,maxW,taille,col,contour,font){let s=taille;x.font=`900 ${s}px ${font}`;while(x.measureText(t).width>maxW&&s>20){s-=4;x.font=`900 ${s}px ${font}`}
+    x.textAlign='center';x.textBaseline='middle';x.lineJoin='round';x.lineWidth=s*.16;x.strokeStyle=contour;x.strokeText(t,cx,cy);x.fillStyle=col;x.fillText(t,cx,cy)}
+  function rendre(c,W,H){const x=c.getContext('2d'),k=H/2070,comb=f.type.value==='combattant',tr=tierP(f.rar.value),E=comb?ECR[tr]:null;x.clearRect(0,0,W,H);x.fillStyle='#14141c';x.fillRect(0,0,W,H);
     if(ED.art){const a=ED.art,s=Math.max(W/a.naturalWidth,H/a.naturalHeight)*ED.z,w=a.naturalWidth*s,h=a.naturalHeight*s;x.drawImage(a,(W-w)/2+ED.x*W,(H-h)/2+ED.y*H,w,h)}
-    if(ED.cadre)x.drawImage(ED.cadre,0,0,W,H)}
+    if(E&&ED.ecr)x.drawImage(ED.ecr,0,0,W,H);
+    if(ED.cadre)x.drawImage(ED.cadre,0,0,W,H);
+    const nom=f.nom.value.trim(),FT='Georgia,"Times New Roman",serif';
+    if(comb&&nom){if(E)texte(x,nom,W/2,(E.y0+E.y1)/2*k,W*.8,120*k,E.tx,E.ct,FT);
+      else{const y=1560*k,g=x.createLinearGradient(0,y-110*k,0,y+110*k);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(.5,'rgba(0,0,0,.55)');g.addColorStop(1,'rgba(0,0,0,0)');x.fillStyle=g;x.fillRect(0,y-110*k,W,220*k);texte(x,nom,W/2,y,W*.8,110*k,'#fff','rgba(0,0,0,.85)',FT)}}   // commun : pas d'écriteau, le nom sur une bande sombre légère
+    if(comb){const a=f.atq.value.trim(),p=f.pv.value.trim(),SF='Impact,"Arial Black",sans-serif';
+      if(a!=='')texte(x,a,W*.13,H*.925,W*.2,150*k,'#ff3b3b','rgba(0,0,0,.9)',SF);
+      if(p!=='')texte(x,p,W*.87,H*.925,W*.2,150*k,'#3ba4ff','rgba(0,0,0,.9)',SF)}}
   function dessine(){rendre(cv,cv.width,cv.height)}
   chargeCadre();
   f.file.onchange=()=>{const fi=f.file.files[0];if(!fi)return;if(fi.size>8*1024*1024){alert('Image trop lourde (8 Mo maximum).');f.file.value='';return}
@@ -733,7 +748,7 @@ async function vPropos(){
    cv.onpointermove=e=>{if(!d)return;const r=cv.getBoundingClientRect();ED.x=d.ox+(e.clientX-d.x)/r.width;ED.y=d.oy+(e.clientY-d.y)/r.height;dessine()};
    cv.onpointerup=cv.onpointercancel=()=>{d=null};
    cv.onwheel=e=>{if(!ED.art)return;e.preventDefault();zm.value=Math.max(100,Math.min(400,+zm.value-Math.sign(e.deltaY)*10));zm.oninput()}}
-  f.rar.onchange=chargeCadre;f.type.onchange=chargeCadre;f.col.onchange=()=>{$('#pcolid').style.display=f.col.value=='autre'?'':'none'};if(!R.col.length){f.col.value='autre';f.col.onchange()}
+  f.rar.onchange=chargeCadre;f.type.onchange=chargeCadre;f.nom.oninput=f.atq.oninput=f.pv.oninput=dessine;f.col.onchange=()=>{$('#pcolid').style.display=f.col.value=='autre'?'':'none'};if(!R.col.length){f.col.value='autre';f.col.onchange()}
   f.onsubmit=async e=>{e.preventDefault();const fi=f.file.files[0];if(!fi)return;const autre=f.col.value=='autre';
     if(autre&&!f.colidee.value.trim()){alert('Écris ton idée de collection.');return}
     const btn=$('#pbtn');btn.disabled=true;btn.textContent='Envoi…';
@@ -743,6 +758,7 @@ async function vPropos(){
     let pc=null;try{const big=document.createElement('canvas');big.width=1488;big.height=2070;rendre(big,1488,2070);
       const bl=await new Promise(ok=>big.toBlob(ok,'image/png'));if(bl){pc=user.id+'/'+crypto.randomUUID()+'-carte.png';const u2=await sb.storage.from('propositions').upload(pc,bl,{contentType:'image/png'});if(u2.error)pc=null}}catch(x){pc=null}
     const args={p_image:path,p_nom:f.nom.value,p_type:f.type.value,p_rarete:+f.rar.value||null,p_collection:autre?null:+f.col.value,p_collection_idee:autre?f.colidee.value:null,p_idee:f.idee.value};if(pc)args.p_image_carte=pc;
+    if(f.type.value==='combattant'){if(f.atq.value!=='')args.p_atq=+f.atq.value;if(f.pv.value!=='')args.p_pv=+f.pv.value}
     const r=await sb.rpc('proposer_carte',args);
     if(r.error){await sb.storage.from('propositions').remove([path,...(pc?[pc]:[])]);alert(r.error.message);btn.disabled=false;btn.textContent='Envoyer ma proposition';return}
     vPropos()};
@@ -762,6 +778,7 @@ async function aPropos(){
     <img src="${esc(uc||u)}" alt="" data-zoom="${esc(uc||u)}">${uc?`<small><a href="${esc(u)}" target="_blank" style="color:#c4b5fd">Voir le dessin seul</a></small>`:''}<b>${esc(x.nom)}</b><span class="st ${x.statut}">${STP[x.statut]}</span>
     <small>Par <b style="color:#fff">${esc(x.pseudo||'?')}</b> · ${new Date(x.cree_le).toLocaleDateString('fr-FR')}</small>
     <small>${TYP[x.type]||''} · <span style="color:${esc(rr.couleur||'#ccc')}">${esc(rr.nom||'?')}</span> · ${x.collection_id?esc(colN(x.collection_id)):`<span class="idc">Nouvelle collection : ${esc(x.collection_idee||'')}</span>`}</small>
+    ${x.atq!=null||x.pv!=null?`<small>Stats proposées : <b style="color:#ff6b6b">ATQ ${x.atq??'—'}</b> · <b style="color:#60a5fa">PV ${x.pv??'—'}</b></small>`:'<small>Pas de stats proposées</small>'}
     ${x.idee?`<div style="font-size:13px;white-space:pre-wrap">${esc(x.idee)}</div>`:''}
     <input placeholder="Note pour le joueur (facultatif)" value="${esc(x.note_admin||'')}" data-note="${x.id}">
     <div class="row">${x.statut!='acceptee'?`<button data-aps="acceptee" data-id="${x.id}">✅ Accepter</button>`:''}${x.statut!='refusee'?`<button class="sec" data-aps="refusee" data-id="${x.id}">❌ Refuser</button>`:''}${x.statut!='attente'?`<button class="sec" data-aps="attente" data-id="${x.id}">⏳ En attente</button>`:''}
