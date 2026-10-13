@@ -153,6 +153,16 @@ test('« évite la mort » passe avant la réanimation, et les dégâts s\'affic
 });
 
 // ================= Statuts =================
+test('« évite la mort » de la magie puis du piège : chaque protection sauve une fois', () => {
+  const ange = MAG('Ange', { type: 'mort_evitee', cond: 'aucune' });
+  const chance = PIE('Deuxième chance', { type: 'proprio_meurt' }, { type: 'mort_evitee' });
+  const r = combat([C('Fort', 100, SOLIDE)], [C('Faible', 1, 50), ange, chance]);
+  const sauve = lignes(r, e => e.t === 'protege' && /évite la mort/.test(e.txt));
+  assert.equal(sauve.length, 2, 'la magie puis le piège doivent chacun éviter la mort');
+  assert.match(sauve[1].txt, /piège/);
+  assert.equal(r.gagnant, 0);   // la 3e attaque mortelle l'achève
+});
+
 test('malédiction : l\'ATQ baisse à chaque tour puis revient petit à petit', () => {
   const r = combat([C('Sorcière', 1, SOLIDE), MAG('Malé', { type: 'malediction', ciblem: 'adversaire', val: 3, tours: 3 })], [C('Cible', 20, SOLIDE)], { seed: 2, regles: { maxTours: 7, maxProlong: 0 } });
   const atqCible = lignes(r, e => e.c === 1 && e.t === 'stat').map(e => e.atq[1]);

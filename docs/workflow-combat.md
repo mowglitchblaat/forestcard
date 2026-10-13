@@ -66,8 +66,8 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-  K0(["Dégâts ≥ PV restants"]) --> K1{"Magie « évite la mort »<br/>active et condition remplie ?"}
-  K1 -- oui --> KE["Les dégâts s'affichent, la carte reste à 1 PV,<br/>crâne barré, statuts négatifs retirés (pas l'étourdissement)"]
+  K0(["Dégâts ≥ PV restants"]) --> K1{"Magie « évite la mort »<br/>active, condition remplie,<br/>pas encore utilisée ?"}
+  K1 -- oui --> KE["Les dégâts s'affichent, la carte reste à 1 PV,<br/>crâne barré, statuts négatifs retirés (pas l'étourdissement)<br/>Chaque protection sauve UNE fois, chacune de son côté :<br/>magie, passif, puis piège ou ultime"]
   K1 -- non --> K2{"Passif « évite la mort »<br/>(une fois) ?"}
   K2 -- oui --> KE
   K2 -- non --> K3{"Piège « évite la mort »<br/>(le propriétaire meurt) ?"}
