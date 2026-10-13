@@ -174,7 +174,15 @@ let deck=null,typeOf={},flt='tout',fcol='tout',collData=[],savedDecks=[],decksOK
 async function loadDecks(){const r=await sb.rpc('mes_decks');if(r.error){decksOK=false;savedDecks=[];return}decksOK=true;savedDecks=r.data||[]}
 const cn=x=>x.variantes_carte.cartes.collections?.nom||'Communes';
 const TYPES={combattant:'Combattants',magie:'Magies',piege:'Pièges'};
+let apercu=false;   // admin : voir toutes les cartes du jeu (rien n'est donné)
+async function chargerApercu(){
+  const sel=c=>sb.from('variantes_carte').select('id,nom,image_path,cartes(id,nom,type,'+c+'collections(nom),raretes(nom,couleur,poids))');
+  let r=await sel('atq,pv,description,passif,ultime,effet,');if(r.error)r=await sel('');
+  if(r.error){alert(r.error.message);throw r.error}
+  return r.data.filter(v=>v.cartes&&v.cartes.raretes).map(v=>({quantite:0,apercu:true,variantes_carte:v}));
+}
 async function loadColl(){
+  if(apercu&&isAdmin){collData=await chargerApercu();collData.sort(cmpColl);typeOf={};collData.forEach(x=>{const c=x.variantes_carte.cartes;typeOf[c.id]=c.type});if(!deck){const dk=await q(sb.from('deck').select('carte_id').eq('joueur_id',user.id));deck=new Set(dk.map(x=>x.carte_id))}return}
   let r=await sb.from('collection_joueur').select('quantite,variantes_carte(id,nom,image_path,cartes(id,nom,type,atq,pv,description,passif,ultime,effet,collections(nom),raretes(nom,couleur,poids)))').eq('joueur_id',user.id);
   if(r.error)r=await sb.from('collection_joueur').select('quantite,variantes_carte(id,nom,image_path,cartes(id,nom,type,collections(nom),raretes(nom,couleur,poids)))').eq('joueur_id',user.id);
   if(r.error){alert(r.error.message);throw r.error}
@@ -350,12 +358,12 @@ const TYPE_L={combattant:['⚔️','Combattant'],magie:['✨','Magie'],piege:['�
 function cardHTML(x,i){
   const v=x.variantes_carte,c=v.cartes,on=deck.has(c.id),col=c.raretes.couleur||'#888',L=lignesCarte(c);
     return `<div class="ct${on?' in':''}" data-t="${TIER(c.raretes)}" data-i="${i}" style="--g:${esc(col)};--tx:${txOn(col)};--i:${i}">
-   <div class="ci" data-open>${v.image_path?`<img loading="lazy" src="${img(v.image_path)}" alt="${esc(c.nom)}">`:`<div style="aspect-ratio:5/7;display:flex;align-items:center;justify-content:center;padding:10px;text-align:center;font-weight:700">${esc(c.nom)}</div>`}<span class="cq">×${x.quantite}</span>${on?'<span class="cd">✓ Deck</span>':''}</div>
+   <div class="ci" data-open>${v.image_path?`<img loading="lazy" src="${img(v.image_path)}" alt="${esc(c.nom)}">`:`<div style="aspect-ratio:5/7;display:flex;align-items:center;justify-content:center;padding:10px;text-align:center;font-weight:700">${esc(c.nom)}</div>`}<span class="cq">${x.apercu?'Aperçu':'×'+x.quantite}</span>${on?'<span class="cd">✓ Deck</span>':''}</div>
    <div class="cb">
     <div class="ch"><b class="cn">${esc(c.nom)}</b><span class="rp">${esc(c.raretes.nom)}</span></div>
     <div class="cm">${(TYPE_L[c.type]||['',''])[0]} ${esc((TYPE_L[c.type]||['',c.type])[1])} · ${esc(cn(x))}${v.nom?` · ${esc(v.nom)}`:''}</div>
     ${c.type==='combattant'&&(c.atq!=null||c.pv!=null)?`<div class="cs"><span class="chip">⚔ ${esc(c.atq??'?')}</span><span class="chip">❤ ${esc(c.pv??'?')}</span></div>`:''}
-    <div class="ca"><button class="sec" data-open>Détails</button><button class="${on?'sec':''}" data-c="${c.id}">${on?'✓ Retirer':'Ajouter au deck'}</button></div>
+    <div class="ca"><button class="sec" data-open>Détails</button>${x.apercu?'':`<button class="${on?'sec':''}" data-c="${c.id}">${on?'✓ Retirer':'Ajouter au deck'}</button>`}</div>
     ${curView===drawColl&&surplus(x)>0&&v.id?`<div class="ca" style="padding-top:0"><button class="sec rec" data-rec="${v.id}" title="Il t'en reste toujours 1">♻ Recycler ${surplus(x)} doublon${surplus(x)>1?'s':''} · ${gainTxt(gainDe(x))}</button></div>`:''}
    </div></div>`;
 }
@@ -381,11 +389,11 @@ function mdDraw(){
    <div class="cmi"><div class="fp"><div class="fi"><div class="tilt face">${v.image_path?`<img src="${img(v.image_path)}" alt="${esc(c.nom)}">`:`<div style="aspect-ratio:5/7;display:flex;align-items:center;justify-content:center;font-weight:700;padding:14px;text-align:center">${esc(c.nom)}</div>`}<div class="ho"></div><div class="gl"></div></div><div class="bk" id="mbk">🌲<div class="gl"></div></div></div></div>
     <div class="flb"><button class="sec" id="mflip">🔄 Retourner la carte</button><small id="mdosn"></small></div></div>
    <div class="cmd"><h2>${esc(c.nom)}</h2>
-    <div class="pills"><span class="pl r">${esc(c.raretes.nom)}</span><span class="pl">${tl[0]} ${esc(tl[1])}</span><span class="pl">${esc(cn(x))}</span>${v.nom?`<span class="pl">${esc(v.nom)}</span>`:''}<span class="pl">Possédée ×${x.quantite}</span></div>
+    <div class="pills"><span class="pl r">${esc(c.raretes.nom)}</span><span class="pl">${tl[0]} ${esc(tl[1])}</span><span class="pl">${esc(cn(x))}</span>${v.nom?`<span class="pl">${esc(v.nom)}</span>`:''}<span class="pl">${x.apercu?'Aperçu · non possédée':'Possédée ×'+x.quantite}</span></div>
     ${c.type==='combattant'&&(c.atq!=null||c.pv!=null)?`<div class="sb"><div class="sbr"><span>⚔ ATQ</span><div class="sbar"><i style="width:${Math.min(100,Math.round(nz(c.atq)/mxA*100))}%"></i></div><b>${esc(c.atq??'?')}</b></div><div class="sbr"><span>❤ PV</span><div class="sbar"><i style="width:${Math.min(100,Math.round(nz(c.pv)/mxP*100))}%"></i></div><b>${esc(c.pv??'?')}</b></div></div>`:''}
     ${L.map(s=>`<div class="sec2"><h4>${s.ico} ${esc(s.t)}</h4>${s.meta?`<div class="trg">${esc(s.meta)}</div>`:''}<ul>${s.items.map(t=>`<li>${cz(esc(t))}</li>`).join('')}</ul></div>`).join('')||'<div class="sec2"><small>Cette carte n\'a pas d\'effet particulier.</small></div>'}
     ${c.description?`<div class="dsc">${esc(c.description)}</div>`:''}
-    <div class="cmf"><button class="sec" data-nav="-1" ${mdList.length<2?'disabled':''}>‹ Précédente</button><button class="sec" data-nav="1" ${mdList.length<2?'disabled':''}>Suivante ›</button><span class="sp"></span>${surplus(x)>0&&v.id?`<button class="sec" data-mrec>♻ Recycler ×${surplus(x)} · ${gainTxt(gainDe(x))}</button>`:''}<button class="${on?'sec':''}" data-mdeck>${on?'✓ Retirer du deck':'Ajouter au deck'}</button></div>
+    <div class="cmf"><button class="sec" data-nav="-1" ${mdList.length<2?'disabled':''}>‹ Précédente</button><button class="sec" data-nav="1" ${mdList.length<2?'disabled':''}>Suivante ›</button><span class="sp"></span>${surplus(x)>0&&v.id?`<button class="sec" data-mrec>♻ Recycler ×${surplus(x)} · ${gainTxt(gainDe(x))}</button>`:''}<button class="${on?'sec':''}" data-mdeck ${x.apercu?'disabled':''}>${x.apercu?'Aperçu (non possédée)':on?'✓ Retirer du deck':'Ajouter au deck'}</button></div>
    </div>`;
   box.querySelector('.cx').onclick=mdClose;
   box.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>mdNav(+b.dataset.nav));
@@ -416,8 +424,8 @@ function bindToggle(redraw){
     redraw();});
 }
 async function vCollection(){
-  await loadColl();await loadDecks();
-  if(!collData.length){main.innerHTML='<p>Tu n\'as encore aucune carte. Achète un booster dans la boutique, puis ouvre-le en live avec !booster.</p>';return}
+  apercu=false;await loadColl();await loadDecks();
+  if(!collData.length&&!isAdmin){main.innerHTML='<p>Tu n\'as encore aucune carte. Achète un booster dans la boutique, puis ouvre-le en live avec !booster.</p>';return}
   await chargerPrix();
   main.innerHTML='<div id="dbar" class="dbar"></div><div class="row" id="rbar"></div><div class="row" id="flt"></div><div class="row" id="fcol"></div><div class="cgrid" id="gr"></div>';
   drawColl();
@@ -431,7 +439,9 @@ function drawColl(){
   $('#fcol').querySelectorAll('button').forEach(b=>b.onclick=()=>{fcol=b.dataset.k;drawColl()});
   const L=collData.filter(x=>(flt=='tout'||x.variantes_carte.cartes.type==flt)&&(fcol=='tout'||cn(x)==fcol));
   $('#gr').innerHTML=L.map(cardHTML).join('');
-  const T=gainTotal();$('#rbar').innerHTML=T.n?`<button id="recall" class="sec">♻ Recycler tous mes doublons (${T.n}) · ${gainTxt(T)}</button><small style="color:#9a9aa8">Tu gardes toujours 1 exemplaire de chaque carte.</small>`:'<small style="color:#9a9aa8">♻ Aucun doublon à recycler pour le moment.</small>';
+  const AP=isAdmin?`<button id="apv" class="${apercu?'on':'sec'}" title="Réservé à l'admin : montre toutes les cartes du jeu pour voir à quoi ressemble la collection. Rien n'est donné.">👁 ${apercu?'Aperçu actif : toutes les cartes du jeu':'Aperçu : voir toutes les cartes du jeu'}</button>`:'';
+  const T=gainTotal();$('#rbar').innerHTML=AP+(T.n?`<button id="recall" class="sec">♻ Recycler tous mes doublons (${T.n}) · ${gainTxt(T)}</button><small style="color:#9a9aa8">Tu gardes toujours 1 exemplaire de chaque carte.</small>`:'<small style="color:#9a9aa8">♻ Aucun doublon à recycler pour le moment.</small>');
+  const apb=$('#apv');if(apb)apb.onclick=async()=>{apercu=!apercu;await loadColl();drawColl()};
   bindToggle(drawColl);bindOpen(L,drawColl);bindRecycle();updBar();
 }
 
@@ -450,7 +460,7 @@ async function vBoutique(){
 
 /* ---------- Deck ---------- */
 async function vDeck(){
-  await loadColl();await loadDecks();await chargerPrix();
+  apercu=false;await loadColl();await loadDecks();await chargerPrix();
   main.innerHTML='<div id="dbar" class="dbar"></div><div class="cgrid" id="gr"></div>';
   drawDeck();
 }
