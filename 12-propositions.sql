@@ -20,6 +20,8 @@ create table if not exists public.propositions (
   cree_le          timestamptz not null default now()
 );
 create index if not exists propositions_cree_le_idx on public.propositions (cree_le desc);
+-- Carte assemblée (dessin + cadre de la rareté), en plus du dessin seul
+alter table public.propositions add column if not exists image_carte text;
 
 alter table public.propositions enable row level security;
 -- Lecture : chacun voit ses propositions, l'admin voit tout
@@ -37,24 +39,26 @@ create policy "propositions suppression" on public.propositions for delete to au
 grant select, update, delete on public.propositions to authenticated;
 
 -- Envoi d'une proposition (passe par cette fonction pour appliquer la limite de 3 en attente)
+drop function if exists public.proposer_carte(text, text, text, bigint, bigint, text, text);
 create or replace function public.proposer_carte(p_image text, p_nom text, p_type text, p_rarete bigint,
-  p_collection bigint, p_collection_idee text, p_idee text)
+  p_collection bigint, p_collection_idee text, p_idee text, p_image_carte text default null)
 returns bigint language plpgsql security definer set search_path = public as $$
 declare n int; ps text; nid bigint;
 begin
   if auth.uid() is null then raise exception 'Connecte-toi pour proposer une carte'; end if;
   if p_image is null or p_image not like auth.uid()::text || '/%' then raise exception 'Image invalide'; end if;
+  if p_image_carte is not null and p_image_carte not like auth.uid()::text || '/%' then raise exception 'Image invalide'; end if;
   select count(*) into n from public.propositions where joueur_id = auth.uid() and statut = 'attente';
   if n >= 3 then raise exception 'Tu as déjà 3 propositions en attente : attends que l''admin les regarde'; end if;
   if p_collection is null and coalesce(trim(p_collection_idee), '') = '' then raise exception 'Choisis une collection ou écris ton idée de collection'; end if;
   select j.pseudo into ps from public.joueurs j where j.id = auth.uid();
-  insert into public.propositions (joueur_id, pseudo, image_path, nom, type, rarete_id, collection_id, collection_idee, idee)
-  values (auth.uid(), ps, p_image, trim(p_nom), p_type, p_rarete, p_collection,
+  insert into public.propositions (joueur_id, pseudo, image_path, image_carte, nom, type, rarete_id, collection_id, collection_idee, idee)
+  values (auth.uid(), ps, p_image, p_image_carte, trim(p_nom), p_type, p_rarete, p_collection,
           case when p_collection is null then nullif(trim(p_collection_idee), '') end, nullif(trim(p_idee), ''))
   returning id into nid;
   return nid;
 end $$;
-grant execute on function public.proposer_carte(text, text, text, bigint, bigint, text, text) to authenticated;
+grant execute on function public.proposer_carte(text, text, text, bigint, bigint, text, text, text) to authenticated;
 
 -- Stockage des images : dossier propre à chaque joueur (propositions/<id du joueur>/fichier)
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)

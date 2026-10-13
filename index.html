@@ -49,6 +49,7 @@ form.f select{max-width:100%;min-width:0}form.f>*{min-width:0}
 .avt{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}.avt td{padding:3px 6px;border-top:1px solid #2c2c38}.avt td.n{text-align:center;width:78px;white-space:nowrap}.avt td.top{font-weight:800;border-radius:4px}.avt td.top.nerf{background:#7f1d1d}.avt td.top.up{background:#14532d}.avt td.top.rework{background:#78350f}
 .pf{display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start}.pf .apv{width:200px;aspect-ratio:5/7;border-radius:10px;background:#262633 center/cover;border:2px dashed #444;display:flex;align-items:center;justify-content:center;color:#888;font-size:13px;text-align:center;padding:10px;box-sizing:border-box}
 .pf .apv.ok{border:2px solid var(--g,#7c3aed);box-shadow:0 0 14px var(--g,#7c3aed);color:transparent}.pf form{flex:1;min-width:260px;display:flex;flex-direction:column;gap:10px}.pf label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:#ccc}.pf textarea{min-height:80px}
+.ced{width:240px;display:flex;flex-direction:column;gap:6px;align-items:center}.ced canvas{width:240px;aspect-ratio:1488/2070;border-radius:10px;background:#262633;touch-action:none;cursor:grab;box-shadow:0 0 14px var(--g,#000)}.ced canvas:active{cursor:grabbing}.ced input[type=range]{width:100%}.ced small{color:#aaa;text-align:center}
 .ppl{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}.ppc{background:#1d1d27;border:1px solid #2c2c38;border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px}
 .ppc img{width:100%;aspect-ratio:5/7;object-fit:cover;border-radius:8px;cursor:zoom-in}.ppc .st{font-size:12px;padding:2px 8px;border-radius:10px;align-self:flex-start}.st.attente{background:#3f3f46}.st.acceptee{background:#14532d}.st.refusee{background:#7f1d1d}
 .ppc .idc{color:#fbbf24}.ppc small{color:#aaa}.ppc .row{gap:6px;flex-wrap:wrap}
@@ -692,7 +693,10 @@ async function vPropos(){
   const L=mine.data||[],att=L.filter(x=>x.statut=='attente').length;
   const rarN=id=>(R.rar.find(x=>x.id==id)||{}).nom||'?',colN=x=>x.collection_id?((R.col.find(c=>c.id==x.collection_id)||{}).nom||'?'):null;
   main.innerHTML=`<h3>Propose ta carte</h3><p><small>Envoie ton splash art et ton idée de carte : choisis son type, sa rareté et sa collection. L'admin regarde chaque proposition ; les meilleures pourront entrer dans le jeu ! (3 propositions en attente maximum, image de 8 Mo maximum.)</small></p>
-   <div class="pn pf"><div class="apv" id="apv">Aperçu de ton dessin</div>
+   <div class="pn pf"><div class="ced"><canvas id="pcv" width="744" height="1035"></canvas>
+     <label style="width:100%">Zoom<input type="range" id="pzoom" min="100" max="400" value="100"></label>
+     <small id="paide">Ajoute ton dessin : tu pourras le déplacer à la souris (ou au doigt) et zoomer pour le placer dans le cadre.</small>
+     <button type="button" class="sec" id="pcentre" style="display:none">Recentrer</button></div>
     <form id="pform">
      <label>Ton splash art (PNG, JPG, WEBP)<input type="file" name="file" accept="image/png,image/jpeg,image/webp,image/gif" required></label>
      <label>Nom de la carte<input name="nom" maxlength="60" required placeholder="Ex. : Le Wendigo des neiges"></label>
@@ -703,22 +707,46 @@ async function vPropos(){
      <label>Ton idée (facultatif)<textarea name="idee" maxlength="600" placeholder="Ambiance, histoire, capacités que tu imagines…"></textarea></label>
      <div class="row"><button id="pbtn" ${att>=3?'disabled':''}>${att>=3?'3 propositions déjà en attente':'Envoyer ma proposition'}</button></div>
     </form></div>
-   <h3>Mes propositions</h3>${L.length?`<div class="ppl">${L.map(x=>`<div class="ppc"><img src="${esc(pImg(x.image_path))}" alt="" data-zoom="${esc(pImg(x.image_path))}"><b>${esc(x.nom)}</b><span class="st ${x.statut}">${STP[x.statut]}</span>
+   <h3>Mes propositions</h3>${L.length?`<div class="ppl">${L.map(x=>`<div class="ppc"><img src="${esc(pImg(x.image_carte||x.image_path))}" alt="" data-zoom="${esc(pImg(x.image_carte||x.image_path))}"><b>${esc(x.nom)}</b><span class="st ${x.statut}">${STP[x.statut]}</span>
      <small>${TYP[x.type]||''} · ${esc(rarN(x.rarete_id))} · ${x.collection_id?esc(colN(x)):`<span class="idc">Idée : ${esc(x.collection_idee||'')}</span>`}</small>
-     ${x.note_admin?`<small>💬 ${esc(x.note_admin)}</small>`:''}${x.statut=='attente'?`<button class="sec" data-pdel="${x.id}" data-path="${esc(x.image_path)}">Retirer</button>`:''}</div>`).join('')}</div>`:'<p><small>Tu n\'as encore rien proposé.</small></p>'}`;
-  const f=$('#pform'),apv=$('#apv'),majG=()=>{const r=R.rar.find(x=>x.id==f.rar.value);apv.style.setProperty('--g',(r&&r.couleur)||'#7c3aed')};
-  f.file.onchange=()=>{const fi=f.file.files[0];if(!fi)return;if(fi.size>8*1024*1024){alert('Image trop lourde (8 Mo maximum).');f.file.value='';return}apv.style.backgroundImage=`url('${URL.createObjectURL(fi)}')`;apv.classList.add('ok');majG()};
-  f.rar.onchange=majG;f.col.onchange=()=>{$('#pcolid').style.display=f.col.value=='autre'?'':'none'};if(!R.col.length){f.col.value='autre';f.col.onchange()}
+     ${x.note_admin?`<small>💬 ${esc(x.note_admin)}</small>`:''}${x.statut=='attente'?`<button class="sec" data-pdel="${x.id}" data-path="${esc(x.image_path)}" data-path2="${esc(x.image_carte||'')}">Retirer</button>`:''}</div>`).join('')}</div>`:'<p><small>Tu n\'as encore rien proposé.</small></p>'}`;
+  const f=$('#pform'),cv=$('#pcv'),zm=$('#pzoom');
+  // Éditeur : le dessin se place sous le cadre de la rareté choisie ; on le déplace et on zoome pour l'ajuster
+  const ED={art:null,z:1,x:0,y:0,cadre:null};
+  const tierP=id=>{const r=R.rar.find(x=>x.id==id);const n=String((r&&r.nom)||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();return['ggez','legendaire','epique','rare','commun'].find(k=>n.includes(k))||'commun'};
+  // Cadre à utiliser : celui du type et de la rareté ; s'il n'existe pas encore, la rareté juste en dessous du même type, puis le cadre combattant
+  const RG=['ggez','legendaire','epique','rare','commun'];
+  const cadresAEssayer=()=>{const t=f.type.value,i=RG.indexOf(tierP(f.rar.value)),L=RG.slice(i).map(r=>`cadres/${t}-${r}.png`);if(t!=='combattant')L.push(`cadres/combattant-${RG[i]}.png`);return L};
+  let jeton=0;
+  const chargeCadre=()=>{const L=cadresAEssayer(),moi=++jeton;let k=0;const im=new Image();im.onload=()=>{if(moi!==jeton)return;ED.cadre=im;dessine()};im.onerror=()=>{if(moi!==jeton)return;if(++k<L.length)im.src=L[k];else{ED.cadre=null;dessine()}};im.src=L[0];
+    const r=R.rar.find(x=>x.id==f.rar.value);cv.style.setProperty('--g',(r&&r.couleur)||'#7c3aed')};
+  function rendre(c,W,H){const x=c.getContext('2d');x.clearRect(0,0,W,H);x.fillStyle='#14141c';x.fillRect(0,0,W,H);
+    if(ED.art){const a=ED.art,s=Math.max(W/a.naturalWidth,H/a.naturalHeight)*ED.z,w=a.naturalWidth*s,h=a.naturalHeight*s;x.drawImage(a,(W-w)/2+ED.x*W,(H-h)/2+ED.y*H,w,h)}
+    if(ED.cadre)x.drawImage(ED.cadre,0,0,W,H)}
+  function dessine(){rendre(cv,cv.width,cv.height)}
+  chargeCadre();
+  f.file.onchange=()=>{const fi=f.file.files[0];if(!fi)return;if(fi.size>8*1024*1024){alert('Image trop lourde (8 Mo maximum).');f.file.value='';return}
+    const im=new Image();im.onload=()=>{ED.art=im;ED.z=1;ED.x=0;ED.y=0;zm.value=100;$('#paide').textContent='Glisse le dessin pour le placer, et règle le zoom.';$('#pcentre').style.display='';dessine()};im.src=URL.createObjectURL(fi)};
+  zm.oninput=()=>{ED.z=+zm.value/100;dessine()};
+  $('#pcentre').onclick=()=>{ED.x=0;ED.y=0;ED.z=1;zm.value=100;dessine()};
+  {let d=null;cv.onpointerdown=e=>{if(!ED.art)return;d={x:e.clientX,y:e.clientY,ox:ED.x,oy:ED.y};cv.setPointerCapture(e.pointerId)};
+   cv.onpointermove=e=>{if(!d)return;const r=cv.getBoundingClientRect();ED.x=d.ox+(e.clientX-d.x)/r.width;ED.y=d.oy+(e.clientY-d.y)/r.height;dessine()};
+   cv.onpointerup=cv.onpointercancel=()=>{d=null};
+   cv.onwheel=e=>{if(!ED.art)return;e.preventDefault();zm.value=Math.max(100,Math.min(400,+zm.value-Math.sign(e.deltaY)*10));zm.oninput()}}
+  f.rar.onchange=chargeCadre;f.type.onchange=chargeCadre;f.col.onchange=()=>{$('#pcolid').style.display=f.col.value=='autre'?'':'none'};if(!R.col.length){f.col.value='autre';f.col.onchange()}
   f.onsubmit=async e=>{e.preventDefault();const fi=f.file.files[0];if(!fi)return;const autre=f.col.value=='autre';
     if(autre&&!f.colidee.value.trim()){alert('Écris ton idée de collection.');return}
     const btn=$('#pbtn');btn.disabled=true;btn.textContent='Envoi…';
     const path=user.id+'/'+crypto.randomUUID()+'.'+((fi.name.split('.').pop()||'png').toLowerCase());
     const up=await sb.storage.from('propositions').upload(path,fi,{contentType:fi.type});
     if(up.error){alert(up.error.message);btn.disabled=false;btn.textContent='Envoyer ma proposition';return}
-    const r=await sb.rpc('proposer_carte',{p_image:path,p_nom:f.nom.value,p_type:f.type.value,p_rarete:+f.rar.value||null,p_collection:autre?null:+f.col.value,p_collection_idee:autre?f.colidee.value:null,p_idee:f.idee.value});
-    if(r.error){await sb.storage.from('propositions').remove([path]);alert(r.error.message);btn.disabled=false;btn.textContent='Envoyer ma proposition';return}
+    let pc=null;try{const big=document.createElement('canvas');big.width=1488;big.height=2070;rendre(big,1488,2070);
+      const bl=await new Promise(ok=>big.toBlob(ok,'image/png'));if(bl){pc=user.id+'/'+crypto.randomUUID()+'-carte.png';const u2=await sb.storage.from('propositions').upload(pc,bl,{contentType:'image/png'});if(u2.error)pc=null}}catch(x){pc=null}
+    const args={p_image:path,p_nom:f.nom.value,p_type:f.type.value,p_rarete:+f.rar.value||null,p_collection:autre?null:+f.col.value,p_collection_idee:autre?f.colidee.value:null,p_idee:f.idee.value};if(pc)args.p_image_carte=pc;
+    const r=await sb.rpc('proposer_carte',args);
+    if(r.error){await sb.storage.from('propositions').remove([path,...(pc?[pc]:[])]);alert(r.error.message);btn.disabled=false;btn.textContent='Envoyer ma proposition';return}
     vPropos()};
-  main.querySelectorAll('[data-pdel]').forEach(b=>b.onclick=async()=>{if(!confirm('Retirer cette proposition ?'))return;const d=await sb.from('propositions').delete().eq('id',b.dataset.pdel);if(d.error){alert(d.error.message);return}await sb.storage.from('propositions').remove([b.dataset.path]);vPropos()});
+  main.querySelectorAll('[data-pdel]').forEach(b=>b.onclick=async()=>{if(!confirm('Retirer cette proposition ?'))return;const d=await sb.from('propositions').delete().eq('id',b.dataset.pdel);if(d.error){alert(d.error.message);return}await sb.storage.from('propositions').remove([b.dataset.path,b.dataset.path2].filter(Boolean));vPropos()});
   main.querySelectorAll('[data-zoom]').forEach(i=>i.onclick=()=>window.open(i.dataset.zoom,'_blank'));
 }
 
@@ -730,21 +758,21 @@ async function aPropos(){
   const r=await qy;if(r.error){box.innerHTML='<p class="ko">Propositions indisponibles : lance d\'abord 12-propositions.sql dans Supabase.</p>';return}
   const L=r.data||[],rar=id=>R.rar.find(x=>x.id==id)||{},colN=id=>(R.col.find(c=>c.id==id)||{}).nom||'?';
   box.innerHTML=`<h3>Propositions des joueurs</h3><div class="vbar">${[['attente','⏳ En attente'],['acceptee','✅ Acceptées'],['refusee','❌ Refusées'],['toutes','Toutes']].map(([k,l])=>`<button class="${k==apFiltre?'on':'sec'}" data-apf="${k}">${l}</button>`).join('')}</div>
-   ${L.length?`<div class="ppl">${L.map(x=>{const rr=rar(x.rarete_id),u=pImg(x.image_path);return`<div class="ppc" style="border-color:${esc(rr.couleur||'#2c2c38')}">
-    <img src="${esc(u)}" alt="" data-zoom="${esc(u)}"><b>${esc(x.nom)}</b><span class="st ${x.statut}">${STP[x.statut]}</span>
+   ${L.length?`<div class="ppl">${L.map(x=>{const rr=rar(x.rarete_id),u=pImg(x.image_path),uc=x.image_carte?pImg(x.image_carte):'';return`<div class="ppc" style="border-color:${esc(rr.couleur||'#2c2c38')}">
+    <img src="${esc(uc||u)}" alt="" data-zoom="${esc(uc||u)}">${uc?`<small><a href="${esc(u)}" target="_blank" style="color:#c4b5fd">Voir le dessin seul</a></small>`:''}<b>${esc(x.nom)}</b><span class="st ${x.statut}">${STP[x.statut]}</span>
     <small>Par <b style="color:#fff">${esc(x.pseudo||'?')}</b> · ${new Date(x.cree_le).toLocaleDateString('fr-FR')}</small>
     <small>${TYP[x.type]||''} · <span style="color:${esc(rr.couleur||'#ccc')}">${esc(rr.nom||'?')}</span> · ${x.collection_id?esc(colN(x.collection_id)):`<span class="idc">Nouvelle collection : ${esc(x.collection_idee||'')}</span>`}</small>
     ${x.idee?`<div style="font-size:13px;white-space:pre-wrap">${esc(x.idee)}</div>`:''}
     <input placeholder="Note pour le joueur (facultatif)" value="${esc(x.note_admin||'')}" data-note="${x.id}">
     <div class="row">${x.statut!='acceptee'?`<button data-aps="acceptee" data-id="${x.id}">✅ Accepter</button>`:''}${x.statut!='refusee'?`<button class="sec" data-aps="refusee" data-id="${x.id}">❌ Refuser</button>`:''}${x.statut!='attente'?`<button class="sec" data-aps="attente" data-id="${x.id}">⏳ En attente</button>`:''}
-     <a href="${esc(u)}" download target="_blank"><button class="sec" title="Télécharger le dessin">⬇️</button></a><button class="sec" data-apdel="${x.id}" data-path="${esc(x.image_path)}" title="Supprimer">🗑️</button></div></div>`}).join('')}</div>`:'<p><small>Aucune proposition ici.</small></p>'}`;
+     <a href="${esc(u)}" download target="_blank"><button class="sec" title="Télécharger le dessin seul">⬇️</button></a>${uc?`<a href="${esc(uc)}" download target="_blank"><button class="sec" title="Télécharger la carte assemblée">🃏</button></a>`:''}<button class="sec" data-apdel="${x.id}" data-path="${esc(x.image_path)}" data-path2="${esc(x.image_carte||'')}" title="Supprimer">🗑️</button></div></div>`}).join('')}</div>`:'<p><small>Aucune proposition ici.</small></p>'}`;
   box.querySelectorAll('[data-apf]').forEach(b=>b.onclick=()=>{apFiltre=b.dataset.apf;aPropos()});
   box.querySelectorAll('[data-zoom]').forEach(i=>i.onclick=()=>window.open(i.dataset.zoom,'_blank'));
   box.querySelectorAll('[data-aps]').forEach(b=>b.onclick=async()=>{const id=b.dataset.id,note=box.querySelector(`[data-note="${id}"]`).value.trim()||null;
     const u=await sb.from('propositions').update({statut:b.dataset.aps,note_admin:note}).eq('id',id);if(u.error){alert(u.error.message);return}aPropos()});
   box.querySelectorAll('[data-note]').forEach(i=>i.onchange=async()=>{await sb.from('propositions').update({note_admin:i.value.trim()||null}).eq('id',i.dataset.note)});
   box.querySelectorAll('[data-apdel]').forEach(b=>b.onclick=async()=>{if(!confirm('Supprimer définitivement cette proposition et son image ?'))return;
-    const d=await sb.from('propositions').delete().eq('id',b.dataset.apdel);if(d.error){alert(d.error.message);return}await sb.storage.from('propositions').remove([b.dataset.path]);aPropos()});
+    const d=await sb.from('propositions').delete().eq('id',b.dataset.apdel);if(d.error){alert(d.error.message);return}await sb.storage.from('propositions').remove([b.dataset.path,b.dataset.path2].filter(Boolean));aPropos()});
 }
 
 /* ---------- Comment jouer ---------- */
