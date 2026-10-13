@@ -1348,14 +1348,19 @@ async function aReglages(){
   if(r.error){$('#sub').innerHTML='<p class="ko">Les réglages ne sont pas encore disponibles côté Supabase (07-dos-et-reglages.sql). Message de Supabase : <b>'+esc(r.error.message)+'</b></p>';return}
   const v=Object.fromEntries((r.data||[]).map(x=>[x.cle,x.valeur]));
   $('#sub').innerHTML=`<div class="f" style="flex-direction:column;align-items:flex-start"><b>Images : réduire la consommation Supabase</b>
-    <small>Convertit les images des cartes, boosters et dos déjà en ligne en WebP plus léger (jusqu'à 1200 px de haut) et les garde 1 an en cache. Les originaux sont conservés : le bouton « Revenir aux originaux » annule tout. Les nouvelles images sont déjà allégées à l'envoi. À lancer une fois, ça peut prendre quelques minutes : laisse la page ouverte.</small>
-    <div class="row"><button id="optim">⚡ Optimiser les images existantes</button><button class="sec" id="optback">↩ Revenir aux originaux</button></div><pre id="optlog" style="max-height:220px;overflow:auto;white-space:pre-wrap;font-size:12px;margin:0"></pre></div>
+    <small>Convertit les images des cartes, boosters et dos déjà en ligne en WebP plus léger (jusqu'à 1200 px de haut) et les garde 1 an en cache. Les originaux sont conservés : « Revenir aux originaux » annule tout. Une fois que tout te plaît, « Supprimer les originaux » libère la place (définitif). Les nouvelles images sont déjà allégées à l'envoi. À lancer une fois, ça peut prendre quelques minutes : laisse la page ouverte.</small>
+    <div class="row"><button id="optim">⚡ Optimiser les images existantes</button><button class="sec" id="optback">↩ Revenir aux originaux</button><button class="sec" id="optdel">🗑️ Supprimer les originaux</button></div><pre id="optlog" style="max-height:220px;overflow:auto;white-space:pre-wrap;font-size:12px;margin:0"></pre></div>
    <form class="f" id="fr"><label><b>Combats gratuits par jour</b> (commande !combat)<br>
     <small>0 = désactivés. Le compteur repart de zéro chaque jour à minuit, heure de Paris.</small><br>
     <input name="n" type="number" min="0" max="50" value="${esc(v.combats_gratuits_par_jour??1)}" style="width:90px"></label><button>Enregistrer</button></form>
    <h3>Recyclage des doublons</h3><form class="f" id="frc"><small>Ce que rapporte chaque exemplaire en trop. Les fragments sont prêts pour un futur craft : laisse 0 tant qu'il n'existe pas.</small>
    <table><tr><th></th><th>Gold</th><th>Fragments</th></tr>${[['commun','Commun'],['rare','Rare'],['epique','Épique'],['legendaire','Légendaire'],['ggez','GGEZ']].map(([k,n],i)=>`<tr><td>${n}</td><td><input name="g_${k}" type="number" min="0" value="${esc(v['recyclage_gold_'+k]??[5,10,35,80,80][i])}" style="width:80px"></td><td><input name="f_${k}" type="number" min="0" value="${esc(v['recyclage_fragments_'+k]??0)}" style="width:80px"></td></tr>`).join('')}</table><button>Enregistrer le recyclage</button></form>
    <h3>Tests</h3><div class="f"><button class="sec" id="rzc">Remettre à zéro les combats gratuits du jour (tous les joueurs)</button></div>`;
+  $('#optdel').onclick=async()=>{const K=[];try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k.startsWith('optim|'))K.push(k)}}catch(e){}
+    if(!K.length)return alert('Aucun original à supprimer depuis ce navigateur.');if(!confirm('Supprimer définitivement les '+K.length+' image(s) d\'origine ?\nTu ne pourras plus revenir en arrière.'))return;
+    const P=K.map(k=>localStorage.getItem(k)).filter(Boolean),L=$('#optlog');L.textContent='';let n=0;
+    for(let i=0;i<P.length;i+=50){const r=await sb.storage.from('cartes').remove(P.slice(i,i+50));if(r.error)L.textContent+='✗ '+r.error.message+'\n';else n+=(r.data||[]).length}
+    K.forEach(k=>{try{localStorage.removeItem(k)}catch(e){}});L.textContent+=n+' original(aux) supprimé(s).'};
   $('#optback').onclick=async()=>{const K=[];try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k.startsWith('optim|'))K.push(k)}}catch(e){}
     if(!K.length)return alert('Aucune optimisation à annuler depuis ce navigateur.');if(!confirm('Remettre les '+K.length+' image(s) d\'origine ?'))return;
     const L=$('#optlog');L.textContent='';let n=0;for(const k of K){const [,tab,id,col]=k.split('|');const p=localStorage.getItem(k);
