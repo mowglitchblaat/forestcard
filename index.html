@@ -1207,10 +1207,18 @@ async function aJoueurs(){
    <div id="jbox"></div>
    <h3>Remise à zéro</h3>
    <div class="f"><label><input type="checkbox" id="rzb" checked> vider aussi les boosters non ouverts</label>
+    <label><input type="checkbox" id="rzs"> remettre aussi les <b>stats</b> à zéro (victoires, records, séries, classement, historique)</label>
     <label>monnaie remise à <input id="rzm" type="number" min="0" style="width:90px" placeholder="inchangée"></label></div>
-   <div class="f"><button class="sec" id="rzj">Vider le joueur choisi</button><button id="rza" style="background:#b91c1c">Vider TOUS les joueurs</button></div>`;
+   <div class="f"><button class="sec" id="rzj">Vider le joueur choisi</button><button id="rza" style="background:#b91c1c">Vider TOUS les joueurs</button></div>
+   <h3>Stats seulement</h3><p><small>Remet à zéro victoires, défaites, séries, records, boosters ouverts, cartes les plus jouées et historique des combats, sans toucher aux cartes. (Il faut avoir lancé 13-reset-stats.sql dans Supabase.)</small></p>
+   <div class="f"><button class="sec" id="rsj">Stats du joueur choisi à zéro</button><button id="rsa" style="background:#b91c1c">Stats de TOUS les joueurs à zéro</button></div>`;
   const opt=()=>({p_boosters:$('#rzb').checked,p_monnaie:$('#rzm').value===''?null:+$('#rzm').value});
   const fini=async m=>{collData=[];deck=null;await refreshJoueur();alert(m);aJoueurs()};
+  const stats=async id=>{const r=await sb.rpc('admin_reset_stats',{p_joueur:id,p_historique:true});if(r.error){alert('Stats non remises à zéro : '+r.error.message+'\n(As-tu lancé 13-reset-stats.sql ?)');return ''}return '\n'+r.data};
+  $('#rsj').onclick=async()=>{const id=$('#jsel').value;if(!id)return alert('Choisis d\'abord un joueur.');const p=j.find(x=>x.id==id);
+    if(!confirm('Remettre à zéro les stats et l\'historique de '+p.pseudo+' ?\nC\'est définitif.'))return;const m=await stats(id);if(m)fini('Stats remises à zéro.'+m)};
+  $('#rsa').onclick=async()=>{if(prompt('Cela remet à zéro les stats, le classement et l\'historique de TOUS les joueurs. Tape STATS pour confirmer :')!=='STATS')return;
+    const m=await stats(null);if(m)fini('Stats de tous les joueurs remises à zéro.'+m)};
   async function load(){
     const id=$('#jsel').value;if(!id){$('#jbox').innerHTML='';return}
     const d=await q(sb.rpc('admin_collection',{p_joueur:id})),p=j.find(x=>x.id==id),tot=d.reduce((s,x)=>s+x.quantite,0);
@@ -1222,10 +1230,10 @@ async function aJoueurs(){
   }
   $('#jsel').onchange=load;
   $('#rzj').onclick=async()=>{const id=$('#jsel').value;if(!id)return alert('Choisis d\'abord un joueur.');
-    const p=j.find(x=>x.id==id);if(!confirm('Vider la collection et le deck de '+p.pseudo+($('#rzb').checked?' ainsi que ses boosters non ouverts':'')+' ?\nC\'est définitif.'))return;
-    await q(sb.rpc('admin_vider_joueur',{p_joueur:id,...opt()}));fini('Joueur remis à zéro.')};
+    const p=j.find(x=>x.id==id);if(!confirm('Vider la collection et le deck de '+p.pseudo+($('#rzb').checked?' ainsi que ses boosters non ouverts':'')+($('#rzs').checked?', et remettre ses stats à zéro':'')+' ?\nC\'est définitif.'))return;
+    await q(sb.rpc('admin_vider_joueur',{p_joueur:id,...opt()}));fini('Joueur remis à zéro.'+($('#rzs').checked?await stats(id):''))};
   $('#rza').onclick=async()=>{if(prompt('Cela vide les cartes de TOUS les joueurs, toi compris. Tape VIDER pour confirmer :')!=='VIDER')return;
-    await q(sb.rpc('admin_vider_joueur',{p_joueur:null,...opt()}));fini('Tous les joueurs ont été remis à zéro.')};
+    await q(sb.rpc('admin_vider_joueur',{p_joueur:null,...opt()}));fini('Tous les joueurs ont été remis à zéro.'+($('#rzs').checked?await stats(null):''))};
 }
 
 
