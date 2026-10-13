@@ -45,6 +45,8 @@ form.f select{max-width:100%;min-width:0}form.f>*{min-width:0}
 .vrow{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:7px 0;border-top:1px solid #2c2c38}.vrow .lb{flex:1;min-width:200px}
 .vrow button{padding:4px 10px}.vrow button.nerf.on{background:#b91c1c;border-color:#b91c1c}.vrow button.up.on{background:#15803d;border-color:#15803d}.vrow button.rework.on{background:#b45309;border-color:#b45309}
 .vres{display:flex;gap:6px 14px;flex-wrap:wrap;font-size:13px;color:#ccc}.vres b{color:#fff}
+.av10{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}.av10 .rk{font-size:26px;font-weight:800;color:#a78bfa;min-width:34px}.av10 img{width:70px;border-radius:6px}.av10 .bd{flex:1;min-width:240px}
+.avt{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}.avt td{padding:3px 6px;border-top:1px solid #2c2c38}.avt td.n{text-align:center;width:78px;white-space:nowrap}.avt td.top{font-weight:800;border-radius:4px}.avt td.top.nerf{background:#7f1d1d}.avt td.top.up{background:#14532d}.avt td.top.rework{background:#78350f}
 .hc{background:#1d1d27;border:1px solid #2c2c38;border-left:4px solid #444;border-radius:10px;padding:10px 14px;margin:10px 0}
 .hc.victoire{border-left-color:#4ade80}.hc.defaite{border-left-color:#f87171}.hc.nul{border-left-color:#9ca3af}
 .hc .top{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
@@ -643,6 +645,32 @@ async function noteEquilibrage(avant,apres){
   }catch(x){}
 }
 
+/* ---------- Admin : récap des votes ---------- */
+let avSem=0;
+async function aVotes(){
+  const box=$('#sub');box.innerHTML='<p><small>Chargement…</small></p>';
+  const [rs,cr]=await Promise.all([sb.rpc('resultats_votes',{p_decalage:avSem}),sb.from('cartes').select('id,nom,type,atq,pv,passif,ultime,effet,raretes(nom,couleur),variantes_carte(nom,image_path)')]);
+  if(rs.error){box.innerHTML='<p class="ko">Votes indisponibles : lance d\'abord 11-votes.sql dans Supabase.</p>';return}
+  const byId={};(cr.data||[]).forEach(c=>byId[c.id]=c);
+  const R={};(rs.data||[]).forEach(x=>{const o=R[x.carte_id]=R[x.carte_id]||{id:x.carte_id,nom:x.carte_nom,votants:+x.votants,total:0,a:{}};const a=o.a[x.aspect]=o.a[x.aspect]||{nerf:0,up:0,rework:0};a[x.sens]=+x.nb;o.total+=+x.nb});
+  const top=Object.values(R).sort((a,b)=>(b.votants-a.votants)||(b.total-a.total)).slice(0,10);
+  const lab=(c,k)=>{const a=c&&vAspects(c).find(z=>z.k==k);return a?a.l:({atq:'ATQ',pv:'PV',ultime:'Ultime',effet:'Effet'}[k]||'Passif')};
+  const semL=['Cette semaine','Semaine dernière','Il y a 2 semaines','Il y a 3 semaines'];
+  const nbVotes=Object.keys(R).length;
+  box.innerHTML=`<h3>Les 10 cartes les plus votées</h3>
+   <div class="vbar">${semL.map((l,i)=>`<button class="${i==avSem?'on':'sec'}" data-avs="${i}">${l}</button>`).join('')}</div>
+   <p><small>${nbVotes} carte${nbVotes>1?'s':''} ont reçu des votes. Classement par nombre de votants ; dans chaque ligne, la case surlignée est l'avis majoritaire. « Modifier » ouvre directement la carte dans l'onglet Cartes (le changement apparaîtra tout seul dans l'onglet Équilibrage).</small></p>
+   ${top.length?top.map((o,i)=>{const c=byId[o.id],u=c?vImg(c):'';
+     return`<div class="pn av10"><span class="rk">${i+1}</span>${u?`<img src="${esc(u)}" alt="">`:''}<div class="bd"><h4 style="margin:0">${esc(o.nom)} <small style="color:#aaa;font-weight:400">· ${o.votants} votant${o.votants>1?'s':''} · ${o.total} avis</small></h4>
+      <table class="avt"><tr><td></td><td class="n">⬇️ Nerf</td><td class="n">⬆️ Up</td><td class="n">🔁 Rework</td></tr>
+      ${Object.entries(o.a).sort((x,y)=>(y[1].nerf+y[1].up+y[1].rework)-(x[1].nerf+x[1].up+x[1].rework)).map(([k,n])=>{const m=Math.max(n.nerf,n.up,n.rework),t=s=>n[s]&&n[s]==m&&[n.nerf,n.up,n.rework].filter(v=>v==m).length==1?` top ${s}`:'';
+        return`<tr><td>${esc(lab(c,k))}</td><td class="n${t('nerf')}">${n.nerf}</td><td class="n${t('up')}">${n.up}</td><td class="n${t('rework')}">${n.rework}</td></tr>`}).join('')}</table>
+      ${c?`<button class="sec" data-avedit="${o.id}" style="margin-top:8px">✏️ Modifier la carte</button>`:''}</div></div>`}).join(''):'<p><small>Aucun vote pour cette semaine.</small></p>'}`;
+  box.querySelectorAll('[data-avs]').forEach(b=>b.onclick=()=>{avSem=+b.dataset.avs;aVotes()});
+  box.querySelectorAll('[data-avedit]').forEach(b=>b.onclick=async()=>{const id=b.dataset.avedit;sub='cartes';vAdmin();
+    for(let k=0;k<40;k++){await new Promise(r=>setTimeout(r,100));const e=document.querySelector(`#sub button[data-edit="${id}"]`);if(e){e.click();return}}});
+}
+
 /* ---------- Comment jouer ---------- */
 function vRegles(){
   const c=(t,body)=>`<div class="stat"><h4>${t}</h4>${body}</div>`,ul=a=>'<ul>'+a.map(x=>`<li>${x}</li>`).join('')+'</ul>';
@@ -740,10 +768,10 @@ function vRegles(){
 
 /* ---------- Admin ---------- */
 async function vAdmin(){
-  const S={cartes:'Cartes',collections:'Collections',boosters:'Boosters',effets:'Effets',raretes:'Raretés',cadeaux:'Cadeaux',dos:'Dos de cartes',reglages:'Réglages',joueurs:'Joueurs'};
+  const S={cartes:'Cartes',collections:'Collections',boosters:'Boosters',effets:'Effets',raretes:'Raretés',cadeaux:'Cadeaux',dos:'Dos de cartes',reglages:'Réglages',joueurs:'Joueurs',votes:'🗳️ Votes'};
   main.innerHTML=`<div class="row">${Object.entries(S).map(([k,v])=>`<button class="${k==sub?'on':'sec'}" data-s="${k}">${v}</button>`).join('')}</div><div id="sub"></div>`;
   main.querySelectorAll('button[data-s]').forEach(b=>b.onclick=()=>{sub=b.dataset.s;vAdmin()});
-  ({cartes:aCartes,collections:aCollections,boosters:aBoosters,effets:aEffets,raretes:aRaretes,cadeaux:aCadeaux,dos:aDos,reglages:aReglages,joueurs:aJoueurs})[sub]();
+  ({cartes:aCartes,collections:aCollections,boosters:aBoosters,effets:aEffets,raretes:aRaretes,cadeaux:aCadeaux,dos:aDos,reglages:aReglages,joueurs:aJoueurs,votes:aVotes})[sub]();
 }
 async function upload(file){
   const path=crypto.randomUUID()+'.'+(file.name.split('.').pop()||'png');
