@@ -620,7 +620,7 @@ async function vClassement(){
 /* ---------- Historique des parties ---------- */
 const LB_RES={victoire:'Victoire',defaite:'Défaite',nul:'Match nul'};
 async function vHistorique(){
-  const r=await sb.rpc('mon_historique',{p_limite:50});
+  const r=await sb.rpc('mon_historique',{p_limite:30});
   if(r.error){main.innerHTML='<p class="ko">Historique indisponible pour le moment (l\'admin doit d\'abord lancer 08-historique.sql dans Supabase).</p>';return}
   const L=r.data||[];
   if(!L.length){main.innerHTML='<h3>Historique</h3><p><small>Aucun combat enregistré pour l\'instant : tes prochains combats apparaîtront ici avec leur déroulé.</small></p>';return}
