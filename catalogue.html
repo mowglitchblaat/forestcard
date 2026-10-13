@@ -171,11 +171,15 @@ function cardHTML(c,img){
   const e=c.effet||{},cd=e.condition,ct=cd&&CL[cd.type]?CL[cd.type](cd):'?';
   secs=`<div class="sec"><h4>Piège</h4><div class="cond">Quand ${esc(ct)}${` · ${e.declenchements>1?`jusqu'à ${e.declenchements} déclenchements`:'1 seul déclenchement'}`}</div>${lines(e.effet,false)||'<span class="none">aucun effet</span>'}</div>`;
  }
- return `<div class="card${c.actif===false?' off':''}">${img&&im?.image_path?`<img loading="lazy" src="${STORAGE+esc(im.image_path)}" alt="">`:''}
+ return `<div class="card${c.actif===false?' off':''}">${img&&im?.image_path?`<img loading="lazy" src="${esc(urlImg(im.image_path))}" alt="">`:''}
   <div class="body"><div class="top"><div><div class="nom">${esc(c.nom)}</div><div class="meta">${ty} · ${col} ${rar}${c.actif===false?' · <b>inactive</b>':''}</div></div>${st}</div>${secs}${c.description?`<div class="desc">${esc(c.description)}</div>`:''}</div></div>`;
 }
 // ======== Chargement et affichage ========
 const STORAGE='https://bjsvqikjnvaomyoifiml.supabase.co/storage/v1/object/public/cartes/';
+const MIROIR_URL='https://mowglitchblaat.github.io/forestcard/img/';let MIROIR=new Set();   // images des cartes recopiées chaque nuit sur GitHub (img/liste.json) : servies par GitHub au lieu de Supabase (quota)
+const chargerMiroir=()=>Promise.race([fetch(MIROIR_URL+'liste.json').then(r=>r.ok?r.json():[]).then(a=>{if(Array.isArray(a))MIROIR=new Set(a)}).catch(()=>{}),new Promise(r=>setTimeout(r,2500))]);
+const urlImg=p=>p?(MIROIR.has(p)?MIROIR_URL+encodeURI(p):STORAGE+p):'';   // GitHub si l'image y est déjà, sinon Supabase
+chargerMiroir();
 let CARTES=[];
 const $=s=>document.querySelector(s);
 function draw(){

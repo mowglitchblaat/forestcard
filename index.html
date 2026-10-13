@@ -183,7 +183,9 @@ function uiBoite(msg,{ok='OK',annuler=null,saisie=null,danger=false}={}){return 
 const uiAlert=m=>uiBoite(m);
 const uiConfirm=(m,o={})=>uiBoite(m,{ok:'Confirmer',annuler:'Annuler',danger:/définiti|supprim|vider|retirer|remise? à zéro|TOUS/i.test(String(m)),...o});
 const uiPrompt=(m,v='')=>uiBoite(m,{ok:'Valider',annuler:'Annuler',saisie:v});
-const img=p=>p?sb.storage.from('cartes').getPublicUrl(p).data.publicUrl:'';
+const MIROIR_URL='https://mowglitchblaat.github.io/forestcard/img/';let MIROIR=new Set();   // images des cartes recopiées chaque nuit sur GitHub (img/liste.json) : servies par GitHub au lieu de Supabase (quota)
+const chargerMiroir=()=>Promise.race([fetch(MIROIR_URL+'liste.json').then(r=>r.ok?r.json():[]).then(a=>{if(Array.isArray(a))MIROIR=new Set(a)}).catch(()=>{}),new Promise(r=>setTimeout(r,2500))]);
+const img=p=>p?(MIROIR.has(p)?MIROIR_URL+encodeURI(p):sb.storage.from('cartes').getPublicUrl(p).data.publicUrl):'';
 async function q(p){const r=await p;if(r.error){uiAlert(r.error.message);throw r.error}return r.data}
 let user,joueur,isAdmin,tab='profil',sub='cartes',B={};   // ouverture sur le profil : pas d'images à charger (économise le quota Supabase)
 const opts=(a,l='nom')=>a.map(x=>`<option value="${x.id}">${esc(x[l])}</option>`).join('');
@@ -1422,5 +1424,5 @@ async function aReglages(){
 }
 
 sb.auth.onAuthStateChange((ev)=>{if(ev==='SIGNED_IN'&&!user)init()});
-init();
+chargerMiroir().then(init);
 </script></body></html>

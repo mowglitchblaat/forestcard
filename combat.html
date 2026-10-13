@@ -519,18 +519,22 @@ if(typeof module!=='undefined')module.exports=g.Moteur;
 </script>
 <script>
 const STORAGE='https://bjsvqikjnvaomyoifiml.supabase.co/storage/v1/object/public/cartes/';
+const MIROIR_URL='https://mowglitchblaat.github.io/forestcard/img/';let MIROIR=new Set();   // images des cartes recopiées chaque nuit sur GitHub (img/liste.json) : servies par GitHub au lieu de Supabase (quota)
+const chargerMiroir=()=>Promise.race([fetch(MIROIR_URL+'liste.json').then(r=>r.ok?r.json():[]).then(a=>{if(Array.isArray(a))MIROIR=new Set(a)}).catch(()=>{}),new Promise(r=>setTimeout(r,2500))]);
+const urlImg=p=>p?(MIROIR.has(p)?MIROIR_URL+encodeURI(p):STORAGE+p):'';   // GitHub si l'image y est déjà, sinon Supabase
+chargerMiroir();
 const $=s=>document.querySelector(s),wait=ms=>new Promise(r=>setTimeout(r,ms*+$('#vit').value));
 const TEST=location.search.includes('test'),DEMO=location.search.includes('demo')||location.search.includes('test');
 if(location.search.includes('fond'))$('#scene').classList.add('dark');
 if(!TEST&&!DEMO)document.body.classList.add('obs');
 
 // ---------- Affichage d'un journal ----------
-function revele(c,e){const g=$('#g'+c);if(!g)return;g.classList.remove('back');g.classList.add('rev');g.textContent=e.img?'':(e.carte||'');g.style.backgroundImage=e.img?`url('${STORAGE+e.img}')`:''}
+function revele(c,e){const g=$('#g'+c);if(!g)return;g.classList.remove('back');g.classList.add('rev');g.textContent=e.img?'':(e.carte||'');g.style.backgroundImage=e.img?`url('${urlImg(e.img)}')`:''}
 // Gros plan : la carte magie / piège grandit au centre de l'écran, y reste un instant, puis retourne dans son emplacement
 function zoomCarte(id,e,kind){return new Promise(res=>{const src=$('#'+id);if(!src||!src.animate){res();return}
  const r=src.getBoundingClientRect(),vw=innerWidth,vh=innerHeight,H=vh*.62,W=H*5/7,z=document.createElement('div');
  z.className='zoom '+kind;z.style.cssText=`left:${(vw-W)/2}px;top:${(vh-H)/2}px;width:${W}px;height:${H}px`;
- if(e.img)z.style.backgroundImage=`url('${STORAGE+e.img}')`;else z.textContent=e.carte||'';
+ if(e.img)z.style.backgroundImage=`url('${urlImg(e.img)}')`;else z.textContent=e.carte||'';
  document.body.appendChild(z);
  const dx=r.left+r.width/2-vw/2,dy=r.top+r.height/2-vh/2,k=r.width/W,pt=`translate(${dx}px,${dy}px) scale(${k})`,d=2100*+$('#vit').value;
  let fini=false;const f=()=>{if(fini)return;fini=true;z.remove();res()};
@@ -539,17 +543,17 @@ function zoomCarte(id,e,kind){return new Promise(res=>{const src=$('#'+id);if(!s
 function retourner(el,milieu){return new Promise(res=>{if(!el||!el.animate){milieu&&milieu();res();return}
  const d=330*+$('#vit').value;const a1=el.animate([{transform:'perspective(900px) rotateY(0)'},{transform:'perspective(900px) rotateY(90deg)'}],{duration:d,easing:'ease-in',fill:'forwards'});a1.onfinish=()=>{milieu&&milieu();a1.cancel();
   el.animate([{transform:'perspective(900px) rotateY(-90deg)'},{transform:'perspective(900px) rotateY(0)'}],{duration:d,easing:'ease-out'}).onfinish=()=>res()}})}
-function faceMagie(i){const m=$('#m'+i),j=JOUEURS[i];if(!m||!j||!m.classList.contains('back'))return;m.classList.remove('back','dos','mag');m.style.backgroundImage=j.magieImg?`url('${STORAGE+j.magieImg}')`:'';m.textContent=j.magieImg?'':j.magie}
-function mini(img,txt){return img?`style="background-image:url('${STORAGE+img}')"`:''}
+function faceMagie(i){const m=$('#m'+i),j=JOUEURS[i];if(!m||!j||!m.classList.contains('back'))return;m.classList.remove('back','dos','mag');m.style.backgroundImage=j.magieImg?`url('${urlImg(j.magieImg)}')`:'';m.textContent=j.magieImg?'':j.magie}
+function mini(img,txt){return img?`style="background-image:url('${urlImg(img)}')"`:''}
 const RANGS_RAR=['ggez','legendaire','epique','rare','commun'];
 function tierRar(r){const n=String((r&&r.nom)||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z]/g,''),k=RANGS_RAR.findIndex(x=>n.includes(x));return r?['ul','lg','ep','ra','co'][k]||'ra':'co'}
 let JOUEURS=[];
-const dosCSS=j=>j.dos?`background-image:url('${STORAGE+j.dos}')`:'';
+const dosCSS=j=>j.dos?`background-image:url('${urlImg(j.dos)}')`:'';
 function panneau(i,j){const im=j.imageCombat||j.image,t=tierRar(j.rar),col=(j.rar&&j.rar.couleur)||'#888',magV=/^Aucun/.test(j.magie);JOUEURS[i]=j;
- $('#p'+i).innerHTML=`<div class="pj">${String(j.pseudo).replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div><div class="cw${t!=='co'?' rr rr-'+t:''}" style="--g:${col}"><div class="card" ${im?`style="background-image:url('${STORAGE+im}')"`:''}>${im?'':j.carte}<div class="dosf" style="${dosCSS(j)}">${j.dos?'':'🌲'}</div>${t==='ep'||t==='lg'||t==='ul'?'<span class="shn"></span>':''}${j.imageCombat?'<span class="sv sva" data-v=""></span><span class="sv svp" data-v=""></span>':''}</div></div>
+ $('#p'+i).innerHTML=`<div class="pj">${String(j.pseudo).replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div><div class="cw${t!=='co'?' rr rr-'+t:''}" style="--g:${col}"><div class="card" ${im?`style="background-image:url('${urlImg(im)}')"`:''}>${im?'':j.carte}<div class="dosf" style="${dosCSS(j)}">${j.dos?'':'🌲'}</div>${t==='ep'||t==='lg'||t==='ul'?'<span class="shn"></span>':''}${j.imageCombat?'<span class="sv sva" data-v=""></span><span class="sv svp" data-v=""></span>':''}</div></div>
  <div class="nm">${j.carte}</div><div class="bar"><i></i></div><div class="pv"></div>
  <div class="mp"><div class="mw"><div class="mini${magV?' vide':' back dos mag'}" id="m${i}" ${magV?mini(j.magieImg):`style="${dosCSS(j)}"`}>${magV?(j.magieImg?'':j.magie):(j.dos?'':'?')}</div><small>Magie</small></div>
- <div class="mw"><div class="mini back${/^Aucun/.test(j.piege)?' vide':''}${j.dos?' dos':''}" id="g${i}" ${j.dos?`style="background-image:url('${STORAGE+j.dos}')"`:''}>${j.dos?'':'?'}</div><small>Piège</small></div></div>`}
+ <div class="mw"><div class="mini back${/^Aucun/.test(j.piege)?' vide':''}${j.dos?' dos':''}" id="g${i}" ${j.dos?`style="background-image:url('${urlImg(j.dos)}')"`:''}>${j.dos?'':'?'}</div><small>Piège</small></div></div>`}
 let st={};const fxAll=new Set(),R=(a,b)=>a+Math.random()*(b-a);
 function fxStart(card,k){
  const cv=document.createElement('canvas');cv.className='fx '+k;const d=Math.min(1.5,window.devicePixelRatio||1),W=card.clientWidth,H=card.clientHeight;
@@ -987,7 +991,7 @@ async function prolongation(e){
 async function volCarte(e){const src=$((e.de==='magie'?'#m':'#g')+e.from),dst=$((e.sur==='magie'?'#m':'#g')+e.to);if(!src||!dst)return;
  if(e.de==='piege')revele(e.from,e);else faceMagie(e.from);
  src.classList.remove('annule');await wait(600);
- const A=src.getBoundingClientRect(),B=dst.getBoundingClientRect(),img=e.img?`url('${STORAGE+e.img}')`:src.style.backgroundImage,txt=e.img?'':(e.carte||'');
+ const A=src.getBoundingClientRect(),B=dst.getBoundingClientRect(),img=e.img?`url('${urlImg(e.img)}')`:src.style.backgroundImage,txt=e.img?'':(e.carte||'');
  const cl=document.createElement('div');cl.className='mini';cl.textContent=txt;
  Object.assign(cl.style,{position:'fixed',left:A.left+'px',top:A.top+'px',width:A.width+'px',height:A.height+'px',margin:'0',zIndex:'60',pointerEvents:'none',backgroundImage:img});
  document.body.appendChild(cl);

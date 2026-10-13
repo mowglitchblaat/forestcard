@@ -29,6 +29,10 @@ html,body{margin:0;height:100%;overflow:hidden;background:transparent;font-famil
 <script>
 const WS_URL='ws://127.0.0.1:8080/';
 const STORAGE='https://bjsvqikjnvaomyoifiml.supabase.co/storage/v1/object/public/cartes/';
+const MIROIR_URL='https://mowglitchblaat.github.io/forestcard/img/';let MIROIR=new Set();   // images des cartes recopiées chaque nuit sur GitHub (img/liste.json) : servies par GitHub au lieu de Supabase (quota)
+const chargerMiroir=()=>Promise.race([fetch(MIROIR_URL+'liste.json').then(r=>r.ok?r.json():[]).then(a=>{if(Array.isArray(a))MIROIR=new Set(a)}).catch(()=>{}),new Promise(r=>setTimeout(r,2500))]);
+const urlImg=p=>p?(MIROIR.has(p)?MIROIR_URL+encodeURI(p):STORAGE+p):'';   // GitHub si l'image y est déjà, sinon Supabase
+chargerMiroir();
 const box=document.getElementById('box'),titre=document.getElementById('titre'),zone=document.getElementById('cartes');
 const SB='https://bjsvqikjnvaomyoifiml.supabase.co',KEY='sb_publishable_-3cPqDCyE-zhb3z5r6dPhg_DJFKGAI6';
 const packwrap=document.getElementById('packwrap'),pack=document.getElementById('pack'),rays=document.getElementById('rays'),flash=document.getElementById('flash');
@@ -44,7 +48,7 @@ async function boosterImg(d){
       imgErr=!r.ok?'erreur '+r.status+' : '+((j&&j.message)||''):!j.length?'aucun booster lisible nommé « '+d.booster+' » (nom différent, ou table non lisible sans connexion)':!p?'ce booster n\'a pas d\'image enregistrée':''}catch(x){p=null;imgErr='lecture impossible : '+x}
       imgCache[d.booster]=p}}
   if(!p)return null;
-  const url=/^https?:/.test(p)?p:STORAGE+p;
+  const url=/^https?:/.test(p)?p:urlImg(p);
   await new Promise(r=>{const i=new Image();i.onload=i.onerror=r;i.src=url;setTimeout(r,3000)});
   return url;
 }
@@ -121,7 +125,7 @@ async function run(){
       el.style.setProperty('--col',c.couleur||'#fff');
       el.innerHTML='<div class="in"><div class="b"></div><div class="f"></div></div>';
       const f=el.querySelector('.f');
-      if(c.image){const i=new Image();i.src=STORAGE+c.image;f.appendChild(i)}
+      if(c.image){const i=new Image();i.src=urlImg(c.image);f.appendChild(i)}
       else f.innerHTML='<span></span>',f.firstChild.textContent=c.carte;
       zone.appendChild(el);return el;
     });
