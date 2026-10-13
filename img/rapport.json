@@ -1,0 +1,10 @@
+{
+ "tables": {
+  "variantes_carte": "illisible : variantes_carte illisible (401) : {\"code\":\"42501\",\"details\":null,\"hint\":\"Grant the required privileges to the current role with: GRANT SELECT ON public.variantes_carte TO anon;\",\"message\":\"permission ",
+  "types_boosters": 8,
+  "dos_cartes": "illisible : dos_cartes illisible (401) : {\"code\":\"42501\",\"details\":null,\"hint\":\"Grant the required privileges to the current role with: GRANT SELECT ON public.dos_cartes TO anon;\",\"message\":\"permission denied for"
+ },
+ "copiees": 0,
+ "deja": 8,
+ "ratees": 0
+}
