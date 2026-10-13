@@ -189,11 +189,19 @@ let user,joueur,isAdmin,tab='profil',sub='cartes',B={};   // ouverture sur le pr
 const opts=(a,l='nom')=>a.map(x=>`<option value="${x.id}">${esc(x[l])}</option>`).join('');
 const TABS={collection:'Ma collection',boutique:'Boutique',deck:'Mon deck',dos:'Dos de cartes',historique:'Historique',profil:'Profils',classement:'🏆 Classement',regles:'Comment jouer',propos:'🎨 Propositions',patch:'📜 Patch notes'};
 
+// Erreur renvoyée par Twitch / Supabase après une connexion ratée (dans l'adresse) : on l'affiche au lieu de rien
+function erreurConnexion(){
+  const P=new URLSearchParams(location.search+'&'+location.hash.slice(1)),e=P.get('error_description')||P.get('error');
+  if(!e)return '';try{history.replaceState(null,'',location.pathname)}catch(x){}
+  const m=/email/i.test(e)?'Ton compte Twitch n\'a pas d\'adresse e-mail confirmée. Sur Twitch : Paramètres → Sécurité et confidentialité → confirme ton e-mail, puis reconnecte-toi ici.'
+    :/access_denied|denied/i.test(e)?'La connexion a été refusée sur la page de Twitch. Recommence et clique sur « Autoriser ».'
+    :'La connexion a échoué. Réessaie depuis Chrome, Safari ou Firefox (pas depuis le navigateur intégré de Twitch, Discord ou Instagram).';
+  return '<p class="ko">'+esc(m)+'<br><small>Détail : '+esc(e)+'</small></p>'}
 async function init(){
   const {data:{session}}=await sb.auth.getSession();
   if(!session){
     $('#nav').innerHTML='';$('#me').innerHTML='<button id="login">Se connecter avec Twitch</button>';
-    main.innerHTML='<p>Connecte-toi avec ton compte Twitch pour voir ta collection.</p>';
+    main.innerHTML='<p>Connecte-toi avec ton compte Twitch pour voir ta collection.</p>'+erreurConnexion();
     $('#login').onclick=()=>sb.auth.signInWithOAuth({provider:'twitch',options:{redirectTo:location.origin+location.pathname}});
     return;
   }
