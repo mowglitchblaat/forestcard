@@ -122,6 +122,15 @@ form.f select{max-width:100%;min-width:0}form.f>*{min-width:0}
 .cx{position:absolute;top:10px;right:12px;z-index:3;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.2);border-radius:999px;width:34px;height:34px;padding:0;font-size:16px}
 @media(prefers-reduced-motion:reduce){.ct,.ct *,.cmb,.cmb *,.tilt{animation:none!important;transition:none!important}.ct[data-t=lg]{border-color:var(--g)}}
 code.cmd{color:#fbbf24;font-weight:700}
+
+/* GGEZ : au-dessus du légendaire — bordure et reflet arc-en-ciel */
+@keyframes ctrb{to{filter:hue-rotate(360deg)}}
+.ct[data-t=ul]{--sp:2s;border:2px solid transparent;padding:8px 8px 10px;
+ background:linear-gradient(165deg,color-mix(in srgb,var(--g) 14%,#1c1c27) 0%,#15151d 62%) padding-box,conic-gradient(from var(--ang),#ff3b6b,#ffb703,#5eead4,#60a5fa,#c084fc,#ff3b6b) border-box;animation:ctpop .6s cubic-bezier(.2,.9,.3,1.25) backwards,ctglow var(--sp) ease-in-out .7s infinite,ctspin 3.4s linear infinite;
+ animation-delay:calc(min(var(--i,0),14)*40ms),calc(.7s + min(var(--i,0),14)*40ms),0s}
+.ct[data-t=ul] .ci::after{opacity:1;background:linear-gradient(115deg,transparent 30%,rgba(255,60,120,.38) 40%,rgba(255,220,60,.4) 47%,rgba(80,255,200,.4) 54%,rgba(100,160,255,.4) 61%,transparent 70%);mix-blend-mode:color-dodge;animation:ctshine 3s ease-in-out infinite;animation-delay:calc(min(var(--i,0),14)*300ms + .6s)}
+.cmb[data-t=ul] .ho{opacity:.7}
+.cmb[data-t=ul]{border-color:transparent;background:linear-gradient(160deg,color-mix(in srgb,var(--g) 14%,#1b1b25),#12121a 65%) padding-box,conic-gradient(from var(--ang),#ff3b6b,#ffb703,#5eead4,#60a5fa,#c084fc,#ff3b6b) border-box;animation:ctpop .45s cubic-bezier(.2,.9,.3,1.25) backwards,ctspin 4s linear infinite}
 </style></head><body>
 <header><h1>🃏 Jeu de cartes</h1><div id="me"></div></header>
 <nav id="nav"></nav><main id="main"></main>
@@ -314,16 +323,16 @@ function lignesCarte(c){
   return L;
 }
 /* FX-END */
-const TIER=r=>['lg','ep','ra','co'][rangRar(r)[0]]||'ra';
+const TIER=r=>['ul','lg','ep','ra','co'][rangRar(r)[0]]||'ra';
 const txOn=h=>{const m=/^#?([0-9a-f]{6})$/i.exec(String(h||'').trim());if(!m)return'#111';const n=parseInt(m[1],16);return(0.299*(n>>16)+0.587*((n>>8)&255)+0.114*(n&255))/255>.6?'#111':'#fff'};
 const KRX=/(?<![\p{L}])(?:([+\-−]?\d+(?:[.,]\d+)?\s?%)|(\d+\s?tours?)|(dégâts?|saign\p{L}*|brûl\p{L}*|poison\p{L}*|malédiction\p{L}*|fracture\p{L}*|renvo\p{L}*)|(soins?|soign\p{L}*|régénér\p{L}*|réanim\p{L}*|PV|récup\p{L}*|protég\p{L}*|évite la mort|purifi\p{L}*)|(étourd\p{L}*|gel\p{L}*|fatigu\p{L}*|insensib\p{L}*|vol(?:e|er|é|s)?|échang\p{L}*|annul\p{L}*)|(ATQ|attaq\p{L}*|frappe\p{L}*|rage)|([+\-−]?\d+))(?![\p{L}])/giu;
 const CK=['','k-p','k-t','k-d','k-h','k-s','k-a','k-n'];
 const cz=t=>String(t).replace(KRX,(m,...g)=>{const k=g.slice(0,7).findIndex(x=>x!==undefined);return`<span class="${CK[k+1]}">${m}</span>`});   // le texte est déjà échappé : on ne touche qu'aux mots clés
 /* ---------- Recyclage des doublons ---------- */
-const PRIX_DEF={commun:{gold:5,fragments:0},rare:{gold:10,fragments:0},epique:{gold:35,fragments:0},legendaire:{gold:80,fragments:0}};
+const PRIX_DEF={commun:{gold:5,fragments:0},rare:{gold:10,fragments:0},epique:{gold:35,fragments:0},legendaire:{gold:80,fragments:0},ggez:{gold:80,fragments:0}};
 let PRIX=null;
 async function chargerPrix(){if(PRIX)return PRIX;PRIX={...PRIX_DEF};try{const r=await sb.rpc('prix_recyclage');(r.data||[]).forEach(p=>{PRIX[p.rang]={gold:p.gold,fragments:p.fragments}})}catch(e){}return PRIX}
-const rangDe=x=>['legendaire','epique','rare','commun'][rangRar(x.variantes_carte.cartes.raretes)[0]]||'commun';
+const rangDe=x=>['ggez','legendaire','epique','rare','commun'][rangRar(x.variantes_carte.cartes.raretes)[0]]||'commun';
 const surplus=x=>Math.max(0,(x.quantite||1)-1);
 const gainDe=x=>{const p=(PRIX||PRIX_DEF)[rangDe(x)]||PRIX_DEF.commun,n=surplus(x);return{n,gold:n*p.gold,fragments:n*p.fragments}};
 const gainTxt=g=>`+${g.gold} gold`+(g.fragments?` · +${g.fragments} fragment${g.fragments>1?'s':''}`:'');
@@ -821,8 +830,8 @@ async function aCollections(){
       await q(sb.from('collections').delete().eq('id',tr.dataset.id));aCollections();};});
 }
 
-const RANGS_RAR=['legendaire','epique','rare','commun'];   // du plus haut au plus bas ; un nom inconnu passe après, du plus rare au moins rare selon son poids de drop
-function rangRar(r){const n=String((r&&r.nom)||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(),i=RANGS_RAR.findIndex(k=>n.includes(k));return[i<0?9:i,+(r&&r.poids)||0]}
+const RANGS_RAR=['ggez','legendaire','epique','rare','commun'];   // GGEZ : au-dessus du légendaire (arc-en-ciel) ;   // du plus haut au plus bas ; un nom inconnu passe après, du plus rare au moins rare selon son poids de drop
+function rangRar(r){const n=String((r&&r.nom)||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z]/g,''),i=RANGS_RAR.findIndex(k=>n.includes(k));return[i<0?9:i,+(r&&r.poids)||0]}
 function cmpCartes(a,b){const x=rangRar(a.raretes),y=rangRar(b.raretes);return(x[0]-y[0])||(x[1]-y[1])||a.nom.localeCompare(b.nom,'fr')}
 const ORD_TYPE={combattant:0,magie:1,piege:2};
 function cmpColl(a,b){const ca=a.variantes_carte.cartes,cb=b.variantes_carte.cartes,x=rangRar(ca.raretes),y=rangRar(cb.raretes);return(x[0]-y[0])||(x[1]-y[1])||(ORD_TYPE[ca.type]-ORD_TYPE[cb.type])||ca.nom.localeCompare(cb.nom,'fr')||a.variantes_carte.nom.localeCompare(b.variantes_carte.nom,'fr')}
@@ -1002,12 +1011,12 @@ async function aReglages(){
     <small>0 = désactivés. Le compteur repart de zéro chaque jour à minuit, heure de Paris.</small><br>
     <input name="n" type="number" min="0" max="50" value="${esc(v.combats_gratuits_par_jour??1)}" style="width:90px"></label><button>Enregistrer</button></form>
    <h3>Recyclage des doublons</h3><form class="f" id="frc"><small>Ce que rapporte chaque exemplaire en trop. Les fragments sont prêts pour un futur craft : laisse 0 tant qu'il n'existe pas.</small>
-   <table><tr><th></th><th>Gold</th><th>Fragments</th></tr>${[['commun','Commun'],['rare','Rare'],['epique','Épique'],['legendaire','Légendaire']].map(([k,n],i)=>`<tr><td>${n}</td><td><input name="g_${k}" type="number" min="0" value="${esc(v['recyclage_gold_'+k]??[5,10,35,80][i])}" style="width:80px"></td><td><input name="f_${k}" type="number" min="0" value="${esc(v['recyclage_fragments_'+k]??0)}" style="width:80px"></td></tr>`).join('')}</table><button>Enregistrer le recyclage</button></form>
+   <table><tr><th></th><th>Gold</th><th>Fragments</th></tr>${[['commun','Commun'],['rare','Rare'],['epique','Épique'],['legendaire','Légendaire'],['ggez','GGEZ']].map(([k,n],i)=>`<tr><td>${n}</td><td><input name="g_${k}" type="number" min="0" value="${esc(v['recyclage_gold_'+k]??[5,10,35,80,80][i])}" style="width:80px"></td><td><input name="f_${k}" type="number" min="0" value="${esc(v['recyclage_fragments_'+k]??0)}" style="width:80px"></td></tr>`).join('')}</table><button>Enregistrer le recyclage</button></form>
    <h3>Tests</h3><div class="f"><button class="sec" id="rzc">Remettre à zéro les combats gratuits du jour (tous les joueurs)</button></div>`;
   $('#fr').onsubmit=async e=>{e.preventDefault();const n=Math.max(0,Math.min(50,parseInt(e.target.n.value,10)||0));
     await q(sb.from('reglages_jeu').upsert({cle:'combats_gratuits_par_jour',valeur:String(n)}));alert('Enregistré : '+n+' combat'+(n>1?'s':'')+' gratuit'+(n>1?'s':'')+' par jour.');aReglages()};
   $('#frc').onsubmit=async e=>{e.preventDefault();const f=e.target,rows=[];
-    for(const k of['commun','rare','epique','legendaire']){rows.push({cle:'recyclage_gold_'+k,valeur:String(Math.max(0,parseInt(f['g_'+k].value,10)||0))},{cle:'recyclage_fragments_'+k,valeur:String(Math.max(0,parseInt(f['f_'+k].value,10)||0))})}
+    for(const k of['commun','rare','epique','legendaire','ggez']){rows.push({cle:'recyclage_gold_'+k,valeur:String(Math.max(0,parseInt(f['g_'+k].value,10)||0))},{cle:'recyclage_fragments_'+k,valeur:String(Math.max(0,parseInt(f['f_'+k].value,10)||0))})}
     await q(sb.from('reglages_jeu').upsert(rows));PRIX=null;alert('Prix de recyclage enregistrés.');aReglages()};
   $('#rzc').onclick=async()=>{if(!confirm('Remettre à zéro le compteur de combats gratuits de tous les joueurs ?'))return;
     await q(sb.rpc('admin_reset_combats_jour'));alert('Compteurs remis à zéro.')};
