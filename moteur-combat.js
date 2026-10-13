@@ -21,7 +21,7 @@ function simuler(pA,pB,opt={}){
    cum:0,coups:0,rt:0,uses:0,last:-99,pend:0}};
  const S=[nw(pA),nw(pB)],id=s=>S.indexOf(s),adv=s=>S[1-id(s)],nom=s=>s.card.nom;
  S.forEach(s=>{if(s.mag.vide)s.magOn=0;if(s.pie.vide)s.pieOn=0});
- let tour=0,rv=0;
+ let tour=0,rv=0,SRC='magie';   // SRC : d'où vient l'effet en cours (magie, piege, ultime, passif) — sert à placer une carte volée
  let pendRev=[],pendEv=[];   // pendRev : réanimations en attente · pendEv : effets (pièges, « évite la mort ») à jouer APRÈS l'affichage des dégâts
  const L=(t,txt,o={})=>{if(t==='degats'&&o.n===0){flush();return}if(t==='stat'&&o.d===0)return;   // rien à montrer pour 0 dégât ou une stat inchangée
   J.push({t,txt,...o,tour,pv:S.map(s=>s.pv),max:S.map(s=>s.max),atq:S.map(s=>s.atq)});if(t==='degats')flush()};
@@ -71,7 +71,7 @@ function simuler(pA,pB,opt={}){
    adv_soigne:ev.t==='soin'&&ev.who===ia,proprio_soigne:ev.t==='soin'&&ev.who===i,proprio_meurt:ev.t==='mort'&&ev.who===i}[c.type];
   if(!ok)return;
   if(x.st.insens>0){o.pbl=1;L('piege',`Le piège de ${o.pseudo} est bloqué (insensible)`,{c:i,k:'bloque',carte:o.pie.nom,img:o.pie.image||null});return}
-  o.decl++;L('piege',`Piège de ${o.pseudo} : ${o.pie.nom} !`,{c:i,carte:o.pie.nom,img:o.pie.image||null});if(c.type==='proprio_meurt')rv=1;fx(e.effet,o,x);rv=0;S.forEach(s=>s.pend=1);
+  o.decl++;L('piege',`Piège de ${o.pseudo} : ${o.pie.nom} !`,{c:i,carte:o.pie.nom,img:o.pie.image||null});if(c.type==='proprio_meurt')rv=1;const s0=SRC;SRC='piege';fx(e.effet,o,x);SRC=s0;rv=0;S.forEach(s=>s.pend=1);
  })}
  // Effets : o = propriétaire de l'effet, x = adversaire. mg=true : effet de magie (annulable/volable)
  const UNEFOIS=['degats','vol_vie','soin','echange_atq','echange_atq_def','echange_pv','echange_tout','purification','vol_ultime','reset_ultime','aleatoire','detruire','voler','equiper'];
@@ -134,8 +134,10 @@ function simuler(pA,pB,opt={}){
    case'reset_ultime':T.uh.forEach(h=>{h.uses=0;h.last=-99});L('statut',`L'ultime de ${nom(T)} est réinitialisé !`,{c:id(T)});break;
    case'mort_evitee':if(!mg&&!o.st.mortUsed){o.st.evite=1;L('statut',`${nom(o)} est protégé : il évitera la mort une fois`,{c:id(o)})}break;   // en magie : lue directement dans dmg() ; en ultime / piège : protection posée à l'activation
    case'detruire':case'voler':{
-    if(e.carte==='magie'&&(x.magOn||x.magAnnT)){const etaitOn=x.magOn;x.magOn=0;x.magAnnT=0;if(etaitOn)undo(x);if(e.type==='voler'){fx(x.mag.effet,o,x,true);L('vol',`${o.pseudo} vole la magie de ${x.pseudo}`,{c:id(x),k:'magie_annulee'})}else L('vol',`La magie de ${x.pseudo} est détruite`,{c:id(x),k:'magie_annulee'})}
-    else if(e.carte==='piege'&&x.pieOn){x.pieOn=0;if(e.type==='voler'){o.pie=x.pie;o.pieOn=1;o.decl=0;L('vol',`${o.pseudo} vole le piège de ${x.pseudo}`,{c:id(x),k:'piege_annule',carte:x.pie.nom,img:x.pie.image||null})}else L('vol',`Le piège de ${x.pseudo} est détruit`,{c:id(x),k:'piege_detruit',carte:x.pie.nom,img:x.pie.image||null})}
+    if(e.carte==='magie'&&(x.magOn||x.magAnnT)){const etaitOn=x.magOn;x.magOn=0;x.magAnnT=0;if(etaitOn)undo(x);if(e.type==='voler'){const vs=SRC,sur=vs==='piege'?'piege':'magie';if(vs==='piege')o.pieOn=0;   // volée par un piège : elle prend la place de ce piège (qui est donc consommé)
+      L('vol',`${o.pseudo} vole la magie de ${x.pseudo} : ${x.mag.nom}`,{c:id(o),k:'vol_carte',from:id(x),to:id(o),de:'magie',sur,carte:x.mag.nom,img:x.mag.image||null});fx(x.mag.effet,o,x,true)}else L('vol',`La magie de ${x.pseudo} est détruite`,{c:id(x),k:'magie_annulee'})}
+    else if(e.carte==='piege'&&x.pieOn){x.pieOn=0;if(e.type==='voler'){const sur='piege';o.pie=x.pie;o.pieOn=1;o.decl=0;o.pbl=0;   // le piège volé prend la place du piège du voleur
+      L('vol',`${o.pseudo} vole le piège de ${x.pseudo} : ${x.pie.nom}`,{c:id(o),k:'vol_carte',from:id(x),to:id(o),de:'piege',sur,carte:x.pie.nom,img:x.pie.image||null})}else L('vol',`Le piège de ${x.pseudo} est détruit`,{c:id(x),k:'piege_detruit',carte:x.pie.nom,img:x.pie.image||null})}
     break}
    case'equiper':{const c=tire(o.deck.filter(k=>k!==o.mag&&k!==o.pie),e.carte);if(c){if(e.carte==='magie'){o.mag=c;o.magOn=1;fx(c.effet,o,x,true)}else{o.pie=c;o.pieOn=1;o.decl=0}L('vol',`${nom(o)} équipe ${c.nom}`)}break}
    default:L('inconnu',`Effet non géré par le moteur : ${e.type}`);
@@ -234,7 +236,7 @@ function simuler(pA,pB,opt={}){
    if(u.utilisations>0&&h.uses>=u.utilisations)continue;
    if(tour-h.last<(u.delai_tours||0))continue;
    if(!((u.apres_tours&&tour>=u.apres_tours)||(u.sur_carte&&s.pend)))continue;
-   h.uses++;h.last=tour;s.pend=0;L('ultime',`ULTIME de ${nom(s)} !`,{c:id(s)});fx(u,s,adv(s));scan({t:'ultime',by:id(s)});if(over())break}
+   h.uses++;h.last=tour;s.pend=0;L('ultime',`ULTIME de ${nom(s)} !`,{c:id(s)});{const s0=SRC;SRC='ultime';fx(u,s,adv(s));SRC=s0}scan({t:'ultime',by:id(s)});if(over())break}
  }
  function attaque(a){
   const d=adv(a),ia=id(a),idd=id(d);
@@ -313,7 +315,7 @@ function simuler(pA,pB,opt={}){
  function passifsTour(s){
   if(s.pv<=0)return;const x=adv(s);
   s.pl.forEach(p=>{if(s.pv<=0)return;
-   if(p.type==='aleatoire'&&(!p.every||tour%p.every===0)&&roll(p.chance==null||p.chance===''?100:p.chance)&&!over())effetAlea(s,x);
+   if(p.type==='aleatoire'&&(!p.every||tour%p.every===0)&&roll(p.chance==null||p.chance===''?100:p.chance)&&!over()){const s0=SRC;SRC='passif';effetAlea(s,x);SRC=s0}
    if(p.type==='soin_tour')heal(s,amt(p,s.max));
    if(p.type==='atq_tours'&&tour%p.tours===0){const dd=amt(p,s.atq);s.atq+=dd;L('stat',`ATQ de ${nom(s)} +${dd}`,{c:id(s),k:'mod',s:'ATQ',d:dd})}
    if(p.type==='pv_tours'&&tour%p.tours===0){const d=amt(p,s.max);s.max+=d;s.pv+=d;L('stat',`PV max de ${nom(s)} +${d}`,{c:id(s),k:'mod',s:'PV max',d})}
