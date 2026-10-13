@@ -160,7 +160,7 @@ const img=p=>p?sb.storage.from('cartes').getPublicUrl(p).data.publicUrl:'';
 async function q(p){const r=await p;if(r.error){alert(r.error.message);throw r.error}return r.data}
 let user,joueur,isAdmin,tab='collection',sub='cartes',B={};
 const opts=(a,l='nom')=>a.map(x=>`<option value="${x.id}">${esc(x[l])}</option>`).join('');
-const TABS={collection:'Ma collection',boutique:'Boutique',deck:'Mon deck',dos:'Dos de cartes',historique:'Historique',profil:'Profils',regles:'Comment jouer',propos:'🎨 Propositions',patch:'📜 Patch notes'};
+const TABS={collection:'Ma collection',boutique:'Boutique',deck:'Mon deck',dos:'Dos de cartes',historique:'Historique',profil:'Profils',classement:'🏆 Classement',regles:'Comment jouer',propos:'🎨 Propositions',patch:'📜 Patch notes'};
 
 async function init(){
   const {data:{session}}=await sb.auth.getSession();
@@ -184,7 +184,7 @@ function show(t){
   tab=t;const T={...TABS};if(isAdmin)T.admin='⚙️ Admin';
   $('#nav').innerHTML=Object.entries(T).map(([k,v])=>`<button class="${k==t?'on':'sec'}" data-t="${k}">${v}</button>`).join('');
   $('#nav').querySelectorAll('button').forEach(b=>b.onclick=()=>show(b.dataset.t));
-  ({collection:vCollection,boutique:vBoutique,deck:vDeck,dos:vDos,historique:vHistorique,profil:vProfil,regles:vRegles,propos:vPropos,patch:vPatch,admin:vAdmin})[t]();
+  ({collection:vCollection,boutique:vBoutique,deck:vDeck,dos:vDos,historique:vHistorique,profil:vProfil,classement:vClassement,regles:vRegles,propos:vPropos,patch:vPatch,admin:vAdmin})[t]();
 }
 
 /* ---------- Collection ---------- */
@@ -519,7 +519,6 @@ async function vProfil(id=user.id){
    ${st('Boosters ouverts',n('boosters_ouverts'))}
    ${Object.entries(byR).map(([k,v])=>st(esc(k),v,'cartes différentes')).join('')}</div>`;
   }
-  const rank=rl.data.slice(0,50).map((x,i)=>`<tr><td>${i+1}</td><td><button class="${x.joueur_id==id?'on':'sec'}" data-p="${x.joueur_id}">${esc(x.pseudo)}${x.joueur_id==user.id?' (moi)':''}</button></td><td>${x.victoires}</td><td>${x.defaites}</td><td>${x.nuls}</td></tr>`).join('');
   main.innerHTML=`<div class="row"><h3 style="margin:0">${mine?'Mon profil':'Profil de '+esc(D.pseudo)}</h3>${mine?'':`<button class="sec" data-p="${user.id}">← Mon profil</button>`}</div>
   <h3>Combats</h3><div class="stats">
    ${st('Victoires',n('victoires'))}${st('Défaites',n('defaites'))}${st('Nuls',n('nuls'))}
@@ -533,9 +532,21 @@ async function vProfil(id=user.id){
   <h3>Cartes</h3><div class="stats">${cardTile('Carte la plus jouée',D.plus_jouee,'combats')}${cardTile('Carte la plus victorieuse',D.plus_gagnante,'victoires')}</div>
   ${coll}
   ${tot?'':`<p><small>${mine?'Aucun combat joué pour l\'instant : tes statistiques de combat apparaîtront après ton premier combat.':'Ce joueur n\'a pas encore combattu.'}</small></p>`}
-  <h3>Classement</h3><p><small>Clique sur un pseudo pour voir son profil.</small></p>
-  <table><tr><th>#</th><th>Joueur</th><th>V</th><th>D</th><th>N</th></tr>${rank}</table>`;
+  <p><button class="sec" data-cl>🏆 Voir le classement</button></p>`;
+  const bc=main.querySelector('[data-cl]');if(bc)bc.onclick=()=>show('classement');
   main.querySelectorAll('button[data-p]').forEach(b=>b.onclick=()=>{vProfil(b.dataset.p);window.scrollTo(0,0)});
+}
+
+/* ---------- Classement ---------- */
+async function vClassement(){
+  const rl=await sb.rpc('liste_profils');
+  if(rl.error){main.innerHTML='<p class="ko">Classement indisponible pour le moment.</p>';return}
+  const L=(rl.data||[]).slice(0,100),med=['🥇','🥈','🥉'];
+  const pc=x=>{const t=(x.victoires||0)+(x.defaites||0)+(x.nuls||0);return t?Math.round(100*(x.victoires||0)/t)+' %':'—'};
+  const moi=L.findIndex(x=>x.joueur_id==user.id);
+  main.innerHTML=`<h3>🏆 Classement</h3><p><small>Clique sur un pseudo pour voir son profil.${moi>=0?` Tu es <b>${moi+1}${moi?'e':'er'}</b>.`:''}</small></p>
+   ${L.length?`<table><tr><th>#</th><th>Joueur</th><th>Victoires</th><th>Défaites</th><th>Nuls</th><th>% victoires</th></tr>${L.map((x,i)=>`<tr${x.joueur_id==user.id?' style="background:#2a2140"':''}><td>${med[i]||i+1}</td><td><button class="${x.joueur_id==user.id?'on':'sec'}" data-p="${x.joueur_id}">${esc(x.pseudo)}${x.joueur_id==user.id?' (moi)':''}</button></td><td>${x.victoires}</td><td>${x.defaites}</td><td>${x.nuls}</td><td>${pc(x)}</td></tr>`).join('')}</table>`:'<p><small>Aucun combat joué pour l\'instant.</small></p>'}`;
+  main.querySelectorAll('button[data-p]').forEach(b=>b.onclick=()=>{tab='profil';const T={...TABS};if(isAdmin)T.admin='⚙️ Admin';$('#nav').innerHTML=Object.entries(T).map(([k,v])=>`<button class="${k=='profil'?'on':'sec'}" data-t="${k}">${v}</button>`).join('');$('#nav').querySelectorAll('button').forEach(n=>n.onclick=()=>show(n.dataset.t));vProfil(b.dataset.p);window.scrollTo(0,0)});
 }
 
 /* ---------- Historique des parties ---------- */
