@@ -1057,12 +1057,13 @@ async function volCarte(e){const src=$((e.de==='magie'?'#m':'#g')+e.from),dst=$(
  dst.classList.add('act');setTimeout(()=>dst.classList.remove('act'),1300);flot(e.to,'Carte volée !','#d8b4fe');await wait(400)}
 
 // RÉANIMATION : auréole d'ange qui brille + symbole de soin (en plus de la lueur de soin)
-function aureole(c){const K=rc(c),W=K.w,cx=K.cx;
+function aureole(c,o={}){const K=rc(c),W=K.w,cx=K.cx;
  addFx(1.9,(x,t,u)=>{const env=Math.sin(Math.PI*cl(u*1.05)),hy=K.y+K.h*.02-K.h*.1*(1-ez(cl(t/.5)));x.globalCompositeOperation='lighter';
   const g=x.createLinearGradient(0,hy,0,K.y+K.h);g.addColorStop(0,`rgba(255,235,150,${.35*env})`);g.addColorStop(1,'rgba(255,235,150,0)');x.fillStyle=g;
   x.beginPath();x.moveTo(cx-W*.2,hy);x.lineTo(cx+W*.2,hy);x.lineTo(K.x+K.w*.92,K.y+K.h);x.lineTo(K.x+K.w*.08,K.y+K.h);x.closePath();x.fill();
   x.save();x.shadowColor=`rgba(255,215,90,${env})`;x.shadowBlur=30*(1+.08*Math.sin(t*10));x.lineWidth=W*.035;x.strokeStyle=`rgba(255,235,150,${env})`;x.beginPath();x.ellipse(cx,hy,W*.2,W*.055,0,0,7);x.stroke();
   x.lineWidth=W*.012;x.strokeStyle=`rgba(255,255,255,${env})`;x.stroke();x.restore();
+  if(o.croix===false)return;   // transcendance : auréole sans la croix de soin
   const cs=W*.16*(.9+.1*Math.sin(t*8)),tt=cs*.32;x.save();x.shadowColor=`rgba(80,255,160,${env})`;x.shadowBlur=25;x.fillStyle=`rgba(210,255,225,${env})`;x.fillRect(cx-tt/2,K.cy-cs,tt,cs*2);x.fillRect(cx-cs,K.cy-tt/2,cs*2,tt);x.restore()})}
 
 function statut(c,k,on){if(k==='fracture')return;const key=c+k;st[key]=Math.max(0,(st[key]||0)+(on?1:-1));const card=$('#p'+c+' .card'),f=card.querySelector('canvas.fx.'+k);
@@ -1109,7 +1110,7 @@ async function jouer(res){
    else if(e.t==='statut'&&e.k==='alea'){flot(e.c,'🎲 '+(e.txt.split(' : ')[1]||'').replace(' !',''),'#c4b5fd');await wait(800)}
    else if(e.t==='statut'&&e.k==='purif'){purif(e.c);flot(e.c,'Purifié !','#fde047');await wait(1300)}
    else if(e.t==='statut'&&e.k==='transc_prep'){flot(e.c,'✦ Transcendance','#fde68a');await wait(700)}
-   else if(e.t==='statut'&&e.k==='transc'){auraFx(e.c,{gold:1});aureole(e.c);flot(e.c,'TRANSCENDANCE !','#fef3c7','big');if(!st[e.c+'transc'])statut(e.c,'transc',true);await wait(2600)}
+   else if(e.t==='statut'&&e.k==='transc'){auraFx(e.c,{gold:1});aureole(e.c,{croix:false});flot(e.c,'TRANSCENDANCE !','#fef3c7','big');if(!st[e.c+'transc'])statut(e.c,'transc',true);await wait(2600)}
    else if(e.t==='finstatut'&&e.k==='transc_prep'){}
    else if(e.t==='statut'&&e.k==='solide'){if(!st[e.c+'solide'])statut(e.c,'solide',true);flot(e.c,'Solidifié !','#d6d3d1');await wait(900)}
    else if(e.t==='statut'&&e.k==='solide_bloque'){solideCoup(e.c);flot(e.c,'Solide !','#e7e5e4');await wait(500)}
@@ -1210,7 +1211,7 @@ if(DEMO){
   ['Statuts','Purification (aura jaune)',c=>{flot(c,'Purifié !','#fde047');purif(c)},2000],
   ['Statuts','Gel (givre)',c=>statut(c,'gel',true),3000,c=>statut(c,'gel',false),'gel'],
   ['Statuts','Gel : attaque bloquée',c=>{flot(c,'Gelé !','#bae6fd');givreCoup(c)},1500],
-  ['Statuts','Transcendance (lumière dorée)',c=>{auraFx(c,{gold:1});aureole(c);flot(c,'TRANSCENDANCE !','#fef3c7','big');statut(c,'transc',true)},4200,c=>statut(c,'transc',false),'transc'],
+  ['Statuts','Transcendance (lumière dorée)',c=>{auraFx(c,{gold:1});aureole(c,{croix:false});flot(c,'TRANSCENDANCE !','#fef3c7','big');statut(c,'transc',true)},4200,c=>statut(c,'transc',false),'transc'],
   ['Statuts','Solidification (pierre)',c=>{statut(c,'solide',true);flot(c,'Solidifié !','#d6d3d1')},3000,c=>statut(c,'solide',false),'solide'],
   ['Statuts','Solidification : étourdissement bloqué',c=>{flot(c,'Solide !','#e7e5e4');solideCoup(c)},1200],
   ['Statuts','Solidification brisée (fracture)',c=>{solideBrise(c);flot(c,'Brisé !','#a8a29e')},1500],
