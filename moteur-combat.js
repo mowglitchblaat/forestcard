@@ -18,7 +18,7 @@ function simuler(pA,pB,opt={}){
  const normPas=p=>!p?[]:p.briques?p.briques.filter(b=>b&&b.type).map(canonP):(p.type?[canonP(p)]:[]);   // passif unique (ancien format) ou plusieurs passifs { briques:[…] }
  const nw=(p,ex,cur)=>{const c=tire(p.deck,'combattant',ex,cur);if(!c)throw new Error(p.pseudo+" n'a aucun combattant dans son deck");const pl=normPas(c.passif);
   return{pseudo:p.pseudo,deck:p.deck,dos:p.dos||null,card:c,mag:tire(p.deck,'magie',ex,cur)||VM,pie:tire(p.deck,'piege',ex,cur)||VP,atq:c.atq,pv:c.pv,max:c.pv,pl:pl,ult:c.ultime,
-   uh:[{u:c.ultime,uses:0,last:-99}],magOn:1,pieOn:1,decl:0,mdelta:[],st:{rage:[],fat:[],pcnt:[],rUsed:[],reanL:[],purs:[],hots:[],cl:0,bleeds:[],frost:[],fract:[],stun:0,skip:0,dbl:0,solide:0,dots:[],cret:[],curses:[],atkfx:[],esqb:0,ren:[],insens:0,prog:[],evite:pl.some(p=>p.type==='evite_mort')?1:0,mortUsed:0,bonus:0},
+   uh:[{u:c.ultime,uses:0,last:-99}],magOn:1,pieOn:1,decl:0,mdelta:[],st:{rage:[],fat:[],pcnt:[],rUsed:[],reanL:[],purs:[],hots:[],cl:0,bleeds:[],frost:[],fract:[],stun:0,skip:0,dbl:0,solide:0,joues:0,trA:null,transc:0,dots:[],cret:[],curses:[],atkfx:[],esqb:0,ren:[],insens:0,prog:[],evite:pl.some(p=>p.type==='evite_mort')?1:0,mortUsed:0,bonus:0},
    cum:0,coups:0,rt:0,uses:0,last:-99,pend:0}};
  const S=[nw(pA),nw(pB)],id=s=>S.indexOf(s),adv=s=>S[1-id(s)],nom=s=>s.card.nom;
  S.forEach(s=>{if(s.mag.vide)s.magOn=0;if(s.pie.vide)s.pieOn=0});
@@ -129,6 +129,7 @@ function simuler(pA,pB,opt={}){
    case'echange_tout':[o.atq,x.atq]=[x.atq,o.atq];[o.pv,x.pv]=[x.pv,o.pv];[o.max,x.max]=[x.max,o.max];L('stat',`${nom(o)} et ${nom(x)} échangent ATQ et PV`,{k:'echange',cs:[id(o),id(x)],col:'mixte'});break;
    case'malediction':maudire((e.ciblem||e.cible)==='soi'?o:x,e.val||0,e.tours||1);break;
    case'saignement':saigner((e.ciblem||e.cible)==='soi'?o:x,e.pctpv||0,e.reducsoin||0,e.tours||1);break;
+   case'transcendance':{const A=porterTransc(o,e);if(A&&mg)o.mdelta.push({undo:()=>{if(o.st.trA===A&&!o.st.transc){o.st.trA=null;L('finstatut',`${nom(o)} perd la Transcendance`,{c:id(o),k:'transc_prep'})}}});break}
    case'solidification':{const ch=e.chance==null||e.chance===''?100:(+e.chance||0);if(solidifier(o,ch,e.tours)&&mg)o.mdelta.push({undo:()=>{if(o.st.solide>0){o.st.solide=0;L('finstatut',`${nom(o)} n'est plus solidifié`,{c:id(o),k:'solide'})}}});break}
    case'gel':geler((e.ciblem||e.cible)==='soi'?o:x,e.annul||0,e.stunch||0,e.tours||1);break;
    case'fracture':fracturer((e.ciblem||e.cible)==='soi'?o:x,e.fchance||0,e.degfrac||0,e.tours||1);break;
@@ -208,6 +209,7 @@ function simuler(pA,pB,opt={}){
    ['Étourdissement',()=>({type:'etourdir_effet',ciblem:'adversaire',tours:ri(1,2)})],
    ['Malédiction',()=>({type:'malediction',ciblem:'adversaire',val:pv(o.atq,10,25),tours:ri(2,4)})],
    ['Saignement',()=>({type:'saignement',ciblem:'adversaire',pctpv:ri(3,7),reducsoin:ri(30,60),tours:ri(2,4)})],
+   ['Transcendance',()=>({type:'transcendance',tours:ri(2,4),patq:ri(10,20),ppv:ri(10,20)})],
    ['Solidification',()=>({type:'solidification',chance:ri(50,100),tours:ri(1,3)})],
    ['Gel',()=>({type:'gel',ciblem:'adversaire',annul:ri(30,60),stunch:ri(10,30),tours:ri(2,3)})],
    ['Fracture',()=>({type:'fracture',ciblem:'adversaire',fchance:ri(40,70),degfrac:pv(o.max,3,8),tours:ri(2,3)})],
@@ -272,6 +274,7 @@ function simuler(pA,pB,opt={}){
    let n=Math.max(0,a.atq*(a.st.dbl>0?2:1)+a.st.bonus+a.st.rage.reduce((q,g)=>q+g.n,0));a.st.bonus=0;   // rage : dégâts en plus · fatigue : dégâts en moins
    d.pl.filter(p=>p.type==='reduc_degats').forEach(p=>{if(roll(p.chance)){L('bloque',`${nom(d)} bloque une partie des dégâts`,{c:idd});n=Math.max(0,n-amt(p,n))}});
    d.rt++;n=dmg(a,d,n);L('degats',`${nom(d)} subit ${n} dégâts`,{c:idd,n});
+   if(a.st.transc&&d.pv>0){const z=d.st;if(z.dots.length||z.curses.length||z.bleeds.length||z.frost.length||z.fract.length||z.fat.length||z.skip>0||z.cl>0)purifier(d)}   // Transcendance : chaque coup qui touche purifie l'adversaire
    d.pl.filter(p=>p.type==='renvoi').forEach(p=>{if(n>0){const b=dmg(d,a,amt(p,n));L('degats',`${nom(a)} subit ${b} dégâts renvoyés`,{c:ia,n:b,k:'renvoi',from:idd})}});
    d.st.ren.forEach(R=>{const b=dmg(d,a,n*R.pct/100);if(b>0)L('degats',`${nom(a)} subit ${b} dégâts renvoyés`,{c:ia,n:b,k:'renvoi',from:idd})});
    if(a.pv<=0||over())return;
@@ -295,6 +298,13 @@ function simuler(pA,pB,opt={}){
   scan({t:'attaque',by:ia});
  }
  // Début du tour d'une carte : malédiction (l'ATQ baisse), puis régénération — avant l'ultime et l'attaque (les autres TIK de statut sont en fin de tour : voir tikFinDeTour)
+ // Transcendance : après avoir joué X tours (4 par défaut) en la possédant, la carte transcende jusqu'à la fin du combat :
+ //   purifiée + étourdissement retiré, ATQ +X % et PV max +X % (15 % par défaut), et chacune de ses attaques qui touche purifie l'adversaire.
+ function porterTransc(s,e,silent){if(s.st.transc||s.st.trA)return null;const v=(k,d)=>{const n=parseInt(e[k],10);return Number.isFinite(n)&&n>=0?n:d};
+  s.st.trA={n:Math.max(1,v('tours',4)),pa:v('patq',15),pp:v('ppv',15),base:s.st.joues};if(!silent)L('statut',`${nom(s)} porte la Transcendance : elle transcendera après ${s.st.trA.n} tour${s.st.trA.n>1?'s':''} joué${s.st.trA.n>1?'s':''}`,{c:id(s),k:'transc_prep'});return s.st.trA}
+ function transcender(s){const A=s.st.trA;s.st.transc=1;L('statut',`${nom(s)} TRANSCENDE !`,{c:id(s),k:'transc'});
+  purifier(s,true);if(s.st.stun>0){s.st.stun=0;L('finstatut',`${nom(s)} n'est plus étourdi`,{c:id(s),k:'etourdi'})}L('statut',`${nom(s)} est purifié (étourdissement compris) !`,{c:id(s),k:'purif'});
+  const da=rd(s.atq*A.pa/100),dp=rd(s.max*A.pp/100);if(da){s.atq+=da;L('stat',`ATQ de ${nom(s)} +${da}`,{c:id(s),k:'mod',s:'ATQ',d:da})}if(dp){s.max+=dp;s.pv+=dp;L('stat',`PV max de ${nom(s)} +${dp}`,{c:id(s),k:'mod',s:'PV max',d:dp})}}
  // Solidification : insensible à l'étourdissement pendant X tours de l'adversaire. Ne se purge pas ; une fracture la brise. Un étourdissement déjà en cours reste.
  function solidifier(s,ch,t){t=Math.max(1,parseInt(t,10)||1);if(!roll(ch))return false;s.st.solide=Math.max(s.st.solide,t);L('statut',`${nom(s)} se solidifie (${t} tour${t>1?'s':''}) : insensible à l'étourdissement`,{c:id(s),k:'solide'});return true}
  function debutTour(s){
@@ -310,6 +320,8 @@ function simuler(pA,pB,opt={}){
  // Fin du tour d'une carte : les durées qui dépendent de SES actions (rage, fatigue, gel, fracture, dégâts doublés) baissent d'un tour.
  // Un tour où elle est étourdie ou gelée compte aussi ; le tour de l'adversaire ne compte jamais.
  function finTourCarte(s){
+  if(s.pv>0){s.st.joues++;if(!s.st.trA&&!s.st.transc){const p=s.pl.find(q=>q.type==='transcendance');if(p){porterTransc(s,p,true);s.st.trA.base=0}}   // passif : possédée dès le début du combat
+   const A=s.st.trA;if(A&&!s.st.transc&&s.st.joues-A.base>=A.n)transcender(s)}
   {const x=adv(s);if(x.st.solide>0&&--x.st.solide===0)L('finstatut',`${nom(x)} n'est plus solidifié`,{c:id(x),k:'solide'})}   // la solidification protège pendant les tours de l'adversaire
   if(s.pv<=0)return;
   s.st.frost=s.st.frost.filter(f=>{if(--f.t>0)return true;L('finstatut',`${nom(s)} n'est plus gelé`,{c:id(s),k:'gel'});return false});

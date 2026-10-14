@@ -315,6 +315,7 @@ function fxPassif(p){
     case 'enchainement':return `${c} % de chances de frapper une fois de plus, puis retente${nz(p.max)>0?` (${p.max} frappes en plus au maximum)`:''}`;
     case 'saignement':return `${c} % de chances de faire saigner la cible (${nz(p.pctpv)} % des PV max par tour, soins −${nz(p.reducsoin)} %, ${trs(T)})`;
     case 'gel':return `${c} % de chances de geler la cible (${nz(p.annul)} % d'attaque annulée, ${nz(p.stunch)} % d'être étourdie, ${trs(T)})`;
+    case 'transcendance':return `Après ${nz(p.tours)||4} tour${(nz(p.tours)||4)>1?'s':''} joué${(nz(p.tours)||4)>1?'s':''}, transcende jusqu'à la fin du combat : purifiée (étourdissement compris), ATQ +${p.patq==null||p.patq===''?15:nz(p.patq)} %, PV max +${p.ppv==null||p.ppv===''?15:nz(p.ppv)} %, et chaque attaque qui touche purifie l'adversaire`;
     case 'solidification':return `À chacun de ses tours, ${c<100?c+' % de chances de se solidifier':'se solidifie'} pendant ${trs(T)} de l'adversaire (insensible à l'étourdissement, ne se purge pas, brisée par une fracture)`;
     case 'fracture':return `${c} % de chances de fracturer la cible (${nz(p.fchance)} % de se blesser de ${nz(p.degfrac)} PV en attaquant, ${trs(T)})`;
     default:return cat(p.type)}
@@ -349,6 +350,7 @@ function fxEffet(e){
     case 'malediction':return[`Maudit ${ci} : ATQ −${v} par tour pendant ${trs(T)}, puis l'ATQ revient petit à petit`];
     case 'saignement':return[`Fait saigner ${ci} : ${nz(e.pctpv)} % des PV max par tour, soins −${nz(e.reducsoin)} %, ${trs(T)}`];
     case 'gel':return[`Gèle ${ci} (${nz(e.annul)} % d'attaque annulée, ${nz(e.stunch)} % d'étourdissement, ${trs(T)})`];
+    case 'transcendance':return[`Après ${nz(e.tours)||4} tour${(nz(e.tours)||4)>1?'s':''} joué${(nz(e.tours)||4)>1?'s':''}, transcende jusqu'à la fin du combat : purifiée (étourdissement compris), ATQ +${e.patq==null||e.patq===''?15:nz(e.patq)} %, PV max +${e.ppv==null||e.ppv===''?15:nz(e.ppv)} %, et chaque attaque qui touche purifie l'adversaire`];
     case 'solidification':{const ch=e.chance==null||e.chance===''?100:nz(e.chance);return[`${ch<100?ch+' % de chances de se solidifier':'Se solidifie'} pendant ${trs(T)} de l'adversaire (insensible à l'étourdissement, ne se purge pas, brisée par une fracture)`]}
     case 'fracture':return[`Fracture ${ci} (${nz(e.fchance)} % de se blesser de ${nz(e.degfrac)} PV en attaquant, ${trs(T)})`];
     case 'vol_ultime':return["Vole l'ultime de l'adversaire"];
@@ -1017,7 +1019,7 @@ async function optimiserImages(log){
 
 /* ---------- Catalogue d'effets (pour ajouter un effet : une ligne ici) ---------- */
 // Paramètres réutilisables : [libellé, 'n' (nombre) ou liste de choix]
-const P={essais:['Nb de tentatives (la chance est tirée jusqu\'à X fois de suite, la 1re réussite suffit ; 1 par défaut)','n'],val:['Valeur','n'],u:['Unité',['pct','pts']],tours:['Nb de tours','n'],chance:['Chance (%)','n'],frappes:['Nb de frappes','n'],
+const P={essais:['Nb de tentatives (la chance est tirée jusqu\'à X fois de suite, la 1re réussite suffit ; 1 par défaut)','n'],val:['Valeur','n'],patq:['% d\'ATQ en plus (15 par défaut)','n'],ppv:['% de PV max en plus (15 par défaut)','n'],u:['Unité',['pct','pts']],tours:['Nb de tours','n'],chance:['Chance (%)','n'],frappes:['Nb de frappes','n'],
  coups:['Nb de coups','n'],cible:['Cible',['soi','adversaire']],carte:['Carte',['magie','piege']],seuil:['Seuil (ignoré si aucune condition)','n'],seuilpv:['Seuil (% PV)','n'],
  cond:['Condition pour éviter la mort',['aucune','pv_max','degats_infliges']],pct:['% PV rendus en plus','n'],pctrev:['% des PV max au retour','n'],val2:['2e valeur','n'],pctatq:["% de l'ATQ infligée volé en PV",'n'],pctpv:['% des PV max de la cible perdus par tour','n'],degtour:['Points de dégâts par tour','n'],ciblem:['Cible (adversaire par défaut)',['adversaire','soi']],max:['Plafond de frappes en plus','n'],reducsoin:['% de soins en moins','n'],ragev:['Rage : dégâts en plus par coup','n'],ragetours:['Rage : nombre de tours','n'],fatval:['Fatigue : ATQ en moins','n'],fattours:['Fatigue : nombre de tours','n'],nbalea:["Nombre d'effets aléatoires tirés (1 par défaut)",'n'],every:['Agit tous les X tours','n'],fois:['Nombre de fois (1 = une seule)','n'],annul:["Chance d'annuler l'attaque (%)",'n'],stunch:["Chance d'être étourdi avant l'attaque (%)",'n'],fchance:['Chance de se blesser en attaquant (%)','n'],degfrac:['Dégâts subis en attaquant','n']};
 // Chaque effet : [libellé, ...paramètres]
@@ -1034,7 +1036,8 @@ const PAS={evite_mort:['Évite la mort une fois (reste à 1 PV et retire les sta
  saignement:["À X % de chances, fait saigner (% des PV max par tour + soins réduits)",'chance','pctpv','reducsoin','tours'],
  gel:["À X % de chances, gèle la cible (chance d'annuler son attaque ou de l'étourdir)",'chance','annul','stunch','tours'],
  fracture:["À X % de chances, fracture la cible (chance de se blesser en attaquant)",'chance','fchance','degfrac','tours'],
- solidification:["À chacun de ses tours, X % de chances de se solidifier pendant X tours de l'adversaire (insensible à l'étourdissement, ne se purge pas, brisée par une fracture)",'chance','tours']};
+ solidification:["À chacun de ses tours, X % de chances de se solidifier pendant X tours de l'adversaire (insensible à l'étourdissement, ne se purge pas, brisée par une fracture)",'chance','tours'],
+ transcendance:["Transcendance : après avoir joué X tours (4 par défaut), transcende jusqu'à la fin du combat : purifiée (étourdissement compris), ATQ +X % et PV max +X % (15 % par défaut), et chaque attaque qui touche purifie l'adversaire",'tours','patq','ppv']};
 const ULT={degats:["Dégâts directs à l'adversaire",'val'],voler:['Vole une magie/un piège','carte'],detruire:['Détruit une magie/un piège','carte'],
  equiper:['Équipe une autre magie/piège du deck','carte'],soin:['Se soigne','val','u'],vol_vie:['Vole de la vie','val'],echange_atq:["Échange l'attaque avec l'adversaire"],
  annule_attaque:['Annule la prochaine attaque'],double_degats:['Double ses dégâts pendant X tours','tours'],echange_atq_def:["Échange l'ATQ et la défense (PV) de la cible (adversaire par défaut, ou soi)",'ciblem'],
@@ -1053,7 +1056,8 @@ const ULT={degats:["Dégâts directs à l'adversaire",'val'],voler:['Vole une ma
  etourdir_effet:["À X % de chances, étourdit pendant X tours (soi ou adversaire ; 100 % si la chance est vide)",'ciblem','chance','essais','tours'],
  poison_effet:["Poison : X points par tour pendant X tours (soi ou adversaire)",'ciblem','degtour','tours'],
  brulure_effet:["Brûlure : X % des PV max par tour pendant X tours (soi ou adversaire)",'ciblem','pctpv','tours'],
- solidification:["Solidification : X % de chances de se solidifier pendant X tours de l'adversaire (insensible à l'étourdissement, ne se purge pas, brisée par une fracture)",'chance','tours']};
+ solidification:["Solidification : X % de chances de se solidifier pendant X tours de l'adversaire (insensible à l'étourdissement, ne se purge pas, brisée par une fracture)",'chance','tours'],
+ transcendance:["Transcendance : après avoir joué X tours (4 par défaut), transcende jusqu'à la fin du combat : purifiée (étourdissement compris), ATQ +X % et PV max +X % (15 % par défaut), et chaque attaque qui touche purifie l'adversaire",'tours','patq','ppv']};
 const MAG={atq_mod:["Modifie l'ATQ (négatif = baisse)",'cible','val','u'],pv_mod:['Modifie les PV max (négatif = baisse)','cible','val','u'],
  soin:['Soigne son combattant','val','u'],degats:["Dégâts directs à l'adversaire",'val'],annule_attaque:["Annule la prochaine attaque de l'adversaire"],
  renvoi:['Renvoie une part des dégâts pendant X tours','val','tours'],insensible_piege:['Insensible aux pièges pendant X tours','tours'],
@@ -1083,7 +1087,8 @@ const MAG={atq_mod:["Modifie l'ATQ (négatif = baisse)",'cible','val','u'],pv_mo
  gel:["Gel : chance d'annuler l'attaque / d'être étourdi, pendant X tours",'ciblem','annul','stunch','tours'],
  fracture:["Fracture : chance de se blesser en attaquant, pendant X tours",'ciblem','fchance','degfrac','tours'],
  vol_ultime:["Vole l'ultime de l'adversaire"],
- solidification:["Solidification : X % de chances de se solidifier pendant X tours de l'adversaire (insensible à l'étourdissement, ne se purge pas, brisée par une fracture)",'chance','tours']};
+ solidification:["Solidification : X % de chances de se solidifier pendant X tours de l'adversaire (insensible à l'étourdissement, ne se purge pas, brisée par une fracture)",'chance','tours'],
+ transcendance:["Transcendance : après avoir joué X tours (4 par défaut), transcende jusqu'à la fin du combat : purifiée (étourdissement compris), ATQ +X % et PV max +X % (15 % par défaut), et chaque attaque qui touche purifie l'adversaire",'tours','patq','ppv']};
 const CON={adv_attaque:["L'adversaire a attaqué X fois",'coups'],adv_ultime:["L'adversaire utilise son ultime"],proprio_pv_sous:['Le propriétaire passe sous X % de PV','seuilpv'],
  adv_pv_bas:["L'adversaire passe sous X % de PV",'seuilpv'],adv_soigne:["L'adversaire se soigne"],proprio_soigne:['Le propriétaire se soigne'],proprio_meurt:['Le propriétaire meurt']};
 let editId=null,editOld=null;

@@ -53,12 +53,12 @@ flowchart TD
   T3 -- "attaque annulée" --> T3x
   T3 -- "gel : attaque annulée ou paralysée (chance)" --> T3x
   T3 -- oui --> AT["Attaque : nombre de frappes<br/>(frappe multiple, enchaînement qui retente)<br/>fracture : chance de se blesser"]
-  AT --> FR["Pour chaque frappe :<br/>esquive ? → sinon dégâts = ATQ (×2 si doublés, + rage, + bonus)<br/>réduction de dégâts · coup mortel ? (schéma 3)<br/>renvoi de dégâts · vol de vie · statuts posés par l'attaque<br/>(cible solidifiée : l'étourdissement est sans effet ;<br/>une fracture brise la solidification)"]
+  AT --> FR["Pour chaque frappe :<br/>esquive ? → sinon dégâts = ATQ (×2 si doublés, + rage, + bonus)<br/>réduction de dégâts · coup mortel ? (schéma 3)<br/>renvoi de dégâts · vol de vie · statuts posés par l'attaque<br/>(cible solidifiée : l'étourdissement est sans effet ;<br/>une fracture brise la solidification)<br/>attaquant transcendé : chaque coup qui touche purifie l'adversaire"]
   FR --> PG["Pièges « l'adversaire a attaqué N fois »<br/>(toutes les N attaques, jusqu'au maximum)"]
   T3x --> T4
   PG --> T4["4. Effets « à chaque tour »<br/>effet aléatoire · soin · ATQ / PV qui augmentent tous les X tours"]
   T4 --> T5["5. Statuts de fin de tour<br/>brûlure / poison (mêmes dégâts à chaque tour,<br/>cumul seulement s'ils sont réappliqués)<br/>saignement · purifications · dégâts différés"]
-  T5 --> T6["6. Fin des durées<br/>gel · fracture · fatigue (ATQ rendue) · rage → fatigue<br/>dégâts doublés · renvoi<br/>insensibilité terminée → piège adverse réactivé s'il lui reste des déclenchements<br/>annulation de magie terminée → la magie revient<br/>solidification de l'adversaire : −1 tour (elle protège pendant ses tours à lui)"]
+  T5 --> T6["6. Fin des durées<br/>gel · fracture · fatigue (ATQ rendue) · rage → fatigue<br/>dégâts doublés · renvoi<br/>insensibilité terminée → piège adverse réactivé s'il lui reste des déclenchements<br/>annulation de magie terminée → la magie revient<br/>solidification de l'adversaire : −1 tour (elle protège pendant ses tours à lui)<br/>Transcendance : après X tours joués (4) → purifiée, étourdissement retiré,<br/>ATQ +X % et PV max +X % (15 %), jusqu'à la fin du combat"]
   T6 --> TF([Au tour de l'autre carte])
 ```
 

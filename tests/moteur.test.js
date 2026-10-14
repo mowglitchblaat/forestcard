@@ -162,6 +162,23 @@ test('valeurs en % : calculées sur la stat de la carte (7 % de 300 ATQ = 21)', 
 });
 
 // ================= Statuts =================
+test('transcendance : après 4 tours joués, purifiée (étourdissement compris), +15 % ATQ / PV max, et chaque coup purifie l\'adversaire', () => {
+  const asc = MAG('Ascension', { type: 'transcendance' });
+  // sans étourdissement : transcende à la fin de son 4e tour, bonus +15 %, puis ses coups purifient l'adversaire
+  const r = combat([C('a', 100, SOLIDE), asc], [C('b', 10, SOLIDE), MAG('Venin', { type: 'poison_effet', ciblem: 'soi', degtour: 3, tours: 20 })], { regles: { maxTours: 12, maxProlong: 0 } });
+  const iT = r.journal.findIndex(e => e.k === 'transc');
+  assert.ok(iT > 0, 'transcende');
+  assert.equal(r.journal.slice(0, iT).filter(e => e.t === 'attaque' && e.c === 0).length, 4, 'après 4 tours joués');
+  const apres = r.journal.slice(iT);
+  assert.ok(apres.some(e => e.txt === 'ATQ de a +15'), 'ATQ +15 %');
+  assert.ok(apres.some(e => e.txt === `PV max de a +${Math.round(SOLIDE * .15)}`), 'PV max +15 %');
+  assert.ok(apres.some(e => e.k === 'purif' && e.c === 1), 'un coup de a purifie l\'adversaire');
+  // étourdie longtemps au moment de transcender : l'étourdissement est retiré
+  const r2 = combat([C('a', 100, SOLIDE), asc], [C('b', 10, SOLIDE, { passif: { type: 'etourdir', chance: 100, tours: 3 } })], { regles: { maxTours: 12, maxProlong: 0 } });
+  const j = r2.journal.findIndex(e => e.k === 'transc');
+  assert.ok(j > 0 && r2.journal.slice(j, j + 4).some(e => /a n'est plus étourdi/.test(e.txt || '')), 'étourdissement retiré');
+});
+
 test('solidification : bloque l\'étourdissement, une fracture la brise, la purification ne la retire pas', () => {
   const etourdit = { type: 'etourdir', chance: 100 };
   // magie : solidifié 3 tours, l'adversaire étourdit à chaque coup → aucun étourdissement
