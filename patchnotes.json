@@ -1,5 +1,41 @@
 [
   {
+    "date": "2026-10-14",
+    "intro": "Quatre nouvelles mécaniques de combat avec leurs animations, des pièges plus fiables et un site plus rapide et plus complet.",
+    "groupes": [
+      {
+        "titre": "Combat",
+        "points": [
+          "Nouvelles mécaniques : Solidification (insensible à l'étourdissement, impossible à purger, brisée par une fracture) et Transcendance (après quelques tours, la carte se purifie et gagne ATQ et PV).",
+          "Encore deux nouveautés : Exécution (des marques qui achèvent la cible sous un seuil de PV, même si elle évite la mort) et Souffle élémentaire (dégâts + un statut au choix : feu, glace, poison…).",
+          "Chaque protection qui évite la mort sauve une fois de son côté, la malédiction rend l'ATQ petit à petit, et les combats par jour contre un même adversaire sont limités."
+        ]
+      },
+      {
+        "titre": "Magies et pièges",
+        "points": [
+          "Le piège « l'adversaire a attaqué N fois » se redéclenche toutes les N attaques, et un piège sous insensibilité se déclenche quand même, mais sans effet.",
+          "Les effets en pourcentage deviennent la norme et se calculent sur les stats de la carte."
+        ]
+      },
+      {
+        "titre": "Animations",
+        "points": [
+          "Souffle de dragon coloré selon le statut, lames et épée sombres pour l'Exécution, auréole pour la Transcendance.",
+          "Le contour de rareté se brise avec la carte, et la lueur des ouvertures de boosters sur le stream ne s'accumule plus."
+        ]
+      },
+      {
+        "titre": "Site",
+        "points": [
+          "Le classement a son propre onglet (médailles, % de victoires, ta place) et la collection affiche une jauge de progression par collection et par rareté.",
+          "La boutique détaille le contenu de chaque booster, et les propositions permettent d'assembler ta carte sous son cadre.",
+          "Site plus rapide : images allégées et chargées à l'affichage, gold à jour sans recharger, historique des 30 derniers combats."
+        ]
+      }
+    ]
+  },
+  {
     "date": "2026-10-13",
     "intro": "Grosse mise à jour des combats et du site : prolongations, magies et pièges corrigés, nouvelles animations, votes et propositions de splash art.",
     "groupes": [
