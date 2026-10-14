@@ -44,7 +44,7 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-  T0([Tour de la carte]) --> T1["1. Début de tour<br/>· malédiction qui s'estompe : l'ATQ perdue revient (morceau par morceau)<br/>· malédiction : l'ATQ baisse<br/>· contre-attaque renforcée préparée<br/>· régénération<br/>· passif Solidification : X % de chances de se solidifier"]
+  T0([Tour de la carte]) --> T1["1. Début de tour<br/>· malédiction qui s'estompe : l'ATQ perdue revient (morceau par morceau)<br/>· malédiction : l'ATQ baisse<br/>· contre-attaque renforcée préparée<br/>· régénération<br/>· passif Solidification : X % de chances de se solidifier<br/>· vol prévu (magie « au tour X », passif de vol) : la carte adverse est volée au début de son X-ième tour"]
   T1 --> T2{"2. Ultime prêt ?<br/>(après X tours ou quand une carte s'active,<br/>utilisations max, délai)"}
   T2 -- oui --> T2a["Ultime (aura rouge) → effets<br/>→ pièges « l'adversaire utilise son ultime »"]
   T2 -- non --> T3
@@ -58,7 +58,7 @@ flowchart TD
   T3x --> T4
   PG --> T4["4. Effets « à chaque tour »<br/>effet aléatoire · soin · ATQ / PV qui augmentent tous les X tours"]
   T4 --> T5["5. Statuts de fin de tour<br/>brûlure / poison (mêmes dégâts à chaque tour,<br/>cumul seulement s'ils sont réappliqués)<br/>saignement · purifications · dégâts différés"]
-  T5 --> T6["6. Fin des durées<br/>gel · fracture · fatigue (ATQ rendue) · rage → fatigue<br/>dégâts doublés · renvoi<br/>insensibilité terminée → piège adverse réactivé s'il lui reste des déclenchements<br/>annulation de magie terminée → la magie revient<br/>solidification de l'adversaire : −1 tour (elle protège pendant ses tours à lui)<br/>Transcendance : après X tours joués (4) → purifiée, étourdissement retiré,<br/>ATQ +X % et PV max +X % (15 %), jusqu'à la fin du combat"]
+  T5 --> T6["6. Fin des durées<br/>gel · fracture · fatigue (ATQ rendue) · rage → fatigue<br/>dégâts doublés · renvoi<br/>insensibilité terminée → piège adverse réactivé s'il lui reste des déclenchements<br/>annulation de magie terminée → la magie revient<br/>vol à durée terminé (compté sur les tours du voleur) → la carte retourne à son propriétaire, le voleur retrouve la carte qu'elle recouvrait<br/>solidification de l'adversaire : −1 tour (elle protège pendant ses tours à lui)<br/>Transcendance : après X tours joués (4) → purifiée, étourdissement retiré,<br/>ATQ +X % et PV max +X % (15 %), jusqu'à la fin du combat"]
   T6 --> TF([Au tour de l'autre carte])
 ```
 
@@ -87,7 +87,7 @@ flowchart TD
   P2 -- oui --> P3["Le piège se déclenche SANS effet :<br/>le déclenchement est consommé<br/>(croix rouge ; « épuisé » s'il n'en reste plus)"]
   P2 -- non --> P4["Le piège se révèle et applique ses effets<br/>(dégâts, statuts, souffle élémentaire, marques d'exécution,<br/>vol, destruction…)"]
   P4 --> P5{"Vol d'une carte ?"}
-  P5 -- oui --> P6["La carte volée s'envole jusqu'au camp du voleur<br/>et prend la place de la carte qui a volé"]
+  P5 -- oui --> P6["La carte volée s'envole jusqu'au camp du voleur<br/>et prend la place de la carte qui a volé<br/>(volée X tours : elle revient ensuite chez son propriétaire,<br/>sans rejouer ses effets « une seule fois »)"]
   P4 --> P7{"Destruction ?"}
   P7 -- oui --> P8[La carte détruite se brise]
 ```

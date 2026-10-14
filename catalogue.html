@@ -140,7 +140,7 @@ function core(e,pas){   // texte de l'effet (sans le « donne à l'attaque de ba
   case'solidification':{const c=e.chance==null||e.chance===''?100:+e.chance;return`${pas?'À chacun de ses tours, ':''}${c<100?c+' % de chances de se solidifier':(pas?'se solidifie':'Se solidifie')} pendant ${T(e.tours)} de l'adversaire (insensible à l'étourdissement, ne se purge pas, brisée par une fracture)`}
   case'etourdir_effet':return`${ch&&+e.chance<100?`${e.chance} % de chances d'étourdir`:'Étourdit'} ${tgt(e,'adversaire')} pendant ${T(e.tours)}`;
   case'detruire':return`Détruit la ${e.carte||'carte'} de l'adversaire`;
-  case'voler':return`Vole la ${e.carte||'carte'} de l'adversaire`;
+  case'voler':{const n=parseInt(e.tourdecl,10)||0,d=parseInt(e.duree,10)||0;return`Vole ${e.carte==='piege'?'le piège':'la magie'} de l'adversaire${n>1?` au début de son ${n}e tour`:pas?' dès son 1er tour':''}${d>0?` pendant ${T(d)} (puis la carte retourne à son propriétaire)`:pas?' (une fois)':''}`}
   case'equiper':return`Équipe une ${e.carte||'carte'} de son deck`;
  }
  const ex=Object.entries(e).filter(([k,v])=>k!=='type'&&v!=null&&v!=='').map(([k,v])=>`${k} ${typeof v==='object'?JSON.stringify(v):v}`).join(', ');

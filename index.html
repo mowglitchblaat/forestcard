@@ -285,6 +285,7 @@ function updBar(){
 }
 /* FX-BEGIN */
 /* ---------- Effets en texte clair (cartes de la collection) ---------- */
+const volTx=(e,pas)=>{const n=parseInt(e.tourdecl,10)||0,d=parseInt(e.duree,10)||0;return `Vole ${e.carte==='magie'?'la magie':'le piège'} de l'adversaire${n>1?` au début de son ${n}e tour`:pas?' dès son 1er tour':''}${d>0?` pendant ${d} tour${d>1?'s':''} (puis la carte retourne à son propriétaire)`:pas?" (une fois, jusqu'à la fin du combat)":''}`};
 const nz=v=>+v||0,trs=t=>`${t} tour${t>1?'s':''}`,sgn=v=>(v>0?'+':'')+v,upc=u=>u==='pct'?' %':'',tousT=t=>t>1?`tous les ${t} tours`:'à chaque tour';
 const ciblT=e=>(e.ciblem||e.cible)==='soi'?'sa propre carte':"l'adversaire";
 const cat=t=>{const L=typeof MAG!=='undefined'&&(MAG[t]||ULT[t]||PAS[t]);return L?L[0]:String(t||'Effet')};
@@ -295,6 +296,7 @@ function fxPassif(p){
   const c=p.chance==null||p.chance===''?100:nz(p.chance),t=nz(p.tours),v=nz(p.val),T=t||1;
   switch(p.type){
     case 'evite_mort':return "Évite la mort une fois (reste à 1 PV, statuts négatifs retirés)";
+    case 'voler':return volTx(p,true);
     case 'reanimation':return `Réanimation : revient avec ${nz(p.pctrev)} % de ses PV max (une fois)`;
     case 'esquive':return `${c} % de chances d'esquiver chaque attaque`;
     case 'fatigue':return `${c} % de chances de fatiguer la cible à chaque coup (ATQ −${nz(p.fatval)}${upc(p.u)} pendant ${trs(nz(p.fattours)||1)})`;
@@ -365,7 +367,7 @@ function fxEffet(e){
     case 'reset_ultime':return["Réinitialise l'ultime (utilisable à nouveau)"];
     case 'mort_evitee':{const k=e.cond||'aucune';return[`Évite la mort une fois (reste à 1 PV, statuts négatifs retirés)${k==='pv_max'?` — si ses PV max sont d'au moins ${nz(e.seuil)}`:k==='degats_infliges'?` — s'il a déjà infligé ${nz(e.seuil)} dégâts`:''}`]}
     case 'detruire':return[`Détruit ${e.carte==='magie'?"la magie":"le piège"} de l'adversaire`];
-    case 'voler':return[`Vole ${e.carte==='magie'?"la magie":"le piège"} de l'adversaire`];
+    case 'voler':return[volTx(e)];
     case 'equiper':return[`Équipe ${e.carte==='magie'?'une autre magie':'un autre piège'} du deck`];
     default:
       if(String(e.type||'').startsWith('atk_'))return['Attaque de base : '+fxPassif({...e,type:e.type.slice(4)})];
@@ -1023,11 +1025,11 @@ async function optimiserImages(log){
 
 /* ---------- Catalogue d'effets (pour ajouter un effet : une ligne ici) ---------- */
 // Paramètres réutilisables : [libellé, 'n' (nombre) ou liste de choix]
-const P={essais:['Nb de tentatives (la chance est tirée jusqu\'à X fois de suite, la 1re réussite suffit ; 1 par défaut)','n'],val:['Valeur','n'],patq:['% d\'ATQ en plus (15 par défaut)','n'],statut:['Statut infligé',['brulure','gel','malediction','poison','saignement','fatigue']],sval:['Valeur du statut (brûlure / saignement : % des PV max par tour · poison : dégâts par tour · malédiction : ATQ −X par tour · gel : % d\'attaque annulée · fatigue : ATQ −X %)','n'],seuilexec:['Seuil d\'exécution : % des PV max (10 par défaut)','n'],nbmarques:['Nombre de marques posées (3 = exécutable tout de suite)','n'],ppv:['% de PV max en plus (15 par défaut)','n'],u:['Unité',['pct','pts']],tours:['Nb de tours','n'],chance:['Chance (%)','n'],frappes:['Nb de frappes','n'],
+const P={tourdecl:['Se déclenche au début de son X-ième tour (vide ou 1 = tout de suite)','n'],duree:['Volée pendant X tours du voleur, puis rendue (vide ou 0 = jusqu\'à la fin du combat)','n'],essais:['Nb de tentatives (la chance est tirée jusqu\'à X fois de suite, la 1re réussite suffit ; 1 par défaut)','n'],val:['Valeur','n'],patq:['% d\'ATQ en plus (15 par défaut)','n'],statut:['Statut infligé',['brulure','gel','malediction','poison','saignement','fatigue']],sval:['Valeur du statut (brûlure / saignement : % des PV max par tour · poison : dégâts par tour · malédiction : ATQ −X par tour · gel : % d\'attaque annulée · fatigue : ATQ −X %)','n'],seuilexec:['Seuil d\'exécution : % des PV max (10 par défaut)','n'],nbmarques:['Nombre de marques posées (3 = exécutable tout de suite)','n'],ppv:['% de PV max en plus (15 par défaut)','n'],u:['Unité',['pct','pts']],tours:['Nb de tours','n'],chance:['Chance (%)','n'],frappes:['Nb de frappes','n'],
  coups:['Nb de coups','n'],cible:['Cible',['soi','adversaire']],carte:['Carte',['magie','piege']],seuil:['Seuil (ignoré si aucune condition)','n'],seuilpv:['Seuil (% PV)','n'],
  cond:['Condition pour éviter la mort',['aucune','pv_max','degats_infliges']],pct:['% PV rendus en plus','n'],pctrev:['% des PV max au retour','n'],val2:['2e valeur','n'],pctatq:["% de l'ATQ infligée volé en PV",'n'],pctpv:['% des PV max de la cible perdus par tour','n'],degtour:['Points de dégâts par tour','n'],ciblem:['Cible (adversaire par défaut)',['adversaire','soi']],max:['Plafond de frappes en plus','n'],reducsoin:['% de soins en moins','n'],ragev:['Rage : dégâts en plus par coup','n'],ragetours:['Rage : nombre de tours','n'],fatval:['Fatigue : ATQ en moins','n'],fattours:['Fatigue : nombre de tours','n'],nbalea:["Nombre d'effets aléatoires tirés (1 par défaut)",'n'],every:['Agit tous les X tours','n'],fois:['Nombre de fois (1 = une seule)','n'],annul:["Chance d'annuler l'attaque (%)",'n'],stunch:["Chance d'être étourdi avant l'attaque (%)",'n'],fchance:['Chance de se blesser en attaquant (%)','n'],degfrac:['Dégâts subis en attaquant','n']};
 // Chaque effet : [libellé, ...paramètres]
-const PAS={evite_mort:['Évite la mort une fois (reste à 1 PV et retire les statuts négatifs)'],reanimation:['Réanimation : la carte est détruite puis revient avec X % de ses PV max (une fois)','pctrev'],esquive:["Esquive : X % de chances d'esquiver chaque attaque (plafond 75 %)",'chance'],fatigue:["À X % de chances, fatigue la cible à chaque coup (réduit son ATQ de X pendant X tours ; la durée s'additionne, pas l'intensité)",'chance','fatval','u','fattours'],aleatoire:["Effet aléatoire parmi tous les effets du jeu : X % de chances, tous les X tours (vide = chaque tour)",'chance','every'],purification:['Purification : retire les statuts négatifs de la carte, tous les X tours (vide = chaque tour), X fois au maximum (vide = illimité)','every','fois'],soin_tour:['Se soigne de X chaque tour','val','u'],renvoi:['Renvoie X dégâts reçus','val','u'],
+const PAS={voler:['Vol de magie / de piège : au début de son X-ième tour (1er tour si vide), vole la carte choisie à l\'adversaire, une fois','carte','tourdecl','duree'],evite_mort:['Évite la mort une fois (reste à 1 PV et retire les statuts négatifs)'],reanimation:['Réanimation : la carte est détruite puis revient avec X % de ses PV max (une fois)','pctrev'],esquive:["Esquive : X % de chances d'esquiver chaque attaque (plafond 75 %)",'chance'],fatigue:["À X % de chances, fatigue la cible à chaque coup (réduit son ATQ de X pendant X tours ; la durée s'additionne, pas l'intensité)",'chance','fatval','u','fattours'],aleatoire:["Effet aléatoire parmi tous les effets du jeu : X % de chances, tous les X tours (vide = chaque tour)",'chance','every'],purification:['Purification : retire les statuts négatifs de la carte, tous les X tours (vide = chaque tour), X fois au maximum (vide = illimité)','every','fois'],soin_tour:['Se soigne de X chaque tour','val','u'],renvoi:['Renvoie X dégâts reçus','val','u'],
  atq_tours:["Augmente l'ATQ tous les X tours",'tours','val','u'],pv_tours:['Augmente les PV tous les X tours','tours','val','u'],
  multi_frappe:['À X % de chances, frappe X fois par tour','chance','frappes'],reduc_degats:['À X % de chances, réduit les dégâts reçus de X','chance','val','u'],
  bonus_frappe:["Si frappé X fois par tour, bonus à la prochaine attaque",'coups','val','u'],
@@ -1043,7 +1045,7 @@ const PAS={evite_mort:['Évite la mort une fois (reste à 1 PV et retire les sta
  solidification:["À chacun de ses tours, X % de chances de se solidifier pendant X tours de l'adversaire (insensible à l'étourdissement, ne se purge pas, brisée par une fracture)",'chance','tours'],
  transcendance:["Transcendance : après avoir joué X tours (4 par défaut), transcende jusqu'à la fin du combat : purifiée (étourdissement compris), ATQ +X % et PV max +X % (15 % par défaut), et chaque attaque qui touche purifie l'adversaire",'tours','patq','ppv'],
  execution:["Exécution : à chaque coup, X % de chances de marquer la cible. À 3 marques, une attaque qui la laisse sous X % de ses PV max l'exécute (même si elle devait éviter la mort ; la réanimation reste possible)",'chance','seuilexec']};
-const ULT={degats:["Dégâts directs à l'adversaire",'val'],voler:['Vole une magie/un piège','carte'],detruire:['Détruit une magie/un piège','carte'],
+const ULT={degats:["Dégâts directs à l'adversaire",'val'],voler:['Vole une magie/un piège (gardé X tours, ou tout le combat)','carte','duree'],detruire:['Détruit une magie/un piège','carte'],
  equiper:['Équipe une autre magie/piège du deck','carte'],soin:['Se soigne','val','u'],vol_vie:['Vole de la vie','val'],echange_atq:["Échange l'attaque avec l'adversaire"],
  annule_attaque:['Annule la prochaine attaque'],double_degats:['Double ses dégâts pendant X tours','tours'],echange_atq_def:["Échange l'ATQ et la défense (PV) de la cible (adversaire par défaut, ou soi)",'ciblem'],
  malediction:["Malédiction : l'ATQ baisse de X points par tour pendant X tours",'ciblem','val','tours'],
@@ -1066,7 +1068,7 @@ const ULT={degats:["Dégâts directs à l'adversaire",'val'],voler:['Vole une ma
  execution:["Exécution : à chaque coup, X % de chances de marquer la cible. À 3 marques, une attaque qui la laisse sous X % de ses PV max l'exécute (même si elle devait éviter la mort ; la réanimation reste possible)",'chance','seuilexec'],
  souffle:["Souffle élémentaire : inflige X dégâts, puis X % de chances d'infliger le statut choisi (valeur et durée réglables ; pour le saignement, soins réduits de X %)",'val','statut','chance','sval','tours','reducsoin'],
  execution_direct:["Exécution : pose directement X marques sur l'adversaire. À 3 marques, une attaque qui le laisse sous X % de ses PV max l'exécute (même s'il devait éviter la mort ; la réanimation reste possible)",'nbmarques','seuilexec']};
-const MAG={atq_mod:["Modifie l'ATQ (négatif = baisse)",'cible','val','u'],pv_mod:['Modifie les PV max (négatif = baisse)','cible','val','u'],
+const MAG={voler:['Vole la magie / le piège de l\'adversaire (tout de suite, ou au début de son X-ième tour)','carte','tourdecl','duree'],atq_mod:["Modifie l'ATQ (négatif = baisse)",'cible','val','u'],pv_mod:['Modifie les PV max (négatif = baisse)','cible','val','u'],
  soin:['Soigne son combattant','val','u'],degats:["Dégâts directs à l'adversaire",'val'],annule_attaque:["Annule la prochaine attaque de l'adversaire"],
  renvoi:['Renvoie une part des dégâts pendant X tours','val','tours'],insensible_piege:['Insensible aux pièges pendant X tours','tours'],
  annule_magies:['Annule la magie adverse pendant X tours (0 = jusqu\'à la fin du combat)','tours'],mort_evitee:['Évite la mort si condition (reste à 1 PV, retire les statuts négatifs, une fois)','cond','seuil'],reanimation:['Réanimation : la carte est détruite puis revient avec X % de ses PV max (une fois)','pctrev'],
@@ -1163,7 +1165,7 @@ async function aCartes(){
   <td><button class="sec" data-a="${c.id}" data-v="${c.actif}">${c.actif?'<span class="ok">Oui</span>':'<span class="ko">Non</span>'}</button></td>
   <td><button class="sec" data-edit="${c.id}" title="Modifier cette carte">✏️</button> <button class="sec" data-del="${c.id}" data-nom="${esc(c.nom)}" title="Supprimer cette carte">🗑️</button></td></tr>`).join('')}</table>`;
   const fc=$('#fc');
-  B={ult:mk($('#b-ult'),CAT.ult),pas:mkMulti($('#b-pas'),CAT.pas,'+ Ajouter un passif','✕ Retirer ce passif'),mag:mkMulti($('#b-mag'),CAT.mag),con:mk($('#b-con'),CAT.con),pef:mkMulti($('#b-pef'),{...CAT.ult,...CAT.mag})};
+  B={ult:mk($('#b-ult'),CAT.ult),pas:mkMulti($('#b-pas'),CAT.pas,'+ Ajouter un passif','✕ Retirer ce passif'),mag:mkMulti($('#b-mag'),CAT.mag),con:mk($('#b-con'),CAT.con),pef:mkMulti($('#b-pef'),{...CAT.ult,...CAT.mag,voler:CAT.ult.voler})};
   const toggle=()=>{const t=fc.type.value;
     $('#r-stats').style.display=$('#s-comb').style.display=t=='combattant'?'':'none';
     $('#s-mag').style.display=t=='magie'?'':'none';$('#s-pie').style.display=t=='piege'?'':'none'};

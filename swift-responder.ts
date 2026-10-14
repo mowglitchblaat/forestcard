@@ -29,7 +29,7 @@ function simuler(pA,pB,opt={}){
  const normPas=p=>!p?[]:p.briques?p.briques.filter(b=>b&&b.type).map(canonP):(p.type?[canonP(p)]:[]);   // passif unique (ancien format) ou plusieurs passifs { briques:[…] }
  const nw=(p,ex,cur)=>{const c=tire(p.deck,'combattant',ex,cur);if(!c)throw new Error(p.pseudo+" n'a aucun combattant dans son deck");const pl=normPas(c.passif);
   return{pseudo:p.pseudo,deck:p.deck,dos:p.dos||null,card:c,mag:tire(p.deck,'magie',ex,cur)||VM,pie:tire(p.deck,'piege',ex,cur)||VP,atq:c.atq,pv:c.pv,max:c.pv,pl:pl,ult:c.ultime,
-   uh:[{u:c.ultime,uses:0,last:-99}],magOn:1,pieOn:1,decl:0,mdelta:[],st:{rage:[],fat:[],pcnt:[],rUsed:[],reanL:[],purs:[],hots:[],cl:0,bleeds:[],frost:[],fract:[],stun:0,skip:0,dbl:0,solide:0,marques:0,mseuil:0,joues:0,trA:null,transc:0,dots:[],cret:[],curses:[],atkfx:[],esqb:0,ren:[],insens:0,prog:[],evite:pl.some(p=>p.type==='evite_mort')?1:0,mortUsed:0,bonus:0},
+   uh:[{u:c.ultime,uses:0,last:-99}],magOn:1,pieOn:1,decl:0,mdelta:[],st:{rage:[],fat:[],pcnt:[],rUsed:[],reanL:[],purs:[],hots:[],cl:0,bleeds:[],frost:[],fract:[],stun:0,skip:0,dbl:0,solide:0,marques:0,mseuil:0,joues:0,trA:null,transc:0,dots:[],cret:[],curses:[],atkfx:[],esqb:0,ren:[],insens:0,prog:[],vols:[],volDiff:[],pvol:[],evite:pl.some(p=>p.type==='evite_mort')?1:0,mortUsed:0,bonus:0},
    cum:0,coups:0,rt:0,uses:0,last:-99,pend:0}};
  const S=[nw(pA),nw(pB)],id=s=>S.indexOf(s),adv=s=>S[1-id(s)],nom=s=>s.card.nom;
  S.forEach(s=>{if(s.mag.vide)s.magOn=0;if(s.pie.vide)s.pieOn=0});
@@ -167,12 +167,14 @@ function simuler(pA,pB,opt={}){
    case'esquive_mod':{const d=e.val||0;T.st.esqb+=d;if(mg)o.mdelta.push({undo:()=>{T.st.esqb-=d}});L('stat',`Esquive de ${nom(T)} ${d>=0?'+':''}${d} %`,{c:id(T),k:'esq',d});break}
    case'reset_ultime':T.uh.forEach(h=>{h.uses=0;h.last=-99});L('statut',`L'ultime de ${nom(T)} est réinitialisé !`,{c:id(T)});break;
    case'mort_evitee':if(!mg){o.st.evite=(o.st.evite||0)+1;L('statut',`${nom(o)} est protégé : il évitera la mort une fois`,{c:id(o)})}break;   // en magie : lue directement dans dmg() ; en ultime / piège : protection posée à l'activation
-   case'detruire':case'voler':{
-    if(e.carte==='magie'&&(x.magOn||x.magAnnT)){const etaitOn=x.magOn;x.magOn=0;x.magAnnT=0;if(etaitOn)undo(x);if(e.type==='voler'){const vs=SRC,sur=vs==='piege'?'piege':'magie';if(vs==='piege')o.pieOn=0;   // volée par un piège : elle prend la place de ce piège (qui est donc consommé)
-      L('vol',`${o.pseudo} vole la magie de ${x.pseudo} : ${x.mag.nom}`,{c:id(o),k:'vol_carte',from:id(x),to:id(o),de:'magie',sur,carte:x.mag.nom,img:x.mag.image||null});fx(x.mag.effet,o,x,true)}else L('vol',`La magie de ${x.pseudo} est détruite`,{c:id(x),k:'magie_annulee'})}
-    else if(e.carte==='piege'&&x.pieOn){x.pieOn=0;if(e.type==='voler'){const sur='piege';o.pie=x.pie;o.pieOn=1;o.decl=0;o.pbl=0;   // le piège volé prend la place du piège du voleur
-      L('vol',`${o.pseudo} vole le piège de ${x.pseudo} : ${x.pie.nom}`,{c:id(o),k:'vol_carte',from:id(x),to:id(o),de:'piege',sur,carte:x.pie.nom,img:x.pie.image||null})}else L('vol',`Le piège de ${x.pseudo} est détruit`,{c:id(x),k:'piege_detruit',carte:x.pie.nom,img:x.pie.image||null})}
+   case'detruire':{
+    if(e.carte==='magie'&&(x.magOn||x.magAnnT)){const etaitOn=x.magOn;x.magOn=0;x.magAnnT=0;if(etaitOn)undo(x);L('vol',`La magie de ${x.pseudo} est détruite`,{c:id(x),k:'magie_annulee'})}
+    else if(e.carte==='piege'&&x.pieOn){x.pieOn=0;L('vol',`Le piège de ${x.pseudo} est détruit`,{c:id(x),k:'piege_detruit',carte:x.pie.nom,img:x.pie.image||null})}
     break}
+   case'voler':{const n=parseInt(e.tourdecl,10)||0;
+    if(n>1&&(mg||SRC==='magie')&&!rt){const V={e,at:n,src:SRC};o.st.volDiff.push(V);U(()=>{o.st.volDiff=o.st.volDiff.filter(z=>z!==V)});   // magie : le vol attend le début du X-ième tour de la carte
+     L('statut',`${nom(o)} volera ${e.carte==='piege'?'le piège':'la magie'} adverse au début de son tour ${n}`,{c:id(o),k:'vol_prevu'});break}
+    voler(o,x,e.carte,SRC,e.duree);break}
    case'equiper':{const c=tire(o.deck.filter(k=>k!==o.mag&&k!==o.pie),e.carte);if(c){if(e.carte==='magie'){o.mag=c;o.magOn=1;fx(c.effet,o,x,true)}else{o.pie=c;o.pieOn=1;o.decl=0}L('vol',`${nom(o)} équipe ${c.nom}`)}break}
    default:L('inconnu',`Effet non géré par le moteur : ${e.type}`);
   }
@@ -267,6 +269,34 @@ function simuler(pA,pB,opt={}){
   if(rest>0){t.atq+=rest;L('stat',`ATQ de ${nom(t)} +${rest} (malédiction levée)`,{c:id(t),k:'mod',s:'ATQ',d:rest})}
   if(restF>0){t.atq+=restF;L('stat',`ATQ de ${nom(t)} +${restF} (fatigue levée)`,{c:id(t),k:'mod',s:'ATQ',d:restF})}
   if(!silent){const LB={annule:"annulation d'attaque",brulure:'brûlure',malediction:'malédiction'};pk.forEach(k=>L('finstatut',`${LB[k]||k} dissipé${k==='annule'?'e':''}`,{c:id(t),k:k==='annule'?'etourdi':k}))}}
+ // ── VOL d'une magie ou d'un piège ──
+ // La carte volée vient se placer du côté du voleur : à la place du piège si c'est un piège qui vole, sinon à sa place de magie / de piège.
+ // duree : nombre de tours DU VOLEUR pendant lesquels il la garde ; ensuite elle retourne à son propriétaire (vide ou 0 = jusqu'à la fin du combat).
+ function voler(o,x,carte,src,duree){const D=Math.max(0,parseInt(duree,10)||0),dur=D?` (${D} tour${D>1?'s':''})`:'';
+  if(carte==='magie'&&(x.magOn||x.magAnnT)){const etaitOn=x.magOn;x.magOn=0;x.magAnnT=0;x.magVol=1;if(etaitOn)undo(x);
+   const sur=src==='piege'?'piege':'magie',prev=src==='piege'?{pie:o.pie,on:0,decl:o.decl,pbl:o.pbl}:null;if(src==='piege')o.pieOn=0;   // volée par un piège : elle prend la place de ce piège (qui est donc consommé)
+   L('vol',`${o.pseudo} vole la magie de ${x.pseudo} : ${x.mag.nom}${dur}`,{c:id(o),k:'vol_carte',from:id(x),to:id(o),de:'magie',sur,carte:x.mag.nom,img:x.mag.image||null,duree:D});
+   const n0=o.mdelta.length;fx(x.mag.effet,o,x,true);
+   if(D>0)o.st.vols.push({t:D,de:'magie',sur,x,card:x.mag,prev,del:o.mdelta.splice(n0)})}   // ses effets sont gardés à part, pour être retirés au retour
+  else if(carte==='piege'&&x.pieOn){x.pieOn=0;
+   const prev={pie:o.pie,on:src==='piege'?0:o.pieOn,decl:o.decl,pbl:o.pbl},xd=x.decl;o.pie=x.pie;o.pieOn=1;o.decl=0;o.pbl=0;   // le piège volé prend la place du piège du voleur
+   L('vol',`${o.pseudo} vole le piège de ${x.pseudo} : ${x.pie.nom}${dur}`,{c:id(o),k:'vol_carte',from:id(x),to:id(o),de:'piege',sur:'piege',carte:x.pie.nom,img:x.pie.image||null,duree:D});
+   if(D>0)o.st.vols.push({t:D,de:'piege',sur:'piege',x,card:x.pie,prev,xd})}
+ }
+ // Fin d'un vol à durée : la carte retourne chez son propriétaire, et le voleur retrouve la carte qu'elle recouvrait
+ function rendre(o,v){const x=v.x;if(x!==adv(o))return;
+  const reste=c=>c&&!c.vide?{nom:c.nom,img:c.image||null}:null;
+  if(v.de==='magie'){
+   v.del.forEach(d=>{if(d.undo){d.undo();return}d.s[d.k]-=d.d;if(d.k==='max')d.s.pv=Math.min(d.s.pv,d.s.max)});   // le voleur perd les effets de la magie volée
+   if(v.prev){o.pie=v.prev.pie;o.pieOn=v.prev.on;o.decl=v.prev.decl;o.pbl=v.prev.pbl}
+   const ok=x.mag===v.card&&!x.magOn;x.magVol=0;
+   L('vol',`${ok?'La magie retourne à '+x.pseudo:'La magie volée disparaît'} : ${v.card.nom}`,{c:id(x),k:'vol_retour',from:id(o),to:id(x),de:v.sur,sur:'magie',carte:v.card.nom,img:v.card.image||null,reste:reste(v.sur==='piege'?v.prev&&v.prev.pie:o.mag),ok:ok?1:0});
+   if(ok&&v.card.effet){x.magOn=1;fx(v.card.effet,x,o,true,true);S.forEach(k=>k.pend=1)}}   // de retour : ses effets « une seule fois » ne se rejouent pas
+  else{const tient=o.pie===v.card&&o.pieOn,max=(v.card.effet&&v.card.effet.declenchements)||1,used=v.xd+(tient?o.decl:0);
+   o.pie=v.prev.pie;o.pieOn=v.prev.on;o.decl=v.prev.decl;o.pbl=v.prev.pbl;
+   const ok=tient&&x.pie===v.card&&!x.pieOn;if(ok){x.decl=Math.min(used,max);x.pieOn=x.decl<max?1:0;x.pbl=0}
+   L('vol',`${ok?'Le piège retourne à '+x.pseudo:'Le piège volé disparaît'} : ${v.card.nom}`,{c:id(x),k:'vol_retour',from:id(o),to:id(x),de:'piege',sur:'piege',carte:v.card.nom,img:v.card.image||null,reste:reste(v.prev.pie),ok:ok?1:0,epuise:ok&&!x.pieOn?1:0})}
+ }
  function undo(s){s.mdelta.forEach(d=>{if(d.undo){d.undo();return}d.s[d.k]-=d.d;if(d.k==='max')d.s.pv=Math.min(d.s.pv,d.s.max)});s.mdelta=[]}
 
  function ultime(s){
@@ -347,6 +377,9 @@ function simuler(pA,pB,opt={}){
   if(s.pv<=0)return;
   s.pl.forEach(p=>{if(p.type==='bonus_frappe'&&s.rt>=(p.coups||1)){s.st.bonus=amt(p,s.atq);L('statut',`${nom(s)} prépare une contre-attaque renforcée`,{c:id(s),k:'bonus'})}});s.rt=0;   // frappé X fois depuis son dernier tour : bonus sur l'attaque qui suit
   s.st.hots=s.st.hots.filter(h=>{if(s.pv<=0)return false;heal(s,h.n);if(--h.t>0)return true;L('statut',`La régénération de ${nom(s)} se termine`);return false});
+  if(s.pv<=0)return;const nt=s.st.joues+1,x=adv(s);   // vols : au début du X-ième tour de la carte (magie à vol différé, passif de vol)
+  s.st.volDiff=s.st.volDiff.filter(V=>{if(nt<V.at)return true;voler(s,x,V.e.carte,V.src,V.e.duree);return false});
+  s.pl.forEach((p,pi)=>{if(p.type==='voler'&&!s.st.pvol[pi]&&nt>=Math.max(1,parseInt(p.tourdecl,10)||1)){s.st.pvol[pi]=1;voler(s,x,p.carte,'passif',p.duree)}});
  }
  // Fin du tour d'une carte : les durées qui dépendent de SES actions (rage, fatigue, gel, fracture, dégâts doublés) baissent d'un tour.
  // Un tour où elle est étourdie ou gelée compte aussi ; le tour de l'adversaire ne compte jamais.
@@ -363,6 +396,7 @@ function simuler(pA,pB,opt={}){
   if(s.magAnnT>0&&--s.magAnnT===0&&!s.magOn&&s.mag.effet){const neuve=s.magNew;s.magOn=1;s.magAnn=0;s.magNew=0;   // fin de l'annulation : la magie revient (si elle n'avait jamais agi, elle agit en entier)
    L('statut',`La magie de ${s.pseudo} revient : ${s.mag.nom}`,{c:id(s),k:'magie_retour'});fx(s.mag.effet,s,adv(s),true,!neuve);S.forEach(k=>k.pend=1);if(s.pv<=0)return}
   s.st.ren=s.st.ren.filter(R=>--R.t>0);
+  s.st.vols=s.st.vols.filter(v=>{if(--v.t>0)return true;rendre(s,v);return false});   // vol à durée : décompté sur les tours du voleur
   if(s.st.insens>0&&--s.st.insens===0){const x=adv(s),pe=x.pie.effet;   // fin de l'insensibilité : le piège adverse bloqué redevient actif s'il peut encore se déclencher
    if(x.pbl&&x.pieOn&&pe&&x.decl<(pe.declenchements||1)){x.pbl=0;L('statut',`Le piège de ${x.pseudo} redevient actif`,{c:id(x),k:'piege_rearme'})}}
  }
@@ -407,7 +441,7 @@ function simuler(pA,pB,opt={}){
  const tAnn=e=>{const b=e.type==='annule_magies'?e:(e.briques||[]).find(b=>b&&b.type==='annule_magies');return Math.max(0,parseInt(b&&b.tours,10)||0)};   // 0 ou vide = jusqu'à la fin du combat
  const magies=()=>{
   ordre.forEach(s=>{const x=adv(s);if(s.magOn&&aMag(s.mag.effet)&&x.magOn){x.magOn=0;x.magAnn=1;x.magAnnT=tAnn(s.mag.effet);x.magNew=1}});
-  ordre.forEach(s=>{if(s.mag.effet&&s.magAnn!==1&&s.magAnn!==2){L('magie',`Magie de ${s.pseudo} : ${s.mag.nom}`,{c:id(s),carte:s.mag.nom,img:s.mag.image||null});fx(s.mag.effet,s,adv(s),true);S.forEach(k=>k.pend=1)}})};
+  ordre.forEach(s=>{if(s.mag.effet&&s.magAnn!==1&&s.magAnn!==2&&!s.magVol){L('magie',`Magie de ${s.pseudo} : ${s.mag.nom}`,{c:id(s),carte:s.mag.nom,img:s.mag.image||null});fx(s.mag.effet,s,adv(s),true);S.forEach(k=>k.pend=1)}})};
  magies();
  // Prolongation : au dernier tour, si aucune carte n'est tombée, chaque joueur tire 3 nouvelles cartes de son deck (1 combattant, 1 magie, 1 piège) et le combat continue, jusqu'au KO.
  // Après reg.maxProlong prolongations (3 par défaut), la carte qui a le plus de PV l'emporte (PV égaux = match nul).

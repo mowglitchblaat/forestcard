@@ -305,6 +305,58 @@ test('robustesse : 2 000 combats aléatoires sans erreur, sans effet inconnu ni 
   }
 });
 
+// ================= Vol de magie / de piège (durée, tour de déclenchement) =================
+const tourDe = (r, e) => r.journal.slice(0, r.journal.indexOf(e)).filter(z => z.t === 'tour' && z.c === e.c).length;   // numéro du tour de la carte au moment de e
+test('vol de magie pendant 2 tours : le voleur garde ses effets 2 de ses tours, puis la magie retourne à son propriétaire', () => {
+  const r = combat([C('a', 10, SOLIDE), MAG('Larcin', { type: 'voler', carte: 'magie', duree: 2 })],
+                   [C('b', 10, SOLIDE), MAG('Force', { type: 'atq_mod', cible: 'soi', val: 50 })], { regles: { maxTours: 6, maxProlong: 0 } });
+  const vol = r.journal.find(e => e.k === 'vol_carte'), ret = r.journal.find(e => e.k === 'vol_retour');
+  assert.ok(vol && ret, 'vol puis retour');
+  assert.equal(vol.duree, 2);
+  assert.equal(ret.ok, 1);
+  assert.equal(ret.atq[0], 10, 'le voleur a perdu le bonus');
+  assert.equal(ret.atq[1], 10, 'avant de rejouer, la magie est retirée au voleur');
+  const apres = r.journal[r.journal.indexOf(ret) + 1];
+  assert.equal(apres.atq[1], 60, 'la magie agit de nouveau pour son propriétaire');
+  // retour à la fin du 2e tour du voleur
+  const tours = r.journal.slice(0, r.journal.indexOf(ret)).filter(z => z.t === 'tour' && z.c === 0).length;
+  assert.equal(tours, 2);
+});
+test('vol de magie sans durée : la carte reste volée jusqu\'à la fin du combat', () => {
+  const r = combat([C('a', 10, SOLIDE), MAG('Larcin', { type: 'voler', carte: 'magie' })],
+                   [C('b', 10, SOLIDE), MAG('Force', { type: 'atq_mod', cible: 'soi', val: 50 })], { regles: { maxTours: 6, maxProlong: 0 } });
+  assert.ok(!r.journal.some(e => e.k === 'vol_retour'));
+  assert.equal(r.journal.at(-1).atq[0], 60);
+  assert.equal(r.journal.at(-1).atq[1], 10);
+});
+test('magie de vol au tour X : le vol a lieu au début du X-ième tour de la carte', () => {
+  const r = combat([C('a', 10, SOLIDE), MAG('Larcin', { type: 'voler', carte: 'piege', tourdecl: 3 })],
+                   [C('b', 10, SOLIDE), PIE('Mine', { type: 'proprio_meurt' }, { type: 'degats', val: 5 })], { regles: { maxTours: 6, maxProlong: 0 } });
+  const vol = r.journal.find(e => e.k === 'vol_carte');
+  assert.ok(vol);
+  assert.equal(tourDe(r, vol), 3);
+  assert.equal(vol.de, 'piege');
+});
+test('passif de vol : une seule fois, au tour choisi (1er tour si vide), puis retour après X tours', () => {
+  const r = combat([C('a', 10, SOLIDE, { passif: { type: 'voler', carte: 'piege', tourdecl: 2, duree: 1 } })],
+                   [C('b', 10, SOLIDE), PIE('Mine', { type: 'proprio_meurt' }, { type: 'degats', val: 5 })], { regles: { maxTours: 6, maxProlong: 0 } });
+  const vols = r.journal.filter(e => e.k === 'vol_carte'), ret = r.journal.find(e => e.k === 'vol_retour');
+  assert.equal(vols.length, 1, 'une seule fois');
+  assert.equal(tourDe(r, vols[0]), 2);
+  assert.ok(ret && ret.ok === 1 && ret.epuise === 0, 'le piège retourne actif');
+  assert.equal(tourDe(r, ret), 2, 'gardé 1 tour : rendu à la fin de ce même tour');
+  const r2 = combat([C('a', 10, SOLIDE, { passif: { type: 'voler', carte: 'piege' } })],
+                    [C('b', 10, SOLIDE), PIE('Mine', { type: 'proprio_meurt' }, { type: 'degats', val: 5 })], { regles: { maxTours: 6, maxProlong: 0 } });
+  assert.equal(tourDe(r2, r2.journal.find(e => e.k === 'vol_carte')), 1);
+});
+test('piège volé par un ultime pendant X tours : le voleur retrouve son propre piège, le propriétaire récupère le sien', () => {
+  const r = combat([C('a', 10, SOLIDE, { ultime: { type: 'voler', carte: 'piege', duree: 2, apres_tours: 1, utilisations: 1 } }), PIE('Mien', { type: 'proprio_meurt' }, { type: 'degats', val: 1 })],
+                   [C('b', 10, SOLIDE), PIE('Mine', { type: 'proprio_meurt' }, { type: 'degats', val: 5 })], { regles: { maxTours: 6, maxProlong: 0 } });
+  const ret = r.journal.find(e => e.k === 'vol_retour');
+  assert.ok(ret && ret.ok === 1);
+  assert.equal(ret.reste.nom, 'Mien', 'le piège du voleur réapparaît à sa place');
+});
+
 // ================= Les 3 copies du moteur =================
 test('les 3 copies du moteur sont identiques (moteur-combat.js, combat.html, swift-responder.ts)', () => {
   const E = "})(typeof window!=='undefined'?window:globalThis);";
