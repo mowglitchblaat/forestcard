@@ -152,6 +152,15 @@ test('« évite la mort » passe avant la réanimation, et les dégâts s\'affic
   assert.ok(r.journal.findIndex(e => e.t === 'reanim_mort') === -1 || r.journal.findIndex(e => e.t === 'reanim_mort') > i, 'pas de réanimation avant');
 });
 
+test('valeurs en % : calculées sur la stat de la carte (7 % de 300 ATQ = 21)', () => {
+  const r1 = combat([C('a', 1, SOLIDE), MAG('Lourdeur', { type: 'fatigue', ciblem: 'adversaire', fatval: 7, u: 'pct', fattours: 2 })], [C('b', 300, SOLIDE)]);
+  assert.ok(lignes(r1, e => /ATQ de b −21 \(fatigue\)/.test(e.txt || '')).length > 0, 'fatigue 7 % de 300 = −21');
+  const r2 = combat([C('a', 200, SOLIDE), MAG('Force', { type: 'atq_mod', cible: 'soi', val: 10, u: 'pct' })], [C('b', 1, SOLIDE)]);
+  assert.ok(lignes(r2, e => /ATQ de a \+20/.test(e.txt || '')).length > 0, '+10 % de 200 = +20');
+  const r3 = combat([C('a', 1, SOLIDE, { passif: { type: 'renvoi', val: 10, u: 'pct' } })], [C('b', 300, SOLIDE)]);
+  assert.ok(lignes(r3, e => /b subit 30 dégâts renvoyés/.test(e.txt || '')).length > 0, 'renvoi 10 % de 300 = 30');
+});
+
 // ================= Statuts =================
 test('« évite la mort » de la magie puis du piège : chaque protection sauve une fois', () => {
   const ange = MAG('Ange', { type: 'mort_evitee', cond: 'aucune' });
