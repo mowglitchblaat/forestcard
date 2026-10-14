@@ -1008,16 +1008,21 @@ function givreCoup(c){const K=rc(c),Sh=Array.from({length:12},(_,i)=>({a:i*.524+
 
 // EXÉCUTION : chaque marque plante une lame (petite, petite, puis une grande au milieu) ; à l'exécution, entaille rouge et les lames s'enfoncent
 let lameN=0;
-function svgLame(){const i='lm'+(++lameN);return`<svg viewBox="0 0 40 160" preserveAspectRatio="none"><defs>
- <linearGradient id="${i}a" x1="0" x2="1"><stop offset="0" stop-color="#8d96a3"/><stop offset=".45" stop-color="#f4f7fb"/><stop offset=".55" stop-color="#c9d1dc"/><stop offset="1" stop-color="#5d6672"/></linearGradient>
- <linearGradient id="${i}o" x1="0" x2="1"><stop offset="0" stop-color="#7a4d0e"/><stop offset=".5" stop-color="#f6d77a"/><stop offset="1" stop-color="#8a5a12"/></linearGradient></defs>
- <path d="M14,43 L26,43 L24.5,128 L20,159 L15.5,128 Z" fill="url(#${i}a)" stroke="#2b2f36" stroke-width=".8"/>
- <path d="M20,47 L20,126" stroke="rgba(255,255,255,.75)" stroke-width="1.4"/><path d="M20,128 L20,152" stroke="rgba(190,20,30,.9)" stroke-width="2"/>
- <rect x="16" y="9" width="8" height="27" rx="2" fill="#3b0d12"/><path d="M16,14 L24,18 M16,20 L24,24 M16,26 L24,30" stroke="url(#${i}o)" stroke-width="1.3"/>
- <circle cx="20" cy="6" r="5" fill="url(#${i}o)" stroke="#3b2405" stroke-width=".8"/>
- <path d="M1,36 Q20,30 39,36 L37,43 Q20,39 3,43 Z" fill="url(#${i}o)" stroke="#3b2405" stroke-width=".8"/><circle cx="20" cy="38.5" r="3.2" fill="#e11d48" stroke="#fff" stroke-width=".6"/></svg>`}
+function svgLame(epee){const i='lm'+(++lameN);   // marques 1 et 2 : lames d'obsidienne sans poignée · marque 3 : épée sombre
+ if(!epee)return`<svg viewBox="0 0 40 160" preserveAspectRatio="none"><defs>
+ <linearGradient id="${i}a" x1="0" x2="1"><stop offset="0" stop-color="#050508"/><stop offset=".45" stop-color="#3a3644"/><stop offset=".55" stop-color="#16141c"/><stop offset="1" stop-color="#020203"/></linearGradient></defs>
+ <path d="M12,7 L18,2 L22,6 L28,1 L27,40 C28,82 26,112 23,132 L20,160 L17,132 C14,112 12,82 13,40 Z" fill="url(#${i}a)" stroke="#000" stroke-width=".8"/>
+ <path d="M20,8 L20,150" stroke="rgba(255,50,70,.55)" stroke-width=".9"/><path d="M27,40 C28,82 26,112 23,132 L20,160" fill="none" stroke="rgba(255,70,80,.75)" stroke-width=".7"/></svg>`;
+ return`<svg viewBox="0 0 40 160" preserveAspectRatio="none"><defs>
+ <linearGradient id="${i}a" x1="0" x2="1"><stop offset="0" stop-color="#060609"/><stop offset=".45" stop-color="#3c3846"/><stop offset=".55" stop-color="#17151d"/><stop offset="1" stop-color="#030304"/></linearGradient>
+ <linearGradient id="${i}o" x1="0" x2="1"><stop offset="0" stop-color="#0d0c10"/><stop offset=".5" stop-color="#4a4452"/><stop offset="1" stop-color="#0d0c10"/></linearGradient></defs>
+ <path d="M14,43 L26,43 L24.5,128 L20,159 L15.5,128 Z" fill="url(#${i}a)" stroke="#000" stroke-width=".8"/>
+ <path d="M20,47 L20,150" stroke="rgba(255,50,70,.6)" stroke-width="1.1"/>
+ <rect x="16" y="9" width="8" height="27" rx="2" fill="#09080b"/><path d="M16,14 L24,18 M16,20 L24,24 M16,26 L24,30" stroke="#3a2a30" stroke-width="1.3"/>
+ <circle cx="20" cy="6" r="5" fill="url(#${i}o)" stroke="#000" stroke-width=".8"/>
+ <path d="M1,36 Q20,30 39,36 L37,43 Q20,39 3,43 Z" fill="url(#${i}o)" stroke="#000" stroke-width=".8"/><circle cx="20" cy="38.5" r="3.2" fill="#b0102a" stroke="#ff4d5e" stroke-width=".6"/></svg>`}
 function lameIn(c,n){const cw=$('#p'+c+' .cw');if(!cw||cw.querySelector('.lame.l'+n))return;const card=cw.querySelector('.card'),big=n>=3,r=n===1?-24:n===2?24:0;
- const d=document.createElement('div');d.className='lame l'+Math.min(3,n);d.innerHTML=svgLame();d.style.transform=`rotate(${r}deg)`;cw.appendChild(d);
+ const d=document.createElement('div');d.className='lame l'+Math.min(3,n);d.innerHTML=svgLame(big);d.style.transform=`rotate(${r}deg)`;cw.appendChild(d);
  const a=d.animate([{transform:`translateY(${big?-170:-140}%) rotate(${r*1.8}deg) scale(${big?1.25:1.1})`,opacity:0},{opacity:1,offset:.35},{transform:`translateY(4%) rotate(${r}deg) scale(1)`,offset:.82},{transform:`rotate(${r}deg)`}],{duration:big?620:420,easing:'cubic-bezier(.55,0,.8,.3)',fill:'both'});
  a.onfinish=()=>{const K=rc(c),tx=K.cx+(n===1?-K.w*.28:n===2?K.w*.28:0),ty=K.y+K.h*(big?.56:.28),Sp=Array.from({length:big?26:12},()=>({a:R(-3.1,0),v:R(.3,1),s:R(1.5,3.5)}));
   card.animate([{transform:'translate(0,0)'},{transform:`translate(${big?-9:-4}px,${big?6:3}px)`},{transform:`translate(${big?8:3}px,${big?-4:-2}px)`},{transform:'translate(0,0)'}],{duration:big?320:200});
