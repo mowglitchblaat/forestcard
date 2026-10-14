@@ -53,7 +53,7 @@ flowchart TD
   T3 -- "attaque annulée" --> T3x
   T3 -- "gel : attaque annulée ou paralysée (chance)" --> T3x
   T3 -- oui --> AT["Attaque : nombre de frappes<br/>(frappe multiple, enchaînement qui retente)<br/>fracture : chance de se blesser"]
-  AT --> FR["Pour chaque frappe :<br/>esquive ? → sinon dégâts = ATQ (×2 si doublés, + rage, + bonus)<br/>réduction de dégâts · coup mortel ? (schéma 3)<br/>renvoi de dégâts · vol de vie · statuts posés par l'attaque<br/>(cible solidifiée : l'étourdissement est sans effet ;<br/>une fracture brise la solidification)<br/>attaquant transcendé : chaque coup qui touche purifie l'adversaire"]
+  AT --> FR["Pour chaque frappe :<br/>esquive ? → sinon dégâts = ATQ (×2 si doublés, + rage, + bonus)<br/>réduction de dégâts · coup mortel ? (schéma 3)<br/>renvoi de dégâts · vol de vie · statuts posés par l'attaque<br/>(cible solidifiée : l'étourdissement est sans effet ;<br/>une fracture brise la solidification)<br/>attaquant transcendé : chaque coup qui touche purifie l'adversaire<br/>Exécution : X % de poser une marque (3 max) ; cible à 3 marques<br/>laissée sous X % de PV (10 %) → exécutée, même si elle évite la mort"]
   FR --> PG["Pièges « l'adversaire a attaqué N fois »<br/>(toutes les N attaques, jusqu'au maximum)"]
   T3x --> T4
   PG --> T4["4. Effets « à chaque tour »<br/>effet aléatoire · soin · ATQ / PV qui augmentent tous les X tours"]
@@ -66,7 +66,7 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-  K0(["Dégâts ≥ PV restants"]) --> K1{"Magie « évite la mort »<br/>active, condition remplie,<br/>pas encore utilisée ?"}
+  K0(["Dégâts ≥ PV restants<br/>(une exécution ignore les protections ci-dessous,<br/>mais pas la réanimation)"]) --> K1{"Magie « évite la mort »<br/>active, condition remplie,<br/>pas encore utilisée ?"}
   K1 -- oui --> KE["Les dégâts s'affichent, la carte reste à 1 PV,<br/>crâne barré, statuts négatifs retirés (pas l'étourdissement)<br/>Chaque protection sauve UNE fois, chacune de son côté :<br/>magie, passif, puis piège ou ultime"]
   K1 -- non --> K2{"Passif « évite la mort »<br/>(une fois) ?"}
   K2 -- oui --> KE

@@ -133,6 +133,8 @@ function core(e,pas){   // texte de l'effet (sans le « donne à l'attaque de ba
   case'echange_tout':return"Échange ATQ et PV avec l'adversaire";
   case'poison_effet':return`Poison sur ${tgt(e,'adversaire')} : ${e.degtour} dégâts par tour pendant ${T(e.tours)}`;
   case'brulure_effet':return`Brûlure sur ${tgt(e,'adversaire')} : ${e.pctpv} % des PV max par tour pendant ${T(e.tours)}`;
+  case'execution':return`${e.chance==null||e.chance===''||+e.chance>=100?'Marque la cible à chaque coup':`À chaque coup, ${e.chance} % de chances de marquer la cible`}. À 3 marques, une attaque qui la laisse sous ${e.seuilexec||10} % de ses PV max l'exécute (ignore « évite la mort »)`;
+  case'execution_direct':return`Pose ${Math.max(1,+e.nbmarques||1)} marque${(+e.nbmarques||1)>1?'s':''} d'exécution sur l'adversaire. À 3 marques, une attaque qui le laisse sous ${e.seuilexec||10} % de ses PV max l'exécute (ignore « évite la mort »)`;
   case'transcendance':return `Après ${e.tours||4} tour${(+e.tours||4)>1?'s':''} joué${(+e.tours||4)>1?'s':''}, transcende jusqu'à la fin du combat : purifiée (étourdissement compris), ATQ +${e.patq==null||e.patq===''?15:e.patq} %, PV max +${e.ppv==null||e.ppv===''?15:e.ppv} %, et chaque attaque qui touche purifie l'adversaire`;
   case'solidification':{const c=e.chance==null||e.chance===''?100:+e.chance;return`${pas?'À chacun de ses tours, ':''}${c<100?c+' % de chances de se solidifier':(pas?'se solidifie':'Se solidifie')} pendant ${T(e.tours)} de l'adversaire (insensible à l'étourdissement, ne se purge pas, brisée par une fracture)`}
   case'etourdir_effet':return`${ch&&+e.chance<100?`${e.chance} % de chances d'étourdir`:'Étourdit'} ${tgt(e,'adversaire')} pendant ${T(e.tours)}`;

@@ -162,6 +162,20 @@ test('valeurs en % : calculées sur la stat de la carte (7 % de 300 ATQ = 21)', 
 });
 
 // ================= Statuts =================
+test('exécution : 3 marques puis exécutée sous le seuil, même avec « évite la mort », réanimation possible', () => {
+  // seuil 1 % (10 PV sur 1000) : à 50 PV le coup suivant est mortel → évite la mort (1 PV) → exécutée quand même
+  const r = combat([C('a', 95, SOLIDE, { passif: { type: 'execution', chance: 100, seuilexec: 1 } })], [C('b', 1, 1000, { passif: { type: 'evite_mort' } })], { regles: { maxTours: 30, maxProlong: 0 } });
+  const k = r.journal.filter(e => ['marque', 'protege', 'execution'].includes(e.k) || e.t === 'protege').map(e => e.k || e.t);
+  assert.deepEqual(k.slice(0, 3), ['marque', 'marque', 'marque'], '3 marques au maximum');
+  assert.equal(r.journal.filter(e => e.k === 'marque').length, 3);
+  assert.ok(k.indexOf('protege') > 2 && k.indexOf('execution') > k.indexOf('protege'), 'évite la mort puis exécutée');
+  assert.equal(r.gagnant, 0);
+  // ultime / piège : marques posées directement ; la réanimation marche encore après une exécution
+  const r2 = combat([C('a', 95, SOLIDE), MAG('Sentence', { type: 'execution_direct', nbmarques: 3 })], [C('b', 1, 1000, { passif: { type: 'reanimation', pctrev: 50 } })], { regles: { maxTours: 30, maxProlong: 0 } });
+  const iE = r2.journal.findIndex(e => e.t === 'statut' && e.k === 'execution');
+  assert.ok(iE > 0 && r2.journal.slice(iE).some(e => e.t === 'reanim'), 'réanimée après l\'exécution');
+});
+
 test('transcendance : après 4 tours joués, purifiée (étourdissement compris), +15 % ATQ / PV max, et chaque coup purifie l\'adversaire', () => {
   const asc = MAG('Ascension', { type: 'transcendance' });
   // sans étourdissement : transcende à la fin de son 4e tour, bonus +15 %, puis ses coups purifient l'adversaire
