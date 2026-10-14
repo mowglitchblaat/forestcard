@@ -616,14 +616,28 @@ async function vProfil(id=user.id){
 }
 
 /* ---------- Classement ---------- */
+// Tri du classement choisi par le joueur (gardé dans le navigateur)
+const TRIS_CL={victoires:'Victoires',pct:'% de victoires',combats:'Combats joués',defaites:'Défaites',nuls:'Nuls',meilleure_serie:'Meilleure série',plus_gros_coup:'Plus gros coup'};
+let triCl=(()=>{try{return localStorage.getItem('fc_tri_classement')||'victoires'}catch(e){return 'victoires'}})();
 async function vClassement(){
   const rl=await sb.rpc('liste_profils');
   if(rl.error){main.innerHTML='<p class="ko">Classement indisponible pour le moment.</p>';return}
-  const L=(rl.data||[]).slice(0,100),med=['🥇','🥈','🥉'];
-  const pc=x=>{const t=(x.victoires||0)+(x.defaites||0)+(x.nuls||0);return t?Math.round(100*(x.victoires||0)/t)+' %':'—'};
+  const T0=rl.data||[],med=['🥇','🥈','🥉'];
+  const nb=(x,k)=>+x[k]||0,tot=x=>nb(x,'victoires')+nb(x,'defaites')+nb(x,'nuls'),ratio=x=>tot(x)?nb(x,'victoires')/tot(x):-1;
+  const pc=x=>tot(x)?Math.round(100*nb(x,'victoires')/tot(x))+' %':'—';
+  const dispo=Object.keys(TRIS_CL).filter(k=>['victoires','pct','combats','defaites','nuls'].includes(k)||T0.some(x=>x[k]!=null));   // séries / records : seulement si le serveur les donne
+  if(!dispo.includes(triCl))triCl='victoires';
+  const val={victoires:x=>nb(x,'victoires'),pct:ratio,combats:tot,defaites:x=>nb(x,'defaites'),nuls:x=>nb(x,'nuls'),meilleure_serie:x=>nb(x,'meilleure_serie'),plus_gros_coup:x=>nb(x,'plus_gros_coup')}[triCl];
+  // à égalité : plus de victoires, puis plus de combats joués, puis le pseudo
+  const L=T0.slice().sort((a,b)=>(val(b)-val(a))||(nb(b,'victoires')-nb(a,'victoires'))||(tot(b)-tot(a))||String(a.pseudo).localeCompare(String(b.pseudo),'fr')).slice(0,100);
   const moi=L.findIndex(x=>x.joueur_id==user.id);
-  main.innerHTML=`<h3>🏆 Classement</h3><p><small>Clique sur un pseudo pour voir son profil.${moi>=0?` Tu es <b>${moi+1}${moi?'e':'er'}</b>.`:''}</small></p>
-   ${L.length?`<table><tr><th>#</th><th>Joueur</th><th>Victoires</th><th>Défaites</th><th>Nuls</th><th>% victoires</th></tr>${L.map((x,i)=>`<tr${x.joueur_id==user.id?' style="background:#2a2140"':''}><td>${med[i]||i+1}</td><td><button class="${x.joueur_id==user.id?'on':'sec'}" data-p="${x.joueur_id}">${esc(x.pseudo)}${x.joueur_id==user.id?' (moi)':''}</button></td><td>${x.victoires}</td><td>${x.defaites}</td><td>${x.nuls}</td><td>${pc(x)}</td></tr>`).join('')}</table>`:'<p><small>Aucun combat joué pour l\'instant.</small></p>'}`;
+  const extra=['meilleure_serie','plus_gros_coup'].includes(triCl)?triCl:null;
+  const th=(k,l)=>`<th${k===triCl?' style="color:#fbbf24"':''}>${l}${k===triCl?' ▼':''}</th>`;
+  main.innerHTML=`<h3>🏆 Classement</h3>
+   <div class="row"><label><small>Classer par</small><br><select id="cltri">${dispo.map(k=>`<option value="${k}"${k===triCl?' selected':''}>${TRIS_CL[k]}</option>`).join('')}</select></label></div>
+   <p><small>Clique sur un pseudo pour voir son profil.${moi>=0?` Tu es <b>${moi+1}${moi?'e':'er'}</b>.`:''}</small></p>
+   ${L.length?`<table><tr><th>#</th><th>Joueur</th>${th('victoires','Victoires')}${th('defaites','Défaites')}${th('nuls','Nuls')}${th('pct','% victoires')}${th('combats','Combats')}${extra?th(extra,TRIS_CL[extra]):''}</tr>${L.map((x,i)=>`<tr${x.joueur_id==user.id?' style="background:#2a2140"':''}><td>${med[i]||i+1}</td><td><button class="${x.joueur_id==user.id?'on':'sec'}" data-p="${x.joueur_id}">${esc(x.pseudo)}${x.joueur_id==user.id?' (moi)':''}</button></td><td>${nb(x,'victoires')}</td><td>${nb(x,'defaites')}</td><td>${nb(x,'nuls')}</td><td>${pc(x)}</td><td>${tot(x)}</td>${extra?`<td>${nb(x,extra)}</td>`:''}</tr>`).join('')}</table>`:'<p><small>Aucun combat joué pour l\'instant.</small></p>'}`;
+  const ts=$('#cltri');if(ts)ts.onchange=()=>{triCl=ts.value;try{localStorage.setItem('fc_tri_classement',triCl)}catch(e){}vClassement()};
   main.querySelectorAll('button[data-p]').forEach(b=>b.onclick=()=>{tab='profil';const T={...TABS};if(isAdmin)T.admin='⚙️ Admin';$('#nav').innerHTML=Object.entries(T).map(([k,v])=>`<button class="${k=='profil'?'on':'sec'}" data-t="${k}">${v}</button>`).join('');$('#nav').querySelectorAll('button').forEach(n=>n.onclick=()=>show(n.dataset.t));vProfil(b.dataset.p);window.scrollTo(0,0)});
 }
 
