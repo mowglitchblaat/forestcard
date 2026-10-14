@@ -1110,7 +1110,7 @@ async function jouer(res){
    else if(e.t==='statut'&&e.k==='alea'){flot(e.c,'🎲 '+(e.txt.split(' : ')[1]||'').replace(' !',''),'#c4b5fd');await wait(800)}
    else if(e.t==='statut'&&e.k==='purif'){purif(e.c);flot(e.c,'Purifié !','#fde047');await wait(1300)}
    else if(e.t==='statut'&&e.k==='transc_prep'){flot(e.c,'✦ Transcendance','#fde68a');await wait(700)}
-   else if(e.t==='statut'&&e.k==='transc'){auraFx(e.c,{gold:1});aureole(e.c,{croix:false});flot(e.c,'TRANSCENDANCE !','#fef3c7','big');if(!st[e.c+'transc'])statut(e.c,'transc',true);await wait(2600)}
+   else if(e.t==='statut'&&e.k==='transc'){auraFx(e.c,{gold:1});aureole(e.c,{croix:false});flot(e.c,'Transcendance !','#fef3c7');if(!st[e.c+'transc'])statut(e.c,'transc',true);await wait(2600)}
    else if(e.t==='finstatut'&&e.k==='transc_prep'){}
    else if(e.t==='statut'&&e.k==='solide'){if(!st[e.c+'solide'])statut(e.c,'solide',true);flot(e.c,'Solidifié !','#d6d3d1');await wait(900)}
    else if(e.t==='statut'&&e.k==='solide_bloque'){solideCoup(e.c);flot(e.c,'Solide !','#e7e5e4');await wait(500)}
@@ -1211,7 +1211,7 @@ if(DEMO){
   ['Statuts','Purification (aura jaune)',c=>{flot(c,'Purifié !','#fde047');purif(c)},2000],
   ['Statuts','Gel (givre)',c=>statut(c,'gel',true),3000,c=>statut(c,'gel',false),'gel'],
   ['Statuts','Gel : attaque bloquée',c=>{flot(c,'Gelé !','#bae6fd');givreCoup(c)},1500],
-  ['Statuts','Transcendance (lumière dorée)',c=>{auraFx(c,{gold:1});aureole(c,{croix:false});flot(c,'TRANSCENDANCE !','#fef3c7','big');statut(c,'transc',true)},4200,c=>statut(c,'transc',false),'transc'],
+  ['Statuts','Transcendance (lumière dorée)',c=>{auraFx(c,{gold:1});aureole(c,{croix:false});flot(c,'Transcendance !','#fef3c7');statut(c,'transc',true)},4200,c=>statut(c,'transc',false),'transc'],
   ['Statuts','Solidification (pierre)',c=>{statut(c,'solide',true);flot(c,'Solidifié !','#d6d3d1')},3000,c=>statut(c,'solide',false),'solide'],
   ['Statuts','Solidification : étourdissement bloqué',c=>{flot(c,'Solide !','#e7e5e4');solideCoup(c)},1200],
   ['Statuts','Solidification brisée (fracture)',c=>{solideBrise(c);flot(c,'Brisé !','#a8a29e')},1500],
