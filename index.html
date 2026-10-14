@@ -1235,7 +1235,7 @@ const PRIX_MIN=250;   // un combat gagné rapporte 50 : un booster coûte au moi
 function vedHTML(x,bv,cartes){
   const cur=bv.filter(v=>x&&v.type_id==x.id);
   const opt=sel=>'<option value="">— aucune —</option>'+cartes.map(c=>`<option value="${c.id}" ${sel==c.id?'selected':''}>${esc(c.nom)} (${esc(c.raretes?c.raretes.nom:'?')}${c.collections?' · '+esc(c.collections.nom):''})</option>`).join('');
-  return `<small>⭐ Cartes vedettes (0 à 2) : mises en avant dans la boutique. Poids : 1 = comme les autres cartes de sa rareté ; 3 = trois fois plus de chances que chacune des autres cartes de cette rareté dans ce booster. La carte doit faire partie d'une collection du booster (ou être une carte commune sans collection).</small>
+  return `<small>⭐ Cartes vedettes (0 à 2) : mises en avant dans la boutique. Poids : 1 = comme les autres cartes de sa rareté ; 3 = trois fois plus de chances que chacune des autres cartes de cette rareté dans ce booster. La carte doit faire partie d'une collection du booster, être sans collection, ou être de rareté commune (les communes sortent dans tous les boosters).</small>
   <div class="row">${[1,2].map(n=>{const v=cur[n-1];return `<label><small>Vedette ${n}</small><br><select name="vc${n}">${opt(v&&v.carte_id)}</select></label><label><small>Poids</small><br><input name="vp${n}" type="number" step="any" min="0.01" value="${v?v.poids:3}" style="width:70px"></label>`}).join('')}</div>`}
 async function aBoosters(){
   const [b,col,rar,bc,bm]=await Promise.all([q(sb.from('types_boosters').select('*').order('id')),q(sb.from('collections').select('*').order('nom')),
