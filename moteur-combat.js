@@ -18,7 +18,7 @@ function simuler(pA,pB,opt={}){
  const normPas=p=>!p?[]:p.briques?p.briques.filter(b=>b&&b.type).map(canonP):(p.type?[canonP(p)]:[]);   // passif unique (ancien format) ou plusieurs passifs { briques:[…] }
  const nw=(p,ex,cur)=>{const c=tire(p.deck,'combattant',ex,cur);if(!c)throw new Error(p.pseudo+" n'a aucun combattant dans son deck");const pl=normPas(c.passif);
   return{pseudo:p.pseudo,deck:p.deck,dos:p.dos||null,card:c,mag:tire(p.deck,'magie',ex,cur)||VM,pie:tire(p.deck,'piege',ex,cur)||VP,atq:c.atq,pv:c.pv,max:c.pv,pl:pl,ult:c.ultime,
-   uh:[{u:c.ultime,uses:0,last:-99}],magOn:1,pieOn:1,decl:0,mdelta:[],st:{rage:[],fat:[],pcnt:[],rUsed:[],reanL:[],purs:[],hots:[],cl:0,bleeds:[],frost:[],fract:[],stun:0,skip:0,dbl:0,dots:[],cret:[],curses:[],atkfx:[],esqb:0,ren:[],insens:0,prog:[],evite:pl.some(p=>p.type==='evite_mort')?1:0,mortUsed:0,bonus:0},
+   uh:[{u:c.ultime,uses:0,last:-99}],magOn:1,pieOn:1,decl:0,mdelta:[],st:{rage:[],fat:[],pcnt:[],rUsed:[],reanL:[],purs:[],hots:[],cl:0,bleeds:[],frost:[],fract:[],stun:0,skip:0,dbl:0,solide:0,dots:[],cret:[],curses:[],atkfx:[],esqb:0,ren:[],insens:0,prog:[],evite:pl.some(p=>p.type==='evite_mort')?1:0,mortUsed:0,bonus:0},
    cum:0,coups:0,rt:0,uses:0,last:-99,pend:0}};
  const S=[nw(pA),nw(pB)],id=s=>S.indexOf(s),adv=s=>S[1-id(s)],nom=s=>s.card.nom;
  S.forEach(s=>{if(s.mag.vide)s.magOn=0;if(s.pie.vide)s.pieOn=0});
@@ -129,6 +129,7 @@ function simuler(pA,pB,opt={}){
    case'echange_tout':[o.atq,x.atq]=[x.atq,o.atq];[o.pv,x.pv]=[x.pv,o.pv];[o.max,x.max]=[x.max,o.max];L('stat',`${nom(o)} et ${nom(x)} échangent ATQ et PV`,{k:'echange',cs:[id(o),id(x)],col:'mixte'});break;
    case'malediction':maudire((e.ciblem||e.cible)==='soi'?o:x,e.val||0,e.tours||1);break;
    case'saignement':saigner((e.ciblem||e.cible)==='soi'?o:x,e.pctpv||0,e.reducsoin||0,e.tours||1);break;
+   case'solidification':{const ch=e.chance==null||e.chance===''?100:(+e.chance||0);if(solidifier(o,ch,e.tours)&&mg)o.mdelta.push({undo:()=>{if(o.st.solide>0){o.st.solide=0;L('finstatut',`${nom(o)} n'est plus solidifié`,{c:id(o),k:'solide'})}}});break}
    case'gel':geler((e.ciblem||e.cible)==='soi'?o:x,e.annul||0,e.stunch||0,e.tours||1);break;
    case'fracture':fracturer((e.ciblem||e.cible)==='soi'?o:x,e.fchance||0,e.degfrac||0,e.tours||1);break;
    case'vol_ultime':{const h=x.uh.find(z=>z.u&&z.u.type);if(h){x.uh=x.uh.filter(z=>z!==h);o.uh.push({u:h.u,uses:0,last:-99});L('vol',`${o.pseudo} vole l'ultime de ${x.pseudo}`,{k:'vol_ultime',from:id(x),c:id(o)})}else L('statut',`${x.pseudo} n'a aucun ultime à voler`)}break;
@@ -137,6 +138,7 @@ function simuler(pA,pB,opt={}){
    case'etourdir_effet':{const M=(e.ciblem||e.cible)==='soi'?o:x,ch=e.chance==null||e.chance===''?100:(+e.chance||0),T=Math.max(1,parseInt(e.tours,10)||1);   // chance vide = 100 %
     const ess=Math.max(1,parseInt(e.essais,10)||1);let ok=false;for(let k=0;k<ess&&!ok;k++)ok=roll(ch);   // X tentatives de suite, la 1re réussite suffit
     if(!ok){L('statut',`${nom(M)} résiste à l'étourdissement (${ch} % de chances${ess>1?', '+ess+' tentatives':''})`,{c:id(M)});break}
+    if(M.st.solide>0){L('statut',`${nom(M)} est solidifié : l'étourdissement n'a aucun effet`,{c:id(M),k:'solide_bloque'});break}
     M.st.stun=Math.max(M.st.stun,T);L('statut',`${nom(M)} est étourdi (${T} tour${T>1?'s':''}) !`,{c:id(M),k:'etourdi'});break}
    case'atk_fatigue':case'atk_enchainement':case'atk_brulure':case'atk_poison':case'atk_etourdir':case'atk_saignement':case'atk_malediction':case'atk_fracture':case'atk_gel':{const q={...e,type:e.type.slice(4)};o.st.atkfx.push(q);if(mg)o.mdelta.push({undo:()=>{o.st.atkfx=o.st.atkfx.filter(z=>z!==q)}});
     L('statut',`L'attaque de ${nom(o)} peut maintenant ${{fatigue:'fatiguer',enchainement:'enchaîner les frappes',brulure:'brûler',poison:'empoisonner',etourdir:'étourdir',saignement:'faire saigner',malediction:'maudire',fracture:'fracturer',gel:'geler'}[q.type]} (${q.chance} %)`);break}
@@ -206,6 +208,7 @@ function simuler(pA,pB,opt={}){
    ['Étourdissement',()=>({type:'etourdir_effet',ciblem:'adversaire',tours:ri(1,2)})],
    ['Malédiction',()=>({type:'malediction',ciblem:'adversaire',val:pv(o.atq,10,25),tours:ri(2,4)})],
    ['Saignement',()=>({type:'saignement',ciblem:'adversaire',pctpv:ri(3,7),reducsoin:ri(30,60),tours:ri(2,4)})],
+   ['Solidification',()=>({type:'solidification',chance:ri(50,100),tours:ri(1,3)})],
    ['Gel',()=>({type:'gel',ciblem:'adversaire',annul:ri(30,60),stunch:ri(10,30),tours:ri(2,3)})],
    ['Fracture',()=>({type:'fracture',ciblem:'adversaire',fchance:ri(40,70),degfrac:pv(o.max,3,8),tours:ri(2,3)})],
    ['Fatigue adverse',()=>({type:'fatigue',ciblem:'adversaire',fatval:ri(15,35),u:'pct',fattours:ri(2,3)})],
@@ -229,7 +232,7 @@ function simuler(pA,pB,opt={}){
   L('statut',`Effet aléatoire de ${nom(o)} : ${lab} !`,{c:id(o),k:'alea'});
   fx(e,o,x,false)}
  function geler(d,ann,sn,t){d.st.frost.push({ann,sn,t});L('statut',`${nom(d)} est gelé (${ann} % d'attaque annulée, ${sn} % d'être étourdi, ${t} tour${t>1?'s':''}) !`,{c:id(d),k:'gel'})}
- function fracturer(d,fc,dg,t){d.st.fract.push({fc,dg,t});L('statut',`${nom(d)} est fracturé (${fc} % de se blesser en attaquant, −${dg} PV, ${t} tour${t>1?'s':''}) !`,{c:id(d),k:'fracture'})}
+ function fracturer(d,fc,dg,t){if(d.st.solide>0){d.st.solide=0;L('statut',`La solidification de ${nom(d)} se brise !`,{c:id(d),k:'solide_brise'})}d.st.fract.push({fc,dg,t});L('statut',`${nom(d)} est fracturé (${fc} % de se blesser en attaquant, −${dg} PV, ${t} tour${t>1?'s':''}) !`,{c:id(d),k:'fracture'})}
 // Purification : retire les statuts négatifs de t (sauf l'étourdissement) et lui rend l'ATQ perdu par malédiction
  function purifier(t,silent){const z=t.st,pk=[];z.pg=(z.pg||0)+1;
   z.dots.forEach(d=>pk.push(d.k==='poison'?'poison':'brulure'));z.curses.forEach(()=>pk.push('malediction'));z.bleeds.forEach(()=>pk.push('saignement'));z.frost.forEach(()=>pk.push('gel'));z.fat.forEach(()=>pk.push('fatigue'));z.fract.forEach(()=>pk.push('fracture'));
@@ -277,7 +280,7 @@ function simuler(pA,pB,opt={}){
     {const SQ=[...a.pl,...a.st.atkfx].filter(q=>q.type==='etourdir'&&(+q.chance||0)>0).map(q=>({...q,chance:+q.chance})),ec=SQ.reduce((q,p)=>q+p.chance,0);   // chances d'étourdir cumulables (passifs + effets de magie)
      const ess=Math.max(1,...SQ.map(q=>parseInt(q.essais,10)||1));let okS=false;for(let k=0;k<ess&&ec>0&&!okS;k++)okS=roll(Math.min(100,ec));
      if(ec>0&&okS){let u=r()*ec,src=SQ[SQ.length-1];for(const q of SQ){if(u<q.chance){src=q;break}u-=q.chance}   // la durée est celle de la source qui a déclenché
-      const T=Math.max(1,parseInt(src.tours,10)||1);d.st.stun=Math.max(d.st.stun,T);L('statut',`${nom(d)} est étourdi${T>1?` (${T} tours)`:''} !`,{c:idd,k:'etourdi'})}}
+      const T=Math.max(1,parseInt(src.tours,10)||1);if(d.st.solide>0)L('statut',`${nom(d)} est solidifié : l'étourdissement n'a aucun effet`,{c:idd,k:'solide_bloque'});else{d.st.stun=Math.max(d.st.stun,T);L('statut',`${nom(d)} est étourdi${T>1?` (${T} tours)`:''} !`,{c:idd,k:'etourdi'})}}}
     for(const q of [...a.pl,...a.st.atkfx]){   // statuts donnés par les passifs et par les effets d'attaque de base
      if(q.type==='brulure'&&roll(q.chance))dotUn(d,'brûlure',rd(d.max*(q.pctpv||0)/100),q.tours||1);
      if(q.type==='poison'&&roll(q.chance))dotUn(d,'poison',q.degtour||0,q.tours||1);
@@ -292,8 +295,11 @@ function simuler(pA,pB,opt={}){
   scan({t:'attaque',by:ia});
  }
  // Début du tour d'une carte : malédiction (l'ATQ baisse), puis régénération — avant l'ultime et l'attaque (les autres TIK de statut sont en fin de tour : voir tikFinDeTour)
+ // Solidification : insensible à l'étourdissement pendant X tours de l'adversaire. Ne se purge pas ; une fracture la brise. Un étourdissement déjà en cours reste.
+ function solidifier(s,ch,t){t=Math.max(1,parseInt(t,10)||1);if(!roll(ch))return false;s.st.solide=Math.max(s.st.solide,t);L('statut',`${nom(s)} se solidifie (${t} tour${t>1?'s':''}) : insensible à l'étourdissement`,{c:id(s),k:'solide'});return true}
  function debutTour(s){
   if(s.pv<=0)return;
+  s.pl.forEach(p=>{if(p.type==='solidification'&&!(s.st.solide>0))solidifier(s,p.chance==null||p.chance===''?100:(+p.chance||0),p.tours)});   // passif : tirage à chacun de ses tours
   {let g=0;s.st.cret=s.st.cret.filter(c=>{if(--c.t>0)return true;g+=c.q;return false});   // malédiction qui s'estompe : chaque baisse revient, une par une, dans l'ordre où elle est arrivée
    g=Math.min(g,s.st.cl);if(g>0){s.atq+=g;s.st.cl-=g;L('stat',`ATQ de ${nom(s)} +${g} (la malédiction s'estompe)`,{c:id(s),k:'mod',s:'ATQ',d:g})}}
   for(const d of s.st.curses.slice()){if(s.pv<=0||over())return;if(!s.st.curses.includes(d))continue;tikUn(s,'curses',d)}   // malédiction : l'ATQ baisse AVANT l'attaque de la carte maudite
@@ -304,6 +310,7 @@ function simuler(pA,pB,opt={}){
  // Fin du tour d'une carte : les durées qui dépendent de SES actions (rage, fatigue, gel, fracture, dégâts doublés) baissent d'un tour.
  // Un tour où elle est étourdie ou gelée compte aussi ; le tour de l'adversaire ne compte jamais.
  function finTourCarte(s){
+  {const x=adv(s);if(x.st.solide>0&&--x.st.solide===0)L('finstatut',`${nom(x)} n'est plus solidifié`,{c:id(x),k:'solide'})}   // la solidification protège pendant les tours de l'adversaire
   if(s.pv<=0)return;
   s.st.frost=s.st.frost.filter(f=>{if(--f.t>0)return true;L('finstatut',`${nom(s)} n'est plus gelé`,{c:id(s),k:'gel'});return false});
   s.st.fract=s.st.fract.filter(f=>{if(--f.t>0)return true;L('finstatut',`La fracture de ${nom(s)} guérit`,{c:id(s),k:'fracture'});return false});

@@ -162,6 +162,27 @@ test('valeurs en % : calculées sur la stat de la carte (7 % de 300 ATQ = 21)', 
 });
 
 // ================= Statuts =================
+test('solidification : bloque l\'étourdissement, une fracture la brise, la purification ne la retire pas', () => {
+  const etourdit = { type: 'etourdir', chance: 100 };
+  // magie : solidifié 3 tours, l'adversaire étourdit à chaque coup → aucun étourdissement
+  const r1 = combat([C('a', 10, SOLIDE, { passif: etourdit })], [C('b', 10, SOLIDE), MAG('Roc', { type: 'solidification', chance: 100, tours: 3 })], { regles: { maxTours: 6, maxProlong: 0 } });
+  const k1 = r1.journal.filter(e => ['solide', 'solide_bloque', 'etourdi'].includes(e.k)).map(e => e.k);
+  assert.equal(k1[0], 'solide');
+  assert.ok(k1.includes('solide_bloque'), 'étourdissement bloqué');
+  assert.ok(k1.indexOf('etourdi') === -1 || k1.indexOf('etourdi') > k1.lastIndexOf('solide_bloque'), 'pas étourdi tant qu\'il est solidifié');
+  // fracture : la solidification se brise, puis l'étourdissement passe
+  const r2 = combat([C('a', 10, SOLIDE, { passif: { briques: [etourdit, { type: 'fracture', chance: 100, fchance: 0, degfrac: 0, tours: 2 }] } })],
+    [C('b', 10, SOLIDE), MAG('Roc', { type: 'solidification', chance: 100, tours: 5 })], { regles: { maxTours: 6, maxProlong: 0 } });
+  const k2 = r2.journal.filter(e => ['solide_bloque', 'solide_brise', 'etourdi'].includes(e.k)).map(e => e.k);
+  assert.deepEqual(k2.slice(0, 3), ['solide_bloque', 'solide_brise', 'etourdi']);
+  // passif : se solidifie à chacun de ses tours (100 %) → jamais étourdi
+  const r3 = combat([C('a', 10, SOLIDE, { passif: etourdit })], [C('b', 10, SOLIDE, { passif: { type: 'solidification', chance: 100, tours: 1 } })], { regles: { maxTours: 6, maxProlong: 0 } });
+  assert.equal(lignes(r3, e => e.k === 'etourdi').length, 0);
+  // la purification ne retire pas la solidification
+  const r4 = combat([C('a', 10, SOLIDE, { passif: etourdit })], [C('b', 10, SOLIDE), MAG('Roc', { briques: [{ type: 'solidification', chance: 100, tours: 3 }, { type: 'purification' }] })], { regles: { maxTours: 4, maxProlong: 0 } });
+  assert.ok(lignes(r4, e => e.k === 'solide_bloque').length > 0);
+});
+
 test('« évite la mort » de la magie puis du piège : chaque protection sauve une fois', () => {
   const ange = MAG('Ange', { type: 'mort_evitee', cond: 'aucune' });
   const chance = PIE('Deuxième chance', { type: 'proprio_meurt' }, { type: 'mort_evitee' });
