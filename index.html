@@ -1015,7 +1015,7 @@ async function optimiserImages(log){
 
 /* ---------- Catalogue d'effets (pour ajouter un effet : une ligne ici) ---------- */
 // Paramètres réutilisables : [libellé, 'n' (nombre) ou liste de choix]
-const P={essais:['Nb de tentatives (la chance est tirée jusqu\'à X fois de suite, la 1re réussite suffit ; 1 par défaut)','n'],val:['Valeur','n'],u:['Unité',['pts','pct']],tours:['Nb de tours','n'],chance:['Chance (%)','n'],frappes:['Nb de frappes','n'],
+const P={essais:['Nb de tentatives (la chance est tirée jusqu\'à X fois de suite, la 1re réussite suffit ; 1 par défaut)','n'],val:['Valeur','n'],u:['Unité',['pct','pts']],tours:['Nb de tours','n'],chance:['Chance (%)','n'],frappes:['Nb de frappes','n'],
  coups:['Nb de coups','n'],cible:['Cible',['soi','adversaire']],carte:['Carte',['magie','piege']],seuil:['Seuil (ignoré si aucune condition)','n'],seuilpv:['Seuil (% PV)','n'],
  cond:['Condition pour éviter la mort',['aucune','pv_max','degats_infliges']],pct:['% PV rendus en plus','n'],pctrev:['% des PV max au retour','n'],val2:['2e valeur','n'],pctatq:["% de l'ATQ infligée volé en PV",'n'],pctpv:['% des PV max de la cible perdus par tour','n'],degtour:['Points de dégâts par tour','n'],ciblem:['Cible (adversaire par défaut)',['adversaire','soi']],max:['Plafond de frappes en plus','n'],reducsoin:['% de soins en moins','n'],ragev:['Rage : dégâts en plus par coup','n'],ragetours:['Rage : nombre de tours','n'],fatval:['Fatigue : ATQ en moins','n'],fattours:['Fatigue : nombre de tours','n'],nbalea:["Nombre d'effets aléatoires tirés (1 par défaut)",'n'],every:['Agit tous les X tours','n'],fois:['Nombre de fois (1 = une seule)','n'],annul:["Chance d'annuler l'attaque (%)",'n'],stunch:["Chance d'être étourdi avant l'attaque (%)",'n'],fchance:['Chance de se blesser en attaquant (%)','n'],degfrac:['Dégâts subis en attaquant','n']};
 // Chaque effet : [libellé, ...paramètres]
@@ -1082,7 +1082,7 @@ const MAG={atq_mod:["Modifie l'ATQ (négatif = baisse)",'cible','val','u'],pv_mo
 const CON={adv_attaque:["L'adversaire a attaqué X fois",'coups'],adv_ultime:["L'adversaire utilise son ultime"],proprio_pv_sous:['Le propriétaire passe sous X % de PV','seuilpv'],
  adv_pv_bas:["L'adversaire passe sous X % de PV",'seuilpv'],adv_soigne:["L'adversaire se soigne"],proprio_soigne:['Le propriétaire se soigne'],proprio_meurt:['Le propriétaire meurt']};
 let editId=null,editOld=null;
-const OL={aucune:'Aucune condition : évite la mort une fois',pv_max:'Ses PV max sont au moins égaux au seuil',degats_infliges:'Il a déjà infligé au moins le seuil en dégâts (total)'};
+const OL={pct:'%',pts:'points (unités)',aucune:'Aucune condition : évite la mort une fois',pv_max:'Ses PV max sont au moins égaux au seuil',degats_infliges:'Il a déjà infligé au moins le seuil en dégâts (total)'};
 function mk(el,cat){
   el.classList.add('mk');el.innerHTML=`<select><option value="">— Aucun —</option>${Object.entries(cat).map(([k,v])=>`<option value="${k}">${v[0]}</option>`).join('')}</select><div class="row"></div>`;
   const s=el.querySelector('select'),d=el.querySelector('.row');
