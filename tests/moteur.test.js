@@ -162,6 +162,19 @@ test('valeurs en % : calculées sur la stat de la carte (7 % de 300 ATQ = 21)', 
 });
 
 // ================= Statuts =================
+test('souffle élémentaire : dégâts puis le statut choisi (chaque élément)', () => {
+  const att = { brulure: /brûle/, gel: /est gelé \(12 %/, malediction: /maudit \(ATQ −12/, poison: /empoisonné/, saignement: /saigne \(12 %/, fatigue: /fatigué \(ATQ −\d+/ };
+  for (const [el, re] of Object.entries(att)) {
+    const r = combat([C('a', 10, SOLIDE), MAG('Souffle', { type: 'souffle', val: 50, statut: el, chance: 100, sval: 12, tours: 2 })], [C('b', 300, SOLIDE)], { regles: { maxTours: 2, maxProlong: 0 } });
+    const i = r.journal.findIndex(e => e.t === 'souffle');
+    assert.ok(i > 0 && r.journal[i].el === el, el + ' : souffle');
+    assert.equal(r.journal[i + 1].txt, 'b subit 50 dégâts (souffle)');
+    assert.match(r.journal[i + 2].txt, re, el + ' : statut appliqué');
+  }
+  const r0 = combat([C('a', 10, SOLIDE), MAG('Souffle', { type: 'souffle', val: 50, statut: 'poison', chance: 0, sval: 12 })], [C('b', 300, SOLIDE)], { regles: { maxTours: 2, maxProlong: 0 } });
+  assert.ok(lignes(r0, e => /résiste au souffle/.test(e.txt || '')).length === 1, '0 % : pas de statut');
+});
+
 test('exécution : 3 marques puis exécutée sous le seuil, même avec « évite la mort », réanimation possible', () => {
   // seuil 1 % (10 PV sur 1000) : à 50 PV le coup suivant est mortel → évite la mort (1 PV) → exécutée quand même
   const r = combat([C('a', 95, SOLIDE, { passif: { type: 'execution', chance: 100, seuilexec: 1 } })], [C('b', 1, 1000, { passif: { type: 'evite_mort' } })], { regles: { maxTours: 30, maxProlong: 0 } });

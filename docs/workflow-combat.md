@@ -85,7 +85,7 @@ flowchart TD
   P1 -- non --> PX([Rien])
   P1 -- oui --> P2{"L'adversaire est<br/>insensible aux pièges ?"}
   P2 -- oui --> P3["Le piège se déclenche SANS effet :<br/>le déclenchement est consommé<br/>(croix rouge ; « épuisé » s'il n'en reste plus)"]
-  P2 -- non --> P4["Le piège se révèle et applique ses effets<br/>(dégâts, statuts, vol, destruction…)"]
+  P2 -- non --> P4["Le piège se révèle et applique ses effets<br/>(dégâts, statuts, souffle élémentaire, marques d'exécution,<br/>vol, destruction…)"]
   P4 --> P5{"Vol d'une carte ?"}
   P5 -- oui --> P6["La carte volée s'envole jusqu'au camp du voleur<br/>et prend la place de la carte qui a volé"]
   P4 --> P7{"Destruction ?"}

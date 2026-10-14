@@ -140,6 +140,14 @@ function simuler(pA,pB,opt={}){
    case'echange_tout':[o.atq,x.atq]=[x.atq,o.atq];[o.pv,x.pv]=[x.pv,o.pv];[o.max,x.max]=[x.max,o.max];L('stat',`${nom(o)} et ${nom(x)} échangent ATQ et PV`,{k:'echange',cs:[id(o),id(x)],col:'mixte'});break;
    case'malediction':maudire((e.ciblem||e.cible)==='soi'?o:x,e.val||0,e.tours||1);break;
    case'saignement':saigner((e.ciblem||e.cible)==='soi'?o:x,e.pctpv||0,e.reducsoin||0,e.tours||1);break;
+   case'souffle':{const el=['brulure','gel','malediction','poison','saignement','fatigue'].includes(e.statut)?e.statut:'brulure',NS={brulure:'de feu',gel:'de glace',malediction:'maudit',poison:'empoisonné',saignement:'de sang',fatigue:"d'épuisement"};
+    L('souffle',`${nom(o)} crache un souffle ${NS[el]} !`,{c:id(x),from:id(o),el});
+    if(+e.val>0){const n=dmg(o,x,+e.val);L('degats',`${nom(x)} subit ${n} dégâts (souffle)`,{c:id(x),n,k:'souffle'})}
+    if(x.pv>0){const ch=e.chance==null||e.chance===''?100:(+e.chance||0),v=+e.sval||0,t=Math.max(1,parseInt(e.tours,10)||2);
+     if(roll(ch))fx({brulure:{type:'brulure_effet',ciblem:'adversaire',pctpv:v,tours:t},gel:{type:'gel',ciblem:'adversaire',annul:v,stunch:0,tours:t},malediction:{type:'malediction',ciblem:'adversaire',val:v,tours:t},
+      poison:{type:'poison_effet',ciblem:'adversaire',degtour:v,tours:t},saignement:{type:'saignement',ciblem:'adversaire',pctpv:v,reducsoin:+e.reducsoin||0,tours:t},fatigue:{type:'fatigue',ciblem:'adversaire',fatval:v,u:'pct',fattours:t}}[el],o,x,mg,rt);
+     else L('statut',`${nom(x)} résiste au souffle (${ch} % de chances)`,{c:id(x)})}
+    break}
    case'execution':{const q={type:'execution',chance:e.chance==null||e.chance===''?100:+e.chance||0,seuilexec:e.seuilexec};o.st.atkfx.push(q);if(mg)o.mdelta.push({undo:()=>{o.st.atkfx=o.st.atkfx.filter(z=>z!==q)}});L('statut',`L'attaque de ${nom(o)} peut maintenant marquer la cible (${q.chance} %)`,{c:id(o),k:'exec_prep'});break}
    case'execution_direct':marquer(x,Math.max(1,parseInt(e.nbmarques,10)||1),e.seuilexec);break;
    case'transcendance':{const A=porterTransc(o,e);if(A&&mg)o.mdelta.push({undo:()=>{if(o.st.trA===A&&!o.st.transc){o.st.trA=null;L('finstatut',`${nom(o)} perd la Transcendance`,{c:id(o),k:'transc_prep'})}}});break}
@@ -222,6 +230,7 @@ function simuler(pA,pB,opt={}){
    ['Étourdissement',()=>({type:'etourdir_effet',ciblem:'adversaire',tours:ri(1,2)})],
    ['Malédiction',()=>({type:'malediction',ciblem:'adversaire',val:pv(o.atq,10,25),tours:ri(2,4)})],
    ['Saignement',()=>({type:'saignement',ciblem:'adversaire',pctpv:ri(3,7),reducsoin:ri(30,60),tours:ri(2,4)})],
+   ['Souffle élémentaire',()=>({type:'souffle',val:pv(o.max,4,10),statut:['brulure','gel','malediction','poison','saignement','fatigue'][ri(0,5)],chance:ri(40,80),sval:ri(5,15),tours:ri(2,3)})],
    ['Exécution (attaque)',()=>({type:'execution',chance:ri(30,60),seuilexec:ri(8,15)})],
    ['Exécution (marques)',()=>({type:'execution_direct',nbmarques:ri(1,2),seuilexec:ri(8,15)})],
    ['Transcendance',()=>({type:'transcendance',tours:ri(2,4),patq:ri(10,20),ppv:ri(10,20)})],
