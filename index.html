@@ -1427,6 +1427,9 @@ const finLocale=iso=>{if(!iso)return'';const d=new Date(iso);if(isNaN(d))return'
 function etatGains(v){const m=+(v.multiplicateur_gains??1)||0,f=v.multiplicateur_fin?new Date(v.multiplicateur_fin):null,fini=f&&!isNaN(f)&&f<new Date();
  const g=k=>Math.round((+(v[k]??{gain_victoire:50,gain_defaite:10,gain_nul:20}[k])||0)*(fini?1:m));
  return(m!==1&&!fini?`🔥 Multiplicateur ×${m} actif${f&&!isNaN(f)?' jusqu\'au '+f.toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'}):' (sans heure de fin)'}`:'Gains normaux (×1)')+` — en ce moment : victoire ${g('gain_victoire')}, défaite ${g('gain_defaite')}, nul ${g('gain_nul')} gold.`}
+function etatBounty(v){const f=v.bounty_fin?new Date(v.bounty_fin):null,fini=f&&!isNaN(f)&&f<new Date();
+ if(String(v.bounty_actif)!=='1'||fini)return'Bounty inactif.';const pg=+(v.bounty_part_gagnant??70);
+ return`🎯 Bounty actif${f&&!isNaN(f)?' jusqu\'au '+f.toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'}):' (sans heure de fin)'} : prime de ${v.bounty_min??5} à ${v.bounty_max??90} gold dans ${v.bounty_chance??30} % des combats, ${pg} % gagnant / ${100-pg} % perdant, et ${v.bounty_tout??10} % de chances que le gagnant rafle tout.`}
 async function sauverGains(o){await q(sb.from('reglages_jeu').upsert(Object.entries(o).map(([cle,val])=>({cle,valeur:String(val)}))))}
 async function aReglages(){
   const r=await sb.from('reglages_jeu').select('cle,valeur');
@@ -1450,6 +1453,17 @@ async function aReglages(){
      <label><small>Jusqu'à (facultatif)</small><br><input name="fin" type="datetime-local" value="${esc(finLocale(v.multiplicateur_fin))}"></label></div>
     <small id="gainetat">${etatGains(v)}</small>
     <div class="row"><button>Enregistrer</button><button type="button" class="sec" id="gx2">🔥 Soirée ×2 (6 h)</button><button type="button" class="sec" id="gx1">↩ Revenir à ×1</button></div></form>
+   <form class="f" id="fbounty" style="flex-direction:column;align-items:flex-start"><b>🎯 Événement Bounty</b>
+    <small>De temps en temps, une prime aléatoire apparaît à la fin d'un combat (pluie de pièces sur le stream) et se partage entre les deux joueurs, en plus des gains normaux (match nul : moitié-moitié). Parfois, le gagnant rafle tout. Elle n'est pas multipliée par les soirées ×2. Avec une heure de fin, l'événement s'arrête tout seul.</small>
+    <div class="row"><label><small>Actif</small><br><input name="on" type="checkbox" ${String(v.bounty_actif)==='1'?'checked':''}></label>
+     <label><small>Prime min</small><br><input name="bmin" type="number" min="0" max="100000" value="${esc(v.bounty_min??5)}" style="width:80px"></label>
+     <label><small>Prime max</small><br><input name="bmax" type="number" min="0" max="100000" value="${esc(v.bounty_max??90)}" style="width:80px"></label>
+     <label><small>Part du gagnant %</small><br><input name="bpart" type="number" min="0" max="100" value="${esc(v.bounty_part_gagnant??70)}" style="width:80px"></label>
+     <label><small>Chance qu'une prime apparaisse %</small><br><input name="bch" type="number" min="0" max="100" value="${esc(v.bounty_chance??30)}" style="width:80px"></label>
+     <label><small>Chance « le gagnant rafle tout » %</small><br><input name="btout" type="number" min="0" max="100" value="${esc(v.bounty_tout??10)}" style="width:80px"></label>
+     <label><small>Jusqu'à (facultatif)</small><br><input name="fin" type="datetime-local" value="${esc(finLocale(v.bounty_fin))}"></label></div>
+    <small>${etatBounty(v)}</small>
+    <div class="row"><button>Enregistrer</button><button type="button" class="sec" id="bgo">🎯 Lancer le Bounty (6 h)</button><button type="button" class="sec" id="bstop">⏹ Arrêter le Bounty</button></div></form>
    <h3>Recyclage des doublons</h3><form class="f" id="frc"><small>Ce que rapporte chaque exemplaire en trop. Les fragments sont prêts pour un futur craft : laisse 0 tant qu'il n'existe pas.</small>
    <table><tr><th></th><th>Gold</th><th>Fragments</th></tr>${[['commun','Commun'],['rare','Rare'],['epique','Épique'],['legendaire','Légendaire'],['ggez','GGEZ']].map(([k,n],i)=>`<tr><td>${n}</td><td><input name="g_${k}" type="number" min="0" value="${esc(v['recyclage_gold_'+k]??[5,10,35,80,80][i])}" style="width:80px"></td><td><input name="f_${k}" type="number" min="0" value="${esc(v['recyclage_fragments_'+k]??0)}" style="width:80px"></td></tr>`).join('')}</table><button>Enregistrer le recyclage</button></form>
    <h3>Tests</h3><div class="f"><button class="sec" id="rzc">Remettre à zéro les combats gratuits du jour (tous les joueurs)</button></div>`;
@@ -1479,6 +1493,13 @@ async function aReglages(){
     uiAlert('Gains enregistrés.');aReglages()};
   $('#gx2').onclick=async()=>{await sauverGains({multiplicateur_gains:2,multiplicateur_fin:new Date(Date.now()+6*3600e3).toISOString()});uiAlert('🔥 Soirée double gains lancée pour 6 heures !');aReglages()};
   $('#gx1').onclick=async()=>{await sauverGains({multiplicateur_gains:1,multiplicateur_fin:''});uiAlert('Gains remis à la normale (×1).');aReglages()};
+  $('#fbounty').onsubmit=async e=>{e.preventDefault();const f=e.target,n=(x,max)=>Math.max(0,Math.min(max,Math.round(+x||0)));
+    const fin=f.fin.value?new Date(f.fin.value):null;if(fin&&isNaN(fin))return uiAlert('Heure de fin invalide.');
+    const mn=n(f.bmin.value,100000),mx=Math.max(mn,n(f.bmax.value,100000));
+    await sauverGains({bounty_actif:f.on.checked?1:0,bounty_min:mn,bounty_max:mx,bounty_part_gagnant:n(f.bpart.value,100),bounty_chance:n(f.bch.value,100),bounty_tout:n(f.btout.value,100),bounty_fin:fin?fin.toISOString():''});
+    uiAlert('Bounty enregistré.');aReglages()};
+  $('#bgo').onclick=async()=>{await sauverGains({bounty_actif:1,bounty_fin:new Date(Date.now()+6*3600e3).toISOString()});uiAlert('🎯 Bounty lancé pour 6 heures !');aReglages()};
+  $('#bstop').onclick=async()=>{await sauverGains({bounty_actif:0,bounty_fin:''});uiAlert('Bounty arrêté.');aReglages()};
   $('#fma').onsubmit=async e=>{e.preventDefault();const n=Math.max(0,Math.min(50,parseInt(e.target.n.value,10)||0));
     await q(sb.from('reglages_jeu').upsert({cle:'combats_meme_adversaire_par_jour',valeur:String(n)}));uiAlert(n?'Enregistré : '+n+' combat'+(n>1?'s':'')+' maximum par jour contre le même adversaire.':'Enregistré : pas de limite contre le même adversaire.');aReglages()};
   $('#frc').onsubmit=async e=>{e.preventDefault();const f=e.target,rows=[];

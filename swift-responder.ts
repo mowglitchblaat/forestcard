@@ -526,6 +526,21 @@ async function reglesGains() {
   const mult = fin && !isNaN(fin.getTime()) && fin.getTime() < Date.now() ? 1 : Math.min(10, nb(v.multiplicateur_gains, 1));
   return { mult, gain: Math.round(nb(v.gain_victoire, REGLES.gain) * mult), perte: Math.round(nb(v.gain_defaite, REGLES.perte) * mult), nul: Math.round(nb(v.gain_nul, REGLES.nul) * mult) };
 }
+// Événement Bounty (Admin > Réglages) : une prime aléatoire (entre min et max gold) apparaît à la fin des combats
+// et se partage entre les deux joueurs (ex. 70 % gagnant / 30 % perdant ; match nul : moitié-moitié). Heure de fin facultative.
+async function reglesBounty() {
+  const v = {};
+  try {
+    const r = await rest('reglages_jeu?cle=in.(bounty_actif,bounty_min,bounty_max,bounty_part_gagnant,bounty_chance,bounty_tout,bounty_fin)&select=cle,valeur');
+    if (r.ok && Array.isArray(r.data)) r.data.forEach(x => { v[x.cle] = x.valeur; });
+  } catch { return null; }
+  if (String(v.bounty_actif) !== '1') return null;
+  const fin = v.bounty_fin ? new Date(v.bounty_fin) : null;
+  if (fin && !isNaN(fin.getTime()) && fin.getTime() < Date.now()) return null;
+  const nb = (x, d, max) => { const n = parseFloat(x); return Number.isFinite(n) && n >= 0 ? Math.min(n, max) : d; };
+  const min = Math.round(nb(v.bounty_min, 5, 100000)), max = Math.max(min, Math.round(nb(v.bounty_max, 90, 100000)));
+  return { min, max, part: nb(v.bounty_part_gagnant, 70, 100), chance: nb(v.bounty_chance, 30, 100), tout: nb(v.bounty_tout, 10, 100) };
+}
 // Anti-farm : nombre maximum de combats entre deux mêmes joueurs par jour (Admin > Réglages, 0 = pas de limite)
 async function limiteMemeAdversaire() {
   try {
@@ -660,8 +675,22 @@ Deno.serve(async (req) => {
   // 3) récompenses et statistiques
   const w = res.gagnant;                                         // 0 = lanceur, 1 = adversaire, null = nul
   const gains = [res.recompenses[0], PAYER_ADVERSAIRE ? res.recompenses[1] : 0];
+  // Bounty : prime aléatoire partagée entre les deux joueurs (s'ajoute aux gains du combat)
+  let bounty = null;
+  try {
+    const B = await reglesBounty();
+    if (B && Math.random() * 100 < B.chance) {
+      const total = B.min + Math.floor(Math.random() * (B.max - B.min + 1));
+      let parts, tout = false;
+      if (w === null) { const h = Math.ceil(total / 2); parts = [h, total - h]; }
+      else { tout = Math.random() * 100 < B.tout; const pg = tout ? total : Math.round(total * B.part / 100); parts = w === 0 ? [pg, total - pg] : [total - pg, pg]; }
+      if (!PAYER_ADVERSAIRE) parts[1] = 0;
+      gains[0] += parts[0]; gains[1] += parts[1];
+      bounty = { total, parts, tout };
+    }
+  } catch { bounty = null; }   // un souci sur la prime ne bloque jamais le combat
   res.recompenses = gains;
-  const fin = res.journal[res.journal.length - 1]; if (fin && fin.t === 'fin') fin.recompenses = gains;
+  const fin = res.journal[res.journal.length - 1]; if (fin && fin.t === 'fin') { fin.recompenses = gains; if (bounty) fin.bounty = bounty; }
   const dmg = [0, 0], gros = [0, 0]; let tours = 0;
   for (const e of res.journal) {
     if (e.t === 'tour') tours++;
@@ -704,6 +733,8 @@ Deno.serve(async (req) => {
   res.annonce = w === null ? `🤝 Match nul entre ${a.pseudo} et ${adv.pseudo} ! ${recompenses}`
     : `🏆 ${nomW} remporte le combat contre ${w === 0 ? adv.pseudo : a.pseudo} ! ${recompenses}`;
   if (G.mult !== 1) res.annonce += ` (🔥 gains ×${G.mult} !)`;
+  if (bounty) res.annonce += bounty.tout ? ` 💰 BOUNTY de ${bounty.total} ${NOM_MONNAIE} : ${nomW} rafle tout !`
+    : ` 💰 Bounty de ${bounty.total} ${NOM_MONNAIE} : ${a.pseudo} +${bounty.parts[0]}${PAYER_ADVERSAIRE ? `, ${adv.pseudo} +${bounty.parts[1]}` : ''} !`;
   const intro = `⚔️ ${a.pseudo} affronte ${adv.pseudo} !`;
   return new Response(JSON.stringify(res), { status: 200, headers: { 'content-type': 'application/json; charset=utf-8', 'x-message': encodeURIComponent(intro) } });
 });
