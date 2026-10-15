@@ -1590,6 +1590,9 @@ function ouvrirRecap(){const R=journalRecap,box=$('#recap');if(!R){box.innerHTML
  if(f&&f.pv)h+=`<div class="pvs">PV à la fin : ${f.pv[0]} / ${f.max[0]} · ${f.pv[1]} / ${f.max[1]}</div>`;
  box.innerHTML=h;box.style.display='block';$('#rcx').onclick=()=>box.style.display='none'}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')$('#recap').style.display='none'});
-if(TEST||DEMO){const dm=$('#demo');if(dm){const row=document.createElement('div');row.id='outils';row.innerHTML='<button id="brc">📋 Récap du combat</button>Vitesse ';row.appendChild($('#vit'));dm.prepend(row);$('#brc').onclick=ouvrirRecap}}
+if(TEST||DEMO){const dm=$('#demo');if(dm){const row=document.createElement('div');row.id='outils';row.innerHTML='<button id="brc">📋 Récap du combat</button><button id="bbty">💰 Tester le Bounty</button>Vitesse ';row.appendChild($('#vit'));dm.prepend(row);$('#brc').onclick=ouvrirRecap;
+  let nb=0;$('#bbty').onclick=()=>{const tout=++nb%3===0,total=5+Math.floor(Math.random()*86),pg=tout?total:Math.round(total*.7),parts=[pg,total-pg];   // aperçu seulement : rien n'est enregistré (1 essai sur 3 : « le gagnant rafle tout »)
+   const b=$('#ban');if(b)b.textContent='Aperçu : A remporte le combat ! (+50)'+(tout?` · 💰 Bounty ${total} : le gagnant rafle tout !`:` · 💰 Bounty ${total} !`);
+   pluieOr(tout?70:45);[0,1].forEach(i=>{if(parts[i]>0&&$('#p'+i))setTimeout(()=>flot(i,'💰 Bounty +'+parts[i],'#fcd34d'),600)})}}}
 if(!TEST&&!DEMO)connect();
 </script></body></html>
