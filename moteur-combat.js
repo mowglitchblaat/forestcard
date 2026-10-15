@@ -138,7 +138,8 @@ function simuler(pA,pB,opt={}){
      else L('statut',`${nom(x)} résiste au souffle (${ch} % de chances)`,{c:id(x)})}
     break}
    case'execution':{const q={type:'execution',chance:e.chance==null||e.chance===''?100:+e.chance||0,seuilexec:e.seuilexec};o.st.atkfx.push(q);if(mg)o.mdelta.push({undo:()=>{o.st.atkfx=o.st.atkfx.filter(z=>z!==q)}});L('statut',`L'attaque de ${nom(o)} peut maintenant marquer la cible (${q.chance} %)`,{c:id(o),k:'exec_prep'});break}
-   case'execution_direct':marquer(x,Math.max(1,parseInt(e.nbmarques,10)||1),e.seuilexec);break;
+   case'execution_direct':{const m0=x.st.marques;marquer(x,Math.max(1,parseInt(e.nbmarques,10)||1),e.seuilexec);const add=x.st.marques-m0;
+    if(add>0)U(()=>{if(x.pv<=0)return;x.st.marques=Math.max(0,x.st.marques-add);L('finstatut',`${nom(x)} perd ${add} marque${add>1?'s':''} d'exécution (${x.st.marques}/3)`,{c:id(x),k:'marque',n:x.st.marques})});break}   // magie volée / annulée : ses marques partent avec elle
    case'transcendance':{const A=porterTransc(o,e);if(A&&mg)o.mdelta.push({undo:()=>{if(o.st.trA===A&&!o.st.transc){o.st.trA=null;L('finstatut',`${nom(o)} perd la Transcendance`,{c:id(o),k:'transc_prep'})}}});break}
    case'solidification':{const ch=e.chance==null||e.chance===''?100:(+e.chance||0);if(solidifier(o,ch,e.tours)&&mg)o.mdelta.push({undo:()=>{if(o.st.solide>0){o.st.solide=0;L('finstatut',`${nom(o)} n'est plus solidifié`,{c:id(o),k:'solide'})}}});break}
    case'gel':geler((e.ciblem||e.cible)==='soi'?o:x,e.annul||0,e.stunch||0,e.tours||1);break;

@@ -124,6 +124,19 @@ test('piège détruit : il se brise (événement piege_detruit)', () => {
   assert.equal(lignes(r, e => e.t === 'piege').length, 0, 'le piège détruit ne se déclenche plus');
 });
 
+test('vol de magie : la victime perd tous les effets de sa magie (stats, marques, solidification, transcendance)', () => {
+  const vol = PIE('Voleur', { type: 'adv_attaque', coups: 1 }, { type: 'voler', carte: 'magie' });
+  for (const e of [{ type: 'atq_mod', cible: 'soi', val: 50 }, { type: 'execution_direct', nbmarques: 2 }, { type: 'solidification', chance: 100, tours: 9 }, { type: 'transcendance', tours: 3 }, { type: 'atk_poison', chance: 100, degtour: 7, tours: 3 }]) {
+    const r = combat([C('a', 100, 1000), MAG('MagA', e)], [C('b', 10, SOLIDE), vol], { seed: 3, regles: { maxTours: 8, maxProlong: 0 } });
+    const i = r.journal.findIndex(x => x.k === 'vol_carte');
+    assert.ok(i > 0, e.type + ' : volée');
+    assert.equal(r.journal[i].atq[0], 100, e.type + ' : ATQ de la victime revenue');
+    const apres = r.journal.slice(i + 1);
+    assert.ok(!apres.some(x => /^(a se solidifie|a TRANSCENDE|b reçoit une marque|L'attaque de a)/.test(x.txt || '')), e.type + ' : plus rien chez la victime');
+    if (e.type === 'execution_direct') assert.ok(r.journal.slice(0, i).some(x => /b perd 2 marques/.test(x.txt || '')), 'marques retirées');
+  }
+});
+
 test('vol de magie : la carte passe chez le voleur et son effet aussi', () => {
   const r = combat([C('A', 6, SOLIDE), MAG('Force', { type: 'atq_mod', cible: 'soi', val: 50, u: 'pct' })],
     [C('B', 6, SOLIDE), PIE('Larcin', { type: 'adv_attaque', coups: 1 }, { type: 'voler', carte: 'magie' })], { seed: 4, regles: { maxTours: 2, maxProlong: 0 } });
