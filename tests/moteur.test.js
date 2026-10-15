@@ -124,6 +124,17 @@ test('piège détruit : il se brise (événement piege_detruit)', () => {
   assert.equal(lignes(r, e => e.t === 'piege').length, 0, 'le piège détruit ne se déclenche plus');
 });
 
+test('vol de magie au début du combat : la magie volée ne s\'active jamais chez la victime, quel que soit l\'ordre', () => {
+  for (const seed of [1, 2, 3, 4, 5, 6]) {
+    const r = combat([C('Marsupirage', 100, SOLIDE), MAG('Rage', { type: 'rage', ragev: 30, u: 'pct', ragetours: 3, fatval: 20, fattours: 2 })],
+      [C('b', 10, SOLIDE), MAG('Corne de dragon', { type: 'voler', carte: 'magie' })], { seed, regles: { maxTours: 4, maxProlong: 0 } });
+    const iV = r.journal.findIndex(e => e.k === 'vol_carte');
+    assert.ok(iV > 0, 'volée');
+    assert.ok(!r.journal.slice(iV).some(e => /Marsupirage entre en rage/.test(e.txt || '')), `seed ${seed} : pas de rage chez la victime après le vol`);
+    assert.ok(r.journal.slice(iV).some(e => /b entre en rage/.test(e.txt || '')), `seed ${seed} : le voleur a la rage`);
+  }
+});
+
 test('vol de magie : la victime perd tous les effets de sa magie (stats, marques, solidification, transcendance)', () => {
   const vol = PIE('Voleur', { type: 'adv_attaque', coups: 1 }, { type: 'voler', carte: 'magie' });
   for (const e of [{ type: 'atq_mod', cible: 'soi', val: 50 }, { type: 'execution_direct', nbmarques: 2 }, { type: 'solidification', chance: 100, tours: 9 }, { type: 'transcendance', tours: 3 }, { type: 'atk_poison', chance: 100, degtour: 7, tours: 3 }]) {
