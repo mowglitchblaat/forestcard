@@ -1396,7 +1396,7 @@ if(DEMO){
  const tg=()=>+$('#dc').value,dw=ms=>new Promise(r=>setTimeout(r,ms*(location.search.includes('fast')?.12:1)));
  const lab=(s,c)=>{$('#dl').textContent=s[1]+(s[0]==='Échanges'?'':' — '+(c?'Bot':'Toi'))};
  const run=(s,c)=>{lab(s,c);if(s[4]&&has(c,s[5])){s[4](c);return}s[3+0]&&s[2](c);if(s[6])setTimeout(mk,s[3]+1500)};
- let html='<div style="font-size:10px;opacity:.5;text-align:right">combat.html v8 — test des effets</div><div id="dl">Choisis un effet ↓</div><button class="big" id="dseq">▶ Tout enchaîner</button><div style="display:flex;gap:6px;margin-bottom:4px"><select id="dc"><option value="0">Cible : Toi (gauche)</option><option value="1">Cible : Bot (droite)</option></select><button id="drs">↺ Réinitialiser</button></div>',g='';
+ let html='<div style="font-size:10px;opacity:.5;text-align:right">combat.html v9 (bourse Bounty) — test des effets</div><div id="dl">Choisis un effet ↓</div><button class="big" id="dseq">▶ Tout enchaîner</button><div style="display:flex;gap:6px;margin-bottom:4px"><select id="dc"><option value="0">Cible : Toi (gauche)</option><option value="1">Cible : Bot (droite)</option></select><button id="drs">↺ Réinitialiser</button></div>',g='';
  S.forEach((s,i)=>{if(s[0]!==g){if(g)html+='</div>';html+=`<h4>${s[0]}</h4><div class="g">`;g=s[0]}html+=`<button data-i="${i}">${s[1]}</button>`});html+='</div>';dm.innerHTML=html;
  dm.querySelectorAll('button[data-i]').forEach(b=>b.onclick=()=>run(S[+b.dataset.i],tg()));
  $('#drs').onclick=mk;let seq=false;
