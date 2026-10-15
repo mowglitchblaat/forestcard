@@ -1,5 +1,37 @@
 [
   {
+    "date": "2026-10-15",
+    "intro": "Le vol de cartes devient bien plus riche, les communes arrivent dans tous les boosters et le classement se trie à ta façon.",
+    "groupes": [
+      {
+        "titre": "Magies et pièges",
+        "points": [
+          "Le vol de magie ou de piège existe maintenant en magie, piège, passif et ultime : tout de suite ou à un tour choisi, et parfois pour quelques tours seulement avant que la carte retourne à son propriétaire.",
+          "Une magie volée n’agit plus du tout chez sa victime (stats, marques d’exécution, solidification…), même si elle est volée dès le début du combat.",
+          "Les effets qui étaient en points avant le passage aux pourcentages reviennent en points, en gardant les valeurs d’équilibrage."
+        ]
+      },
+      {
+        "titre": "Animations",
+        "points": [
+          "Une carte volée pour quelques tours repart vers son propriétaire, et les marques d’exécution retirées s’effacent à l’écran."
+        ]
+      },
+      {
+        "titre": "Boutique et boosters",
+        "points": [
+          "Les cartes communes peuvent sortir dans tous les boosters, quelle que soit leur collection, et la boutique les affiche dans le contenu de chaque booster."
+        ]
+      },
+      {
+        "titre": "Site",
+        "points": [
+          "Le classement peut se trier par victoires, % de victoires, combats joués, défaites ou matchs nuls."
+        ]
+      }
+    ]
+  },
+  {
     "date": "2026-10-14",
     "intro": "Quatre nouvelles mécaniques de combat avec leurs animations, des pièges plus fiables et un site plus rapide et plus complet.",
     "groupes": [
