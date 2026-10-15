@@ -382,6 +382,12 @@ test('piège volé par un ultime pendant X tours : le voleur retrouve son propre
 });
 
 // ================= Les 3 copies du moteur =================
+test('deux pièges qui se déclenchent l\'un l\'autre : la chaîne s\'arrête (pas de boucle sans fin)', () => {
+  const soin = (n) => PIE(n, { type: 'adv_soigne' }, { type: 'soin', val: 1 }, 9999);
+  const r = combat([C('a', 4000, 1e6), soin('P1')], [C('b', 4000, 1e6), soin('P2'), MAG('Regen', { type: 'soin_tours', val: 1, tours: 9 })], { regles: { maxTours: 4, maxProlong: 0 } });
+  assert.ok(lignes(r, e => e.t === 'piege').length < 50, 'nombre de pièges raisonnable');
+});
+
 test('les 3 copies du moteur sont identiques (moteur-combat.js, combat.html, swift-responder.ts)', () => {
   const E = "})(typeof window!=='undefined'?window:globalThis);";
   const extrait = f => { const s = fs.readFileSync(path.join(__dirname, '..', f), 'utf8').replace(/\r\n/g, '\n'); const a = s.indexOf('(function(g){\nconst '); return s.slice(a, s.indexOf(E, a) + E.length); };
