@@ -250,7 +250,8 @@ async function loadColl(){
   let r=await sb.from('collection_joueur').select('quantite,variantes_carte(id,nom,image_path,cartes(id,nom,type,atq,pv,description,passif,ultime,effet,collections(nom),raretes(nom,couleur,poids)))').eq('joueur_id',user.id);
   if(r.error)r=await sb.from('collection_joueur').select('quantite,variantes_carte(id,nom,image_path,cartes(id,nom,type,collections(nom),raretes(nom,couleur,poids)))').eq('joueur_id',user.id);
   if(r.error){uiAlert(r.error.message);throw r.error}
-  collData=r.data;
+  collData=(r.data||[]).filter(x=>x&&x.variantes_carte&&x.variantes_carte.cartes);   // une carte devenue invisible pour le joueur (désactivée, supprimée…) arrive vide : on l'ignore au lieu de bloquer la page
+  if(collData.length<(r.data||[]).length)console.warn('Collection : '+((r.data||[]).length-collData.length)+' carte(s) illisible(s) ignorée(s)');
   collData.sort(cmpColl);   // légendaire en premier, puis épique, rare, commun
   typeOf={};collData.forEach(x=>{const c=x.variantes_carte.cartes;typeOf[c.id]=c.type});
   if(!deck){const dk=await q(sb.from('deck').select('carte_id').eq('joueur_id',user.id));deck=new Set(dk.map(x=>x.carte_id))}
@@ -1244,7 +1245,7 @@ const RANGS_RAR=['ggez','legendaire','epique','rare','commun'];   // GGEZ : au-d
 function rangRar(r){const n=String((r&&r.nom)||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z]/g,''),i=RANGS_RAR.findIndex(k=>n.includes(k));return[i<0?9:i,+(r&&r.poids)||0]}
 function cmpCartes(a,b){const x=rangRar(a.raretes),y=rangRar(b.raretes);return(x[0]-y[0])||(x[1]-y[1])||a.nom.localeCompare(b.nom,'fr')}
 const ORD_TYPE={combattant:0,magie:1,piege:2};
-function cmpColl(a,b){const ca=a.variantes_carte.cartes,cb=b.variantes_carte.cartes,x=rangRar(ca.raretes),y=rangRar(cb.raretes);return(x[0]-y[0])||(x[1]-y[1])||(ORD_TYPE[ca.type]-ORD_TYPE[cb.type])||ca.nom.localeCompare(cb.nom,'fr')||a.variantes_carte.nom.localeCompare(b.variantes_carte.nom,'fr')}
+function cmpColl(a,b){const ca=a.variantes_carte.cartes,cb=b.variantes_carte.cartes,x=rangRar(ca.raretes),y=rangRar(cb.raretes);return(x[0]-y[0])||(x[1]-y[1])||(ORD_TYPE[ca.type]-ORD_TYPE[cb.type])||String(ca.nom||'').localeCompare(cb.nom||'','fr')||String(a.variantes_carte.nom||'').localeCompare(b.variantes_carte.nom||'','fr')}
 const PRIX_MIN=250;   // un combat gagné rapporte 50 : un booster coûte au moins 5 victoires
 function vedHTML(x,bv,cartes){
   const cur=bv.filter(v=>x&&v.type_id==x.id);
