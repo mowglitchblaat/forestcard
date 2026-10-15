@@ -1206,11 +1206,23 @@ function statut(c,k,on){if(k==='fracture')return;const key=c+k;st[key]=Math.max(
 function maj(e){[0,1].forEach(i=>{const p=$('#p'+i);p.querySelector('i').style.width=Math.max(0,e.pv[i]/e.max[i]*100)+'%';
  p.querySelector('.pv').textContent=`${Math.max(0,e.pv[i])} / ${e.max[i]} PV · ATQ ${e.atq[i]}`;
  [['.sva',e.atq[i]],['.svp',Math.max(0,e.pv[i])]].forEach(([k,v])=>{const n=p.querySelector(k);if(!n)return;const t=String(v);if(n.dataset.v!==t){const nv=n.dataset.v!=='';n.dataset.v=t;if(nv){n.classList.remove('pls');void n.offsetWidth;n.classList.add('pls')}}})})}
-// BOUNTY : pluie de pièces sur tout l'écran à la fin du combat (simple, ~3 s)
-function pluieOr(n){if(!document.getElementById('st-pluie')){const st=document.createElement('style');st.id='st-pluie';st.textContent='@keyframes chutePiece{0%{transform:translateY(-12vh) rotate(0deg);opacity:0}10%{opacity:1}85%{opacity:1}100%{transform:translateY(112vh) rotate(var(--r));opacity:0}}.piece{position:fixed;top:0;z-index:80;pointer-events:none;font-size:var(--t);animation:chutePiece var(--d) cubic-bezier(.35,.1,.6,1) var(--w) forwards;opacity:0;filter:drop-shadow(0 0 6px #fbbf24)}';document.head.appendChild(st)}
- for(let k=0;k<n;k++){const p=document.createElement('div');p.className='piece';p.textContent=Math.random()<.75?'🪙':'💰';
-  p.style.left=(Math.random()*96)+'vw';p.style.setProperty('--t',(18+Math.random()*22)+'px');p.style.setProperty('--d',(1.6+Math.random()*1.4)+'s');p.style.setProperty('--w',(Math.random()*1.2)+'s');p.style.setProperty('--r',(Math.random()*720-360)+'deg');
-  document.body.appendChild(p);setTimeout(()=>p.remove(),4500)}}
+// BOUNTY : une bourse tombe au milieu de l'écran puis lance des pièces vers chaque joueur,
+// plus de pièces du côté qui reçoit le plus ; aucune pièce pour celui qui ne touche rien (« le gagnant rafle tout »)
+function bourseBounty(parts){const tot=(parts[0]||0)+(parts[1]||0);if(!tot)return;
+ const W=innerWidth,H=innerHeight,cx=W/2,cy=H*.42,mk=(t,fs)=>{const d=document.createElement('div');d.textContent=t;Object.assign(d.style,{position:'fixed',left:'0',top:'0',zIndex:'85',pointerEvents:'none',fontSize:fs+'px',lineHeight:'1',filter:'drop-shadow(0 0 10px #fbbf24)'});document.body.appendChild(d);return d};
+ const sac=mk('💰',Math.round(Math.min(W,H)*.16)),sw=sac.getBoundingClientRect().width||100,sx=cx-sw/2,sy=cy-sw/2;
+ sac.animate([{transform:`translate(${sx}px,${-sw*1.5}px) rotate(-8deg)`},{transform:`translate(${sx}px,${sy}px) rotate(0deg)`,offset:.55},{transform:`translate(${sx}px,${sy-sw*.25}px) rotate(5deg)`,offset:.72},{transform:`translate(${sx}px,${sy}px) rotate(0deg)`,offset:.86},
+  {transform:`translate(${sx}px,${sy}px) scale(1.08,.92)`,offset:.93},{transform:`translate(${sx}px,${sy}px)`}],{duration:950,easing:'ease-in',fill:'forwards'});
+ const cible=i=>{const c=document.getElementById('p'+i),r=c&&c.getBoundingClientRect();return r&&r.width?{x:r.left+r.width/2,y:r.top+r.height*.4}:{x:i?W*.85:W*.15,y:H*.45}};
+ const N=Math.max(8,Math.min(34,Math.round(10+tot/3)));
+ setTimeout(()=>{sac.animate([{transform:`translate(${sx}px,${sy}px) scale(1)`},{transform:`translate(${sx}px,${sy}px) scale(1.18)`},{transform:`translate(${sx}px,${sy}px) scale(1)`}],{duration:350,fill:'forwards'});
+  [0,1].forEach(i=>{const n=parts[i]>0?Math.max(2,Math.round(N*parts[i]/tot)):0,t=cible(i);
+   for(let k=0;k<n;k++){const pc=mk('🪙',22+Math.random()*14),dl=k*45+Math.random()*60,dx=t.x-cx+(Math.random()-.5)*60,dy=t.y-cy+(Math.random()-.5)*60,haut=-(90+Math.random()*120);
+    pc.animate([{transform:`translate(${cx-12}px,${cy-12}px) scale(.6)`,opacity:0},{transform:`translate(${cx-12+dx*.12}px,${cy-12+haut*.5}px) scale(1)`,opacity:1,offset:.15},
+     {transform:`translate(${cx-12+dx*.55}px,${cy-12+haut+dy*.3}px) rotate(${(Math.random()-.5)*360}deg)`,offset:.5},{transform:`translate(${cx-12+dx}px,${cy-12+dy}px) rotate(${(Math.random()-.5)*720}deg) scale(.8)`,opacity:1,offset:.92},
+     {transform:`translate(${cx-12+dx}px,${cy-12+dy}px) scale(.3)`,opacity:0}],{duration:900+Math.random()*300,delay:dl,easing:'cubic-bezier(.3,.6,.5,1)',fill:'forwards'});
+    setTimeout(()=>pc.remove(),dl+1400)}});
+  setTimeout(()=>{sac.animate([{opacity:1},{opacity:0,transform:`translate(${sx}px,${sy+30}px) scale(.7)`}],{duration:500,fill:'forwards'}).onfinish=()=>sac.remove()},1700)},950)}
 function flot(i,txt,col,cls){const d=document.createElement('div');d.className='fl'+(cls?' '+cls:'');d.textContent=txt;d.style.color=col;$('#p'+i).appendChild(d);setTimeout(()=>d.remove(),1300)}
 let enCours=false;const file=[];
 let journalRecap=null,wsLive=null;
@@ -1285,7 +1297,7 @@ async function jouer(res){
    else if(e.t==='piege'){revele(e.c,e);await zoomCarte('g'+e.c,e,'piege');$('#g'+e.c).classList.toggle('annule',e.k==='bloque')}
    let ms={magie:600,piege:600,ultime:2200,fin:5000,degats:900,soin:1300,esquive:1100,bloque:1500,statut:1100,stat:1500,vol:1500,protege:2900,finstatut:250,frappe:350}[e.t]||900;
    if(e.t==='degats'&&R.journal.slice(ix+1,ix+4).some(z=>z.t==='protege'&&z.c===e.c))ms=200;   // coup fatal évité : les dégâts et l'effet « évite la mort » apparaissent presque ensemble
-   if(e.t==='fin'){[0,1].forEach(i=>{faceMagie(i);const p=$('#p'+i);if(p)p.classList.remove('actif','idle')});fxAll.forEach(s=>s());fxAll.clear();document.querySelectorAll('canvas.fx').forEach(k=>k.remove());{const rw=e.recompenses[e.gagnant??0];$('#ban').textContent=e.txt+(rw>0?` (+${rw})`:'')+(e.bounty?(e.bounty.tout?` · 💰 Bounty ${e.bounty.total} : le gagnant rafle tout !`:` · 💰 Bounty ${e.bounty.total} !`):'');if(e.bounty){pluieOr(e.bounty.tout?70:45);[0,1].forEach(i=>{if(e.bounty.parts[i]>0)setTimeout(()=>flot(i,'💰 Bounty +'+e.bounty.parts[i],'#fcd34d'),600)})}}if(e.gagnant!=null){briser(1-e.gagnant);auraFx(e.gagnant,{gold:1,dur:5.2})}else[0,1].forEach(i=>{if(e.pv&&e.pv[i]<=0)briser(i)})}   // double KO : les deux cartes se brisent
+   if(e.t==='fin'){[0,1].forEach(i=>{faceMagie(i);const p=$('#p'+i);if(p)p.classList.remove('actif','idle')});fxAll.forEach(s=>s());fxAll.clear();document.querySelectorAll('canvas.fx').forEach(k=>k.remove());{const rw=e.recompenses[e.gagnant??0];$('#ban').textContent=e.txt+(rw>0?` (+${rw})`:'')+(e.bounty?(e.bounty.tout?` · 💰 Bounty ${e.bounty.total} : le gagnant rafle tout !`:` · 💰 Bounty ${e.bounty.total} !`):'');if(e.bounty){bourseBounty(e.bounty.parts);[0,1].forEach(i=>{if(e.bounty.parts[i]>0)setTimeout(()=>flot(i,'💰 Bounty +'+e.bounty.parts[i],'#fcd34d'),2100)})}}if(e.gagnant!=null){briser(1-e.gagnant);auraFx(e.gagnant,{gold:1,dur:5.2})}else[0,1].forEach(i=>{if(e.pv&&e.pv[i]<=0)briser(i)})}   // double KO : les deux cartes se brisent
    await wait(ms);
   }
   if(!TEST&&!DEMO&&R.annonce&&wsLive&&wsLive.readyState===1)wsLive.send(JSON.stringify({request:'DoAction',id:'fin-combat',action:{name:ACTION_FIN},args:{message:R.annonce}}));   // annonce du résultat dans le chat, une fois l'animation terminée
@@ -1593,6 +1605,6 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')$('#recap').style.di
 if(TEST||DEMO){const dm=$('#demo');if(dm){const row=document.createElement('div');row.id='outils';row.innerHTML='<button id="brc">📋 Récap du combat</button><button id="bbty">💰 Tester le Bounty</button>Vitesse ';row.appendChild($('#vit'));dm.prepend(row);$('#brc').onclick=ouvrirRecap;
   let nb=0;$('#bbty').onclick=()=>{const tout=++nb%3===0,total=5+Math.floor(Math.random()*86),pg=tout?total:Math.round(total*.7),parts=[pg,total-pg];   // aperçu seulement : rien n'est enregistré (1 essai sur 3 : « le gagnant rafle tout »)
    const b=$('#ban');if(b)b.textContent='Aperçu : A remporte le combat ! (+50)'+(tout?` · 💰 Bounty ${total} : le gagnant rafle tout !`:` · 💰 Bounty ${total} !`);
-   pluieOr(tout?70:45);[0,1].forEach(i=>{if(parts[i]>0&&$('#p'+i))setTimeout(()=>flot(i,'💰 Bounty +'+parts[i],'#fcd34d'),600)})}}}
+   bourseBounty(parts);[0,1].forEach(i=>{if(parts[i]>0&&$('#p'+i))setTimeout(()=>flot(i,'💰 Bounty +'+parts[i],'#fcd34d'),2100)})}}}
 if(!TEST&&!DEMO)connect();
 </script></body></html>
