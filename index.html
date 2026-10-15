@@ -963,7 +963,7 @@ function vRegles(){
 
   ${h('Récompenses & économie','y','Tout le monde gagne quelque chose à chaque combat.')}
   <div class="stats">
-   ${c('Gains par combat','<table><tr><td>Victoire</td><td><b>50 gold</b></td></tr><tr><td>Match nul</td><td><b>20 gold</b></td></tr><tr><td>Défaite</td><td><b>10 gold</b></td></tr></table>')}
+   ${c('Gains par combat','<table><tr><td>Victoire</td><td><b>50 gold</b></td></tr><tr><td>Match nul</td><td><b>20 gold</b></td></tr><tr><td>Défaite</td><td><b>10 gold</b></td></tr></table><small>🔥 Lors des soirées spéciales, les gains peuvent être multipliés (×2…) : c'est annoncé dans le chat après chaque combat.</small>')}
    ${c('Et ensuite ?','Les gold servent à acheter des boosters sur le site, à partir de 250 gold : environ 5 victoires pour un nouveau booster. Plus on joue, plus la collection grandit.')}
   </div>
 
@@ -1422,6 +1422,12 @@ async function aDos(){
 }
 
 /* ---------- Admin : réglages du jeu ---------- */
+// Gains des combats (Admin > Réglages) : lus par la fonction Supabase des combats
+const finLocale=iso=>{if(!iso)return'';const d=new Date(iso);if(isNaN(d))return'';const z=n=>String(n).padStart(2,'0');return`${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}T${z(d.getHours())}:${z(d.getMinutes())}`};
+function etatGains(v){const m=+(v.multiplicateur_gains??1)||0,f=v.multiplicateur_fin?new Date(v.multiplicateur_fin):null,fini=f&&!isNaN(f)&&f<new Date();
+ const g=k=>Math.round((+(v[k]??{gain_victoire:50,gain_defaite:10,gain_nul:20}[k])||0)*(fini?1:m));
+ return(m!==1&&!fini?`🔥 Multiplicateur ×${m} actif${f&&!isNaN(f)?' jusqu\'au '+f.toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'}):' (sans heure de fin)'}`:'Gains normaux (×1)')+` — en ce moment : victoire ${g('gain_victoire')}, défaite ${g('gain_defaite')}, nul ${g('gain_nul')} gold.`}
+async function sauverGains(o){await q(sb.from('reglages_jeu').upsert(Object.entries(o).map(([cle,val])=>({cle,valeur:String(val)}))))}
 async function aReglages(){
   const r=await sb.from('reglages_jeu').select('cle,valeur');
   if(r.error){$('#sub').innerHTML='<p class="ko">Les réglages ne sont pas encore disponibles côté Supabase (07-dos-et-reglages.sql). Message de Supabase : <b>'+esc(r.error.message)+'</b></p>';return}
@@ -1435,6 +1441,15 @@ async function aReglages(){
    <form class="f" id="fma"><label><b>Combats contre le même adversaire par jour</b> (anti-farm, !combat et duels)<br>
     <small>Nombre maximum de combats entre deux mêmes joueurs par jour, dans les deux sens (A contre B + B contre A). 0 = pas de limite. Repart de zéro à minuit, heure de Paris.</small><br>
     <input name="n" type="number" min="0" max="50" value="${esc(v.combats_meme_adversaire_par_jour??3)}" style="width:90px"></label><button>Enregistrer</button></form>
+   <form class="f" id="fgain" style="flex-direction:column;align-items:flex-start"><b>💰 Gains des combats</b>
+    <small>Gold gagné à chaque combat (!combat et duels), pour les deux joueurs. Le multiplicateur sert aux soirées spéciales : ×2 = soirée double gains. Avec une heure de fin, il revient tout seul à ×1 ensuite (vide = jusqu'à ce que tu le changes).</small>
+    <div class="row"><label><small>Victoire</small><br><input name="gv" type="number" min="0" max="10000" value="${esc(v.gain_victoire??50)}" style="width:80px"></label>
+     <label><small>Défaite</small><br><input name="gd" type="number" min="0" max="10000" value="${esc(v.gain_defaite??10)}" style="width:80px"></label>
+     <label><small>Match nul</small><br><input name="gn" type="number" min="0" max="10000" value="${esc(v.gain_nul??20)}" style="width:80px"></label>
+     <label><small>Multiplicateur</small><br><input name="mul" type="number" min="0" max="10" step="0.5" value="${esc(v.multiplicateur_gains??1)}" style="width:80px"></label>
+     <label><small>Jusqu'à (facultatif)</small><br><input name="fin" type="datetime-local" value="${esc(finLocale(v.multiplicateur_fin))}"></label></div>
+    <small id="gainetat">${etatGains(v)}</small>
+    <div class="row"><button>Enregistrer</button><button type="button" class="sec" id="gx2">🔥 Soirée ×2 (6 h)</button><button type="button" class="sec" id="gx1">↩ Revenir à ×1</button></div></form>
    <h3>Recyclage des doublons</h3><form class="f" id="frc"><small>Ce que rapporte chaque exemplaire en trop. Les fragments sont prêts pour un futur craft : laisse 0 tant qu'il n'existe pas.</small>
    <table><tr><th></th><th>Gold</th><th>Fragments</th></tr>${[['commun','Commun'],['rare','Rare'],['epique','Épique'],['legendaire','Légendaire'],['ggez','GGEZ']].map(([k,n],i)=>`<tr><td>${n}</td><td><input name="g_${k}" type="number" min="0" value="${esc(v['recyclage_gold_'+k]??[5,10,35,80,80][i])}" style="width:80px"></td><td><input name="f_${k}" type="number" min="0" value="${esc(v['recyclage_fragments_'+k]??0)}" style="width:80px"></td></tr>`).join('')}</table><button>Enregistrer le recyclage</button></form>
    <h3>Tests</h3><div class="f"><button class="sec" id="rzc">Remettre à zéro les combats gratuits du jour (tous les joueurs)</button></div>`;
@@ -1458,6 +1473,12 @@ async function aReglages(){
   $('#optim').onclick=async()=>{if(!(await uiConfirm('Optimiser toutes les images déjà en ligne ? Les anciens fichiers seront remplacés par des versions WebP plus légères.')))return;const b=$('#optim'),L=$('#optlog');b.disabled=true;L.textContent='';await optimiserImages(t=>{L.textContent+=t+'\n';L.scrollTop=1e9});b.disabled=false};
   $('#fr').onsubmit=async e=>{e.preventDefault();const n=Math.max(0,Math.min(50,parseInt(e.target.n.value,10)||0));
     await q(sb.from('reglages_jeu').upsert({cle:'combats_gratuits_par_jour',valeur:String(n)}));uiAlert('Enregistré : '+n+' combat'+(n>1?'s':'')+' gratuit'+(n>1?'s':'')+' par jour.');aReglages()};
+  $('#fgain').onsubmit=async e=>{e.preventDefault();const f=e.target,n=(x,max)=>Math.max(0,Math.min(max,+x||0));
+    const fin=f.fin.value?new Date(f.fin.value):null;if(fin&&isNaN(fin))return uiAlert('Heure de fin invalide.');
+    await sauverGains({gain_victoire:Math.round(n(f.gv.value,10000)),gain_defaite:Math.round(n(f.gd.value,10000)),gain_nul:Math.round(n(f.gn.value,10000)),multiplicateur_gains:n(f.mul.value,10),multiplicateur_fin:fin?fin.toISOString():''});
+    uiAlert('Gains enregistrés.');aReglages()};
+  $('#gx2').onclick=async()=>{await sauverGains({multiplicateur_gains:2,multiplicateur_fin:new Date(Date.now()+6*3600e3).toISOString()});uiAlert('🔥 Soirée double gains lancée pour 6 heures !');aReglages()};
+  $('#gx1').onclick=async()=>{await sauverGains({multiplicateur_gains:1,multiplicateur_fin:''});uiAlert('Gains remis à la normale (×1).');aReglages()};
   $('#fma').onsubmit=async e=>{e.preventDefault();const n=Math.max(0,Math.min(50,parseInt(e.target.n.value,10)||0));
     await q(sb.from('reglages_jeu').upsert({cle:'combats_meme_adversaire_par_jour',valeur:String(n)}));uiAlert(n?'Enregistré : '+n+' combat'+(n>1?'s':'')+' maximum par jour contre le même adversaire.':'Enregistré : pas de limite contre le même adversaire.');aReglages()};
   $('#frc').onsubmit=async e=>{e.preventDefault();const f=e.target,rows=[];

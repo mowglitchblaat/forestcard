@@ -514,6 +514,18 @@ function debutJourParis() {
   const dec = h - 12;
   return `${j}T00:00:00${dec >= 0 ? '+' : '-'}${String(Math.abs(dec)).padStart(2, '0')}:00`;
 }
+// Gains des combats (Admin > Réglages) : gold par victoire / défaite / nul, multiplicateur des soirées spéciales (×2…) avec heure de fin facultative
+async function reglesGains() {
+  const v = {};
+  try {
+    const r = await rest('reglages_jeu?cle=in.(gain_victoire,gain_defaite,gain_nul,multiplicateur_gains,multiplicateur_fin)&select=cle,valeur');
+    if (r.ok && Array.isArray(r.data)) r.data.forEach(x => { v[x.cle] = x.valeur; });
+  } catch { /* réglages illisibles : gains par défaut */ }
+  const nb = (x, d) => { const n = parseFloat(x); return Number.isFinite(n) && n >= 0 ? n : d; };
+  const fin = v.multiplicateur_fin ? new Date(v.multiplicateur_fin) : null;
+  const mult = fin && !isNaN(fin.getTime()) && fin.getTime() < Date.now() ? 1 : Math.min(10, nb(v.multiplicateur_gains, 1));
+  return { mult, gain: Math.round(nb(v.gain_victoire, REGLES.gain) * mult), perte: Math.round(nb(v.gain_defaite, REGLES.perte) * mult), nul: Math.round(nb(v.gain_nul, REGLES.nul) * mult) };
+}
 // Anti-farm : nombre maximum de combats entre deux mêmes joueurs par jour (Admin > Réglages, 0 = pas de limite)
 async function limiteMemeAdversaire() {
   try {
@@ -633,12 +645,13 @@ Deno.serve(async (req) => {
   const { a, b: adv } = prep.data;
 
   // 2) calcul du combat (une seule fois, ici)
-  let res;
+  let res, G = { mult: 1 };
   try {
     const dos = await dosDe([a.id, adv.id]);
+    G = await reglesGains();
     await ajouterRaretes([...(a.deck || []), ...(adv.deck || [])]);
     res = globalThis.Moteur.simuler({ pseudo: a.pseudo, deck: a.deck, dos: dos[a.id] }, { pseudo: adv.pseudo, deck: adv.deck, dos: dos[adv.id] },
-      { seed: Math.floor(Math.random() * 1e9), regles: REGLES });
+      { seed: Math.floor(Math.random() * 1e9), regles: { ...REGLES, gain: G.gain, perte: G.perte, nul: G.nul } });
   } catch (e) {
     if (mode === 'quotidien') await rpc('rendre_combat_quotidien', { p_joueur: a.id });
     return txt('Le combat a rencontré une erreur, il n\'est pas décompté.', 500);
@@ -690,6 +703,7 @@ Deno.serve(async (req) => {
   const recompenses = PAYER_ADVERSAIRE ? `${gagne(a.pseudo, gains[0])}, ${gagne(adv.pseudo, gains[1])}.` : `${gagne(a.pseudo, gains[0])}.`;
   res.annonce = w === null ? `🤝 Match nul entre ${a.pseudo} et ${adv.pseudo} ! ${recompenses}`
     : `🏆 ${nomW} remporte le combat contre ${w === 0 ? adv.pseudo : a.pseudo} ! ${recompenses}`;
+  if (G.mult !== 1) res.annonce += ` (🔥 gains ×${G.mult} !)`;
   const intro = `⚔️ ${a.pseudo} affronte ${adv.pseudo} !`;
   return new Response(JSON.stringify(res), { status: 200, headers: { 'content-type': 'application/json; charset=utf-8', 'x-message': encodeURIComponent(intro) } });
 });
