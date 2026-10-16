@@ -336,6 +336,8 @@ function simuler(pA,pB,opt={}){
    if(k>=base)L('attaque',`${nom(a)} enchaîne une frappe de plus !`,{c:ia,k:'enchaine'});
    else if(base>1)L('frappe',`Frappe ${k+1}/${base} de ${nom(a)}`,{c:ia});
    const ech=Math.min(reg.plafondEsquive,d.pl.filter(p=>p.type==='esquive').reduce((q,p)=>q+(p.chance||0),0)+d.st.esqb);if(ech>0&&roll(ech)){L('esquive',`${nom(d)} esquive !`,{c:idd});continue} // l'esquive annule aussi les effets associés
+   if(!avF&&d.pv>0&&d.st.av>=2&&!a.st.avale&&!d.st.avaleur){const q=[...a.pl,...a.st.atkfx].find(q=>q.type==='avalage');   // 3e attaque réussie : l'avalage remplace les dégâts (s'il échoue, les marques tombent et le coup porte normalement)
+    if(q){avF=1;if(avaler(a,d,q))break}}
    let n=Math.max(0,a.atq*(a.st.dbl>0?2:1)+a.st.bonus+a.st.rage.reduce((q,g)=>q+g.n,0));a.st.bonus=0;   // rage : dégâts en plus · fatigue : dégâts en moins
    d.pl.filter(p=>p.type==='reduc_degats').forEach(p=>{if(roll(p.chance)){L('bloque',`${nom(d)} bloque une partie des dégâts`,{c:idd});n=Math.max(0,n-amt(p,n))}});
    d.rt++;n=dmg(a,d,n);L('degats',`${nom(d)} subit ${n} dégâts`,{c:idd,n});
@@ -360,8 +362,8 @@ function simuler(pA,pB,opt={}){
      if(q.type==='gel'&&roll(q.chance))geler(d,q.annul||0,q.stunch||0,q.tours||1);
      if(q.type==='fatigue'&&roll(q.chance))fatiguer(d,q.fatval||0,q.u,q.fattours||1)}
    }
-   if(!avF&&d.pv>0&&!a.st.avale&&!d.st.avaleur){const q=[...a.pl,...a.st.atkfx].find(q=>q.type==='avalage');   // avalage : fourchette, couteau, puis avalage à la 3e attaque réussie
-    if(q){avF=1;if(d.st.av>=2)avaler(a,d,q);else if(roll(q.chance==null||q.chance===''?100:+q.chance))marquerAv(d,1)}}
+   if(!avF&&d.pv>0&&!a.st.avale&&!d.st.avaleur){const q=[...a.pl,...a.st.atkfx].find(q=>q.type==='avalage');   // avalage : 🍴 à la 1re attaque réussie, 🔪 à la 2e
+    if(q){avF=1;if(d.st.av<2&&roll(q.chance==null||q.chance===''?100:+q.chance))marquerAv(d,1)}}
    if(over())return;
    if(a.st.avale)break;
   }
@@ -381,10 +383,11 @@ function simuler(pA,pB,opt={}){
  const NEG_AV=z=>z.dots.length||z.frost.length||z.curses.length||z.bleeds.length||z.fat.length;
  function marquerAv(d,n){if(d.pv<=0||d.st.avaleur)return;for(let k=0;k<n&&d.st.av<2;k++){d.st.av++;L('statut',`${nom(d)} reçoit ${d.st.av===1?'la fourchette 🍴':'le couteau 🔪'} (avalage ${d.st.av}/2)`,{c:id(d),k:'av_marque',n:d.st.av})}}
  function avaler(a,d,q){const ratio=Math.max(0,q.ratio==null||q.ratio===''?3:+q.ratio||0);d.st.av=0;
-  if(a.pv<ratio*d.atq){L('statut',`${nom(a)} n'a pas assez de PV pour avaler ${nom(d)} (il faut ${ratio} × son ATQ) : les marques tombent`,{c:id(d),k:'av_rate'});return}
+  if(a.pv<ratio*d.atq){L('statut',`${nom(a)} n'a pas assez de PV pour avaler ${nom(d)} (il faut ${ratio} × son ATQ) : les marques tombent`,{c:id(d),k:'av_rate'});return false}
   const A={v:d,n:0,max:Math.max(1,parseInt(q.tours,10)||3),pct:q.pctmache==null||q.pctmache===''?10:+q.pctmache||0,base:q.machebase==='actuels'?'actuels':'max',repos:Math.max(0,parseInt(q.repos,10)||0),neuf:1,unique:0};
   d.st.avaleur=a;a.st.avale=A;L('statut',`${nom(a)} AVALE ${nom(d)} !`,{c:id(a),k:'avale',cible:id(d)});
-  if(NEG_AV(d.st)){A.unique=1;transfertAv(a,d)}}
+  if(NEG_AV(d.st)){A.unique=1;transfertAv(a,d)}
+  return true}
  function transfertAv(a,d){const z=d.st,T=t=>Math.ceil((t||1)*1.5),dots=z.dots.slice(),fr=z.frost.slice(),cu=z.curses.slice(),bl=z.bleeds.slice(),fa=z.fat.slice(),rest=z.cl+fa.reduce((q,f)=>q+(f.q||0),0);
   const ks=[...new Set([...dots.map(x=>x.k==='poison'?'poison':'brulure'),...(fr.length?['gel']:[]),...(cu.length?['malediction']:[]),...(bl.length?['saignement']:[]),...(fa.length?['fatigue']:[])])];
   z.dots=[];z.frost=[];z.curses=[];z.cl=0;z.cret=[];z.bleeds=[];z.fat=[];
