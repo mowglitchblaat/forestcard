@@ -18,7 +18,7 @@ function simuler(pA,pB,opt={}){
  const normPas=p=>!p?[]:p.briques?p.briques.filter(b=>b&&b.type).map(canonP):(p.type?[canonP(p)]:[]);   // passif unique (ancien format) ou plusieurs passifs { briques:[…] }
  const nw=(p,ex,cur)=>{const c=tire(p.deck,'combattant',ex,cur);if(!c)throw new Error(p.pseudo+" n'a aucun combattant dans son deck");const pl=normPas(c.passif);
   return{pseudo:p.pseudo,deck:p.deck,dos:p.dos||null,card:c,mag:tire(p.deck,'magie',ex,cur)||VM,pie:tire(p.deck,'piege',ex,cur)||VP,atq:c.atq,pv:c.pv,max:c.pv,pl:pl,ult:c.ultime,
-   uh:[{u:c.ultime,uses:0,last:-99}],magOn:1,pieOn:1,decl:0,mdelta:[],st:{rage:[],fat:[],pcnt:[],rUsed:[],reanL:[],purs:[],hots:[],cl:0,bleeds:[],frost:[],fract:[],stun:0,skip:0,dbl:0,solide:0,marques:0,mseuil:0,joues:0,trA:null,transc:0,dots:[],cret:[],curses:[],atkfx:[],esqb:0,ren:[],insens:0,prog:[],vols:[],volDiff:[],pvol:[],evite:pl.some(p=>p.type==='evite_mort')?1:0,mortUsed:0,bonus:0},
+   uh:[{u:c.ultime,uses:0,last:-99}],magOn:1,pieOn:1,decl:0,mdelta:[],st:{rage:[],fat:[],pcnt:[],rUsed:[],reanL:[],purs:[],hots:[],cl:0,bleeds:[],frost:[],fract:[],stun:0,skip:0,dbl:0,solide:0,marques:0,mseuil:0,joues:0,trA:null,transc:0,dots:[],cret:[],curses:[],atkfx:[],esqb:0,ren:[],insens:0,prog:[],vols:[],volDiff:[],pvol:[],av:0,avaleur:null,avale:null,repos:0,evite:pl.some(p=>p.type==='evite_mort')?1:0,mortUsed:0,bonus:0},
    cum:0,coups:0,rt:0,uses:0,last:-99,pend:0}};
  const S=[nw(pA),nw(pB)],id=s=>S.indexOf(s),adv=s=>S[1-id(s)],nom=s=>s.card.nom;
  S.forEach(s=>{if(s.mag.vide)s.magOn=0;if(s.pie.vide)s.pieOn=0});
@@ -86,11 +86,13 @@ function simuler(pA,pB,opt={}){
   o.decl++;L('piege',`Piège de ${o.pseudo} : ${o.pie.nom} !`,{c:i,carte:o.pie.nom,img:o.pie.image||null});if(c.type==='proprio_meurt')rv=1;const s0=SRC;SRC='piege';PCH++;try{fx(e.effet,o,x)}finally{PCH--}SRC=s0;rv=0;S.forEach(s=>s.pend=1);
  })}
  // Effets : o = propriétaire de l'effet, x = adversaire. mg=true : effet de magie (annulable/volable)
+ const SANS_CIBLE=['voler','detruire','annule_magies','vol_ultime','echange_atq','echange_atq_def','echange_pv','echange_tout','annule_attaque','marque_avalage','execution_direct'];   // sans objet quand la carte visée (avalée) est remplacée par celle qui joue l'effet
  const UNEFOIS=['degats','vol_vie','soin','echange_atq','echange_atq_def','echange_pv','echange_tout','purification','vol_ultime','reset_ultime','aleatoire','detruire','voler','equiper'];
  function fx(e,o,x,mg,rt){   // rt : retour d'une magie annulée pour X tours — ses effets « une seule fois » ne se rejouent pas
   if(!e)return;
   e=canon(e);
   if(e.briques){e.briques.forEach(b=>fx(b,o,x,mg,rt));return}
+  if(x.st.avaleur){x=x.st.avaleur;if(x===o&&SANS_CIBLE.includes(e.type))return}   // AVALAGE : la carte avalée ne reçoit rien, tout ce qui la visait touche la carte qui l'a avalée
   if(rt&&UNEFOIS.includes(e.type))return;      // effet « maison » composé de briques de base
   const T=e.cible==='adversaire'?x:o;
   const delta=(s,k,d)=>{if(mg)o.mdelta.push({s,k,d})};
@@ -140,6 +142,8 @@ function simuler(pA,pB,opt={}){
      else L('statut',`${nom(x)} résiste au souffle (${ch} % de chances)`,{c:id(x)})}
     break}
    case'execution':{const q={type:'execution',chance:e.chance==null||e.chance===''?100:+e.chance||0,seuilexec:e.seuilexec};o.st.atkfx.push(q);if(mg)o.mdelta.push({undo:()=>{o.st.atkfx=o.st.atkfx.filter(z=>z!==q)}});L('statut',`L'attaque de ${nom(o)} peut maintenant marquer la cible (${q.chance} %)`,{c:id(o),k:'exec_prep'});break}
+   case'atk_avalage':{const q={type:'avalage',chance:e.chance,ratio:e.ratio,pctmache:e.pctmache,machebase:e.machebase,tours:e.tours,repos:e.repos};o.st.atkfx.push(q);if(mg)o.mdelta.push({undo:()=>{o.st.atkfx=o.st.atkfx.filter(z=>z!==q)}});L('statut',`L'attaque de ${nom(o)} peut maintenant préparer un avalage`,{c:id(o),k:'aval_prep'});break}
+   case'marque_avalage':marquerAv(x,Math.max(1,parseInt(e.nbmarques,10)||1));break;
    case'execution_direct':{const m0=x.st.marques;marquer(x,Math.max(1,parseInt(e.nbmarques,10)||1),e.seuilexec);const add=x.st.marques-m0;
     if(add>0)U(()=>{if(x.pv<=0)return;x.st.marques=Math.max(0,x.st.marques-add);L('finstatut',`${nom(x)} perd ${add} marque${add>1?'s':''} d'exécution (${x.st.marques}/3)`,{c:id(x),k:'marque',n:x.st.marques})});break}   // magie volée / annulée : ses marques partent avec elle
    case'transcendance':{const A=porterTransc(o,e);if(A&&mg)o.mdelta.push({undo:()=>{if(o.st.trA===A&&!o.st.transc){o.st.trA=null;L('finstatut',`${nom(o)} perd la Transcendance`,{c:id(o),k:'transc_prep'})}}});break}
@@ -301,6 +305,9 @@ function simuler(pA,pB,opt={}){
  }
  function attaque(a){
   const d=adv(a),ia=id(a),idd=id(d);
+  if(a.st.avale){L('statut',`${nom(a)} a la bouche pleine : il n'attaque pas`,{c:ia,k:'av_bloque'});return}   // avalage : aucune des deux cartes n'attaque
+  if(a.st.avaleur){L('statut',`${nom(a)} est dans le ventre de ${nom(a.st.avaleur)} : il n'attaque pas`,{c:ia,k:'av_bloque'});return}
+  if(a.st.repos>0){a.st.repos--;L('statut',`${nom(a)} digère : il n'attaque pas`,{c:ia,k:'digere'});return}
   if(a.st.stun){a.st.stun--;L('statut',`${nom(a)} est étourdi, il n'attaque pas`,{c:ia,k:a.st.stun>0?'etourdi_tour':'etourdi_fin'});return}
   if(a.st.skip){a.st.skip=0;L('bloque',`L'attaque de ${nom(a)} est annulée`,{c:id(adv(a))});return}
   if(a.st.frost.length){const fa=Math.min(100,a.st.frost.reduce((q,f)=>q+f.ann,0)),fs=Math.min(100,a.st.frost.reduce((q,f)=>q+f.sn,0));
@@ -313,6 +320,7 @@ function simuler(pA,pB,opt={}){
   a.coups++;L('attaque',`${nom(a)} attaque${base>1?` (${base} frappes)`:''}`,{c:ia});
   for(const f of a.st.fract){if(roll(f.fc)){const n=dmg(d,a,f.dg);L('degats',`${nom(a)} se blesse en attaquant (fracture) : ${n} dégâts`,{c:ia,n,k:'fracture'})}}
   if(over())return;
+  let avF=0;   // avalage : une seule marque (ou tentative) par attaque, même avec plusieurs frappes
   for(let k=0;k<multi&&d.pv>0;k++){
    if(k>=base)L('attaque',`${nom(a)} enchaîne une frappe de plus !`,{c:ia,k:'enchaine'});
    else if(base>1)L('frappe',`Frappe ${k+1}/${base} de ${nom(a)}`,{c:ia});
@@ -341,7 +349,10 @@ function simuler(pA,pB,opt={}){
      if(q.type==='gel'&&roll(q.chance))geler(d,q.annul||0,q.stunch||0,q.tours||1);
      if(q.type==='fatigue'&&roll(q.chance))fatiguer(d,q.fatval||0,q.u,q.fattours||1)}
    }
+   if(!avF&&d.pv>0&&!a.st.avale&&!d.st.avaleur){const q=[...a.pl,...a.st.atkfx].find(q=>q.type==='avalage');   // avalage : fourchette, couteau, puis avalage à la 3e attaque réussie
+    if(q){avF=1;if(d.st.av>=2)avaler(a,d,q);else if(roll(q.chance==null||q.chance===''?100:+q.chance))marquerAv(d,1)}}
    if(over())return;
+   if(a.st.avale)break;
   }
   scan({t:'attaque',by:ia});
  }
@@ -351,6 +362,36 @@ function simuler(pA,pB,opt={}){
  function marquer(d,n,seuil){if(d.pv<=0)return;const s=parseInt(seuil,10);if(Number.isFinite(s)&&s>0)d.st.mseuil=Math.max(d.st.mseuil,s);
   for(let k=0;k<n&&d.st.marques<3;k++){d.st.marques++;L('statut',`${nom(d)} reçoit une marque d'exécution (${d.st.marques}/3)`,{c:id(d),k:'marque',n:d.st.marques})}}
  function executer(a,d){L('statut',`${nom(d)} est EXÉCUTÉ !`,{c:id(d),k:'execution'});EXEC=1;const n=dmg(a,d,d.pv);EXEC=0;d.st.marques=0;L('degats',`${nom(d)} subit ${n} dégâts (exécution)`,{c:id(d),n,k:'execution'})}
+ // AVALAGE : 🍴 fourchette à la 1re attaque réussie, 🔪 couteau à la 2e, puis à la 3e attaque réussie la carte tente d'avaler sa cible.
+ //   Il faut des PV actuels ≥ ratio × l'ATQ de la cible (3 par défaut), sinon les marques tombent. Une fois avalée, la cible est mâchée à chaque tour de la carte
+ //   qui avale (X % de ses PV max ou actuels), X fois (3), puis recrachée ; la carte qui avale digère ensuite X tours sans attaquer. Pendant l'avalage, aucune des deux n'attaque
+ //   et tout ce qui visait la carte avalée touche la carte qui avale. Si la cible a des statuts négatifs (brûlure, gel, poison, malédiction, saignement, fatigue),
+ //   ils passent tout de suite à la carte qui avale (×1,5 en intensité et en durée) : une seule mâche, puis la cible est recrachée.
+ const NEG_AV=z=>z.dots.length||z.frost.length||z.curses.length||z.bleeds.length||z.fat.length;
+ function marquerAv(d,n){if(d.pv<=0||d.st.avaleur)return;for(let k=0;k<n&&d.st.av<2;k++){d.st.av++;L('statut',`${nom(d)} reçoit ${d.st.av===1?'la fourchette 🍴':'le couteau 🔪'} (avalage ${d.st.av}/2)`,{c:id(d),k:'av_marque',n:d.st.av})}}
+ function avaler(a,d,q){const ratio=Math.max(0,q.ratio==null||q.ratio===''?3:+q.ratio||0);d.st.av=0;
+  if(a.pv<ratio*d.atq){L('statut',`${nom(a)} n'a pas assez de PV pour avaler ${nom(d)} (il faut ${ratio} × son ATQ) : les marques tombent`,{c:id(d),k:'av_rate'});return}
+  const A={v:d,n:0,max:Math.max(1,parseInt(q.tours,10)||3),pct:q.pctmache==null||q.pctmache===''?10:+q.pctmache||0,base:q.machebase==='actuels'?'actuels':'max',repos:Math.max(0,parseInt(q.repos,10)||0),neuf:1,unique:0};
+  d.st.avaleur=a;a.st.avale=A;L('statut',`${nom(a)} AVALE ${nom(d)} !`,{c:id(a),k:'avale',cible:id(d)});
+  if(NEG_AV(d.st)){A.unique=1;transfertAv(a,d)}}
+ function transfertAv(a,d){const z=d.st,T=t=>Math.ceil((t||1)*1.5),dots=z.dots.slice(),fr=z.frost.slice(),cu=z.curses.slice(),bl=z.bleeds.slice(),fa=z.fat.slice(),rest=z.cl+fa.reduce((q,f)=>q+(f.q||0),0);
+  const ks=[...new Set([...dots.map(x=>x.k==='poison'?'poison':'brulure'),...(fr.length?['gel']:[]),...(cu.length?['malediction']:[]),...(bl.length?['saignement']:[]),...(fa.length?['fatigue']:[])])];
+  z.dots=[];z.frost=[];z.curses=[];z.cl=0;z.cret=[];z.bleeds=[];z.fat=[];
+  L('statut',`Les statuts de ${nom(d)} passent à ${nom(a)}, plus forts (×1,5) !`,{c:id(a),k:'av_transfert',from:id(d),ks});
+  ks.forEach(k=>L('finstatut',`${nom(d)} perd son statut (${k})`,{c:id(d),k}));
+  if(rest>0){d.atq+=rest;L('stat',`ATQ de ${nom(d)} +${rest} (statuts partis)`,{c:id(d),k:'mod',s:'ATQ',d:rest})}
+  dots.forEach(x=>dotUn(a,x.k,rd(x.n*1.5),T(x.t)));fr.forEach(f=>geler(a,Math.min(100,rd(f.ann*1.5)),Math.min(100,rd(f.sn*1.5)),T(f.t)));
+  cu.forEach(c=>maudire(a,rd(c.n*1.5),T(c.t)));bl.forEach(b=>saigner(a,rd(b.pct*1.5),Math.min(100,rd(b.r*1.5)),T(b.t)));fa.forEach(f=>fatiguer(a,rd(f.n*1.5),'pts',T(f.t)))}
+ function macher(s){const A=s.st.avale;if(!A)return;const v=A.v;
+  if(v!==adv(s)||v.pv<=0){recracher(s,false);return}
+  if(A.neuf){A.neuf=0;return}   // avalée pendant ce tour : la mâche commence à son tour suivant
+  A.n++;const n=dmg(s,v,(A.base==='actuels'?v.pv:v.max)*A.pct/100);
+  L('degats',`${nom(s)} mâche ${nom(v)} : ${n} dégâts${A.unique?'':` (${A.n}/${A.max})`}`,{c:id(v),n,k:'mache',by:id(s)});
+  if(over())return;
+  if(A.unique)recracher(s,false);else if(A.n>=A.max)recracher(s,true)}
+ function recracher(s,complet){const A=s.st.avale;if(!A)return;const v=A.v;s.st.avale=null;if(v.st.avaleur===s)v.st.avaleur=null;
+  L('statut',`${nom(s)} recrache ${nom(v)} !`,{c:id(s),k:'recrache',cible:id(v)});
+  if(complet&&A.repos>0){s.st.repos=A.repos;L('statut',`${nom(s)} digère : il n'attaquera pas pendant ${A.repos} tour${A.repos>1?'s':''}`,{c:id(s),k:'digere_debut'})}}
  // Transcendance : après avoir joué X tours (4 par défaut) en la possédant, la carte transcende jusqu'à la fin du combat :
  //   purifiée + étourdissement retiré, ATQ +X % et PV max +X % (15 % par défaut), et chacune de ses attaques qui touche purifie l'adversaire.
  function porterTransc(s,e,silent){if(s.st.transc||s.st.trA)return null;const v=(k,d)=>{const n=parseInt(e[k],10);return Number.isFinite(n)&&n>=0?n:d};
@@ -440,7 +481,7 @@ function simuler(pA,pB,opt={}){
  const MAXP=reg.maxProlong??3;let manche=0,base=0;
  for(;;){
   for(tour=1;tour<=reg.maxTours&&!over();tour++){
-   for(let oi=0;oi<2;oi++){const a=ordre[oi];if(over())break;L('tour',`Tour ${base+(tour-1)*2+oi+1}`,{c:id(a)});debutTour(a);if(over())break;ultime(a);if(over())break;attaque(a);if(over())break;passifsTour(a);if(over())break;statutsCarte(a);if(over())break;finTourCarte(a)}
+   for(let oi=0;oi<2;oi++){const a=ordre[oi];if(over())break;L('tour',`Tour ${base+(tour-1)*2+oi+1}`,{c:id(a)});debutTour(a);if(over())break;ultime(a);if(over())break;attaque(a);if(over())break;macher(a);if(over())break;passifsTour(a);if(over())break;statutsCarte(a);if(over())break;finTourCarte(a)}
   }
   if(over()||manche>=MAXP)break;
   manche++;base+=reg.maxTours*2;tour=0;
