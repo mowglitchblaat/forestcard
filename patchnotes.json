@@ -6,7 +6,7 @@
       {
         "titre": "Effets",
         "points": [
-          "La Transcendance monte maintenant en trois niveaux (I, II, III), tous les X tours joués : à chaque niveau, la carte est purifiée et gagne de l’ATQ et des PV max.",
+          "La Transcendance monte maintenant en trois niveaux (I, II, III) : au début de ses tours X, 2X et 3X, avant d’attaquer, la carte est purifiée et gagne de l’ATQ et des PV max. Le bonus profite donc tout de suite à l’attaque du tour.",
           "Dès le niveau I, ses attaques volent de la vie : 10 %, 20 % puis 30 % des dégâts infligés selon le niveau (réglable carte par carte)."
         ]
       },

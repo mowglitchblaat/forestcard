@@ -213,13 +213,13 @@ test('exécution : 3 marques puis exécutée sous le seuil, même avec « évite
   assert.ok(iE > 0 && r2.journal.slice(iE).some(e => e.t === 'reanim'), 'réanimée après l\'exécution');
 });
 
-test('transcendance : après 4 tours joués, purifiée (étourdissement compris), +15 % ATQ / PV max, et chaque coup purifie l\'adversaire', () => {
+test('transcendance : au début de son 4e tour (avant d\'attaquer), purifiée (étourdissement compris), +15 % ATQ / PV max, et chaque coup purifie l\'adversaire', () => {
   const asc = MAG('Ascension', { type: 'transcendance' });
-  // sans étourdissement : transcende à la fin de son 4e tour, bonus +15 %, puis ses coups purifient l'adversaire
+  // sans étourdissement : transcende au début de son 4e tour, avant l'attaque, bonus +15 %, puis ses coups purifient l'adversaire
   const r = combat([C('a', 100, SOLIDE), asc], [C('b', 10, SOLIDE), MAG('Venin', { type: 'poison_effet', ciblem: 'soi', degtour: 3, tours: 20 })], { regles: { maxTours: 12, maxProlong: 0 } });
   const iT = r.journal.findIndex(e => e.k === 'transc');
   assert.ok(iT > 0, 'transcende');
-  assert.equal(r.journal.slice(0, iT).filter(e => e.t === 'attaque' && e.c === 0).length, 4, 'après 4 tours joués');
+  assert.equal(r.journal.slice(0, iT).filter(e => e.t === 'attaque' && e.c === 0).length, 3, 'avant sa 4e attaque');
   const apres = r.journal.slice(iT);
   assert.ok(apres.some(e => e.txt === 'ATQ de a +15'), 'ATQ +15 %');
   assert.ok(apres.some(e => e.txt === `PV max de a +${Math.round(SOLIDE * .15)}`), 'PV max +15 %');
@@ -230,12 +230,12 @@ test('transcendance : après 4 tours joués, purifiée (étourdissement compris)
   assert.ok(j > 0 && r2.journal.slice(j, j + 4).some(e => /a n'est plus étourdi/.test(e.txt || '')), 'étourdissement retiré');
 });
 
-test('transcendance : 3 niveaux à X, 2X et 3X tours joués, bonus à chaque niveau et vol de vie 10 / 20 / 30 %', () => {
+test('transcendance : 3 niveaux au début des tours X, 2X et 3X (avant l\'attaque), bonus à chaque niveau et vol de vie 10 / 20 / 30 %', () => {
   const asc = MAG('Ascension', { type: 'transcendance', tours: 2 });
   const r = combat([C('a', 100, SOLIDE), asc], [C('b', 10, SOLIDE)], { regles: { maxTours: 20, maxProlong: 0 } });
   const niv = r.journal.filter(e => e.k === 'transc');
   assert.deepEqual(niv.map(e => e.niv), [1, 2, 3], 'trois niveaux, pas plus');
-  assert.deepEqual(auxAttaquesDeA(r, e => e.k === 'transc'), [2, 4, 6], 'tous les 2 tours joués');
+  assert.deepEqual(auxAttaquesDeA(r, e => e.k === 'transc'), [1, 3, 5], 'avant ses 2e, 4e et 6e attaques');
   assert.equal(r.journal.filter(e => /^ATQ de a \+/.test(e.txt || '')).length, 3, 'bonus ATQ à chaque niveau');
   // vol de vie : aucun soin avant le niveau I, puis des soins sur ses attaques
   const i1 = r.journal.indexOf(niv[0]);

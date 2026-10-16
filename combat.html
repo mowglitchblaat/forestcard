@@ -546,11 +546,11 @@ function simuler(pA,pB,opt={}){
  function recracher(s,complet){const A=s.st.avale;if(!A)return;const v=A.v;s.st.avale=null;if(v.st.avaleur===s)v.st.avaleur=null;
   L('statut',`${nom(s)} recrache ${nom(v)} !`,{c:id(s),k:'recrache',cible:id(v)});
   if(complet&&A.repos>0){s.st.repos=A.repos;L('statut',`${nom(s)} digère : il n'attaquera pas pendant ${A.repos} tour${A.repos>1?'s':''}`,{c:id(s),k:'digere_debut'})}}
- // Transcendance en 3 niveaux : tous les X tours joués en la possédant (4 par défaut), la carte monte d'un niveau (I, II, III), jusqu'à la fin du combat.
+ // Transcendance en 3 niveaux : au début de ses X-ième, 2X-ième et 3X-ième tours en la possédant (X = 4 par défaut), avant son attaque, la carte monte d'un niveau (I, II, III), jusqu'à la fin du combat.
  //   À chaque niveau : purifiée + étourdissement retiré, ATQ +X % et PV max +X % (15 % par défaut, sur les stats du moment).
  //   Dès le niveau I, chacune de ses attaques qui touche purifie l'adversaire et lui vole de la vie : 10 / 20 / 30 % des dégâts infligés par défaut (vv1, vv2, vv3).
  function porterTransc(s,e,silent){if(s.st.transc||s.st.trA)return null;const v=(k,d)=>{const n=parseInt(e[k],10);return Number.isFinite(n)&&n>=0?n:d};
-  s.st.trA={n:Math.max(1,v('tours',4)),pa:v('patq',15),pp:v('ppv',15),vv:[v('vv1',10),v('vv2',20),v('vv3',30)],base:s.st.joues};if(!silent)L('statut',`${nom(s)} porte la Transcendance : elle transcendera après ${s.st.trA.n} tour${s.st.trA.n>1?'s':''} joué${s.st.trA.n>1?'s':''}`,{c:id(s),k:'transc_prep'});return s.st.trA}
+  s.st.trA={n:Math.max(1,v('tours',4)),pa:v('patq',15),pp:v('ppv',15),vv:[v('vv1',10),v('vv2',20),v('vv3',30)],base:s.st.joues};if(!silent)L('statut',`${nom(s)} porte la Transcendance : elle transcendera au début de son tour ${s.st.trA.n}`,{c:id(s),k:'transc_prep'});return s.st.trA}
  function transcender(s){const A=s.st.trA,niv=++s.st.transc,R=['I','II','III'][niv-1];L('statut',`${nom(s)} TRANSCENDE (niveau ${R}) : vol de vie ${A.vv[niv-1]} %`,{c:id(s),k:'transc',niv});
   purifier(s,true);if(s.st.stun>0){s.st.stun=0;L('finstatut',`${nom(s)} n'est plus étourdi`,{c:id(s),k:'etourdi'})}L('statut',`${nom(s)} est purifié (étourdissement compris) !`,{c:id(s),k:'purif'});
   const da=rd(s.atq*A.pa/100),dp=rd(s.max*A.pp/100);if(da){s.atq+=da;L('stat',`ATQ de ${nom(s)} +${da}`,{c:id(s),k:'mod',s:'ATQ',d:da})}if(dp){s.max+=dp;s.pv+=dp;L('stat',`PV max de ${nom(s)} +${dp}`,{c:id(s),k:'mod',s:'PV max',d:dp})}}
@@ -568,12 +568,13 @@ function simuler(pA,pB,opt={}){
   if(s.pv<=0)return;const nt=s.st.joues+1,x=adv(s);   // vols : au début du X-ième tour de la carte (magie à vol différé, passif de vol)
   s.st.volDiff=s.st.volDiff.filter(V=>{if(nt<V.at)return true;voler(s,x,V.e.carte,V.src,V.e.duree);return false});
   s.pl.forEach((p,pi)=>{if(p.type==='voler'&&!s.st.pvol[pi]&&nt>=Math.max(1,parseInt(p.tourdecl,10)||1)){s.st.pvol[pi]=1;voler(s,x,p.carte,'passif',p.duree)}});
+  if(s.pv<=0||over())return;if(!s.st.trA&&!s.st.transc){const p=s.pl.find(q=>q.type==='transcendance');if(p){porterTransc(s,p,true);s.st.trA.base=0}}   // passif : possédée dès le début du combat
+  {const A=s.st.trA;if(A&&!A.stop&&s.st.transc<3&&nt-A.base>=A.n*(s.st.transc+1))transcender(s)}   // Transcendance : niveaux I, II, III au début de ses X-ième, 2X-ième, 3X-ième tours, AVANT l'attaque
  }
  // Fin du tour d'une carte : les durées qui dépendent de SES actions (rage, fatigue, gel, fracture, dégâts doublés) baissent d'un tour.
  // Un tour où elle est étourdie ou gelée compte aussi ; le tour de l'adversaire ne compte jamais.
  function finTourCarte(s){
-  if(s.pv>0){s.st.joues++;if(!s.st.trA&&!s.st.transc){const p=s.pl.find(q=>q.type==='transcendance');if(p){porterTransc(s,p,true);s.st.trA.base=0}}   // passif : possédée dès le début du combat
-   const A=s.st.trA;if(A&&!A.stop&&s.st.transc<3&&s.st.joues-A.base>=A.n*(s.st.transc+1))transcender(s)}   // niveaux I, II, III à X, 2X, 3X tours joués
+  if(s.pv>0)s.st.joues++;
   {const x=adv(s);if(x.st.solide>0&&--x.st.solide===0)L('finstatut',`${nom(x)} n'est plus solidifié`,{c:id(x),k:'solide'})}   // la solidification protège pendant les tours de l'adversaire
   if(s.pv<=0)return;
   s.st.frost=s.st.frost.filter(f=>{if(--f.t>0)return true;L('finstatut',`${nom(s)} n'est plus gelé`,{c:id(s),k:'gel'});return false});
