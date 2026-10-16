@@ -1,5 +1,24 @@
 [
   {
+    "date": "2026-10-16",
+    "intro": "La Transcendance gagne trois niveaux et vole désormais de la vie.",
+    "groupes": [
+      {
+        "titre": "Effets",
+        "points": [
+          "La Transcendance monte maintenant en trois niveaux (I, II, III), tous les X tours joués : à chaque niveau, la carte est purifiée et gagne de l’ATQ et des PV max.",
+          "Dès le niveau I, ses attaques volent de la vie : 10 %, 20 % puis 30 % des dégâts infligés selon le niveau (réglable carte par carte)."
+        ]
+      },
+      {
+        "titre": "Animations",
+        "points": [
+          "Le niveau atteint s’affiche à l’écran au moment où la carte transcende."
+        ]
+      }
+    ]
+  },
+  {
     "date": "2026-10-15",
     "intro": "Le vol de cartes devient bien plus riche, les communes arrivent dans tous les boosters et le classement se trie à ta façon.",
     "groupes": [

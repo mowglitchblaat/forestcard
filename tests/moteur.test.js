@@ -230,6 +230,22 @@ test('transcendance : après 4 tours joués, purifiée (étourdissement compris)
   assert.ok(j > 0 && r2.journal.slice(j, j + 4).some(e => /a n'est plus étourdi/.test(e.txt || '')), 'étourdissement retiré');
 });
 
+test('transcendance : 3 niveaux à X, 2X et 3X tours joués, bonus à chaque niveau et vol de vie 10 / 20 / 30 %', () => {
+  const asc = MAG('Ascension', { type: 'transcendance', tours: 2 });
+  const r = combat([C('a', 100, SOLIDE), asc], [C('b', 10, SOLIDE)], { regles: { maxTours: 20, maxProlong: 0 } });
+  const niv = r.journal.filter(e => e.k === 'transc');
+  assert.deepEqual(niv.map(e => e.niv), [1, 2, 3], 'trois niveaux, pas plus');
+  assert.deepEqual(auxAttaquesDeA(r, e => e.k === 'transc'), [2, 4, 6], 'tous les 2 tours joués');
+  assert.equal(r.journal.filter(e => /^ATQ de a \+/.test(e.txt || '')).length, 3, 'bonus ATQ à chaque niveau');
+  // vol de vie : aucun soin avant le niveau I, puis des soins sur ses attaques
+  const i1 = r.journal.indexOf(niv[0]);
+  assert.ok(!r.journal.slice(0, i1).some(e => e.t === 'soin' && e.c === 0), 'pas de vol de vie avant le niveau I');
+  assert.ok(r.journal.slice(i1).some(e => e.t === 'soin' && e.c === 0), 'vol de vie après le niveau I');
+  // réglages personnalisés
+  const r2 = combat([C('a', 100, SOLIDE), MAG('X', { type: 'transcendance', tours: 1, vv1: 0, vv2: 0, vv3: 50 })], [C('b', 10, SOLIDE)], { regles: { maxTours: 12, maxProlong: 0 } });
+  assert.ok(r2.journal.find(e => e.k === 'transc' && e.niv === 3).txt.includes('50 %'));
+});
+
 test('solidification : bloque l\'étourdissement, une fracture la brise, la purification ne la retire pas', () => {
   const etourdit = { type: 'etourdir', chance: 100 };
   // magie : solidifié 3 tours, l'adversaire étourdit à chaque coup → aucun étourdissement
