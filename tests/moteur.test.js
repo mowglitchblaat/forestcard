@@ -404,6 +404,12 @@ test('avalage : mâché 3 fois (10 % des PV max), recraché, puis la carte digè
   assert.ok(!r.journal.slice(i, j).some(e => e.t === 'attaque'), 'personne n\'attaque pendant l\'avalage');
   assert.equal(r.journal.slice(j).filter(e => e.k === 'digere').length >= 2, true, 'digestion de 2 tours');
 });
+test('avalage : l\'attaque qui avale ne fait pas de dégâts', () => {
+  const r = combat([C('Ogre', 10, 500, { passif: AVAL() })], [C('Lapin', 10, 300)], { seed: 2, regles: { maxTours: 10, maxProlong: 0 } });
+  const i = r.journal.findIndex(e => e.k === 'avale');
+  let j = i; while (j > 0 && r.journal[j].t !== 'attaque') j--;
+  assert.ok(!r.journal.slice(j, i).some(e => e.t === 'degats' && e.c === 1), 'aucun dégât sur le Lapin pendant l\'attaque qui avale');
+});
 test('avalage : pas assez de PV (3 × l\'ATQ de la cible) → les marques tombent', () => {
   const r = combat([C('Ogre', 10, 5000, { passif: AVAL({ ratio: 1000 }) })], [C('Lapin', 10, 5000)], { seed: 2, regles: { maxTours: 4, maxProlong: 0 } });
   assert.ok(r.journal.some(e => e.k === 'av_rate'));
