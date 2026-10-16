@@ -216,7 +216,7 @@ async function init(){
     if(!r.error&&r.data&&(r.data.monnaie!==joueur.monnaie||r.data.fragments!==joueur.fragments)){joueur={...joueur,...r.data};header()}},45000);
 }
 function header(){
-  $('#me').innerHTML=`${isAdmin?'<small style="opacity:.5;margin-right:8px">site v10</small>':''}${esc(joueur.pseudo)} · 💰 ${joueur.monnaie}${joueur.fragments>0?` · 🧩 ${joueur.fragments}`:''} <button class="sec" id="out">Déconnexion</button>`;
+  $('#me').innerHTML=`${isAdmin?'<small style="opacity:.5;margin-right:8px">site v11 (avalage)</small>':''}${esc(joueur.pseudo)} · 💰 ${joueur.monnaie}${joueur.fragments>0?` · 🧩 ${joueur.fragments}`:''} <button class="sec" id="out">Déconnexion</button>`;
   $('#out').onclick=async()=>{await sb.auth.signOut();location.reload()};
 }
 async function refreshJoueur(){joueur=await q(sb.from('joueurs').select('*').eq('id',user.id).single());header()}
