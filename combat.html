@@ -1275,9 +1275,7 @@ async function avalerFx(a,v){const Ka=rc(a),Kv=rc(v),dir=Kv.cx>Ka.cx?1:-1,cwA=$(
   {transform:`translate(${O.x-T.x}px,${O.y-T.y}px) rotate(${-dir*220}deg) scale(.1)`,offset:tC,easing:'cubic-bezier(.6,0,.9,.5)'},{transform:`translate(${O.x-T.x}px,${O.y-T.y}px) scale(0)`,opacity:0,offset:1}],{duration:DUR*1000,fill:'forwards'});
  const tip=u=>{if(u<tA){const k=u/tA,e=k<.7?Math.pow(k/.7,.6)*1.06:1.06-.06*((k-.7)/.3);return{x:O.x+(T.x-O.x)*e,y:O.y+(T.y-O.y)*e}}
   if(u<tB)return{x:T.x+Math.sin(u*90)*2,y:T.y};const k=Math.min(1,(u-tB)/(tC-tB)),e=k*k*(.4+.6*k);return{x:T.x+(O.x-T.x)*e,y:T.y+(O.y-T.y)*e}};
- addFx(DUR,(x,t,u)=>{const M=u<.06?u/.06:u<tC?1:Math.max(0,1-(u-tC)/.12);   // la bouche s'ouvre, puis se referme après le GLOUPS
-  if(M>0){x.save();const mw=W*1.25*M,mh=W*.95*M;x.fillStyle='#2b0410';x.strokeStyle='#f472b6';x.lineWidth=Math.max(2,W*.16);x.beginPath();x.ellipse(O.x,O.y,mw,mh,0,0,7);x.fill();x.stroke();
-   x.fillStyle='#fffbeb';for(let k=-1;k<=1;k+=2){x.beginPath();x.moveTo(O.x-mw*.45,O.y+k*mh*.7);x.lineTo(O.x-mw*.25,O.y+k*mh*.2);x.lineTo(O.x-mw*.05,O.y+k*mh*.7);x.moveTo(O.x+mw*.05,O.y+k*mh*.7);x.lineTo(O.x+mw*.25,O.y+k*mh*.2);x.lineTo(O.x+mw*.45,O.y+k*mh*.7);x.fill()}x.restore()}
+ addFx(DUR,(x,t,u)=>{
   if(u>=tC)return;const P=tip(u),dx=P.x-O.x,dy=P.y-O.y,dd=Math.hypot(dx,dy)||1,nx=-dy/dd,ny=dx/dd;
   const ext=u<tA,amp=W*(ext?.32*(1-u/tA)+.06:u<tB?.04:.12),sag=dd*(ext?.03:.05),th=W*(ext?.75+.25*u/tA:1),N=28,pts=[];
   for(let i=0;i<=N;i++){const q=i/N,ondule=Math.sin(q*Math.PI*3.2-t*34)*amp*Math.sin(Math.PI*q),tombe=sag*Math.sin(Math.PI*q);   // langue presque droite : petite onde qui court le long, léger affaissement
