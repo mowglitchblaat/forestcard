@@ -388,6 +388,40 @@ test('deux pièges qui se déclenchent l\'un l\'autre : la chaîne s\'arrête (p
   assert.ok(lignes(r, e => e.t === 'piege').length < 50, 'nombre de pièges raisonnable');
 });
 
+// ================= Avalage =================
+const AVAL = (x = {}) => ({ type: 'avalage', chance: 100, ratio: 3, pctmache: 10, machebase: 'max', tours: 3, repos: 2, ...x });
+test('avalage : fourchette, couteau, puis avalage à la 3e attaque réussie', () => {
+  const r = combat([C('Ogre', 10, 500, { passif: AVAL() })], [C('Lapin', 10, 300)], { seed: 2, regles: { maxTours: 10, maxProlong: 0 } });
+  const k = r.journal.filter(e => e.k === 'av_marque' || e.k === 'avale').slice(0, 3).map(e => e.k + (e.n || ''));
+  assert.deepEqual(k, ['av_marque1', 'av_marque2', 'avale']);
+});
+test('avalage : mâché 3 fois (10 % des PV max), recraché, puis la carte digère 2 tours', () => {
+  const r = combat([C('Ogre', 10, 500, { passif: AVAL() })], [C('Lapin', 10, 300)], { seed: 2, regles: { maxTours: 10, maxProlong: 0 } });
+  const i = r.journal.findIndex(e => e.k === 'avale'), j = r.journal.findIndex(e => e.k === 'recrache');
+  const mache = r.journal.slice(i, j).filter(e => e.k === 'mache');
+  assert.equal(mache.length, 3);
+  assert.ok(mache.every(e => e.n === 30), 'chaque mâche : 10 % de 300');
+  assert.ok(!r.journal.slice(i, j).some(e => e.t === 'attaque'), 'personne n\'attaque pendant l\'avalage');
+  assert.equal(r.journal.slice(j).filter(e => e.k === 'digere').length >= 2, true, 'digestion de 2 tours');
+});
+test('avalage : pas assez de PV (3 × l\'ATQ de la cible) → les marques tombent', () => {
+  const r = combat([C('Ogre', 10, 5000, { passif: AVAL({ ratio: 1000 }) })], [C('Lapin', 10, 5000)], { seed: 2, regles: { maxTours: 4, maxProlong: 0 } });
+  assert.ok(r.journal.some(e => e.k === 'av_rate'));
+  assert.ok(!r.journal.some(e => e.k === 'avale'));
+});
+test('avalage : les statuts négatifs de la cible passent à la carte qui avale (×1,5), une seule mâche puis recrachée', () => {
+  const r = combat([C('Ogre', 10, 500, { passif: { briques: [AVAL(), { type: 'poison', chance: 100, degtour: 4, tours: 2 }] } })], [C('Lapin', 10, 300)], { seed: 2, regles: { maxTours: 6, maxProlong: 0 } });
+  const i = r.journal.findIndex(e => e.k === 'av_transfert'), j = r.journal.findIndex(e => e.k === 'recrache');
+  assert.ok(i > 0 && j > i);
+  assert.equal(r.journal.slice(i, j).filter(e => e.k === 'mache').length, 1);
+  assert.ok(r.journal.slice(i, j).some(e => /Ogre est empoisonné/.test(e.txt || '')));
+});
+test('avalage : la carte avalée ne reçoit rien, ce qui la visait touche la carte qui avale', () => {
+  const r = combat([C('Ogre', 10, 500, { passif: AVAL() })], [C('Lapin', 10, 300, { ultime: { type: 'degats', val: 9, apres_tours: 4 } })], { seed: 2, regles: { maxTours: 6, maxProlong: 0 } });
+  const i = r.journal.findIndex(e => e.k === 'avale'), j = r.journal.findIndex(e => e.k === 'recrache');
+  assert.ok(r.journal.slice(i, j).some(e => /Ogre subit 9 dégâts directs/.test(e.txt || '')));
+});
+
 test('les 3 copies du moteur sont identiques (moteur-combat.js, combat.html, swift-responder.ts)', () => {
   const E = "})(typeof window!=='undefined'?window:globalThis);";
   const extrait = f => { const s = fs.readFileSync(path.join(__dirname, '..', f), 'utf8').replace(/\r\n/g, '\n'); const a = s.indexOf('(function(g){\nconst '); return s.slice(a, s.indexOf(E, a) + E.length); };
