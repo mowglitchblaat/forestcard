@@ -1266,9 +1266,9 @@ function vRegles(){
 
   ${h('Le principe en 4 étapes','y','Tout se joue entre le site et le live.')}
   <div class="stats">
-   ${c('1 · Obtiens des boosters','Achète-les sur le site avec tes gold, ou récupère le cadeau du jour.')}
+   ${c('1 · Obtiens des boosters','Achète-les sur le site avec tes gold, récupère le cadeau du jour ou gagne-les aux jeux du jour.')}
    ${c('2 · Ouvre-les en live','Avec la commande <code class="cmd">!booster</code> : les cartes apparaissent à l\'écran.')}
-   ${c('3 · Compose ton deck','Choisis tes cartes sur le site, directement depuis ta collection.')}
+   ${c('3 · Compose ton deck','10 cartes à choisir sur le site, dans l\'onglet « Mon deck ».')}
    ${c('4 · Combats !','Duels et combats automatiques, avec animations en direct.')}
   </div>
 
@@ -1280,24 +1280,24 @@ function vRegles(){
   </div>
 
   ${h('Raretés & collections','v','Plus une carte est rare, plus elle est difficile à obtenir.')}
-  <p><span class="pill" style="background:#9ca3af">Commun</span><span class="pill" style="background:#60a5fa">Rare</span><span class="pill" style="background:#c084fc">Épique</span><span class="pill" style="background:#fbbf24">Légendaire</span></p>
+  <p><span class="pill" style="background:#9ca3af">Commun</span><span class="pill" style="background:#60a5fa">Rare</span><span class="pill" style="background:#c084fc">Épique</span><span class="pill" style="background:#fbbf24">Légendaire</span><span class="pill" style="background:linear-gradient(90deg,#f87171,#fbbf24,#4ade80,#60a5fa,#c084fc)">GGEZ</span></p>
   <div class="stats">
-   ${c('Deux collections','Horreurs et Chasseurs, avec des boosters dédiés, plus un lot de cartes communes qui n\'appartiennent à aucune collection.')}
+   ${c('Les collections','Plusieurs collections (Horreurs, Chasseurs et d\'autres), chacune avec ses boosters. Les cartes communes peuvent sortir dans tous les boosters, quelle que soit leur collection.')}
    ${c('Versions alternatives','Certaines cartes existent en version « full art » : le même effet, un visuel encore plus beau à exhiber.')}
-   ${c('Cartes vedettes','Chaque booster met en avant une ou deux cartes à retrouver, visibles dans la boutique.')}
+   ${c('GGEZ','La rareté ultime, au-dessus du légendaire, avec son aura arc-en-ciel.')}
   </div>
 
   ${h('Les boosters','y','Les cartes s\'obtiennent uniquement par boosters.')}
   <div class="stats">
-   ${c('Boutique du site','Les boosters s\'achètent avec des gold, à partir de 250 gold. Ils vont dans ton stock, en attente d\'être ouverts.')}
+   ${c('Boutique du site','Les boosters s\'achètent avec des gold, à partir de 250 gold (une confirmation est demandée avant chaque achat). Ils vont dans ton stock, en attente d\'être ouverts. « Détails du contenu » montre les cartes à l\'affiche et ce que contient chaque booster.')}
    ${c('Ouverture en live','Tape <code class="cmd">!booster</code> pendant le stream : l\'animation d\'ouverture s\'affiche à l\'écran et les cartes rejoignent ta collection.')}
    ${c('Cadeau du jour','Avec <code class="cmd">!quotidien</code>, récupère chaque jour entre 1 et 3 boosters gratuits.')}
   </div>
 
   ${h('Ton deck','b','Simple et volontairement limité.')}
   <div class="stats">
-   ${c('Les règles',ul(['9 à 10 cartes par deck','Au moins 3 combattants, 3 magies et 3 pièges','Une seule copie de chaque carte, pour éviter les combos trop forts']))}
-   ${c('Sur le site',ul(['« Ma collection » : clique sur une carte pour l\'ajouter au deck','Cartes rangées par rareté, filtres par type et collection','« Mon deck » : visualise ton équipe','Clique sur une carte pour voir ses stats et ses effets en détail','Tu peux enregistrer plusieurs decks sous un nom (10 maximum), les recharger, et choisir celui qui sert aux combats']))}
+   ${c('Les règles',ul(['Exactement <b>10 cartes</b> : 3 combattants, 3 magies, 3 pièges + 1 carte libre (du type de ton choix)','Un deck de 9 cartes ne peut pas combattre : complète-le avant de lancer un combat','Une seule copie de chaque carte, pour éviter les combos trop forts']))}
+   ${c('Onglet « Mon deck »',ul(['À gauche ton deck, avec ses cases ; à droite toutes tes cartes','Touche une carte pour l\'ajouter ou la retirer, la loupe 🔍 pour voir ses détails','Recherche, filtres par type, rareté et collection, tri par rareté, nom, ATQ ou PV','Liste de tes decks en haut (10 maximum), bouton « Nouveau » pour en créer un','« Utiliser pour les combats » choisit le deck qui se bat']))}
   </div>
 
   ${h('Le combat','r','Un combattant, une magie et un piège sont tirés au hasard dans le deck de chaque joueur. Le calcul est automatique.')}
@@ -1305,13 +1305,14 @@ function vRegles(){
    ${c('Début','Les magies s\'activent et dévoilent leur carte.')}
    ${c('Chaque tour','Chaque carte joue à son tour, toujours dans le même ordre : malédiction et régénération, ultime, attaque, ses effets « à chaque tour » (ATQ qui augmente, soin, effet aléatoire), puis ses dégâts de statut (poison, brûlure, saignement) et la fin de ses durées.')}
    ${c('Pièges','Ils se déclenchent dès que leur condition est remplie.')}
-   ${c('Fin','À 0 PV, ou quand chaque carte a joué 10 fois : le plus de PV l\'emporte. Chaque carte qui joue compte pour un tour (tour 1 : le premier joueur, tour 2 : le deuxième, et ainsi de suite).')}
+   ${c('Fin','Le combat s\'arrête quand une carte tombe à 0 PV. Si les deux tombent en même temps : match nul. Chaque carte qui joue compte pour un tour (tour 1 : le premier joueur, tour 2 : le deuxième, et ainsi de suite).')}
+   ${c('Prolongations','Si personne n\'est tombé après 10 tours de chaque carte, chacun tire 3 nouvelles cartes de son deck (1 combattant, 1 magie, 1 piège) et le combat repart, jusqu\'à 3 prolongations. Après la dernière, le plus de PV l\'emporte.')}
   </div>
-  <p><small>Tout est rejoué à l'écran avec des animations : coups, esquives, poison, brûlure, boucliers, cartes qui se brisent, aura dorée pour le vainqueur. Tes derniers combats sont à retrouver dans l'onglet « Historique ».</small></p>
+  <p><small>Tout est rejoué à l'écran avec des animations : coups, esquives, poison, brûlure, boucliers, cartes qui se brisent, aura dorée pour le vainqueur. Tes 10 derniers combats sont à retrouver dans l'onglet « Historique », une fois leur animation terminée en live (pas de spoil !).</small></p>
 
   ${h('Lancer un combat','r','Deux façons de se battre.')}
   <div class="stats">
-   ${c('<code class="cmd">!combat</code> · Combat du jour','Des combats gratuits chaque jour (leur nombre est fixé par le streamer), contre un adversaire pris au hasard.')}
+   ${c('<code class="cmd">!combat</code> · Combat du jour','Des combats gratuits chaque jour (leur nombre est fixé par le streamer), contre un adversaire pris au hasard parmi ceux qui ont un deck de 10 cartes.')}
    ${c('<code class="cmd">Duel + @pseudo</code> · Défi ciblé','Une récompense de points de chaîne : écris le @ du viewer que tu veux défier.')}
   </div>
   <p><small>Même absent du live, l'adversaire peut être défié : il gagne lui aussi des gold et des statistiques.</small></p>
@@ -1320,20 +1321,38 @@ function vRegles(){
   <div class="stats">
    ${c('Gains par combat','<table><tr><td>Victoire</td><td><b>50 gold</b></td></tr><tr><td>Match nul</td><td><b>20 gold</b></td></tr><tr><td>Défaite</td><td><b>10 gold</b></td></tr></table><small>🔥 Lors des soirées spéciales, les gains peuvent être multipliés (×2…) : c\'est annoncé dans le chat après chaque combat.</small>')}
    ${c('Et ensuite ?','Les gold servent à acheter des boosters sur le site, à partir de 250 gold : environ 5 victoires pour un nouveau booster. Plus on joue, plus la collection grandit.')}
+   ${c('Recyclage des doublons','Dans « Ma collection », recycle tes cartes en double en gold : <table><tr><td>Commun</td><td><b>5</b></td></tr><tr><td>Rare</td><td><b>10</b></td></tr><tr><td>Épique</td><td><b>35</b></td></tr><tr><td>Légendaire</td><td><b>80</b></td></tr></table><small>Tu gardes toujours 1 exemplaire de chaque carte.</small>')}
+  </div>
+
+  ${h('Jeux du jour','v','Un onglet de petits jeux gratuits : une partie de chaque par jour, remise à zéro à minuit.')}
+  <div class="stats">
+   ${c('🍄 Les champignons','Choisis 1 champignon sur 3 et gagne le gold caché dessous (de 10 à 250). Puis tente un quitte ou double… si tu l\'oses.')}
+   ${c('⚔️ Duel d\'ATQ','Toi contre le bot au meilleur des 3 manches : chacun tire une carte du jeu, la plus grosse ATQ gagne. La victoire rapporte un booster !')}
+   ${c('❤️ Plus ou moins','La carte suivante a-t-elle plus ou moins de PV ? Enchaîne les bonnes réponses jusqu\'à 200 gold, encaisse quand tu veux : une erreur et tout est perdu.')}
+   ${c('🎟️ Ticket à gratter <small>(bonus)</small>','Gratte 6 cartes : 3 fois la même rareté rapporte de 15 à 300 gold, et 3 boosters 📦 font gagner un booster.')}
   </div>
 
   ${h('Des effets partout','p','Chaque effet a sa propre animation à l\'écran.')}
   <div class="stats">
    ${c('Statuts','Poison, brûlure, saignement, gel, fracture, malédiction, étourdissement, rage, fatigue.')}
    ${c('Défense','Esquive, blocage, renvoi de dégâts, soin, purification, évite la mort, réanimation.')}
-   ${c('Attaque','Enchaînement de frappes, vol de vie, vol d\'ultime, échange d\'ATQ et de PV, effets aléatoires.')}
+   ${c('Attaque','Enchaînement de frappes, vol de vie, vol d\'ultime, vol de magie ou de piège, échange d\'ATQ et de PV, exécution, avalage, effets aléatoires.')}
+   ${c('Transcendance','Tous les X tours, au début de son tour et avant d\'attaquer, la carte monte d\'un niveau (jusqu\'à 3) : elle est purifiée, gagne de l\'ATQ et des PV max, et ses coups purifient l\'adversaire et volent de la vie (de plus en plus à chaque niveau).')}
   </div>
   ${ul(['Les effets suivent le tour de la carte concernée : la malédiction baisse l\'ATQ au début de son tour, juste avant son attaque ; poison, brûlure et saignement font effet à la fin de son tour, juste après son attaque. Jouer en premier ou en deuxième ne change jamais cet ordre.','Un statut garde la même intensité à chaque tour. Si un effet le réapplique par-dessus, l\'intensité s\'additionne et la durée repart de zéro.','La purification retire tous les statuts négatifs présents à ce moment-là, sauf l\'étourdissement : il fait toujours sauter la prochaine attaque de la carte touchée, quoi qu\'il arrive.','Rage, fatigue, gel et fracture comptent les tours de la carte touchée.','La fatigue fait vraiment baisser l\'ATQ de la carte touchée (rendue à la fin) ; réappliquée, elle dure plus longtemps mais ne s\'aggrave pas.']).replace('<ul>','<ul style="color:#aaa;font-size:14px">')}
 
   ${h('Ton profil','v','Visible par tous les joueurs connectés.')}
   <div class="stats">
    ${c('Combats',ul(['Victoires et défaites','Plus grande série de victoires','Plus gros coup infligé']))}
-   ${c('Records',ul(['Victoire la plus rapide','Carte la plus jouée','Collection et deck']))}
+   ${c('Records',ul(['Victoire la plus rapide','Carte la plus jouée','Boosters ouverts','Collection et deck']))}
+   ${c('Classement & historique',ul(['Onglet 🏆 Classement : trie par victoires, % de victoires, combats…','Onglet Historique : tes 10 derniers combats et tes 5 derniers boosters ouverts']))}
+  </div>
+
+  ${h('La communauté','p','Le jeu évolue avec vous.')}
+  <div class="stats">
+   ${c('📜 Patch notes','Chaque jour, les nouveautés et corrections du jeu, et tous les changements d\'équilibrage des cartes.')}
+   ${c('🗳️ Votes','Chaque semaine, vote pour le nerf, le up ou le rework de tes cartes (5 maximum) : les plus votées sont étudiées.')}
+   ${c('🎨 Propositions','Propose ton splash art et ton idée de carte : les meilleures pourront entrer dans le jeu !')}
   </div>
 
   ${h('Les commandes en un coup d\'œil','y','Tout ce que le chat peut faire.')}
@@ -1346,7 +1365,7 @@ function vRegles(){
   ${h('Et bientôt ?','b','Les idées qui arrivent ensuite.')}
   <div class="stats">
    ${c('Le combat pour le titre','Un champion de la chaîne, un deck de 20 cartes, trois combats d\'affilée : la première équipe entièrement éliminée perd. Le champion doit accepter le défi dans le chat.')}
-   ${c('Échanges & recyclage','Dans Ma collection, tu peux recycler tes doublons en gold : plus la carte est rare, plus elle rapporte. Tu gardes toujours 1 exemplaire de chaque carte. Les échanges entre joueurs viendront plus tard.')}
+   ${c('Échanges','Échanger tes cartes avec les autres joueurs.')}
   </div></div>`;
 }
 
