@@ -1444,7 +1444,7 @@ async function jouer(res){
    else if(e.k==='piege_detruit'){const g=$('#g'+e.c);if(g){revele(e.c,e);g.classList.remove('annule');await wait(500);briser(e.c,g);await wait(2600)}}   // piège détruit : la carte se brise comme à la défaite
    else if(e.k==='piege_rearme'){const g=$('#g'+e.c);if(g){g.classList.remove('annule');g.classList.add('act');setTimeout(()=>g.classList.remove('act'),1000)}flot(e.c,'Piège actif','#fca5a5');await wait(600)}   // fin de l'insensibilité : la croix part
    else if(e.t==='statut'&&e.k==='regen'){flot(e.c,'Régénération','#4ade80');await wait(600)}   // pas d'aura persistante (elle prenait l'aspect du poison) : le soin de chaque tour s'affiche avec l'animation de soin
-   else if(e.t==='statut'&&e.k){statut(e.c,e.k,true);if(e.k==='malediction')cranes(e.c)}
+   else if(e.t==='statut'&&e.k){if(!['brulure','poison','saignement','malediction'].includes(e.k)||!st[e.c+e.k])statut(e.c,e.k,true);if(e.k==='malediction')cranes(e.c)}   // ces statuts se cumulent en UN seul effet : une réapplication ne doit pas empiler l'icône (sinon elle reste après la purification)
    else if(e.t==='stat'&&e.k==='malediction_tick'){cranes(e.c);flot(e.c,'ATQ '+e.d,'#c084fc')}
    else if(e.t==='stat'&&e.k==='mod'&&e.d)fleches(e.c,e.s,e.d);
    else if(e.t==='finstatut'&&e.k==='marque'){document.querySelectorAll('#p'+e.c+' .lame').forEach(l=>{const n=+(l.className.match(/l(\d)/)||[])[1];if(n>(e.n||0))l.animate([{opacity:1},{opacity:0}],{duration:400,fill:'forwards'}).onfinish=()=>l.remove()})}

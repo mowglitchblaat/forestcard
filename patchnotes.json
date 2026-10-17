@@ -45,6 +45,12 @@
           "La boutique est plus épurée : les collections et les cartes à l’affiche sont rangées dans « Détails du contenu » de chaque booster.",
           "Un achat demande maintenant une confirmation, avec le prix et le gold qu’il te restera, pour éviter les clics par erreur."
         ]
+      },
+      {
+        "titre": "Animations",
+        "points": [
+          "Un saignement, une brûlure, un poison ou une malédiction réappliqués plusieurs fois ne laissent plus leur effet visuel collé à la carte après une purification ou à la fin du statut."
+        ]
       }
     ]
   },
