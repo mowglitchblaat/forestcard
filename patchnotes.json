@@ -51,6 +51,12 @@
         "points": [
           "Un saignement, une brûlure, un poison ou une malédiction réappliqués plusieurs fois ne laissent plus leur effet visuel collé à la carte après une purification ou à la fin du statut."
         ]
+      },
+      {
+        "titre": "Classement",
+        "points": [
+          "Le classement a maintenant trois vues : 🌍 Global (depuis le début), 📅 Mensuel (remis à zéro chaque 1er du mois) et 🗓️ Hebdo (remis à zéro chaque lundi)."
+        ]
       }
     ]
   },
