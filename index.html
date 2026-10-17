@@ -76,6 +76,24 @@ button.chm:disabled:not(.vise){opacity:.45}
 @keyframes chpop{0%{transform:scale(.6)}60%{transform:scale(1.12)}100%{transform:scale(1)}}
 @keyframes chflip{to{transform:rotateY(360deg)}}
 @media(prefers-reduced-motion:reduce){.chi,.chc,.chm.pop{animation:none!important}}
+/* les 3 jeux du jour */
+.jx{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:18px;align-items:stretch}.jx>div{display:flex}.jx .chp{margin:0;flex:1}
+.jx .chs{max-width:none}.jx .chm{min-height:92px}.jx .chi{font-size:34px}
+.jdu{background:radial-gradient(120% 140% at 0% 0%,#3a1f1f 0%,#1f1a1a 45%,#17171f 100%);border-color:#4a2f2f}
+.jpm{background:radial-gradient(120% 140% at 0% 0%,#1f2a3a 0%,#1a1c22 45%,#17171f 100%);border-color:#2f3d4a}
+.jvs{display:flex;align-items:center;justify-content:center;gap:10px}.vs{font-weight:900;color:#fbbf24;font-size:18px;text-shadow:0 0 8px #000}
+.jc{width:96px;display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center;transition:opacity .3s,transform .3s}
+.jc img,.jc .ph{width:96px;aspect-ratio:5/7;object-fit:cover;border-radius:8px;box-shadow:0 0 0 2px var(--g,#444),0 0 10px var(--g,transparent);background:#262633}
+.jc.dos .ph{display:flex;align-items:center;justify-content:center;font-size:30px;background:repeating-linear-gradient(45deg,#1d3324 0 8px,#173020 8px 16px);box-shadow:0 0 0 2px #2f4a36}
+.jc small{font-size:11px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.jc b{font-size:16px}
+.jc.win{transform:scale(1.06)}.jc.win img{box-shadow:0 0 0 3px #4ade80,0 0 18px #4ade80}.jc.win b{color:#86efac}.jc.lose{opacity:.5}
+.jc.petit{width:66px;opacity:.6}.jc.petit img{width:66px}.jc.flip{animation:jflip .45s ease-out}
+.jsc{text-align:center;font-size:13px;color:#ddd}.jrec{display:flex;flex-direction:column;gap:2px;font-size:11.5px;color:#aaa}.jrec .moi{color:#bbf7d0}.jrec .bot{color:#fecaca}
+.jpip{display:flex;gap:4px}.jpip span{flex:1;text-align:center;font-size:11.5px;padding:3px 0;border-radius:6px;background:#262633;color:#888;border:1px solid #333}.jpip span.ok{background:#14532d;color:#bbf7d0;border-color:#22c55e}.jpip span.cur{border-color:#fbbf24;color:#fde68a}
+.jbt{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.jbt [data-pm]{flex:1;min-height:40px;font-weight:700}.jbt small{color:#aaa}
+.jdu>button,.jpm>button{align-self:flex-start;min-height:40px}
+@keyframes jflip{0%{transform:rotateY(90deg)}100%{transform:rotateY(0)}}
+@media(max-width:900px){.jx{grid-template-columns:1fr}}
 .card>button[data-id]{margin-top:auto}
 .bved{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 2px}.bved span{display:flex;flex-direction:column;align-items:center;gap:3px;width:64px;text-align:center}.bved img{width:64px;border-radius:5px}.bved small{font-size:10.5px;line-height:1.2}
 .bdet{font-size:12px;margin:4px 0}.bdet summary{cursor:pointer;color:#c4b5fd;font-weight:600}.bdet .bc{margin:6px 0 2px;font-weight:700}.bdet .br{display:flex;flex-wrap:wrap;gap:4px}.bdet .br span{padding:1px 7px;border-radius:9px;border:1px solid var(--g);color:var(--g)}
@@ -638,7 +656,7 @@ async function vBoutique(){
     const V=ved[id]||[];
     return`<details class="bdet"><summary>Détails du contenu (${tot} carte${tot>1?'s':''} possibles)</summary>
      ${V.length?`<div class="bc">⭐ À l'affiche</div><div class="bved">${V.map(v=>`<span>${v.image_path?`<img loading="lazy" src="${img(v.image_path)}" style="box-shadow:0 0 8px ${esc(v.couleur||'#fff')}" alt="">`:''}<small>${esc(v.nom)}</small></span>`).join('')}</div>`:''}${L.map(c=>`<div class="bc">${esc(c.nom)}</div><div class="br">${c.r.sort((x,y)=>(+x.rarete_poids)-(+y.rarete_poids)).map(r=>`<span style="--g:${esc(r.rarete_couleur||'#aaa')}">${r.nb} ${esc(r.rarete_nom)}</span>`).join('')}</div>`).join('')}</details>`};
-  main.innerHTML=`<div id="champ"></div><h3>Tes boosters non ouverts</h3><p>${s.length?s.map(x=>`${esc(x.types_boosters.nom)} ×${x.quantite}`).join(' · ')+'<br><small>Ouvre-les pendant le live avec !booster</small>':'Aucun'}</p>
+  main.innerHTML=`<div id="jeux"></div><h3>Tes boosters non ouverts</h3><p>${s.length?s.map(x=>`${esc(x.types_boosters.nom)} ×${x.quantite}`).join(' · ')+'<br><small>Ouvre-les pendant le live avec !booster</small>':'Aucun'}</p>
   <h3>Acheter</h3><div class="grid">${t.map(b=>`<div class="card">${b.image_path?`<img loading="lazy" src="${img(b.image_path)}">`:''}<b>${esc(b.nom)}</b><small>${b.nb_cartes} cartes par booster</small>${contenu(b.id)}<button data-id="${b.id}" data-nom="${esc(b.nom)}" data-prix="${b.prix}">Acheter · 💰 ${b.prix}</button></div>`).join('')}</div>`;
   main.querySelectorAll('button[data-id]').forEach(b=>b.onclick=async()=>{
     const prix=+b.dataset.prix||0,solde=+joueur.monnaie||0;
@@ -648,7 +666,65 @@ async function vBoutique(){
     const {error}=await sb.rpc('acheter_booster',{p_type_id:+b.dataset.id});
     if(error)uiAlert(error.message.includes('MONNAIE')?'Pas assez de gold.':error.message);else uiAlert(`✅ « ${b.dataset.nom} » acheté ! Ouvre-le pendant le live avec !booster.`);
     await refreshJoueur();vBoutique();});
-  champignons($('#champ'));
+  jeuxDuJour($('#jeux'));
+}
+/* JEUX-DU-JOUR */
+/* ---------- Les 3 jeux du jour (24-jeux-du-jour.sql) ---------- */
+async function jeuxDuJour(box){
+  if(!box)return;
+  const t=await sb.rpc('champignons_etat');
+  if(t.error){box.innerHTML=isAdmin?'<p><small>🎲 Jeux du jour : lance 24-jeux-du-jour.sql dans Supabase pour les activer.</small></p>':'';return}
+  box.innerHTML=`<h3>🎲 Jeux du jour <small style="font-weight:400">· gratuits, une partie chacun par jour</small></h3><div class="jx"><div id="jchamp"></div><div id="jduel"></div><div id="jpm"></div></div>`;
+  champignons($('#jchamp'));duelAtq($('#jduel'));plusMoins($('#jpm'));
+}
+const jCarte=(c,val,cls='')=>c?`<div class="jc ${cls}" style="--g:${esc(c.couleur||'#888')}">${c.image?`<img src="${img(c.image)}" alt="">`:'<div class="ph"></div>'}<small>${esc(c.nom||'')}</small><b>${val}</b></div>`:'';
+const jDos=()=>`<div class="jc dos"><div class="ph">🌲</div><small>&nbsp;</small><b>?</b></div>`;
+const jErr={DEJA_JOUE:'Tu as déjà joué à ce jeu aujourd\'hui, reviens demain !',PARTIE_FINIE:'Cette partie est terminée, reviens demain !',AUCUNE_CARTE:'Aucune carte combattant disponible pour le moment.',RIEN_A_ENCAISSER:'Rien à encaisser pour l\'instant.'};
+const pause=ms=>new Promise(ok=>setTimeout(ok,ms));
+
+// ⚔️ Duel d'ATQ : au meilleur des 3, la plus grosse ATQ gagne la manche ; victoire = un booster à 250 gold max
+async function duelAtq(box,anim){
+  const r=await sb.rpc('duel_atq_etat');if(r.error){box.innerHTML='';return}
+  const E=r.data||{};
+  const tete=`<div class="chh"><div><b>⚔️ Duel d'ATQ</b><small>${E.joue?`Reviens dans ${chMinuit()} pour un nouveau duel.`:'Tire une carte du jeu, le bot aussi : la plus grosse ATQ gagne la manche. Gagne 2 manches et remporte un booster !'}</small></div></div>`;
+  const recap=M=>{let a=0,b=0;return `<div class="jrec">${M.map((m,i)=>{if(m.gagnant==='moi')a++;if(m.gagnant==='bot')b++;return `<span class="${m.gagnant}">M${i+1} · ${esc(m.moi.nom)} <b>${m.moi.atq}</b> vs <b>${m.bot.atq}</b> ${esc(m.bot.nom)} ${m.gagnant==='moi'?'✅':m.gagnant==='bot'?'❌':'🤝'}</span>`}).join('')}</div>`};
+  const fin=E=>E.gagne?`<div class="chr ok">🎁 Victoire ! Tu gagnes <b>${esc((E.booster&&E.booster.nom)||'un booster')}</b> : il t'attend dans tes boosters, ouvre-le en live avec !booster.</div>`:`<div class="chr ko">🤖 Le bot gagne cette fois… revanche demain !</div>`;
+  if(!E.joue){box.innerHTML=`<div class="chp jdu">${tete}<div class="jvs">${jDos()}<span class="vs">VS</span>${jDos()}</div><button id="jdgo">⚔️ Lancer le duel</button></div>`;
+    $('#jdgo').onclick=async()=>{$('#jdgo').disabled=true;
+      const d=await sb.rpc('duel_atq_jouer');if(d.error){uiAlert(jErr[d.error.message]||d.error.message);duelAtq(box);return}
+      const D=d.data,M=D.manches||[];let a=0,b=0;
+      for(let i=0;i<M.length;i++){const m=M[i];
+        box.querySelector('.chp').innerHTML=`${tete}<div class="jsc">Manche ${i+1} · Toi <b>${a}</b> – <b>${b}</b> Bot</div><div class="jvs">${jDos()}<span class="vs">VS</span>${jDos()}</div>`;await pause(600);
+        if(m.gagnant==='moi')a++;if(m.gagnant==='bot')b++;
+        box.querySelector('.chp').innerHTML=`${tete}<div class="jsc">Manche ${i+1} · Toi <b>${a}</b> – <b>${b}</b> Bot${m.gagnant==='egal'?' · égalité, on rejoue !':''}</div><div class="jvs">${jCarte(m.moi,'⚔ '+m.moi.atq,'flip '+(m.gagnant==='moi'?'win':m.gagnant==='bot'?'lose':''))}<span class="vs">VS</span>${jCarte(m.bot,'⚔ '+m.bot.atq,'flip '+(m.gagnant==='bot'?'win':m.gagnant==='moi'?'lose':''))}</div>`;
+        await pause(1700)}
+      if(D.gagne)await refreshJoueur();duelAtq(box,true)};
+    return}
+  const M=E.manches||[],der=M[M.length-1];
+  box.innerHTML=`<div class="chp jdu fini">${tete}${der?`<div class="jvs">${jCarte(der.moi,'⚔ '+der.moi.atq,der.gagnant==='moi'?'win':'lose')}<span class="vs">VS</span>${jCarte(der.bot,'⚔ '+der.bot.atq,der.gagnant==='bot'?'win':'lose')}</div>`:''}${fin(E)}${recap(M)}</div>`;
+}
+
+// ⬆️⬇️ Plus ou moins : la carte suivante a-t-elle plus ou moins de PV ? Série de 5 max, on encaisse quand on veut
+async function plusMoins(box){
+  const r=await sb.rpc('plusmoins_etat');if(r.error){box.innerHTML='';return}
+  dessinerPM(box,r.data||{});
+}
+function dessinerPM(box,E,info){
+  const G=[10,25,50,100,200],s=E.serie||0;
+  const tete=`<div class="chh"><div><b>❤️ Plus ou moins</b><small>${E.fini?`Reviens dans ${chMinuit()} pour une nouvelle partie.`:'La carte suivante aura-t-elle plus ou moins de PV ? Enchaîne les bonnes réponses, encaisse quand tu veux… une erreur et tout est perdu !'}</small></div></div>`;
+  const pips=`<div class="jpip">${G.map((g,i)=>`<span class="${i<s?'ok':''}${i===s&&!E.fini?' cur':''}">${g}</span>`).join('')}</div>`;
+  if(!E.joue){box.innerHTML=`<div class="chp jpm">${tete}${pips}<button id="jpgo">❤️ Commencer</button></div>`;
+    $('#jpgo').onclick=async()=>{$('#jpgo').disabled=true;const d=await sb.rpc('plusmoins_commencer');if(d.error){uiAlert(jErr[d.error.message]||d.error.message);plusMoins(box);return}dessinerPM(box,d.data)};return}
+  const dernier=(E.coups||[])[E.coups.length-1];
+  const res=E.fini?(E.gain>0?`<div class="chr ok">💰 ${s>=5?'Série parfaite ! ':''}Tu encaisses <b>${E.gain} 💰</b> !</div>`:`<div class="chr ko">💨 Raté ! La série s'arrête là, rien n'est gagné cette fois.</div>`):'';
+  box.innerHTML=`<div class="chp jpm${E.fini?' fini':''}">${tete}${pips}
+   <div class="jvs">${dernier&&info?jCarte(dernier.avant,'❤ '+dernier.avant.pv,'petit'):''}${dernier&&info?`<span class="vs">${dernier.ok?'✅':'❌'}</span>`:''}${jCarte(E.carte,'❤ '+E.carte.pv,info?'flip '+(dernier&&dernier.ok?'win':'lose'):'')}</div>
+   ${E.fini?res:`<div class="jbt"><button class="sec" data-pm="moins">⬇️ Moins</button><button class="sec" data-pm="plus">⬆️ Plus</button></div>
+    <div class="jbt">${s>0?`<button id="jpcash">💰 Encaisser ${E.gain_actuel} 💰</button>`:''}<small>Prochaine bonne réponse : <b>${E.gain_suivant} 💰</b></small></div>`}</div>`;
+  box.querySelectorAll('[data-pm]').forEach(b=>b.onclick=async()=>{box.querySelectorAll('button').forEach(x=>x.disabled=true);
+    const d=await sb.rpc('plusmoins_jouer',{p_choix:b.dataset.pm});if(d.error){uiAlert(jErr[d.error.message]||d.error.message);plusMoins(box);return}
+    if(d.data.fini&&d.data.gain>0)await refreshJoueur();dessinerPM(box,d.data,true)});
+  const c=$('#jpcash');if(c)c.onclick=async()=>{c.disabled=true;const d=await sb.rpc('plusmoins_encaisser');if(d.error){uiAlert(jErr[d.error.message]||d.error.message);plusMoins(box);return}await refreshJoueur();dessinerPM(box,d.data)};
 }
 /* ---------- Mini-jeu quotidien : les champignons de la forêt (24-champignons.sql) ---------- */
 // 1 essai par jour : choisir 1 champignon sur 3 → gold caché dessous ; puis, si on veut, un « quitte ou double ».
@@ -657,7 +733,7 @@ function chMinuit(){const p=new Date(new Date().toLocaleString('en-US',{timeZone
 async function champignons(box,anim){
   if(!box)return;
   const r=await sb.rpc('champignons_etat');
-  if(r.error){box.innerHTML=isAdmin?'<p><small>Mini-jeu des champignons : lance 24-champignons.sql dans Supabase pour l\'activer.</small></p>':'';return}
+  if(r.error){box.innerHTML='';return}
   const E=r.data||{},joue=!!E.joue,gainTxt=g=>`+${g} 💰`;
   const vals=joue?(()=>{const a=[...(E.autres||[])];a.splice(E.choix,0,E.gain);return a})():[null,null,null];
   const big=g=>g>=100?' jack':'';
