@@ -158,6 +158,37 @@ code.cmd{color:#fbbf24;font-weight:700}
 .uib{background:#1d1d27;border:1px solid #3a3a4a;border-radius:12px;padding:18px 20px;max-width:440px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.6)}
 .uit{white-space:pre-wrap;line-height:1.45;margin-bottom:14px}.uii{width:100%;box-sizing:border-box;margin-bottom:14px}.uia{display:flex;justify-content:flex-end;gap:8px}
 @keyframes uif{from{opacity:0}to{opacity:1}}
+/* ---------- Onglet Deck ---------- */
+.dk{display:grid;grid-template-columns:minmax(290px,330px) minmax(0,1fr);gap:18px;align-items:start;margin-top:8px}
+.dkl{position:sticky;top:10px;background:#1d1d27;border:1px solid #2c2c38;border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px;max-height:calc(100vh - 20px);overflow:auto}
+.dkh{display:flex;gap:6px}.dkh select{flex:1;min-width:0}.dkh button{flex:none}
+.dkc{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:12.5px}.dkc span{padding:2px 8px;border-radius:999px;background:#262633;color:#bbb}.dkc span.ok{background:#14532d;color:#bbf7d0}.dkc b{margin-left:auto;font-size:18px}.dkc b.ok{color:#4ade80}
+.dks{display:grid;grid-template-columns:repeat(3,1fr) 0.9fr;gap:6px;align-items:center}
+.sl{position:relative;aspect-ratio:5/7;border-radius:8px;padding:0;overflow:hidden;background:#111;border:2px solid var(--g,#444);box-shadow:0 0 8px var(--g,transparent);display:flex;align-items:center;justify-content:center;text-align:center;font-size:11px}
+.sl img{width:100%;height:100%;object-fit:cover;display:block}.sl i{position:absolute;top:3px;right:3px;font-style:normal;font-size:10px;width:18px;height:18px;line-height:18px;border-radius:50%;background:rgba(0,0,0,.7);opacity:.85}
+.sl.vide{flex-direction:column;gap:2px;border:2px dashed #3a3a48;background:#15151d;box-shadow:none;color:#666}.sl.vide span{font-size:20px;filter:grayscale(.6);opacity:.7}.sl.vide small{color:#777;font-size:10.5px}
+.sl.lib{outline:1px solid #a78bfa55;outline-offset:2px}.sl.vide.lib{border-color:#6d4fc2;color:#a78bfa}.sl.vide.lib small{color:#a78bfa}
+.dkx{font-size:12px;color:#fca5a5;background:#7f1d1d33;border:1px solid #7f1d1d;border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:6px}.dkxs{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
+.dkok{font-size:12.5px;text-align:center;padding:6px;border-radius:8px;background:#14532d55;color:#86efac}
+.dka{display:flex;flex-direction:column;gap:6px}.dka>button{min-height:40px}.dkb{display:flex;gap:6px;flex-wrap:wrap}.dkb button{flex:1;font-size:13px}
+.dkf{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}.dkf input{width:100%}.dkf .seg{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:3px;padding:3px;background:#1d1d27;border:1px solid #2c2c38;border-radius:12px;margin:0}
+.dkf .seg button{border:0;border-radius:9px;background:transparent;color:#bbb;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dkf .seg button.on{background:#7c3aed;color:#fff}
+.dksel{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.dksel select{min-width:0;width:100%}
+.dcg{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:12px 10px}
+.dc{display:flex;flex-direction:column;gap:4px;min-width:0}.dcb{position:relative;padding:0;border:0;background:#111;border-radius:9px;overflow:hidden;aspect-ratio:5/7;box-shadow:0 0 0 2px var(--g),0 0 10px var(--g);transition:transform .12s,opacity .15s}
+.dcb img{width:100%;height:100%;object-fit:cover;display:block}.dcb:active{transform:scale(.96)}.dcn0{padding:8px;font-size:12px}
+.dc.on .dcb{opacity:.42;box-shadow:0 0 0 3px #4ade80}.dcv{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:34px;color:#4ade80;text-shadow:0 0 8px #000}
+.dc.bloq .dcb{opacity:.3;filter:grayscale(.7)}
+.dci{display:flex;align-items:center;gap:4px;font-size:12px}.dci span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dcz{flex:none;padding:3px 6px;font-size:12px;background:#262633;border-color:#3a3a48}
+.dkm{display:none}
+@media(max-width:760px){
+ .dk{grid-template-columns:1fr;gap:12px}.dkl{position:static;max-height:none}
+ .dcg{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 8px}.dci{font-size:11px}
+ .dksel{grid-template-columns:1fr 1fr}.dksel select:last-child{grid-column:1/-1}
+ .dkm{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:20;gap:10px;align-items:center;justify-content:space-between;padding:10px 14px calc(10px + env(safe-area-inset-bottom));background:rgba(20,20,28,.96);border-top:1px solid #2c2c38;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);font-size:14px}
+ .dkm b{font-size:17px}.dkm b.ok{color:#4ade80}.dkm button{min-height:40px}
+ .dk~.dkm{display:flex}main:has(.dk){padding-bottom:80px}
+}
 /* ---------- Téléphone : en-tête compact, cartes sur 2 colonnes, boutons plus faciles à toucher ---------- */
 @media(max-width:600px){
  header{padding:8px 12px;gap:6px 10px;flex-wrap:wrap}h1{font-size:17px;white-space:nowrap}
@@ -289,15 +320,15 @@ async function loadColl(){
   if(!deck){const dk=await q(sb.from('deck').select('carte_id').eq('joueur_id',user.id));deck=new Set(dk.map(x=>x.carte_id))}
 }
 function updBar(){
-  const n=t=>[...deck].filter(i=>typeOf[i]==t).length,ok=deck.size>=9&&deck.size<=10&&n('combattant')>=3&&n('magie')>=3&&n('piege')>=3;
+  const n=t=>[...deck].filter(i=>typeOf[i]==t).length,ok=dkValide();
   $('#dbar').innerHTML=`<div class="dtop"><span><b>${deck.size}/10</b> — combattants ${n('combattant')}/3 · magies ${n('magie')}/3 · pièges ${n('piege')}/3</span>
-   <span class="dbt"><button id="clr" class="sec" ${deck.size?'':'disabled'} title="Vide le deck en cours de montage (le deck de combat déjà enregistré ne change pas)">🧹 Tout retirer</button><button id="sv" ${ok?'':'disabled'} title="9 ou 10 cartes, au moins 3 de chaque type">Enregistrer comme deck de combat</button></span></div>
+   <span class="dbt"><button id="clr" class="sec" ${deck.size?'':'disabled'} title="Vide le deck en cours de montage (le deck de combat déjà enregistré ne change pas)">🧹 Tout retirer</button><button id="sv" ${ok?'':'disabled'} title="10 cartes : 3 combattants, 3 magies, 3 pièges + 1 libre">Enregistrer comme deck de combat</button></span></div>
    ${decksOK?`<div class="dmul"><span>Mes decks :</span><select id="dsel"><option value="">— choisir —</option>${savedDecks.map(d=>`<option value="${d.id}" ${String(d.id)===String(selDeck)?'selected':''}>${esc(d.nom)} (${(d.cartes||[]).length})</option>`).join('')}</select>
     <button id="dld" class="sec" ${selDeck?'':'disabled'}>Charger</button><button id="dsa" class="sec">💾 Sauver sous un nom</button><button id="ddl" class="sec" ${selDeck?'':'disabled'}>🗑 Supprimer</button></div>`
    :`<small>Decks multiples indisponibles pour le moment (l'admin doit lancer 09-decks-multiples.sql dans Supabase).</small>`}`;
   $('#sv').onclick=async()=>{
     const {error}=await sb.rpc('enregistrer_deck',{p_cartes:[...deck]});
-    uiAlert(error?({DECK_TAILLE_INVALIDE:'Il faut 9 ou 10 cartes.',DECK_COMPOSITION_INVALIDE:'Il faut au moins 3 cartes de chaque type.'}[error.message]||error.message):'Deck de combat enregistré !');};
+    uiAlert(error?({DECK_TAILLE_INVALIDE:'Il faut exactement 10 cartes.',DECK_COMPOSITION_INVALIDE:'Il faut au moins 3 cartes de chaque type.'}[error.message]||error.message):'Deck de combat enregistré !');};
   $('#clr').onclick=()=>{deck.clear();selDeck='';if(curView)curView();else updBar()};
   if(!decksOK)return;
   $('#dsel').onchange=e=>{selDeck=e.target.value;updBar()};
@@ -513,9 +544,7 @@ function mdDraw(){
   box.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>mdNav(+b.dataset.nav));
   const mr=box.querySelector('[data-mrec]');if(mr)mr.onclick=()=>{const g=gainDe(x);recycler(v.id,`Recycler ${g.n} exemplaire${g.n>1?'s':''} en trop de « ${c.nom} » ?\nTu en gardes 1. Tu reçois ${gainTxt(g).replace(/\+/g,'')}.`)};
   box.querySelector('[data-mdeck]').onclick=()=>{
-    if(deck.has(c.id))deck.delete(c.id);
-    else if(deck.size>=10){uiAlert('Deck complet : 10 cartes maximum.');return}
-    else deck.add(c.id);
+    if(!dkBascule(c.id))return;
     if(mdRedraw)mdRedraw();mdDraw()};
   const tilt=box.querySelector('.fi'),fp=box.querySelector('.fp');
   fp.onpointermove=e=>{const r=fp.getBoundingClientRect(),px=(e.clientX-r.left)/r.width,py=(e.clientY-r.top)/r.height;
@@ -531,11 +560,7 @@ function mdDraw(){
 }
 function bindOpen(L,redraw){main.querySelectorAll('.ct').forEach(t=>t.querySelectorAll('[data-open]').forEach(e=>e.onclick=()=>mdOpen(L,+t.dataset.i,redraw)))}
 function bindToggle(redraw){
-  main.querySelectorAll('button[data-c]').forEach(b=>b.onclick=()=>{const id=+b.dataset.c;
-    if(deck.has(id))deck.delete(id);
-    else if(deck.size>=10){uiAlert('Deck complet : 10 cartes maximum.');return}
-    else deck.add(id);
-    redraw();});
+  main.querySelectorAll('button[data-c]').forEach(b=>b.onclick=()=>{if(dkBascule(+b.dataset.c))redraw()});
 }
 async function vCollection(){
   apercu=false;await loadColl();await loadDecks();
@@ -594,20 +619,109 @@ async function vBoutique(){
     await refreshJoueur();vBoutique();});
 }
 
-/* ---------- Deck ---------- */
+/* ---------- Deck : à gauche le deck (3 combattants · 3 magies · 3 pièges + 1 libre), à droite toutes ses cartes ---------- */
+const DK_N=10,DK_T=['combattant','magie','piege'];
+const dkCompte=(set=deck)=>{const n={combattant:0,magie:0,piege:0};[...set].forEach(i=>{if(n[typeOf[i]]!=null)n[typeOf[i]]++});return n};
+const dkLibre=n=>DK_T.reduce((s,t)=>s+Math.max(0,n[t]-3),0);   // cartes posées sur la case libre
+const dkValide=(set=deck)=>{const n=dkCompte(set);return set.size===DK_N&&DK_T.every(t=>n[t]>=3)};
+// '' si la carte peut entrer dans le deck, sinon la raison
+function dkRefus(id){const t=typeOf[id];if(deck.has(id))return '';if(deck.size>=DK_N)return 'Deck complet : 10 cartes.';
+  const n=dkCompte();if(n[t]<3)return '';if(dkLibre(n)<1)return '';
+  return `Plus de place pour ${t==='magie'?'une magie':t==='piege'?'un piège':'un combattant'} : le deck se compose de 3 combattants, 3 magies, 3 pièges et 1 carte libre (déjà prise).`}
+function dkBascule(id){if(deck.has(id)){deck.delete(id);return true}const r=dkRefus(id);if(r){uiAlert(r);return false}deck.add(id);return true}
+let dkCombat=new Set(),dkNom='',dkSrc='',dkF={t:'tout',r:'tout',c:'tout',q:'',tri:'rarete'};
+const dkCle=s=>[...s].sort((a,b)=>a-b).join(',');
+const dkSale=()=>dkCle(deck)!==dkSrc;
 async function vDeck(){
   apercu=false;await loadColl();await loadDecks();await chargerPrix();
-  main.innerHTML='<div id="dbar" class="dbar"></div><div class="cgrid" id="gr"></div>';
+  const dk=await sb.from('deck').select('carte_id').eq('joueur_id',user.id);dkCombat=new Set(((dk&&dk.data)||[]).map(x=>x.carte_id));
+  if(!selDeck&&!dkNom){const k=dkCle(dkCombat),d=savedDecks.find(x=>dkCle(new Set(x.cartes||[]))===k&&k);
+    if(d){selDeck=String(d.id);deck=new Set(d.cartes)}else{deck=new Set(dkCombat);dkNom=dkCombat.size?'Deck de combat':''}}
+  dkSrc=dkCle(deck);
+  main.innerHTML=`<div class="dk"><aside class="dkl" id="dkl"></aside><section class="dkr"><div class="dkf" id="dkf"></div><div class="dcg" id="dcg"></div></section></div><div class="dkm" id="dkm"></div>`;
   drawDeck();
 }
+function dkCartes(){   // une tuile par carte (même si plusieurs versions), quantités additionnées
+  const M=new Map();collData.forEach(x=>{const c=x.variantes_carte.cartes,o=M.get(c.id);if(o)o.quantite+=x.quantite||0;else M.set(c.id,{...x,quantite:x.quantite||0})});return [...M.values()]}
 function drawDeck(){
-  curView=drawDeck;
-  const seen=new Set(),ord={combattant:0,magie:1,piege:2};
-  const L=collData.filter(x=>{const i=x.variantes_carte.cartes.id;if(!deck.has(i)||seen.has(i))return false;seen.add(i);return true})
-    .sort((a,b)=>(ord[a.variantes_carte.cartes.type]-ord[b.variantes_carte.cartes.type])||cmpColl(a,b));
-  $('#gr').innerHTML=L.length?L.map(cardHTML).join(''):'<p>Ton deck est vide. Ajoute des cartes depuis « Ma collection ».</p>';
-  bindToggle(drawDeck);bindOpen(L,drawDeck);updBar();
+  curView=drawDeck;if(!$('#dkl'))return;
+  const tous=dkCartes(),parId=new Map(tous.map(x=>[x.variantes_carte.cartes.id,x])),n=dkCompte(),ok=dkValide(),enCombat=deck.size&&dkCle(deck)===dkCle(dkCombat);
+  // ---- colonne de gauche : le deck ----
+  const pos={combattant:[],magie:[],piege:[]},libre=[];   // une carte en trop (ancien deck) reste visible pour pouvoir la retirer
+  [...deck].map(i=>parId.get(i)).filter(Boolean).sort(cmpColl).forEach(x=>{const t=x.variantes_carte.cartes.type;if(pos[t].length<3)pos[t].push(x);else libre.push(x)});
+  const slot=(x,t,lib)=>{if(!x){const L=lib?['★','Libre']:TYPE_L[t];return `<div class="sl vide${lib?' lib':''}"><span>${L[0]}</span><small>${L[1]}</small></div>`}
+    const v=x.variantes_carte,c=v.cartes;return `<button class="sl${lib?' lib':''}" data-rm="${c.id}" style="--g:${esc(c.raretes.couleur||'#888')}" title="Retirer ${esc(c.nom)}">${v.image_path?`<img src="${img(v.image_path)}" alt="${esc(c.nom)}">`:`<b>${esc(c.nom)}</b>`}<i>✕</i></button>`};
+  const opts=savedDecks.map(d=>`<option value="${d.id}" ${String(d.id)===String(selDeck)?'selected':''}>${dkCle(new Set(d.cartes||[]))===dkCle(dkCombat)&&dkCombat.size?'⚔️ ':''}${esc(d.nom)} (${(d.cartes||[]).length}/10)</option>`).join('');
+  $('#dkl').innerHTML=`
+   ${decksOK?`<div class="dkh"><select id="dsel" aria-label="Mes decks">${selDeck?'':`<option value="" selected>✏️ ${esc(dkNom||'Nouveau deck')}${dkSale()?' (non enregistré)':''}</option>`}${opts}</select><button id="dnew" class="sec" title="Commencer un deck vide">➕ Nouveau</button></div>`:''}
+   <div class="dkc"><span class="${n.combattant>=3?'ok':''}">⚔️ ${Math.min(3,n.combattant)}/3</span><span class="${n.magie>=3?'ok':''}">✨ ${Math.min(3,n.magie)}/3</span><span class="${n.piege>=3?'ok':''}">🪤 ${Math.min(3,n.piege)}/3</span><span class="${libre.length?'ok':''}">★ ${Math.min(1,libre.length)}/1</span><b class="${ok?'ok':''}">${deck.size}/10</b></div>
+   <div class="dks">${DK_T.map((t,r)=>[0,1,2].map(i=>slot(pos[t][i],t)).join('')+(r===1?slot(libre[0],null,true):'<div></div>')).join('')}</div>
+   ${libre.length>1?`<div class="dkx"><span>⚠️ ${libre.length-1} carte${libre.length>2?'s':''} en trop : il faut 3 combattants, 3 magies, 3 pièges et 1 seule carte libre. Retire ${libre.length>2?'celles-ci':'celle-ci'} :</span><div class="dkxs">${libre.slice(1).map(x=>slot(x,null,true)).join('')}</div></div>`:''}
+   ${enCombat?`<div class="dkok">⚔️ C'est ton deck de combat actuel${ok?'':' — mais il ne respecte plus la règle, corrige-le'}</div>`:''}
+   <div class="dka">
+    <button id="dplay" ${ok&&!enCombat?'':'disabled'} title="10 cartes : 3 combattants, 3 magies, 3 pièges + 1 libre">${enCombat&&ok?'✓ Deck de combat':ok?'⚔️ Utiliser pour les combats':deck.size>=DK_N?'⚠️ Composition à corriger':`⚔️ Encore ${DK_N-deck.size} carte${DK_N-deck.size>1?'s':''}`}</button>
+    ${decksOK?`<button id="dsave" class="sec" ${ok&&(dkSale()||!selDeck)?'':'disabled'}>💾 Enregistrer</button>`:''}
+    <div class="dkb"><button id="clr" class="sec" ${deck.size?'':'disabled'}>🧹 Vider</button>${decksOK&&selDeck?'<button id="dren" class="sec">✏️ Renommer</button><button id="ddl" class="sec">🗑 Supprimer</button>':''}</div>
+   </div>${decksOK?'':'<small>Decks multiples indisponibles pour le moment (l\'admin doit lancer 09-decks-multiples.sql dans Supabase).</small>'}`;
+  // ---- barre fixe en bas (téléphone) ----
+  $('#dkm').innerHTML=`<span><b class="${ok?'ok':''}">${deck.size}/10</b> · ⚔️${n.combattant} ✨${n.magie} 🪤${n.piege}</span><button id="dplay2" ${ok&&!enCombat?'':'disabled'}>${enCombat?'✓ En combat':'⚔️ Utiliser'}</button>`;
+  // ---- colonne de droite : filtres + cartes ----
+  const rars=[...new Map(tous.map(x=>{const r=x.variantes_carte.cartes.raretes;return [r.nom,r]})).values()].sort((a,b)=>rangRar(a)[0]-rangRar(b)[0]||rangRar(a)[1]-rangRar(b)[1]);
+  const cols=[...new Set(tous.map(cn))].sort((a,b)=>(a=='Communes')-(b=='Communes')||a.localeCompare(b,'fr'));
+  if(!$('#dkq')){$('#dkf').innerHTML=`<input id="dkq" type="search" placeholder="🔎 Chercher une carte…" value="${esc(dkF.q)}">
+    <div class="row seg" id="dkt"></div>
+    <div class="dksel"><select id="dkr" aria-label="Rareté"></select><select id="dkc" aria-label="Collection"></select><select id="dktri" aria-label="Trier par"><option value="rarete">Tri : rareté</option><option value="nom">Tri : nom</option><option value="atq">Tri : ATQ</option><option value="pv">Tri : PV</option><option value="qte">Tri : exemplaires</option></select></div>`;
+    $('#dkq').oninput=e=>{dkF.q=e.target.value;drawDeck()};$('#dkr').onchange=e=>{dkF.r=e.target.value;drawDeck()};$('#dkc').onchange=e=>{dkF.c=e.target.value;drawDeck()};$('#dktri').onchange=e=>{dkF.tri=e.target.value;drawDeck()}}
+  $('#dkt').innerHTML=[['tout','Tout'],...DK_T.map(t=>[t,TYPES[t]])].map(([k,v])=>`<button class="${k==dkF.t?'on':'sec'}" data-dt="${k}">${v}</button>`).join('');
+  $('#dkt').querySelectorAll('button').forEach(b=>b.onclick=()=>{dkF.t=b.dataset.dt;drawDeck()});
+  $('#dkr').innerHTML=`<option value="tout">Toutes les raretés</option>`+rars.map(r=>`<option ${r.nom===dkF.r?'selected':''}>${esc(r.nom)}</option>`).join('');
+  $('#dkc').innerHTML=`<option value="tout">Toutes les collections</option>`+cols.map(c=>`<option ${c===dkF.c?'selected':''}>${esc(c)}</option>`).join('');
+  $('#dktri').value=dkF.tri;
+  const q=dkF.q.trim().toLowerCase(),tri={nom:(a,b)=>String(a.variantes_carte.cartes.nom).localeCompare(b.variantes_carte.cartes.nom,'fr'),atq:(a,b)=>nz(b.variantes_carte.cartes.atq)-nz(a.variantes_carte.cartes.atq)||cmpColl(a,b),pv:(a,b)=>nz(b.variantes_carte.cartes.pv)-nz(a.variantes_carte.cartes.pv)||cmpColl(a,b),qte:(a,b)=>b.quantite-a.quantite||cmpColl(a,b)}[dkF.tri]||cmpColl;
+  const L=tous.filter(x=>{const c=x.variantes_carte.cartes;return(dkF.t=='tout'||c.type==dkF.t)&&(dkF.r=='tout'||c.raretes.nom==dkF.r)&&(dkF.c=='tout'||cn(x)==dkF.c)&&(!q||String(c.nom).toLowerCase().includes(q))}).sort(tri);
+  $('#dcg').innerHTML=L.length?L.map((x,i)=>{const v=x.variantes_carte,c=v.cartes,on=deck.has(c.id),bloq=!on&&!!dkRefus(c.id);
+    return `<div class="dc${on?' on':''}${bloq?' bloq':''}" data-t="${TIER(c.raretes)}" style="--g:${esc(c.raretes.couleur||'#888')}"><button class="dcb" data-add="${c.id}" title="${on?'Retirer du deck':'Ajouter au deck'}">${v.image_path?`<img loading="lazy" src="${img(v.image_path)}" alt="${esc(c.nom)}">`:`<b class="dcn0">${esc(c.nom)}</b>`}${on?'<span class="dcv">✓</span>':''}</button>
+      <div class="dci"><span>${TYPE_L[c.type]?TYPE_L[c.type][0]:''} ${esc(c.nom)}</span><button class="dcz" data-zi="${i}" title="Voir les détails">🔍</button></div></div>`}).join('')
+   :`<p><small>${tous.length?'Aucune carte ne correspond à ces filtres.':'Tu n\'as encore aucune carte : achète un booster dans la boutique, puis ouvre-le en live avec !booster.'}</small></p>`;
+  // ---- actions ----
+  const redessine=()=>drawDeck();
+  $('#dcg').querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>{if(dkBascule(+b.dataset.add))redessine()});
+  $('#dcg').querySelectorAll('[data-zi]').forEach(b=>b.onclick=()=>mdOpen(L,+b.dataset.zi,redessine));
+  $('#dkl').querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{deck.delete(+b.dataset.rm);redessine()});
+  $('#clr').onclick=()=>{deck.clear();redessine()};
+  const jouer=async()=>{if(!dkValide()){uiAlert('Il faut exactement 10 cartes : 3 combattants, 3 magies, 3 pièges et 1 carte libre.');return}
+    if(decksOK&&(dkSale()||!selDeck)&&!(await dkSauver()))return;
+    const {error}=await sb.rpc('enregistrer_deck',{p_cartes:[...deck]});
+    if(error){uiAlert({DECK_TAILLE_INVALIDE:'Il faut exactement 10 cartes.',DECK_COMPOSITION_INVALIDE:'Il faut au moins 3 cartes de chaque type.'}[error.message]||error.message);return}
+    dkCombat=new Set(deck);redessine();uiAlert('⚔️ Deck de combat enregistré ! Il sera utilisé pour tes prochains combats.')};
+  $('#dplay').onclick=jouer;$('#dplay2').onclick=jouer;
+  if(!decksOK)return;
+  $('#dsave').onclick=async()=>{if(await dkSauver())redessine()};
+  $('#dsel').onchange=async e=>{const id=e.target.value;if(dkSale()&&deck.size&&!(await uiConfirm('Tes changements sur ce deck ne sont pas enregistrés. Changer de deck quand même ?',{ok:'Changer de deck'}))){e.target.value=selDeck;return}
+    const d=savedDecks.find(x=>String(x.id)===String(id));if(!d)return;
+    const own=new Set(collData.map(x=>x.variantes_carte.cartes.id)),ids=(d.cartes||[]).filter(i=>own.has(i));
+    if(ids.length<(d.cartes||[]).length)uiAlert((d.cartes.length-ids.length)+' carte(s) de ce deck ne sont plus dans ta collection.');
+    selDeck=String(d.id);dkNom='';deck=new Set(ids);dkSrc=dkCle(new Set(d.cartes||[]));redessine()};
+  $('#dnew').onclick=async()=>{if(savedDecks.length>=10){uiAlert('Tu as déjà 10 decks enregistrés : supprime-en un d\'abord.');return}
+    if(dkSale()&&deck.size&&!(await uiConfirm('Tes changements sur ce deck ne sont pas enregistrés. Commencer un nouveau deck quand même ?',{ok:'Nouveau deck'})))return;
+    const nom=((await uiPrompt('Nom du nouveau deck :',''))||'').trim();if(!nom)return;
+    selDeck='';dkNom=nom.slice(0,30);deck=new Set();dkSrc='';redessine()};
+  const ren=$('#dren');if(ren)ren.onclick=async()=>{const d=savedDecks.find(x=>String(x.id)===String(selDeck));if(!d)return;
+    const nom=((await uiPrompt('Nouveau nom du deck :',d.nom))||'').trim();if(!nom||nom===d.nom)return;
+    const r=await sb.rpc('sauver_deck',{p_nom:nom,p_cartes:d.cartes||[]});if(r.error){uiAlert(r.error.message);return}
+    await sb.rpc('supprimer_deck',{p_id:+d.id});await loadDecks();selDeck=String(r.data);redessine()};
+  const del=$('#ddl');if(del)del.onclick=async()=>{const d=savedDecks.find(x=>String(x.id)===String(selDeck));if(!d||!(await uiConfirm('Supprimer le deck « '+d.nom+' » ?')))return;
+    const {error}=await sb.rpc('supprimer_deck',{p_id:+selDeck});if(error){uiAlert(error.message);return}
+    selDeck='';dkNom='Nouveau deck';await loadDecks();dkSrc='';redessine()};
 }
+// Enregistre le deck en cours sous son nom (demande un nom s'il n'en a pas). true si c'est fait.
+async function dkSauver(){
+  if(!dkValide()){uiAlert('Il faut exactement 10 cartes : 3 combattants, 3 magies, 3 pièges et 1 carte libre.');return false}
+  const cur=savedDecks.find(x=>String(x.id)===String(selDeck));let nom=cur?cur.nom:dkNom;
+  if(!nom||nom==='Nouveau deck'||nom==='Deck de combat'&&!cur){nom=((await uiPrompt('Nom du deck :',nom&&nom!=='Nouveau deck'?nom:''))||'').trim();if(!nom)return false}
+  const {data,error}=await sb.rpc('sauver_deck',{p_nom:nom.slice(0,30),p_cartes:[...deck]});
+  if(error){uiAlert(({TROP_DE_DECKS:'Tu as déjà 10 decks enregistrés : supprime-en un d\'abord.',NOM_INVALIDE:'Le nom doit faire entre 1 et 30 caractères.',DECK_TROP_GRAND:'Un deck contient 10 cartes au maximum.'}[error.message])||error.message);return false}
+  await loadDecks();selDeck=String(data);dkNom='';dkSrc=dkCle(deck);return true}
 
 /* ---------- Profils (visibles par tous les joueurs connectés) ---------- */
 async function vProfil(id=user.id){
