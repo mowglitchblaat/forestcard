@@ -319,13 +319,21 @@ function erreurConnexion(){
     :'La connexion a échoué. Réessaie depuis Chrome, Safari ou Firefox (pas depuis le navigateur intégré de Twitch, Discord ou Instagram).';
   return '<p class="ko">'+esc(m)+'<br><small>Détail : '+esc(e)+'</small></p>'}
 async function init(){
-  const {data:{session}}=await sb.auth.getSession();
+  const {data:{session},error:errSes}=await sb.auth.getSession();
   if(!session){
+    // Retour de Twitch sans session (connexion qui « tourne en boucle ») : on explique pourquoi au lieu de réafficher le bouton sans rien dire
+    let tente=0;try{tente=+localStorage.getItem('fc_login_tente')||0;localStorage.removeItem('fc_login_tente')}catch(e){}
+    const boucle=(errSes||(tente&&Date.now()-tente<10*60e3))?`<div class="ko" style="margin-top:12px;line-height:1.5"><b>La connexion n'a pas pu être enregistrée.</b><br>
+      • Vérifie que la <b>date et l'heure</b> de ton appareil sont réglées automatiquement.<br>
+      • Ouvre le site dans <b>Chrome, Safari ou Firefox</b> (pas depuis l'appli Twitch, Discord ou Instagram), hors navigation privée.<br>
+      • Autorise les cookies / données de site pour ce site, et désactive le bloqueur de pub (ou les « Shields » de Brave) le temps de te connecter.<br>
+      • Sur téléphone, si la page Twitch s'ouvre dans l'appli Twitch, essaie depuis un ordinateur.${errSes?`<br><small>Détail : ${esc(errSes.message||errSes)}</small>`:''}</div>`:'';
     $('#nav').innerHTML='';$('#me').innerHTML='<button id="login">Se connecter avec Twitch</button>';
-    main.innerHTML='<p>Connecte-toi avec ton compte Twitch pour voir ta collection.</p>'+erreurConnexion();
-    $('#login').onclick=()=>sb.auth.signInWithOAuth({provider:'twitch',options:{redirectTo:location.origin+location.pathname}});
+    main.innerHTML='<p>Connecte-toi avec ton compte Twitch pour voir ta collection.</p>'+(erreurConnexion()||boucle);
+    $('#login').onclick=()=>{try{localStorage.setItem('fc_login_tente',String(Date.now()))}catch(e){}sb.auth.signInWithOAuth({provider:'twitch',options:{redirectTo:location.origin+location.pathname}})};
     return;
   }
+  try{localStorage.removeItem('fc_login_tente')}catch(e){}
   user=session.user;
   joueur=await q(sb.from('joueurs').select('*').eq('id',user.id).single());
   isAdmin=await q(sb.rpc('is_admin'));
