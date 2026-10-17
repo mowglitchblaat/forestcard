@@ -100,7 +100,7 @@ button.chm:disabled:not(.vise){opacity:.45}
 .tkc canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:grab;transition:opacity .4s}.tkc.vu canvas{opacity:0;pointer-events:none}
 .tkd{height:100%;display:flex;align-items:center;justify-content:center;font-size:30px;background:repeating-linear-gradient(45deg,#1d3324 0 8px,#173020 8px 16px)}
 .tkv{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:radial-gradient(circle at 50% 40%,color-mix(in srgb,var(--c) 35%,#111),#111 75%)}
-.tkv span{font-size:30px;color:var(--c);text-shadow:0 0 12px var(--c)}.tkv b{font-size:12px;color:#fff}
+.tkv span{font-size:30px;color:var(--c);text-shadow:0 0 12px var(--c)}.tkv.bx span{filter:drop-shadow(0 0 10px var(--c))}.tkl .tkb{font-weight:700;background:#0e3a44}.tkv b{font-size:12px;color:#fff}
 .tkv.gz span{background:linear-gradient(90deg,#f87171,#fbbf24,#4ade80,#60a5fa,#c084fc);-webkit-background-clip:text;background-clip:text;color:transparent}
 .tkc.tkw{box-shadow:0 0 0 3px var(--c),0 0 18px var(--c);animation:chpop .6s cubic-bezier(.2,.9,.3,1.4)}
 .jtk.fini .tkc:not(.tkw){opacity:.55}
@@ -738,19 +738,20 @@ function dessinerPM(box,E,info){
   const c=$('#jpcash');if(c)c.onclick=async()=>{c.disabled=true;const d=await sb.rpc('plusmoins_encaisser');if(d.error){uiAlert(jErr[d.error.message]||d.error.message);plusMoins(box);return}await refreshJoueur();dessinerPM(box,d.data)};
 }
 // 🎟️ Ticket à gratter : 6 dos de cartes à gratter, 3 fois la même rareté = gagné (gold versé une fois tout gratté)
-const TK_R={commun:['Commun','#9ca3af',15],rare:['Rare','#3b82f6',30],epique:['Épique','#a855f7',60],legendaire:['Légendaire','#f59e0b',120],ggez:['GGEZ','#ff3fb4',300]};
+const TK_R={commun:['Commun','#9ca3af',15],rare:['Rare','#3b82f6',30],epique:['Épique','#a855f7',60],legendaire:['Légendaire','#f59e0b',120],ggez:['GGEZ','#ff3fb4',300],booster:['Booster','#22d3ee',0]};
 async function ticketGratter(box){
   const r=await sb.rpc('ticket_etat');if(r.error){box.innerHTML='';return}
   dessinerTicket(box,r.data||{});
 }
 function dessinerTicket(box,E){
-  const lots=`<div class="tkl">3 identiques = ${Object.values(TK_R).map(([n,c,g])=>`<span style="--c:${c}">${n} ${g}</span>`).join('')}</div>`;
+  const lots=`<div class="tkl">3 identiques = ${Object.entries(TK_R).map(([k,[n,c,g]])=>k==='booster'?`<span class="tkb" style="--c:${c}">📦 3 boosters = 1 booster offert !</span>`:`<span style="--c:${c}">${n} ${g}</span>`).join('')}</div>`;
   const tete=`<div class="chh"><div><b>🎟️ Ticket à gratter <span class="jbg">BONUS</span></b><small>${E.joue&&E.encaisse?`Reviens dans ${chMinuit()} pour un nouveau ticket.`:'Gratte les 6 cartes : trouve 3 fois la même rareté pour gagner du gold !'}</small></div></div>`;
   if(!E.joue){box.innerHTML=`<div class="chp jtk">${tete}${lots}<div class="tkg">${[0,1,2,3,4,5].map(()=>'<div class="tkc"><div class="tkd">🌲</div></div>').join('')}</div><button id="tkgo">🎟️ Prendre mon ticket</button></div>`;
     $('#tkgo').onclick=async()=>{$('#tkgo').disabled=true;const d=await sb.rpc('ticket_prendre');if(d.error){uiAlert(jErr[d.error.message]||d.error.message);ticketGratter(box);return}dessinerTicket(box,d.data)};return}
   const G=E.grille||[],fini=!!E.encaisse;
-  const res=()=>E.gagnant?`<div class="chr ok">🎉 3 × ${TK_R[E.gagnant][0]} ! Tu gagnes <b>${E.gain} 💰</b></div>`:`<div class="chr ko">🍂 Pas de trio cette fois… nouveau ticket demain !</div>`;
-  box.innerHTML=`<div class="chp jtk${fini?' fini':''}">${tete}${lots}<div class="tkg">${G.map((k,i)=>{const R=TK_R[k]||[k,'#888'];return `<div class="tkc${fini?' vu':''}${fini&&k===E.gagnant?' tkw':''}" data-k="${esc(k)}" style="--c:${R[1]}"><div class="tkv${k==='ggez'?' gz':''}"><span>◆</span><b>${esc(R[0])}</b></div>${fini?'':'<canvas></canvas>'}</div>`}).join('')}</div>
+  const res=()=>E.gagnant==='booster'?`<div class="chr ok">🎁 3 boosters ! Tu gagnes <b>${esc((E.booster&&E.booster.nom)||'un booster')}</b> : il t'attend dans tes boosters, ouvre-le en live avec !booster.</div>`
+   :E.gagnant?`<div class="chr ok">🎉 3 × ${TK_R[E.gagnant][0]} ! Tu gagnes <b>${E.gain} 💰</b></div>`:`<div class="chr ko">🍂 Pas de trio cette fois… nouveau ticket demain !</div>`;
+  box.innerHTML=`<div class="chp jtk${fini?' fini':''}">${tete}${lots}<div class="tkg">${G.map((k,i)=>{const R=TK_R[k]||[k,'#888'];return `<div class="tkc${fini?' vu':''}${fini&&k===E.gagnant?' tkw':''}" data-k="${esc(k)}" style="--c:${R[1]}"><div class="tkv${k==='ggez'?' gz':''}${k==='booster'?' bx':''}"><span>${k==='booster'?'📦':'◆'}</span><b>${esc(R[0])}</b></div>${fini?'':'<canvas></canvas>'}</div>`}).join('')}</div>
    ${fini?res():'<div class="jbt"><small>Gratte au doigt ou à la souris</small><button class="sec" id="tkall">✨ Tout gratter</button></div>'}</div>`;
   if(fini)return;
   const cells=[...box.querySelectorAll('.tkc')];let fin=false;
@@ -758,7 +759,7 @@ function dessinerTicket(box,E){
     cells.forEach(c=>{if(c.dataset.k===E.gagnant)c.classList.add('tkw')});
     const d=await sb.rpc('ticket_encaisser');if(d.error){uiAlert(jErr[d.error.message]||d.error.message);return}
     if(d.data.gain>0)await refreshJoueur();
-    await pause(900);dessinerTicket(box,d.data)};
+    await pause(900);dessinerTicket(box,d.data)};   // 3 × 📦 : le booster est ajouté côté Supabase au moment d'encaisser
   const reveler=c=>{if(c.classList.contains('vu'))return;c.classList.add('vu');toutVu()};
   dosActif().then(dos=>cells.forEach(c=>{
     let bas=false,dernier=null;const cv=c.querySelector('canvas'),W=cv.width=c.clientWidth*2,H=cv.height=c.clientHeight*2,x=cv.getContext('2d'),N=8,M=11,touche=new Set();

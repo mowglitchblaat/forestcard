@@ -298,6 +298,7 @@ grant execute on function public.plusmoins_encaisser() to authenticated;
 -- JEU 4 (bonus) : « Ticket à gratter »
 -- 6 cases cachées sous des dos de cartes. Chaque case révèle une rareté.
 -- 3 fois la même rareté = gagné : Commun 15 · Rare 30 · Épique 60 · Légendaire 120 · GGEZ 300 gold.
+-- 3 boosters 📦 = un booster au hasard (parmi ceux en vente à 250 gold ou moins) : environ 1 ticket sur 25.
 -- Le ticket est tiré ici ; le gold n'est versé qu'une fois le ticket entièrement gratté (pas de spoil dans l'en-tête).
 -- =====================================================================
 create table if not exists public.ticket_jour (
@@ -310,16 +311,17 @@ create table if not exists public.ticket_jour (
   cree_le timestamptz not null default now(),
   primary key (joueur_id, jour)
 );
+alter table public.ticket_jour add column if not exists booster jsonb;   -- booster gagné (3 × 📦)
 alter table public.ticket_jour enable row level security;
 revoke all on public.ticket_jour from anon, authenticated;
 
--- Tirage : ~39 % de tickets gagnants, gain moyen ≈ 16 gold
+-- Tirage : ~43 % de tickets gagnants (dont 4 % de boosters), gain moyen ≈ 16 gold + un booster tous les ~25 jours
 create or replace function public.ticket_tirer(out p_grille text[], out p_gagnant text, out p_gain int)
 language plpgsql volatile as $$
-declare R text[] := array['commun','rare','epique','legendaire','ggez']; G int[] := array[15,30,60,120,300];
+declare R text[] := array['commun','rare','epique','legendaire','ggez','booster']; G int[] := array[15,30,60,120,300,0];
   x numeric := random() * 100; w int; pool text[] := '{}'; s text; i int;
 begin
-  w := case when x < 18 then 1 when x < 29 then 2 when x < 35 then 3 when x < 38 then 4 when x < 39 then 5 else 0 end;
+  w := case when x < 18 then 1 when x < 29 then 2 when x < 35 then 3 when x < 38 then 4 when x < 39 then 5 when x < 43 then 6 else 0 end;
   -- les autres cases : chaque rareté au plus 2 fois (sinon ce serait un 2e gain)
   foreach s in array R loop if w = 0 or s <> R[w] then pool := pool || s || s; end if; end loop;
   select array_agg(v order by random()) into pool from unnest(pool) v;
@@ -330,7 +332,7 @@ end $$;
 revoke execute on function public.ticket_tirer() from public, anon, authenticated;
 
 create or replace function public.ticket_vue(t public.ticket_jour) returns jsonb language sql stable as $$
-  select jsonb_build_object('joue', true, 'grille', to_jsonb(t.grille), 'gagnant', t.gagnant, 'gain', t.gain, 'encaisse', t.encaisse);
+  select jsonb_build_object('joue', true, 'grille', to_jsonb(t.grille), 'gagnant', t.gagnant, 'gain', t.gain, 'encaisse', t.encaisse, 'booster', t.booster);
 $$;
 
 create or replace function public.ticket_etat()
@@ -357,20 +359,38 @@ begin
   return public.ticket_vue(t);
 end $$;
 
--- Appelé quand toutes les cases sont grattées : verse le gain (une seule fois)
-create or replace function public.ticket_encaisser()
-returns jsonb language plpgsql security definer set search_path = public as $$
-declare t public.ticket_jour;
+-- Appelé quand toutes les cases sont grattées : verse le gain (une seule fois) — gold, ou booster pour 3 × 📦
+do $$
+declare col text;
 begin
-  if auth.uid() is null then raise exception 'NON_CONNECTE'; end if;
-  select * into t from public.ticket_jour where joueur_id = auth.uid() and jour = public.champignons_jour_paris() for update;
-  if not found then raise exception 'PAS_ENCORE_JOUE'; end if;
-  if not t.encaisse then
-    update public.ticket_jour set encaisse = true where joueur_id = t.joueur_id and jour = t.jour;
-    if t.gain > 0 then update public.joueurs set monnaie = coalesce(monnaie, 0) + t.gain where id = auth.uid(); end if;
-    t.encaisse := true;
-  end if;
-  return public.ticket_vue(t);
+  select a.attname into col
+  from pg_constraint k join pg_attribute a on a.attrelid = k.conrelid and a.attnum = any(k.conkey)
+  where k.contype = 'f' and k.conrelid = 'public.stock_boosters'::regclass and k.confrelid = 'public.types_boosters'::regclass limit 1;
+  col := coalesce(col, 'type_id');
+  execute format($f$
+  create or replace function public.ticket_encaisser()
+  returns jsonb language plpgsql security definer set search_path = public as $b$
+  declare t public.ticket_jour; bo record;
+  begin
+    if auth.uid() is null then raise exception 'NON_CONNECTE'; end if;
+    select * into t from public.ticket_jour where joueur_id = auth.uid() and jour = public.champignons_jour_paris() for update;
+    if not found then raise exception 'PAS_ENCORE_JOUE'; end if;
+    if not t.encaisse then
+      t.encaisse := true;
+      if t.gain > 0 then update public.joueurs set monnaie = coalesce(monnaie, 0) + t.gain where id = auth.uid(); end if;
+      if t.gagnant = 'booster' then
+        select tb.id, tb.nom, tb.image_path into bo from public.types_boosters tb
+          where tb.actif and tb.prix is not null and tb.prix <= 250 order by random() limit 1;
+        if found then
+          update public.stock_boosters set quantite = quantite + 1 where joueur_id = auth.uid() and %1$I = bo.id;
+          if not found then insert into public.stock_boosters (joueur_id, %1$I, quantite) values (auth.uid(), bo.id, 1); end if;
+          t.booster := jsonb_build_object('id', bo.id, 'nom', bo.nom, 'image', bo.image_path);
+        end if;
+      end if;
+      update public.ticket_jour set encaisse = true, booster = t.booster where joueur_id = t.joueur_id and jour = t.jour;
+    end if;
+    return public.ticket_vue(t);
+  end $b$;$f$, col);
 end $$;
 
 grant execute on function public.ticket_etat() to authenticated;
