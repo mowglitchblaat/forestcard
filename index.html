@@ -483,6 +483,7 @@ function fxEffet(e){
     case 'solidification':{const ch=e.chance==null||e.chance===''?100:nz(e.chance);return[`${ch<100?ch+' % de chances de se solidifier':'Se solidifie'} pendant ${trs(T)} de l'adversaire (insensible à l'étourdissement, ne se purge pas, brisée par une fracture)`]}
     case 'fracture':return[`Fracture ${ci} (${nz(e.fchance)} % de se blesser de ${nz(e.degfrac)} PV en attaquant, ${trs(T)})`];
     case 'vol_ultime':return["Vole l'ultime de l'adversaire"];
+    case 'copie_ultime':return["Copie l'ultime de l'adversaire : il le garde, et cette carte peut aussi le lancer"];
     case 'poison_effet':return[`Empoisonne ${ci} : ${nz(e.degtour)} dégâts par tour pendant ${trs(T)}`];
     case 'brulure_effet':return[`Brûle ${ci} : ${nz(e.pctpv)} % des PV max par tour pendant ${trs(T)}`];
     case 'etourdir_effet':{const ch=e.chance==null||e.chance===''?100:nz(e.chance);const qui=(e.ciblem||e.cible)==='soi'?'sa propre carte':"l'adversaire";return[`${ch<100?`${ch} % de chances${nz(e.essais)>1?` (${e.essais} tentatives)`:''} d'étourdir`:'Étourdit'} ${qui} pendant ${trs(T)}`]}
@@ -1445,7 +1446,7 @@ const ULT={degats:["Dégâts directs à l'adversaire",'val'],voler:['Vole une ma
  saignement:["Saignement : X % des PV max par tour + soins réduits, pendant X tours",'ciblem','pctpv','reducsoin','tours'],
  gel:["Gel : chance d'annuler l'attaque / d'être étourdi, pendant X tours",'ciblem','annul','stunch','tours'],
  fracture:["Fracture : chance de se blesser en attaquant, pendant X tours",'ciblem','fchance','degfrac','tours'],
- vol_ultime:["Vole l'ultime de l'adversaire"],
+ vol_ultime:["Vole l'ultime de l'adversaire"],copie_ultime:["Copie l'ultime de l'adversaire (il le garde aussi)"],
  soin_tours:["Régénération : soigne de X PV par tour pendant X tours",'val','u','tours'],
  purification:["Purification : retire les statuts négatifs (poison, brûlure, gel, saignement, fracture, malédiction, étourdissement…) et rend l'ATQ perdu. 1re purification tout de suite, puis une tous les X tours, X fois au total",'cible','every','fois'],
  reanimation:['Réanimation : la carte est détruite puis revient avec X % de ses PV max (une fois)','pctrev'],
@@ -1491,7 +1492,7 @@ const MAG={voler:['Vole la magie / le piège de l\'adversaire (tout de suite, ou
  saignement:["Saignement : X % des PV max par tour + soins réduits, pendant X tours",'ciblem','pctpv','reducsoin','tours'],
  gel:["Gel : chance d'annuler l'attaque / d'être étourdi, pendant X tours",'ciblem','annul','stunch','tours'],
  fracture:["Fracture : chance de se blesser en attaquant, pendant X tours",'ciblem','fchance','degfrac','tours'],
- vol_ultime:["Vole l'ultime de l'adversaire"],
+ vol_ultime:["Vole l'ultime de l'adversaire"],copie_ultime:["Copie l'ultime de l'adversaire (il le garde aussi)"],
  solidification:["Solidification : X % de chances de se solidifier pendant X tours de l'adversaire (insensible à l'étourdissement, ne se purge pas, brisée par une fracture)",'chance','tours'],
  transcendance:["Transcendance : au début de ses X-ième, 2X-ième et 3X-ième tours (X = 4 par défaut), avant son attaque, monte d'un niveau (3 niveaux) jusqu'à la fin du combat. À chaque niveau : purifiée (étourdissement compris), ATQ +X % et PV max +X % (15 % par défaut). Dès le niveau I, chaque attaque qui touche purifie l'adversaire et vole de la vie (10 / 20 / 30 % des dégâts par défaut)",'tours','patq','ppv','vv1','vv2','vv3'],
  execution:["Exécution : à chaque coup, X % de chances de marquer la cible. À 3 marques, une attaque qui la laisse sous X % de ses PV max l'exécute (même si elle devait éviter la mort ; la réanimation reste possible)",'chance','seuilexec'],

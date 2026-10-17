@@ -86,8 +86,8 @@ function simuler(pA,pB,opt={}){
   o.decl++;L('piege',`Piège de ${o.pseudo} : ${o.pie.nom} !`,{c:i,carte:o.pie.nom,img:o.pie.image||null});if(c.type==='proprio_meurt')rv=1;const s0=SRC;SRC='piege';PCH++;try{fx(e.effet,o,x)}finally{PCH--}SRC=s0;rv=0;S.forEach(s=>s.pend=1);
  })}
  // Effets : o = propriétaire de l'effet, x = adversaire. mg=true : effet de magie (annulable/volable)
- const SANS_CIBLE=['voler','detruire','annule_magies','vol_ultime','echange_atq','echange_atq_def','echange_pv','echange_tout','annule_attaque','marque_avalage','execution_direct'];   // sans objet quand la carte visée (avalée) est remplacée par celle qui joue l'effet
- const UNEFOIS=['degats','vol_vie','soin','echange_atq','echange_atq_def','echange_pv','echange_tout','purification','vol_ultime','reset_ultime','aleatoire','detruire','voler','equiper'];
+ const SANS_CIBLE=['voler','detruire','annule_magies','vol_ultime','copie_ultime','echange_atq','echange_atq_def','echange_pv','echange_tout','annule_attaque','marque_avalage','execution_direct'];   // sans objet quand la carte visée (avalée) est remplacée par celle qui joue l'effet
+ const UNEFOIS=['degats','vol_vie','soin','echange_atq','echange_atq_def','echange_pv','echange_tout','purification','vol_ultime','copie_ultime','reset_ultime','aleatoire','detruire','voler','equiper'];
  function fx(e,o,x,mg,rt){   // rt : retour d'une magie annulée pour X tours — ses effets « une seule fois » ne se rejouent pas
   if(!e)return;
   e=canon(e);
@@ -150,6 +150,9 @@ function simuler(pA,pB,opt={}){
    case'solidification':{const ch=e.chance==null||e.chance===''?100:(+e.chance||0);if(solidifier(o,ch,e.tours)&&mg)o.mdelta.push({undo:()=>{if(o.st.solide>0){o.st.solide=0;L('finstatut',`${nom(o)} n'est plus solidifié`,{c:id(o),k:'solide'})}}});break}
    case'gel':geler((e.ciblem||e.cible)==='soi'?o:x,e.annul||0,e.stunch||0,e.tours||1);break;
    case'fracture':fracturer((e.ciblem||e.cible)==='soi'?o:x,e.fchance||0,e.degfrac||0,e.tours||1);break;
+   case'copie_ultime':{const h=x.uh.find(z=>z.u&&z.u.type&&z.u.type!=='copie_ultime');   // copie : l'adversaire GARDE son ultime, la carte en reçoit une copie neuve
+    if(!h)L('statut',`${x.pseudo} n'a aucun ultime à copier`);else if(o.uh.some(z=>z.u===h.u||z.src===h.u))L('statut',`${nom(o)} a déjà cet ultime`);
+    else{o.uh.push({u:h.u,uses:0,last:-99,src:h.u});L('vol',`${o.pseudo} copie l'ultime de ${x.pseudo}`,{k:'copie_ultime',from:id(x),c:id(o)})}}break;
    case'vol_ultime':{const h=x.uh.find(z=>z.u&&z.u.type);if(h){x.uh=x.uh.filter(z=>z!==h);o.uh.push({u:h.u,uses:0,last:-99});L('vol',`${o.pseudo} vole l'ultime de ${x.pseudo}`,{k:'vol_ultime',from:id(x),c:id(o)})}else L('statut',`${x.pseudo} n'a aucun ultime à voler`)}break;
    case'poison_effet':{const M=(e.ciblem||e.cible)==='soi'?o:x;dotUn(M,'poison',e.degtour||0,e.tours||1);break}
    case'brulure_effet':{const M=(e.ciblem||e.cible)==='soi'?o:x;dotUn(M,'brûlure',rd(M.max*(e.pctpv||0)/100),e.tours||1);break}
@@ -241,6 +244,7 @@ function simuler(pA,pB,opt={}){
    ['Régénération',()=>({type:'soin_tours',val:ri(5,12),u:'pct',tours:ri(2,4)})],
    ['Esquive en hausse',()=>({type:'esquive_mod',cible:'soi',val:ri(15,30)})],
    ["Vol de l'ultime adverse",()=>({type:'vol_ultime'})],
+   ["Copie de l'ultime adverse",()=>({type:'copie_ultime'})],
    ['Ultime rechargé',()=>({type:'reset_ultime'})],
    ['Magie adverse annulée',()=>({type:'annule_magies'})],
    ['Magie adverse détruite',()=>({type:'detruire',carte:'magie'})],

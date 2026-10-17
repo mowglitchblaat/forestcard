@@ -77,7 +77,7 @@ const CATS={saignement:'sang',gel:'gel',poison:'poison',poison_effet:'poison',br
  soin:'soin',soin_tour:'soin',soin_tours:'soin',vol_pct_atq:'soin',vol_vie:'soin',etourdir:'etourdi',etourdir_effet:'etourdi',esquive:'esquive',esquive_mod:'esquive',
  evite_mort:'vie',mort_evitee:'vie',reanimation:'vie',enchainement:'frappe',multi_frappe:'frappe',double_degats:'frappe',bonus_frappe:'frappe',
  renvoi:'defense',reduc_degats:'defense',echange_atq:'echange',echange_atq_def:'echange',echange_pv:'echange',echange_tout:'echange',
- vol_ultime:'ultime',reset_ultime:'ultime',degats:'degats',degats_tours:'degats',atq_mod:'stat',pv_mod:'stat',atq_tours:'stat',pv_tours:'stat',rage:'rage',fatigue:'fatigue',aleatoire:'alea'};
+ vol_ultime:'ultime',copie_ultime:'ultime',reset_ultime:'ultime',degats:'degats',degats_tours:'degats',atq_mod:'stat',pv_mod:'stat',atq_tours:'stat',pv_tours:'stat',rage:'rage',fatigue:'fatigue',aleatoire:'alea'};
 const catOf=t=>CATS[String(t).replace(/^atk_/,'')]||'autre';
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const sg=v=>(v>=0?'+':'')+v;
@@ -117,6 +117,7 @@ function core(e,pas){   // texte de l'effet (sans le « donne à l'attaque de ba
   case'fatigue':return ch?`${P}fatiguer : dégâts −${e.fatval||0}${e.u==='pct'?' %':''} par coup pendant ${T(e.fattours)}`:`Fatigue de ${tgt(e,'adversaire')} : dégâts −${e.fatval||0}${e.u==='pct'?' %':''} par coup pendant ${T(e.fattours)}`;
   case'aleatoire':return pas?`Effet aléatoire parmi tous les effets du jeu : ${e.chance==null||e.chance===''?100:e.chance} % de chances ${e.every>1?`tous les ${e.every} tours`:'chaque tour'}`:`Effet aléatoire${(e.nbalea||e.fois)>1?` ×${e.nbalea||e.fois}`:''} : tiré au hasard parmi tous les effets du jeu`;
   case'vol_ultime':return"Vole l'ultime de l'adversaire";
+  case'copie_ultime':return"Copie l'ultime de l'adversaire (il le garde aussi)";
   case'reset_ultime':return"Réinitialise l'ultime (utilisable à nouveau)";
   case'atq_mod':return`ATQ de ${tgt(e,'soi')} ${sg(e.val)}${e.u==='pct'?' %':''}`;
   case'pv_mod':return`PV max de ${tgt(e,'soi')} ${sg(e.val)}${e.u==='pct'?' %':''}`;

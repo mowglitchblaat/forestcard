@@ -246,6 +246,17 @@ test('transcendance : 3 niveaux au début des tours X, 2X et 3X (avant l\'attaqu
   assert.ok(r2.journal.find(e => e.k === 'transc' && e.niv === 3).txt.includes('50 %'));
 });
 
+test('copie d\'ultime : la carte copie l\'ultime adverse, l\'adversaire le garde', () => {
+  const r = combat([C('Morph', 10, SOLIDE, { ultime: { type: 'copie_ultime', apres_tours: 1, utilisations: 1 } })],
+    [C('Dragon', 10, SOLIDE, { ultime: { type: 'degats', val: 100, apres_tours: 3, utilisations: 0 } })], { regles: { maxTours: 8, maxProlong: 0 } });
+  assert.ok(r.journal.some(e => e.k === 'copie_ultime'), 'copie faite');
+  const ult = r.journal.filter(e => e.t === 'ultime').map(e => e.txt);
+  assert.ok(ult.some(x => /Dragon/.test(x)), 'le Dragon lance toujours son ultime');
+  assert.ok(ult.filter(x => /Morph/.test(x)).length > 1, 'le Morph lance aussi la copie');
+  assert.ok(lignes(r, e => /Morph subit 100/.test(e.txt || '')).length > 0 && lignes(r, e => /Dragon subit 100/.test(e.txt || '')).length > 0, 'les deux infligent les 100 dégâts');
+  assert.equal(lignes(r, e => e.k === 'copie_ultime').length, 1, 'pas de double copie');
+});
+
 test('solidification : bloque l\'étourdissement, une fracture la brise, la purification ne la retire pas', () => {
   const etourdit = { type: 'etourdir', chance: 100 };
   // magie : solidifié 3 tours, l'adversaire étourdit à chaque coup → aucun étourdissement
