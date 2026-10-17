@@ -6,13 +6,39 @@
 -- À lancer une fois dans Supabase (SQL Editor) ; peut être relancé sans risque.
 
 -- ================= 1) Historique des combats : 10 derniers =================
+-- (ce bloc contient aussi tout ce que faisait 16-historique-30.sql : pas besoin de l'avoir lancé avant)
+create index if not exists historique_combats_a_idx on public.historique_combats (joueur_a, cree_le desc);
+create index if not exists historique_combats_b_idx on public.historique_combats (joueur_b, cree_le desc);
+
+-- Ménage pour une liste de joueurs (null = tous)
+-- Un combat est effacé si, pour CHACUN de ses deux joueurs, il y a déjà au moins p_garder (10) combats plus récents.
+create or replace function public.nettoyer_historique(p_joueurs uuid[] default null, p_garder int default 10)
+returns int language plpgsql security definer set search_path = public as $$
+declare n int; minuit timestamptz := (date_trunc('day', now() at time zone 'Europe/Paris') at time zone 'Europe/Paris');
+begin
+  delete from public.historique_combats h
+  where h.cree_le < minuit   -- jamais les combats du jour
+    and (p_joueurs is null or h.joueur_a = any(p_joueurs) or h.joueur_b = any(p_joueurs))
+    and (h.joueur_a is null or (select count(*) from public.historique_combats x
+         where (x.joueur_a = h.joueur_a or x.joueur_b = h.joueur_a) and (x.cree_le, x.id) > (h.cree_le, h.id)) >= p_garder)
+    and (h.joueur_b is null or (select count(*) from public.historique_combats x
+         where (x.joueur_a = h.joueur_b or x.joueur_b = h.joueur_b) and (x.cree_le, x.id) > (h.cree_le, h.id)) >= p_garder);
+  get diagnostics n = row_count;
+  return n;
+end $$;
+revoke execute on function public.nettoyer_historique(uuid[], int) from public, anon, authenticated;
+
+-- Après chaque combat enregistré : ménage pour les deux joueurs (10 derniers combats)
 create or replace function public.historique_apres_combat()
 returns trigger language plpgsql security definer set search_path = public as $$
 begin
   perform public.nettoyer_historique(array_remove(array[new.joueur_a, new.joueur_b], null), 10);
   return null;
 end $$;
-select public.nettoyer_historique(null, 10) as combats_effaces;
+drop trigger if exists historique_30 on public.historique_combats;
+create trigger historique_30 after insert on public.historique_combats
+  for each row execute function public.historique_apres_combat();
+select public.nettoyer_historique(null::uuid[], 10) as combats_effaces;
 
 -- ================= 2) Historique des boosters ouverts =================
 create table if not exists public.historique_boosters (
