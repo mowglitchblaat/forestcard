@@ -9,7 +9,7 @@
           "Nouvel onglet « Mon deck » : ton deck à gauche avec ses cases (3 combattants, 3 magies, 3 pièges + 1 carte libre), toutes tes cartes à droite. Touche une carte pour l’ajouter ou la retirer.",
           "Les cartes se filtrent par type, rareté et collection, se cherchent par nom et se trient par rareté, nom, ATQ, PV ou nombre d’exemplaires.",
           "Choisis ton deck dans la liste en haut, crée-en un avec « Nouveau », renomme-le ou supprime-le.",
-          "Un deck de combat doit maintenant faire exactement 10 cartes : à 9, il ne peut plus être validé."
+          "Un deck de combat doit maintenant faire exactement 10 cartes : les anciens decks de 9 cartes ne peuvent plus combattre tant qu’ils ne sont pas complétés dans l’onglet « Mon deck »."
         ]
       },
       {

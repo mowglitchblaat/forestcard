@@ -521,11 +521,11 @@ if(typeof module!=='undefined')module.exports=g.Moteur;
 // ---------------- Serveur ----------------
 const ERREURS = {
   JOUEUR_INCONNU: "Connecte-toi d'abord au site avec Twitch pour jouer.",
-  DECK_INVALIDE: "Ton deck n'est pas prêt : compose-le sur le site (un combattant, une magie et un piège au minimum).",
+  DECK_INVALIDE: "Ton deck n'est plus valide : il faut maintenant 10 cartes (3 combattants, 3 magies, 3 pièges + 1 libre). Complète-le dans l'onglet Mon deck du site !",
   DEJA_JOUE: "Tu as déjà fait ton combat gratuit aujourd'hui, reviens demain !",
   ADVERSAIRE_INCONNU: "Joueur introuvable : il doit s'être connecté au site au moins une fois.",
   ADVERSAIRE_SOI: "Tu ne peux pas te défier toi-même.",
-  ADVERSAIRE_SANS_DECK: "Ce joueur n'a pas encore de deck prêt.",
+  ADVERSAIRE_SANS_DECK: "Ce joueur n'a pas de deck valide (10 cartes) pour l'instant.",
   AUCUN_ADVERSAIRE: "Aucun adversaire disponible pour l'instant.",
   DEJA_RECLAME: 'Tu as déjà récupéré ton booster quotidien, reviens demain !',
   AUCUN_BOOSTER_QUOTIDIEN: "Aucun booster n'est distribué en ce moment.",
@@ -687,7 +687,22 @@ Deno.serve(async (req) => {
     const code = String((prep.data && prep.data.message) || '');
     return txt(ERREURS[code] || 'Impossible de lancer le combat (' + code + ').', 409);
   }
-  // 1 bis) anti-farm : limite de combats contre le même adversaire par jour
+  // 1 bis) decks de 10 cartes obligatoires (3 combattants, 3 magies, 3 pièges + 1 libre) : les anciens decks de 9 cartes ne jouent plus
+  const deckOK = (d) => Array.isArray(d) && new Set(d.map((c) => c && c.id)).size === 10 &&
+    ['combattant', 'magie', 'piege'].every((t) => d.filter((c) => c && c.type === t).length >= 3);
+  for (let essai = 0; ; essai++) {
+    if (!deckOK(prep.data.a.deck)) {
+      if (mode === 'quotidien') await rpc('rendre_combat_quotidien', { p_joueur: prep.data.a.id });
+      return txt(ERREURS.DECK_INVALIDE, 409);
+    }
+    if (deckOK(prep.data.b.deck)) break;
+    if (mode === 'quotidien') await rpc('rendre_combat_quotidien', { p_joueur: prep.data.a.id });
+    if (b.adversaire || essai >= 5) return txt(b.adversaire ? ERREURS.ADVERSAIRE_SANS_DECK : ERREURS.AUCUN_ADVERSAIRE, 409);
+    const p2 = await rpc('preparer_combat', argsPrep);   // adversaire au hasard avec un ancien deck : on en tire un autre
+    if (!p2.ok) { const code = String((p2.data && p2.data.message) || ''); return txt(ERREURS[code] || 'Impossible de lancer le combat (' + code + ').', 409); }
+    prep = p2;
+  }
+  // 1 ter) anti-farm : limite de combats contre le même adversaire par jour
   const maxPaire = await limiteMemeAdversaire();
   if (maxPaire > 0) {
     // Adversaire tiré au hasard (!combat sans @) : on retente quelques fois pour tomber sur un autre joueur
