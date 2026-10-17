@@ -4,6 +4,16 @@
     "intro": "Nouvel atelier de deck, historique sans spoil et site plus confortable sur téléphone.",
     "groupes": [
       {
+        "titre": "Jeux du jour",
+        "points": [
+          "Nouvel onglet « 🎲 Jeux du jour » : des petits jeux gratuits, une partie de chaque par jour (remise à zéro à minuit).",
+          "🍄 Les champignons de la forêt : choisis un champignon sur trois et gagne le gold caché dessous, puis tente un quitte ou double si tu l’oses.",
+          "⚔️ Duel d’ATQ : toi contre le bot au meilleur des 3 manches, la plus grosse ATQ gagne. La victoire rapporte un booster !",
+          "❤️ Plus ou moins : devine si la carte suivante a plus ou moins de PV, enchaîne jusqu’à 200 gold… et encaisse avant de te tromper.",
+          "🎟️ Ticket à gratter (bonus) : gratte 6 cartes et trouve 3 fois la même rareté pour gagner du gold."
+        ]
+      },
+      {
         "titre": "Deck",
         "points": [
           "Nouvel onglet « Mon deck » : ton deck à gauche avec ses cases (3 combattants, 3 magies, 3 pièges + 1 carte libre), toutes tes cartes à droite. Touche une carte pour l’ajouter ou la retirer.",

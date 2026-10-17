@@ -1,5 +1,5 @@
 -- 24-jeux-du-jour.sql — Forest Card
--- Trois mini-jeux gratuits dans la boutique, chacun jouable une fois par jour (heure de Paris).
+-- Quatre mini-jeux gratuits dans la boutique (3 jeux du jour + 1 jeu bonus), chacun jouable une fois par jour (heure de Paris).
 -- Tout est tiré ici, côté Supabase : impossible de tricher depuis le navigateur.
 -- À lancer une fois dans Supabase (SQL Editor) ; peut être relancé sans risque.
 
@@ -293,3 +293,86 @@ grant execute on function public.plusmoins_etat() to authenticated;
 grant execute on function public.plusmoins_commencer() to authenticated;
 grant execute on function public.plusmoins_jouer(text) to authenticated;
 grant execute on function public.plusmoins_encaisser() to authenticated;
+
+-- =====================================================================
+-- JEU 4 (bonus) : « Ticket à gratter »
+-- 6 cases cachées sous des dos de cartes. Chaque case révèle une rareté.
+-- 3 fois la même rareté = gagné : Commun 15 · Rare 30 · Épique 60 · Légendaire 120 · GGEZ 300 gold.
+-- Le ticket est tiré ici ; le gold n'est versé qu'une fois le ticket entièrement gratté (pas de spoil dans l'en-tête).
+-- =====================================================================
+create table if not exists public.ticket_jour (
+  joueur_id uuid not null,
+  jour date not null,
+  grille text[] not null,
+  gagnant text,                          -- rareté gagnante (null = perdu)
+  gain int not null default 0,
+  encaisse boolean not null default false,
+  cree_le timestamptz not null default now(),
+  primary key (joueur_id, jour)
+);
+alter table public.ticket_jour enable row level security;
+revoke all on public.ticket_jour from anon, authenticated;
+
+-- Tirage : ~39 % de tickets gagnants, gain moyen ≈ 16 gold
+create or replace function public.ticket_tirer(out p_grille text[], out p_gagnant text, out p_gain int)
+language plpgsql volatile as $$
+declare R text[] := array['commun','rare','epique','legendaire','ggez']; G int[] := array[15,30,60,120,300];
+  x numeric := random() * 100; w int; pool text[] := '{}'; s text; i int;
+begin
+  w := case when x < 18 then 1 when x < 29 then 2 when x < 35 then 3 when x < 38 then 4 when x < 39 then 5 else 0 end;
+  -- les autres cases : chaque rareté au plus 2 fois (sinon ce serait un 2e gain)
+  foreach s in array R loop if w = 0 or s <> R[w] then pool := pool || s || s; end if; end loop;
+  select array_agg(v order by random()) into pool from unnest(pool) v;
+  if w > 0 then p_grille := array[R[w], R[w], R[w]] || pool[1:3]; p_gagnant := R[w]; p_gain := G[w];
+  else p_grille := pool[1:6]; p_gagnant := null; p_gain := 0; end if;
+  select array_agg(v order by random()) into p_grille from unnest(p_grille) v;   -- mélange des 6 cases
+end $$;
+revoke execute on function public.ticket_tirer() from public, anon, authenticated;
+
+create or replace function public.ticket_vue(t public.ticket_jour) returns jsonb language sql stable as $$
+  select jsonb_build_object('joue', true, 'grille', to_jsonb(t.grille), 'gagnant', t.gagnant, 'gain', t.gain, 'encaisse', t.encaisse);
+$$;
+
+create or replace function public.ticket_etat()
+returns jsonb language plpgsql stable security definer set search_path = public as $$
+declare t public.ticket_jour;
+begin
+  if auth.uid() is null then raise exception 'NON_CONNECTE'; end if;
+  select * into t from public.ticket_jour where joueur_id = auth.uid() and jour = public.champignons_jour_paris();
+  if not found then return jsonb_build_object('joue', false); end if;
+  return public.ticket_vue(t);
+end $$;
+
+create or replace function public.ticket_prendre()
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare g text[]; w text; n int; t public.ticket_jour;
+begin
+  if auth.uid() is null then raise exception 'NON_CONNECTE'; end if;
+  if not exists (select 1 from public.joueurs where id = auth.uid()) then raise exception 'JOUEUR_INCONNU'; end if;
+  select * into g, w, n from public.ticket_tirer();
+  insert into public.ticket_jour (joueur_id, jour, grille, gagnant, gain) values (auth.uid(), public.champignons_jour_paris(), g, w, n)
+  on conflict (joueur_id, jour) do nothing returning * into t;
+  if t is null then raise exception 'DEJA_JOUE'; end if;
+  delete from public.ticket_jour where joueur_id = auth.uid() and jour < public.champignons_jour_paris() - 7;   -- ménage
+  return public.ticket_vue(t);
+end $$;
+
+-- Appelé quand toutes les cases sont grattées : verse le gain (une seule fois)
+create or replace function public.ticket_encaisser()
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare t public.ticket_jour;
+begin
+  if auth.uid() is null then raise exception 'NON_CONNECTE'; end if;
+  select * into t from public.ticket_jour where joueur_id = auth.uid() and jour = public.champignons_jour_paris() for update;
+  if not found then raise exception 'PAS_ENCORE_JOUE'; end if;
+  if not t.encaisse then
+    update public.ticket_jour set encaisse = true where joueur_id = t.joueur_id and jour = t.jour;
+    if t.gain > 0 then update public.joueurs set monnaie = coalesce(monnaie, 0) + t.gain where id = auth.uid(); end if;
+    t.encaisse := true;
+  end if;
+  return public.ticket_vue(t);
+end $$;
+
+grant execute on function public.ticket_etat() to authenticated;
+grant execute on function public.ticket_prendre() to authenticated;
+grant execute on function public.ticket_encaisser() to authenticated;

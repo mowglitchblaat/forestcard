@@ -77,21 +77,33 @@ button.chm:disabled:not(.vise){opacity:.45}
 @keyframes chflip{to{transform:rotateY(360deg)}}
 @media(prefers-reduced-motion:reduce){.chi,.chc,.chm.pop{animation:none!important}}
 /* les 3 jeux du jour */
-.jx{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:18px;align-items:stretch}.jx>div{display:flex}.jx .chp{margin:0;flex:1}
+.jx{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:18px;align-items:stretch}.jx>div{display:flex}.jx .chp{margin:0;flex:1}
 .jx .chs{max-width:none}.jx .chm{min-height:92px}.jx .chi{font-size:34px}
 .jdu{background:radial-gradient(120% 140% at 0% 0%,#3a1f1f 0%,#1f1a1a 45%,#17171f 100%);border-color:#4a2f2f}
-.jpm{background:radial-gradient(120% 140% at 0% 0%,#1f2a3a 0%,#1a1c22 45%,#17171f 100%);border-color:#2f3d4a}
 .jvs{display:flex;align-items:center;justify-content:center;gap:10px}.vs{font-weight:900;color:#fbbf24;font-size:18px;text-shadow:0 0 8px #000}
 .jc{width:96px;display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center;transition:opacity .3s,transform .3s}
 .jc img,.jc .ph{width:96px;aspect-ratio:5/7;object-fit:cover;border-radius:8px;box-shadow:0 0 0 2px var(--g,#444),0 0 10px var(--g,transparent);background:#262633}
 .jc.dos .ph{display:flex;align-items:center;justify-content:center;font-size:30px;background:repeating-linear-gradient(45deg,#1d3324 0 8px,#173020 8px 16px);box-shadow:0 0 0 2px #2f4a36}
 .jc small{font-size:11px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.jc b{font-size:16px}
 .jc.win{transform:scale(1.06)}.jc.win img{box-shadow:0 0 0 3px #4ade80,0 0 18px #4ade80}.jc.win b{color:#86efac}.jc.lose{opacity:.5}
-.jc.petit{width:66px;opacity:.6}.jc.petit img{width:66px}.jc.flip{animation:jflip .45s ease-out}
+.jc.flip{animation:jflip .45s ease-out}
 .jsc{text-align:center;font-size:13px;color:#ddd}.jrec{display:flex;flex-direction:column;gap:2px;font-size:11.5px;color:#aaa}.jrec .moi{color:#bbf7d0}.jrec .bot{color:#fecaca}
+.jbt{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}.jbt [data-pm]{flex:1;min-height:40px;font-weight:700}.jbt small{color:#aaa}
+.jdu>button,.jpm>button,.jtk>button{align-self:flex-start;min-height:40px}
+.jtk{background:radial-gradient(120% 140% at 0% 0%,#3a331f 0%,#1f1d1a 45%,#17171f 100%);border-color:#4a422f}
+.jpm{background:radial-gradient(120% 140% at 0% 0%,#1f2a3a 0%,#1a1c22 45%,#17171f 100%);border-color:#2f3d4a}
 .jpip{display:flex;gap:4px}.jpip span{flex:1;text-align:center;font-size:11.5px;padding:3px 0;border-radius:6px;background:#262633;color:#888;border:1px solid #333}.jpip span.ok{background:#14532d;color:#bbf7d0;border-color:#22c55e}.jpip span.cur{border-color:#fbbf24;color:#fde68a}
-.jbt{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.jbt [data-pm]{flex:1;min-height:40px;font-weight:700}.jbt small{color:#aaa}
-.jdu>button,.jpm>button{align-self:flex-start;min-height:40px}
+.jc.petit{width:66px;opacity:.6}.jc.petit img{width:66px}.jbg{font-size:10px;font-weight:800;letter-spacing:.06em;padding:2px 7px;border-radius:999px;background:linear-gradient(90deg,#f59e0b,#ec4899);color:#111;vertical-align:middle;margin-left:4px}
+.tkl{display:flex;flex-wrap:wrap;gap:4px;font-size:11px;color:#aaa;align-items:center}.tkl span{padding:1px 7px;border-radius:999px;border:1px solid var(--c);color:var(--c)}
+.tkg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;width:100%;max-width:330px;align-self:center}
+.tkc{position:relative;aspect-ratio:5/7;border-radius:9px;overflow:hidden;background:#111;box-shadow:0 0 0 1px #3a3a48;user-select:none;-webkit-user-select:none}
+.tkc canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:grab;transition:opacity .4s}.tkc.vu canvas{opacity:0;pointer-events:none}
+.tkd{height:100%;display:flex;align-items:center;justify-content:center;font-size:30px;background:repeating-linear-gradient(45deg,#1d3324 0 8px,#173020 8px 16px)}
+.tkv{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:radial-gradient(circle at 50% 40%,color-mix(in srgb,var(--c) 35%,#111),#111 75%)}
+.tkv span{font-size:30px;color:var(--c);text-shadow:0 0 12px var(--c)}.tkv b{font-size:12px;color:#fff}
+.tkv.gz span{background:linear-gradient(90deg,#f87171,#fbbf24,#4ade80,#60a5fa,#c084fc);-webkit-background-clip:text;background-clip:text;color:transparent}
+.tkc.tkw{box-shadow:0 0 0 3px var(--c),0 0 18px var(--c);animation:chpop .6s cubic-bezier(.2,.9,.3,1.4)}
+.jtk.fini .tkc:not(.tkw){opacity:.55}
 @keyframes jflip{0%{transform:rotateY(90deg)}100%{transform:rotateY(0)}}
 @media(max-width:900px){.jx{grid-template-columns:1fr}}
 .card>button[data-id]{margin-top:auto}
@@ -296,7 +308,7 @@ function voirActif(el){if(!el)return;const b=el.querySelector('button.on');if(!b
 async function q(p){const r=await p;if(r.error){uiAlert(r.error.message);throw r.error}return r.data}
 let user,joueur,isAdmin,tab='profil',sub='cartes',B={};   // ouverture sur le profil : pas d'images à charger (économise le quota Supabase)
 const opts=(a,l='nom')=>a.map(x=>`<option value="${x.id}">${esc(x[l])}</option>`).join('');
-const TABS={collection:'Ma collection',boutique:'Boutique',deck:'Mon deck',dos:'Dos de cartes',historique:'Historique',profil:'Profils',classement:'🏆 Classement',regles:'Comment jouer',propos:'🎨 Propositions',patch:'📜 Patch notes'};
+const TABS={collection:'Ma collection',boutique:'Boutique',jeux:'🎲 Jeux du jour',deck:'Mon deck',dos:'Dos de cartes',historique:'Historique',profil:'Profils',classement:'🏆 Classement',regles:'Comment jouer',propos:'🎨 Propositions',patch:'📜 Patch notes'};
 
 // Erreur renvoyée par Twitch / Supabase après une connexion ratée (dans l'adresse) : on l'affiche au lieu de rien
 function erreurConnexion(){
@@ -328,7 +340,7 @@ function header(){
 }
 async function refreshJoueur(){joueur=await q(sb.from('joueurs').select('*').eq('id',user.id).single());header()}
 // L'onglet ouvert est gardé dans l'adresse (#classement, #admin/joueurs…) : un rafraîchissement reste sur la même page
-const VUES=['collection','boutique','deck','dos','historique','profil','classement','regles','propos','patch','admin'];
+const VUES=['collection','boutique','jeux','deck','dos','historique','profil','classement','regles','propos','patch','admin'];
 function lireAncre(){const [t,s]=decodeURIComponent(location.hash.slice(1)).split('/');if(VUES.includes(t)&&(t!=='admin'||isAdmin)){tab=t;if(t==='admin'&&s)sub=s}}
 function ecrireAncre(){const a='#'+tab+(tab==='admin'?'/'+sub:'');if(location.hash!==a)history.replaceState(null,'',a)}
 window.addEventListener('hashchange',()=>{if(!user)return;const av=tab+'/'+sub;lireAncre();if(tab+'/'+sub!==av)show(tab)});
@@ -337,7 +349,7 @@ function show(t){
   tab=t;ecrireAncre();const T={...TABS};if(isAdmin)T.admin='⚙️ Admin';
   $('#nav').innerHTML=Object.entries(T).map(([k,v])=>`<button class="${k==t?'on':'sec'}" data-t="${k}">${v}</button>`).join('');
   $('#nav').querySelectorAll('button').forEach(b=>b.onclick=()=>show(b.dataset.t));voirActif($('#nav'));
-  ({collection:vCollection,boutique:vBoutique,deck:vDeck,dos:vDos,historique:vHistorique,profil:vProfil,classement:vClassement,regles:vRegles,propos:vPropos,patch:vPatch,admin:vAdmin})[t]();
+  ({collection:vCollection,boutique:vBoutique,jeux:vJeux,deck:vDeck,dos:vDos,historique:vHistorique,profil:vProfil,classement:vClassement,regles:vRegles,propos:vPropos,patch:vPatch,admin:vAdmin})[t]();
 }
 
 /* ---------- Collection ---------- */
@@ -656,7 +668,7 @@ async function vBoutique(){
     const V=ved[id]||[];
     return`<details class="bdet"><summary>Détails du contenu (${tot} carte${tot>1?'s':''} possibles)</summary>
      ${V.length?`<div class="bc">⭐ À l'affiche</div><div class="bved">${V.map(v=>`<span>${v.image_path?`<img loading="lazy" src="${img(v.image_path)}" style="box-shadow:0 0 8px ${esc(v.couleur||'#fff')}" alt="">`:''}<small>${esc(v.nom)}</small></span>`).join('')}</div>`:''}${L.map(c=>`<div class="bc">${esc(c.nom)}</div><div class="br">${c.r.sort((x,y)=>(+x.rarete_poids)-(+y.rarete_poids)).map(r=>`<span style="--g:${esc(r.rarete_couleur||'#aaa')}">${r.nb} ${esc(r.rarete_nom)}</span>`).join('')}</div>`).join('')}</details>`};
-  main.innerHTML=`<div id="jeux"></div><h3>Tes boosters non ouverts</h3><p>${s.length?s.map(x=>`${esc(x.types_boosters.nom)} ×${x.quantite}`).join(' · ')+'<br><small>Ouvre-les pendant le live avec !booster</small>':'Aucun'}</p>
+  main.innerHTML=`<h3>Tes boosters non ouverts</h3><p>${s.length?s.map(x=>`${esc(x.types_boosters.nom)} ×${x.quantite}`).join(' · ')+'<br><small>Ouvre-les pendant le live avec !booster</small>':'Aucun'}</p>
   <h3>Acheter</h3><div class="grid">${t.map(b=>`<div class="card">${b.image_path?`<img loading="lazy" src="${img(b.image_path)}">`:''}<b>${esc(b.nom)}</b><small>${b.nb_cartes} cartes par booster</small>${contenu(b.id)}<button data-id="${b.id}" data-nom="${esc(b.nom)}" data-prix="${b.prix}">Acheter · 💰 ${b.prix}</button></div>`).join('')}</div>`;
   main.querySelectorAll('button[data-id]').forEach(b=>b.onclick=async()=>{
     const prix=+b.dataset.prix||0,solde=+joueur.monnaie||0;
@@ -666,20 +678,19 @@ async function vBoutique(){
     const {error}=await sb.rpc('acheter_booster',{p_type_id:+b.dataset.id});
     if(error)uiAlert(error.message.includes('MONNAIE')?'Pas assez de gold.':error.message);else uiAlert(`✅ « ${b.dataset.nom} » acheté ! Ouvre-le pendant le live avec !booster.`);
     await refreshJoueur();vBoutique();});
-  jeuxDuJour($('#jeux'));
 }
 /* JEUX-DU-JOUR */
 /* ---------- Les 3 jeux du jour (24-jeux-du-jour.sql) ---------- */
-async function jeuxDuJour(box){
-  if(!box)return;
+async function vJeux(){
+  main.innerHTML='<p><small>Chargement…</small></p>';
   const t=await sb.rpc('champignons_etat');
-  if(t.error){box.innerHTML=isAdmin?'<p><small>🎲 Jeux du jour : lance 24-jeux-du-jour.sql dans Supabase pour les activer.</small></p>':'';return}
-  box.innerHTML=`<h3>🎲 Jeux du jour <small style="font-weight:400">· gratuits, une partie chacun par jour</small></h3><div class="jx"><div id="jchamp"></div><div id="jduel"></div><div id="jpm"></div></div>`;
-  champignons($('#jchamp'));duelAtq($('#jduel'));plusMoins($('#jpm'));
+  if(t.error){main.innerHTML='<h3>🎲 Jeux du jour</h3><p>Les jeux du jour arrivent bientôt !</p>'+(isAdmin?'<p><small>Admin : lance 24-jeux-du-jour.sql dans Supabase pour les activer.</small></p>':'');return}
+  main.innerHTML=`<h3>🎲 Jeux du jour</h3><p><small>Des petits jeux gratuits pour gagner du gold et des boosters : une partie de chaque par jour, remise à zéro à minuit.</small></p><div class="jx"><div id="jchamp"></div><div id="jduel"></div><div id="jpm"></div><div id="jtk" class="jbonus"></div></div>`;
+  champignons($('#jchamp'));duelAtq($('#jduel'));plusMoins($('#jpm'));ticketGratter($('#jtk'));
 }
 const jCarte=(c,val,cls='')=>c?`<div class="jc ${cls}" style="--g:${esc(c.couleur||'#888')}">${c.image?`<img src="${img(c.image)}" alt="">`:'<div class="ph"></div>'}<small>${esc(c.nom||'')}</small><b>${val}</b></div>`:'';
 const jDos=()=>`<div class="jc dos"><div class="ph">🌲</div><small>&nbsp;</small><b>?</b></div>`;
-const jErr={DEJA_JOUE:'Tu as déjà joué à ce jeu aujourd\'hui, reviens demain !',PARTIE_FINIE:'Cette partie est terminée, reviens demain !',AUCUNE_CARTE:'Aucune carte combattant disponible pour le moment.',RIEN_A_ENCAISSER:'Rien à encaisser pour l\'instant.'};
+const jErr={DEJA_JOUE:'Tu as déjà joué à ce jeu aujourd\'hui, reviens demain !',PARTIE_FINIE:'Cette partie est terminée, reviens demain !',AUCUNE_CARTE:'Aucune carte combattant disponible pour le moment.',PAS_ENCORE_JOUE:'Commence d\'abord la partie.',RIEN_A_ENCAISSER:'Rien à encaisser pour l\'instant.'};
 const pause=ms=>new Promise(ok=>setTimeout(ok,ms));
 
 // ⚔️ Duel d'ATQ : au meilleur des 3, la plus grosse ATQ gagne la manche ; victoire = un booster à 250 gold max
@@ -725,6 +736,45 @@ function dessinerPM(box,E,info){
     const d=await sb.rpc('plusmoins_jouer',{p_choix:b.dataset.pm});if(d.error){uiAlert(jErr[d.error.message]||d.error.message);plusMoins(box);return}
     if(d.data.fini&&d.data.gain>0)await refreshJoueur();dessinerPM(box,d.data,true)});
   const c=$('#jpcash');if(c)c.onclick=async()=>{c.disabled=true;const d=await sb.rpc('plusmoins_encaisser');if(d.error){uiAlert(jErr[d.error.message]||d.error.message);plusMoins(box);return}await refreshJoueur();dessinerPM(box,d.data)};
+}
+// 🎟️ Ticket à gratter : 6 dos de cartes à gratter, 3 fois la même rareté = gagné (gold versé une fois tout gratté)
+const TK_R={commun:['Commun','#9ca3af',15],rare:['Rare','#3b82f6',30],epique:['Épique','#a855f7',60],legendaire:['Légendaire','#f59e0b',120],ggez:['GGEZ','#ff3fb4',300]};
+async function ticketGratter(box){
+  const r=await sb.rpc('ticket_etat');if(r.error){box.innerHTML='';return}
+  dessinerTicket(box,r.data||{});
+}
+function dessinerTicket(box,E){
+  const lots=`<div class="tkl">3 identiques = ${Object.values(TK_R).map(([n,c,g])=>`<span style="--c:${c}">${n} ${g}</span>`).join('')}</div>`;
+  const tete=`<div class="chh"><div><b>🎟️ Ticket à gratter <span class="jbg">BONUS</span></b><small>${E.joue&&E.encaisse?`Reviens dans ${chMinuit()} pour un nouveau ticket.`:'Gratte les 6 cartes : trouve 3 fois la même rareté pour gagner du gold !'}</small></div></div>`;
+  if(!E.joue){box.innerHTML=`<div class="chp jtk">${tete}${lots}<div class="tkg">${[0,1,2,3,4,5].map(()=>'<div class="tkc"><div class="tkd">🌲</div></div>').join('')}</div><button id="tkgo">🎟️ Prendre mon ticket</button></div>`;
+    $('#tkgo').onclick=async()=>{$('#tkgo').disabled=true;const d=await sb.rpc('ticket_prendre');if(d.error){uiAlert(jErr[d.error.message]||d.error.message);ticketGratter(box);return}dessinerTicket(box,d.data)};return}
+  const G=E.grille||[],fini=!!E.encaisse;
+  const res=()=>E.gagnant?`<div class="chr ok">🎉 3 × ${TK_R[E.gagnant][0]} ! Tu gagnes <b>${E.gain} 💰</b></div>`:`<div class="chr ko">🍂 Pas de trio cette fois… nouveau ticket demain !</div>`;
+  box.innerHTML=`<div class="chp jtk${fini?' fini':''}">${tete}${lots}<div class="tkg">${G.map((k,i)=>{const R=TK_R[k]||[k,'#888'];return `<div class="tkc${fini?' vu':''}${fini&&k===E.gagnant?' tkw':''}" data-k="${esc(k)}" style="--c:${R[1]}"><div class="tkv${k==='ggez'?' gz':''}"><span>◆</span><b>${esc(R[0])}</b></div>${fini?'':'<canvas></canvas>'}</div>`}).join('')}</div>
+   ${fini?res():'<div class="jbt"><small>Gratte au doigt ou à la souris</small><button class="sec" id="tkall">✨ Tout gratter</button></div>'}</div>`;
+  if(fini)return;
+  const cells=[...box.querySelectorAll('.tkc')];let fin=false;
+  const toutVu=async()=>{if(fin||!cells.every(c=>c.classList.contains('vu')))return;fin=true;
+    cells.forEach(c=>{if(c.dataset.k===E.gagnant)c.classList.add('tkw')});
+    const d=await sb.rpc('ticket_encaisser');if(d.error){uiAlert(jErr[d.error.message]||d.error.message);return}
+    if(d.data.gain>0)await refreshJoueur();
+    await pause(900);dessinerTicket(box,d.data)};
+  const reveler=c=>{if(c.classList.contains('vu'))return;c.classList.add('vu');toutVu()};
+  dosActif().then(dos=>cells.forEach(c=>{
+    let bas=false,dernier=null;const cv=c.querySelector('canvas'),W=cv.width=c.clientWidth*2,H=cv.height=c.clientHeight*2,x=cv.getContext('2d'),N=8,M=11,touche=new Set();
+    const peindre=im=>{x.globalCompositeOperation='source-over';const g=x.createLinearGradient(0,0,W,H);g.addColorStop(0,'#1f3a26');g.addColorStop(1,'#0f1f15');x.fillStyle=g;x.fillRect(0,0,W,H);
+      if(im)x.drawImage(im,0,0,W,H);else{x.fillStyle='rgba(255,255,255,.06)';for(let k=-H;k<W;k+=18){x.fillRect(k,0,8,H*2)}x.font=`${W*.36}px serif`;x.textAlign='center';x.textBaseline='middle';x.fillText('🌲',W/2,H/2)}
+      x.fillStyle='rgba(0,0,0,.45)';x.fillRect(0,H-W*.2,W,W*.2);x.fillStyle='#fde68a';x.font=`700 ${W*.11}px system-ui`;x.textAlign='center';x.textBaseline='middle';x.fillText('GRATTE',W/2,H-W*.1);x.globalCompositeOperation='destination-out';dernier=null};
+    if(dos&&dos.image){const im=new Image();im.onload=()=>peindre(im);im.onerror=()=>peindre(null);im.src=img(dos.image);peindre(null)}else peindre(null);
+    const gratter=e=>{const b=cv.getBoundingClientRect(),px=(e.clientX-b.left)/b.width*W,py=(e.clientY-b.top)/b.height*H,rr=W*.16;
+      x.lineWidth=rr*2;x.lineCap='round';x.beginPath();if(dernier){x.moveTo(dernier[0],dernier[1]);x.lineTo(px,py);x.stroke()}x.arc(px,py,rr,0,7);x.fill();dernier=[px,py];
+      for(let i=0;i<N;i++)for(let j=0;j<M;j++){const cx=(i+.5)*W/N,cy=(j+.5)*H/M;if(Math.hypot(cx-px,cy-py)<rr*1.1)touche.add(i+','+j)}
+      if(touche.size>N*M*.5)reveler(c)};
+    cv.addEventListener('pointerdown',e=>{bas=true;dernier=null;cv.setPointerCapture(e.pointerId);gratter(e)});
+    cv.addEventListener('pointermove',e=>{if(bas)gratter(e)});
+    const stop=()=>{bas=false;dernier=null};cv.addEventListener('pointerup',stop);cv.addEventListener('pointercancel',stop);
+  }));
+  $('#tkall').onclick=()=>cells.forEach(reveler);
 }
 /* ---------- Mini-jeu quotidien : les champignons de la forêt (24-champignons.sql) ---------- */
 // 1 essai par jour : choisir 1 champignon sur 3 → gold caché dessous ; puis, si on veut, un « quitte ou double ».
