@@ -556,7 +556,7 @@ function simuler(pA,pB,opt={}){
  function porterTransc(s,e,silent){if(s.st.transc||s.st.trA)return null;const v=(k,d)=>{const n=parseInt(e[k],10);return Number.isFinite(n)&&n>=0?n:d};
   s.st.trA={n:Math.max(1,v('tours',4)),pa:v('patq',15),pp:v('ppv',15),vv:[v('vv1',10),v('vv2',20),v('vv3',30)],base:s.st.joues};if(!silent)L('statut',`${nom(s)} porte la Transcendance : elle transcendera au début de son tour ${s.st.trA.n}`,{c:id(s),k:'transc_prep'});return s.st.trA}
  function transcender(s){const A=s.st.trA,niv=++s.st.transc,R=['I','II','III'][niv-1];L('statut',`${nom(s)} TRANSCENDE (niveau ${R}) : vol de vie ${A.vv[niv-1]} %`,{c:id(s),k:'transc',niv});
-  purifier(s,true);if(s.st.stun>0){s.st.stun=0;L('finstatut',`${nom(s)} n'est plus étourdi`,{c:id(s),k:'etourdi'})}L('statut',`${nom(s)} est purifié (étourdissement compris) !`,{c:id(s),k:'purif'});
+  if(s.st.stun>0){s.st.stun=0;L('finstatut',`${nom(s)} n'est plus étourdi`,{c:id(s),k:'etourdi'})}purifier(s);   // purification visible : chaque statut retiré est annoncé (et disparaît de l'écran)
   const da=rd(s.atq*A.pa/100),dp=rd(s.max*A.pp/100);if(da){s.atq+=da;L('stat',`ATQ de ${nom(s)} +${da}`,{c:id(s),k:'mod',s:'ATQ',d:da})}if(dp){s.max+=dp;s.pv+=dp;L('stat',`PV max de ${nom(s)} +${dp}`,{c:id(s),k:'mod',s:'PV max',d:dp})}}
  // Solidification : insensible à l'étourdissement pendant X tours de l'adversaire. Ne se purge pas ; une fracture la brise. Un étourdissement déjà en cours reste.
  function solidifier(s,ch,t){t=Math.max(1,parseInt(t,10)||1);if(!roll(ch))return false;s.st.solide=Math.max(s.st.solide,t);L('statut',`${nom(s)} se solidifie (${t} tour${t>1?'s':''}) : insensible à l'étourdissement`,{c:id(s),k:'solide'});return true}
