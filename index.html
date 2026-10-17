@@ -158,6 +158,27 @@ code.cmd{color:#fbbf24;font-weight:700}
 .uib{background:#1d1d27;border:1px solid #3a3a4a;border-radius:12px;padding:18px 20px;max-width:440px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.6)}
 .uit{white-space:pre-wrap;line-height:1.45;margin-bottom:14px}.uii{width:100%;box-sizing:border-box;margin-bottom:14px}.uia{display:flex;justify-content:flex-end;gap:8px}
 @keyframes uif{from{opacity:0}to{opacity:1}}
+/* ---------- Téléphone : en-tête compact, cartes sur 2 colonnes, boutons plus faciles à toucher ---------- */
+@media(max-width:600px){
+ header{padding:8px 12px;gap:6px 10px;flex-wrap:wrap}h1{font-size:17px;white-space:nowrap}
+ #me{font-size:13px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end;margin-left:auto}#me>small{display:none}#me button{padding:5px 10px;font-size:12px}
+ nav{padding:8px 10px;gap:5px}nav button{padding:8px 12px}
+ main{padding:4px 10px 40px}
+ .cgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 10px;padding:4px 0}
+ .ct{padding:6px 6px 8px;gap:6px;border-radius:12px}.ct[data-t=lg]{padding:5px 5px 7px}.ct:hover{transform:none;filter:none}.ct:hover .ci img{transform:none}
+ .ci{border-radius:9px}.cn{font-size:13px}.ch{flex-wrap:wrap;gap:4px}.rp{font-size:9px;padding:1px 6px}.cm{font-size:10.5px}
+ .cs{flex-wrap:wrap;gap:4px}.chip{font-size:11px;padding:2px 6px}.ce{font-size:11px}.cq,.cd{font-size:10px;padding:1px 6px;top:4px}.cq{right:4px}.cd{left:4px}
+ .ca{flex-wrap:wrap;gap:5px}.ca button{flex:1 1 64px}.ca button,.cw button{font-size:12.5px;padding:7px 6px;min-height:36px}
+ .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.card{padding:5px}.card button{min-height:36px}
+ .stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:6px 0 16px}.stat{padding:10px}.stat b{font-size:22px}.stat span{font-size:12px}.stat.card2{grid-column:1/-1}
+ .dbar{position:static;padding:10px;margin:4px 0 12px}.dmul select{min-width:0;flex:1}
+ .hc,.pn,.prog{padding:10px 12px}
+ .eq .nm,.eq .ch,.vrow .lb,.av10 .bd,.vsel .vf{min-width:0}.pf{flex-direction:column;align-items:center}.pf form{width:100%;min-width:0}.vrow .lb{flex-basis:100%}.vsel>img{width:110px}.pf .apv{width:150px}
+ .ppl{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ .cmo{padding:8px}.cmb{padding:14px;max-height:94vh;border-radius:16px}.cmd h2{font-size:21px}.cmi{max-width:260px}
+ td,th{padding:6px 4px}
+ input:not([type=checkbox]):not([type=radio]):not([type=range]),select,textarea{font-size:16px;max-width:100%}   /* 16 px : l'iPhone ne zoome plus quand on touche un champ */
+}
 </style></head><body>
 <header><h1>🃏 Jeu de cartes</h1><div id="me"></div></header>
 <nav id="nav"></nav><main id="main"></main>

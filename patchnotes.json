@@ -1,12 +1,13 @@
 [
   {
     "date": "2026-10-17",
-    "intro": "L’historique ne gâche plus la surprise des combats.",
+    "intro": "L’historique ne gâche plus la surprise des combats et le site s’adapte mieux au téléphone.",
     "groupes": [
       {
         "titre": "Site",
         "points": [
-          "Un combat n’apparaît dans l’historique qu’une fois son animation terminée en live : plus de spoil du résultat."
+          "Un combat n’apparaît dans l’historique qu’une fois son animation terminée en live : plus de spoil du résultat.",
+          "Le site est plus confortable sur téléphone : cartes sur deux colonnes, en-tête plus compact, boutons plus faciles à toucher et formulaires qui ne débordent plus."
         ]
       }
     ]
