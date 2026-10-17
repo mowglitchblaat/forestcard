@@ -54,6 +54,28 @@ form.f select{max-width:100%;min-width:0}form.f>*{min-width:0}
 .ppc img{width:100%;aspect-ratio:5/7;object-fit:cover;border-radius:8px;cursor:zoom-in}.ppc .st{font-size:12px;padding:2px 8px;border-radius:10px;align-self:flex-start}.st.attente{background:#3f3f46}.st.acceptee{background:#14532d}.st.refusee{background:#7f1d1d}
 .ppc .idc{color:#fbbf24}.ppc small{color:#aaa}.ppc .row{gap:6px;flex-wrap:wrap}
 .bcol{display:flex;flex-wrap:wrap;gap:4px;margin:2px 0}.bcol span{font-size:11px;padding:2px 7px;border-radius:9px;background:#2a2a38;border:1px solid #3a3a4a}
+/* mini-jeu des champignons */
+.chp{background:radial-gradient(120% 140% at 0% 0%,#1f3a26 0%,#1a1f1c 45%,#17171f 100%);border:1px solid #2f4a36;border-radius:14px;padding:12px 14px;margin:8px 0 18px;display:flex;flex-direction:column;gap:12px}
+.chh b{display:block;font-size:16px}.chh small{color:#a7b8ab}
+.chs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;max-width:460px}
+.chm{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:104px;border-radius:12px;border:1px solid #3a5a42;background:#132018;color:#eee;padding:8px 4px}
+button.chm{cursor:pointer;transition:transform .15s,box-shadow .15s}button.chm:hover{transform:translateY(-3px);box-shadow:0 6px 18px rgba(74,222,128,.25)}
+button.chm .chi{animation:chwob 2.4s ease-in-out infinite;animation-delay:var(--d)}
+.chi{font-size:40px;line-height:1;display:block}.chm small{color:#9fb3a5;font-size:11.5px}
+.chm.vise{box-shadow:0 0 0 2px #4ade80,0 0 22px #4ade8088}.chm.vise .chi{animation:chshake .25s linear infinite}
+button.chm:disabled:not(.vise){opacity:.45}
+.chm.ouvert{background:#151a17;border-color:#2c2c38;opacity:.55}.chm.ouvert b{font-size:15px;color:#bbb}
+.chm.pris{opacity:1;border-color:#4ade80;background:#14301d;box-shadow:0 0 16px #4ade8055}.chm.pris b{color:#86efac;font-size:19px}
+.chm.pris.jack{border-color:#fbbf24;background:#33270c;box-shadow:0 0 22px #fbbf2499}.chm.pris.jack b{color:#fde68a}
+.chm.pop{animation:chpop .6s cubic-bezier(.2,.9,.3,1.4)}
+.chd{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:14px}.chd button{background:#b45309;border-color:#b45309}
+.chr{font-size:14px;padding:8px 10px;border-radius:8px}.chr.ok{background:#14532d66;color:#bbf7d0}.chr.ko{background:#7f1d1d55;color:#fecaca}
+.chc{display:inline-block;animation:chflip .35s linear infinite}
+@keyframes chwob{0%,100%{transform:rotate(0)}20%{transform:rotate(-7deg)}40%{transform:rotate(6deg)}60%{transform:rotate(0)}}
+@keyframes chshake{0%,100%{transform:translateX(0)}25%{transform:translateX(-3px) rotate(-6deg)}75%{transform:translateX(3px) rotate(6deg)}}
+@keyframes chpop{0%{transform:scale(.6)}60%{transform:scale(1.12)}100%{transform:scale(1)}}
+@keyframes chflip{to{transform:rotateY(360deg)}}
+@media(prefers-reduced-motion:reduce){.chi,.chc,.chm.pop{animation:none!important}}
 .card>button[data-id]{margin-top:auto}
 .bved{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 2px}.bved span{display:flex;flex-direction:column;align-items:center;gap:3px;width:64px;text-align:center}.bved img{width:64px;border-radius:5px}.bved small{font-size:10.5px;line-height:1.2}
 .bdet{font-size:12px;margin:4px 0}.bdet summary{cursor:pointer;color:#c4b5fd;font-weight:600}.bdet .bc{margin:6px 0 2px;font-weight:700}.bdet .br{display:flex;flex-wrap:wrap;gap:4px}.bdet .br span{padding:1px 7px;border-radius:9px;border:1px solid var(--g);color:var(--g)}
@@ -616,7 +638,7 @@ async function vBoutique(){
     const V=ved[id]||[];
     return`<details class="bdet"><summary>Détails du contenu (${tot} carte${tot>1?'s':''} possibles)</summary>
      ${V.length?`<div class="bc">⭐ À l'affiche</div><div class="bved">${V.map(v=>`<span>${v.image_path?`<img loading="lazy" src="${img(v.image_path)}" style="box-shadow:0 0 8px ${esc(v.couleur||'#fff')}" alt="">`:''}<small>${esc(v.nom)}</small></span>`).join('')}</div>`:''}${L.map(c=>`<div class="bc">${esc(c.nom)}</div><div class="br">${c.r.sort((x,y)=>(+x.rarete_poids)-(+y.rarete_poids)).map(r=>`<span style="--g:${esc(r.rarete_couleur||'#aaa')}">${r.nb} ${esc(r.rarete_nom)}</span>`).join('')}</div>`).join('')}</details>`};
-  main.innerHTML=`<h3>Tes boosters non ouverts</h3><p>${s.length?s.map(x=>`${esc(x.types_boosters.nom)} ×${x.quantite}`).join(' · ')+'<br><small>Ouvre-les pendant le live avec !booster</small>':'Aucun'}</p>
+  main.innerHTML=`<div id="champ"></div><h3>Tes boosters non ouverts</h3><p>${s.length?s.map(x=>`${esc(x.types_boosters.nom)} ×${x.quantite}`).join(' · ')+'<br><small>Ouvre-les pendant le live avec !booster</small>':'Aucun'}</p>
   <h3>Acheter</h3><div class="grid">${t.map(b=>`<div class="card">${b.image_path?`<img loading="lazy" src="${img(b.image_path)}">`:''}<b>${esc(b.nom)}</b><small>${b.nb_cartes} cartes par booster</small>${contenu(b.id)}<button data-id="${b.id}" data-nom="${esc(b.nom)}" data-prix="${b.prix}">Acheter · 💰 ${b.prix}</button></div>`).join('')}</div>`;
   main.querySelectorAll('button[data-id]').forEach(b=>b.onclick=async()=>{
     const prix=+b.dataset.prix||0,solde=+joueur.monnaie||0;
@@ -626,6 +648,39 @@ async function vBoutique(){
     const {error}=await sb.rpc('acheter_booster',{p_type_id:+b.dataset.id});
     if(error)uiAlert(error.message.includes('MONNAIE')?'Pas assez de gold.':error.message);else uiAlert(`✅ « ${b.dataset.nom} » acheté ! Ouvre-le pendant le live avec !booster.`);
     await refreshJoueur();vBoutique();});
+  champignons($('#champ'));
+}
+/* ---------- Mini-jeu quotidien : les champignons de la forêt (24-champignons.sql) ---------- */
+// 1 essai par jour : choisir 1 champignon sur 3 → gold caché dessous ; puis, si on veut, un « quitte ou double ».
+const CH_ERR={DEJA_JOUE:'Tu as déjà cueilli ton champignon aujourd\'hui, reviens demain !',DEJA_DOUBLE:'Tu as déjà tenté ta chance aujourd\'hui.',MONNAIE_INSUFFISANTE:'Tu as déjà dépensé ce gain : plus de quitte ou double possible.',PAS_ENCORE_JOUE:'Choisis d\'abord un champignon.'};
+function chMinuit(){const p=new Date(new Date().toLocaleString('en-US',{timeZone:'Europe/Paris'})),f=new Date(p);f.setHours(24,0,0,0);const m=Math.max(0,Math.round((f-p)/60000));return `${Math.floor(m/60)} h ${String(m%60).padStart(2,'0')}`}
+async function champignons(box,anim){
+  if(!box)return;
+  const r=await sb.rpc('champignons_etat');
+  if(r.error){box.innerHTML=isAdmin?'<p><small>Mini-jeu des champignons : lance 24-champignons.sql dans Supabase pour l\'activer.</small></p>':'';return}
+  const E=r.data||{},joue=!!E.joue,gainTxt=g=>`+${g} 💰`;
+  const vals=joue?(()=>{const a=[...(E.autres||[])];a.splice(E.choix,0,E.gain);return a})():[null,null,null];
+  const big=g=>g>=100?' jack':'';
+  box.innerHTML=`<div class="chp${joue?' fini':''}">
+   <div class="chh"><div><b>🍄 Les champignons de la forêt</b><small>${joue?`Reviens dans ${chMinuit()} pour une nouvelle cueillette.`:'Une cueillette gratuite par jour : choisis un champignon, le gold caché dessous est pour toi !'}</small></div></div>
+   <div class="chs">${[0,1,2].map(i=>joue
+     ?`<div class="chm ouvert${i===E.choix?' pris':''}${big(vals[i])}${anim&&i===E.choix?' pop':''}"><span class="chi">${i===E.choix?'🍄':'🍂'}</span><b>${gainTxt(vals[i])}</b>${i===E.choix?'<small>ton choix</small>':'<small>raté…</small>'}</div>`
+     :`<button class="chm" data-ch="${i}" style="--d:${i*.25}s" aria-label="Champignon ${i+1}"><span class="chi">🍄</span><small>?</small></button>`).join('')}</div>
+   ${joue?(E.double_fait
+     ?`<div class="chr ${E.double_gagne?'ok':'ko'}">${E.double_gagne?`🎉 Quitte ou double gagné : +${E.gain} 💰 de plus !`:`💨 Quitte ou double perdu : les ${E.gain} 💰 sont repartis dans la forêt.`}</div>`
+     :`<div class="chd"><span>Tu as gagné <b>${E.gain} 💰</b>. Tenter le <b>quitte ou double</b> ? (1 chance sur 2)</span><button id="chdb">🪙 Quitte ou double</button></div>`):''}
+  </div>`;
+  box.querySelectorAll('[data-ch]').forEach(b=>b.onclick=async()=>{
+    box.querySelectorAll('[data-ch]').forEach(x=>{x.disabled=true;x.classList.toggle('vise',x===b)});
+    const [j]=await Promise.all([sb.rpc('champignons_jouer',{p_choix:+b.dataset.ch}),new Promise(ok=>setTimeout(ok,900))]);
+    if(j.error){uiAlert(CH_ERR[j.error.message]||j.error.message);champignons(box);return}
+    await refreshJoueur();champignons(box,true)});
+  const db=$('#chdb');if(db)db.onclick=async()=>{
+    if(!(await uiConfirm(`Quitte ou double sur tes ${E.gain} 💰 ?\nPile : tu gagnes ${E.gain} 💰 de plus. Face : tu les perds.`,{ok:'🪙 Lancer la pièce'})))return;
+    db.disabled=true;db.innerHTML='<span class="chc">🪙</span> La pièce tourne…';
+    const [d]=await Promise.all([sb.rpc('champignons_doubler'),new Promise(ok=>setTimeout(ok,1400))]);
+    if(d.error){uiAlert(CH_ERR[d.error.message]||d.error.message)}
+    await refreshJoueur();champignons(box)};
 }
 
 /* ---------- Deck : à gauche le deck (3 combattants · 3 magies · 3 pièges + 1 libre), à droite toutes ses cartes ---------- */
