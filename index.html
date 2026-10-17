@@ -177,6 +177,15 @@ code.cmd{color:#fbbf24;font-weight:700}
  .ppl{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
  .cmo{padding:8px}.cmb{padding:14px;max-height:94vh;border-radius:16px}.cmd h2{font-size:21px}.cmi{max-width:260px}
  td,th{padding:6px 4px}
+ /* rangées de choix : sélecteur segmenté (peu de choix) ou pastilles qui défilent au doigt (beaucoup de choix) */
+ .seg{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:3px;padding:3px;background:#1d1d27;border:1px solid #2c2c38;border-radius:12px;margin:8px 0}
+ .seg button{border:0;border-radius:9px;padding:9px 4px;font-size:13px;background:transparent;color:#bbb;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:40px;transition:background .15s}
+ .seg button.on{background:#7c3aed;color:#fff;font-weight:600;box-shadow:0 2px 10px rgba(124,58,237,.45)}
+ .chips,nav{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;scroll-snap-type:x proximity;-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent)}
+ .chips{margin:6px -10px;padding:2px 28px 2px 10px}.chips::-webkit-scrollbar,nav::-webkit-scrollbar{display:none}
+ .chips button,nav button{flex:none;white-space:nowrap;border-radius:999px;scroll-snap-align:start}
+ .chips button{padding:8px 15px;font-size:13.5px;min-height:38px}.chips button.sec{background:#1d1d27;border-color:#33333f;color:#ccc}
+ nav{padding-right:28px}
  input:not([type=checkbox]):not([type=radio]):not([type=range]),select,textarea{font-size:16px;max-width:100%}   /* 16 px : l'iPhone ne zoome plus quand on touche un champ */
 }
 </style></head><body>
@@ -207,6 +216,8 @@ const uiPrompt=(m,v='')=>uiBoite(m,{ok:'Valider',annuler:'Annuler',saisie:v});
 const MIROIR_URL='https://mowglitchblaat.github.io/forestcard/img/';let MIROIR=new Set();   // images des cartes recopiées chaque nuit sur GitHub (img/liste.json) : servies par GitHub au lieu de Supabase (quota)
 const chargerMiroir=()=>Promise.race([fetch(MIROIR_URL+'liste.json').then(r=>r.ok?r.json():[]).then(a=>{if(Array.isArray(a))MIROIR=new Set(a)}).catch(()=>{}),new Promise(r=>setTimeout(r,2500))]);
 const img=p=>p?(MIROIR.has(p)?MIROIR_URL+encodeURI(p):sb.storage.from('cartes').getPublicUrl(p).data.publicUrl):'';
+// Téléphone : une rangée de boutons qui défile fait apparaître le bouton choisi au milieu
+function voirActif(el){if(!el)return;const b=el.querySelector('button.on');if(!b||el.scrollWidth<=el.clientWidth)return;el.scrollLeft=b.offsetLeft-el.offsetLeft-(el.clientWidth-b.offsetWidth)/2}
 async function q(p){const r=await p;if(r.error){uiAlert(r.error.message);throw r.error}return r.data}
 let user,joueur,isAdmin,tab='profil',sub='cartes',B={};   // ouverture sur le profil : pas d'images à charger (économise le quota Supabase)
 const opts=(a,l='nom')=>a.map(x=>`<option value="${x.id}">${esc(x[l])}</option>`).join('');
@@ -250,7 +261,7 @@ function show(t){
   if(!VUES.includes(t)||(t==='admin'&&!isAdmin))t='profil';
   tab=t;ecrireAncre();const T={...TABS};if(isAdmin)T.admin='⚙️ Admin';
   $('#nav').innerHTML=Object.entries(T).map(([k,v])=>`<button class="${k==t?'on':'sec'}" data-t="${k}">${v}</button>`).join('');
-  $('#nav').querySelectorAll('button').forEach(b=>b.onclick=()=>show(b.dataset.t));
+  $('#nav').querySelectorAll('button').forEach(b=>b.onclick=()=>show(b.dataset.t));voirActif($('#nav'));
   ({collection:vCollection,boutique:vBoutique,deck:vDeck,dos:vDos,historique:vHistorique,profil:vProfil,classement:vClassement,regles:vRegles,propos:vPropos,patch:vPatch,admin:vAdmin})[t]();
 }
 
@@ -530,7 +541,7 @@ async function vCollection(){
   apercu=false;await loadColl();await loadDecks();
   if(!collData.length&&!isAdmin){main.innerHTML='<p>Tu n\'as encore aucune carte. Achète un booster dans la boutique, puis ouvre-le en live avec !booster.</p>';return}
   await chargerPrix();
-  main.innerHTML='<div id="dbar" class="dbar"></div><div id="prog"></div><div class="row" id="rbar"></div><div class="row" id="flt"></div><div class="row" id="fcol"></div><div class="cgrid" id="gr"></div>';
+  main.innerHTML='<div id="dbar" class="dbar"></div><div id="prog"></div><div class="row" id="rbar"></div><div class="row seg" id="flt"></div><div class="row chips" id="fcol"></div><div class="cgrid" id="gr"></div>';
   drawColl();progression();
 }
 // Progression : cartes différentes possédées / cartes du jeu (au total, par collection, par rareté) — seuls des nombres sont montrés
@@ -555,7 +566,7 @@ function drawColl(){
   $('#flt').querySelectorAll('button').forEach(b=>b.onclick=()=>{flt=b.dataset.f;drawColl()});
   const names=[...new Set(collData.map(cn))].sort();
   $('#fcol').innerHTML=[['tout','Toutes les collections'],...names.map(n=>[n,n])].map(([k,v])=>`<button class="${k==fcol?'on':'sec'}" data-k="${esc(k)}">${esc(v)}</button>`).join('');
-  $('#fcol').querySelectorAll('button').forEach(b=>b.onclick=()=>{fcol=b.dataset.k;drawColl()});
+  $('#fcol').querySelectorAll('button').forEach(b=>b.onclick=()=>{fcol=b.dataset.k;drawColl()});voirActif($('#fcol'));
   const L=collData.filter(x=>(flt=='tout'||x.variantes_carte.cartes.type==flt)&&(fcol=='tout'||cn(x)==fcol));
   $('#gr').innerHTML=L.map(cardHTML).join('');
   const AP=isAdmin?`<button id="apv" class="${apercu?'on':'sec'}" title="Réservé à l'admin : montre toutes les cartes du jeu pour voir à quoi ressemble la collection. Rien n'est donné.">👁 ${apercu?'Aperçu actif : toutes les cartes du jeu':'Aperçu : voir toutes les cartes du jeu'}</button>`:'';
@@ -698,7 +709,7 @@ async function vHistorique(){
 let pnTab='tech';
 async function vPatch(){
   const T={tech:'🛠️ Notes techniques',equi:'⚖️ Équilibrage',votes:'🗳️ Votes'};
-  main.innerHTML=`<h3>Patch notes</h3><div class="row">${Object.entries(T).map(([k,v])=>`<button class="${k==pnTab?'on':'sec'}" data-pn="${k}">${v}</button>`).join('')}</div><div id="pnb"><p><small>Chargement…</small></p></div>`;
+  main.innerHTML=`<h3>Patch notes</h3><div class="row seg">${Object.entries(T).map(([k,v])=>`<button class="${k==pnTab?'on':'sec'}" data-pn="${k}">${v}</button>`).join('')}</div><div id="pnb"><p><small>Chargement…</small></p></div>`;
   main.querySelectorAll('[data-pn]').forEach(b=>b.onclick=()=>{pnTab=b.dataset.pn;vPatch()});
   const box=$('#pnb'),jour=d=>{const s=new Date(d+(d.length==10?'T12:00:00':'')).toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});return s.charAt(0).toUpperCase()+s.slice(1)};
   if(pnTab=='votes'){await vVotes(box);return}
@@ -906,7 +917,7 @@ async function aPropos(){
   let qy=sb.from('propositions').select('*').order('cree_le',{ascending:false});if(apFiltre!='toutes')qy=qy.eq('statut',apFiltre);
   const r=await qy;if(r.error){box.innerHTML='<p class="ko">Propositions indisponibles : lance d\'abord 12-propositions.sql dans Supabase.</p>';return}
   const L=r.data||[],rar=id=>R.rar.find(x=>x.id==id)||{},colN=id=>(R.col.find(c=>c.id==id)||{}).nom||'?';
-  box.innerHTML=`<h3>Propositions des joueurs</h3><div class="vbar">${[['attente','⏳ En attente'],['acceptee','✅ Acceptées'],['refusee','❌ Refusées'],['toutes','Toutes']].map(([k,l])=>`<button class="${k==apFiltre?'on':'sec'}" data-apf="${k}">${l}</button>`).join('')}</div>
+  box.innerHTML=`<h3>Propositions des joueurs</h3><div class="vbar chips">${[['attente','⏳ En attente'],['acceptee','✅ Acceptées'],['refusee','❌ Refusées'],['toutes','Toutes']].map(([k,l])=>`<button class="${k==apFiltre?'on':'sec'}" data-apf="${k}">${l}</button>`).join('')}</div>
    ${L.length?`<div class="ppl">${L.map(x=>{const rr=rar(x.rarete_id),u=pImg(x.image_path),uc=x.image_carte?pImg(x.image_carte):'';return`<div class="ppc" style="border-color:${esc(rr.couleur||'#2c2c38')}">
     <img loading="lazy" src="${esc(uc||u)}" alt="" data-zoom="${esc(uc||u)}">${uc?`<small><a href="${esc(u)}" target="_blank" style="color:#c4b5fd">Voir le dessin seul</a></small>`:''}<b>${esc(x.nom)}</b><span class="st ${x.statut}">${STP[x.statut]}</span>
     <small>Par <b style="color:#fff">${esc(x.pseudo||'?')}</b> · ${new Date(x.cree_le).toLocaleDateString('fr-FR')}</small>
@@ -1024,7 +1035,7 @@ function vRegles(){
 async function vAdmin(){
   const S={cartes:'Cartes',collections:'Collections',boosters:'Boosters',effets:'Effets',raretes:'Raretés',cadeaux:'Cadeaux',dos:'Dos de cartes',reglages:'Réglages',joueurs:'Joueurs',votes:'🗳️ Votes',propos:'🎨 Propositions'};
   if(!(sub in S)){sub='cartes';ecrireAncre()}
-  main.innerHTML=`<div class="row">${Object.entries(S).map(([k,v])=>`<button class="${k==sub?'on':'sec'}" data-s="${k}">${v}</button>`).join('')}</div><div id="sub"></div>`;
+  main.innerHTML=`<div class="row chips" id="asub">${Object.entries(S).map(([k,v])=>`<button class="${k==sub?'on':'sec'}" data-s="${k}">${v}</button>`).join('')}</div><div id="sub"></div>`;voirActif($('#asub'));
   main.querySelectorAll('button[data-s]').forEach(b=>b.onclick=()=>{sub=b.dataset.s;ecrireAncre();vAdmin()});
   ({cartes:aCartes,collections:aCollections,boosters:aBoosters,effets:aEffets,raretes:aRaretes,cadeaux:aCadeaux,dos:aDos,reglages:aReglages,joueurs:aJoueurs,votes:aVotes,propos:aPropos})[sub]();
 }
