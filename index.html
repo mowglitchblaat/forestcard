@@ -60,6 +60,8 @@ form.f select{max-width:100%;min-width:0}form.f>*{min-width:0}
 .prog{background:#1d1d27;border:1px solid #2c2c38;border-radius:10px;padding:10px 14px;margin:8px 0 12px}.prog .top{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px}.prog .top b{font-size:18px}
 .pbar{height:10px;border-radius:6px;background:#2a2a38;overflow:hidden;margin:6px 0}.pbar i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#7c3aed,#c084fc)}
 .prog details summary{cursor:pointer;color:#c4b5fd;font-size:13px;font-weight:600}.pcol{margin:8px 0}.pcol .pbar{height:6px;margin:3px 0}.pcol .pbar i{background:linear-gradient(90deg,#16a34a,#4ade80)}.prr{display:flex;flex-wrap:wrap;gap:4px}.prr span{font-size:11px;padding:1px 7px;border-radius:9px;border:1px solid var(--g);color:var(--g)}
+.hb{background:#1d1d27;border:1px solid #2c2c38;border-radius:10px;padding:10px 14px;margin:10px 0}.hb .top{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.hbc{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:10px;margin-top:10px}.hbc figure{margin:0;display:flex;flex-direction:column;gap:4px;min-width:0}.hbc img,.hbc .ph{width:100%;aspect-ratio:5/7;object-fit:cover;border-radius:7px;box-shadow:0 0 0 2px var(--g),0 0 10px var(--g);background:#262633}.hbc figcaption{font-size:11.5px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hc{background:#1d1d27;border:1px solid #2c2c38;border-left:4px solid #444;border-radius:10px;padding:10px 14px;margin:10px 0}
 .hc.victoire{border-left-color:#4ade80}.hc.defaite{border-left-color:#f87171}.hc.nul{border-left-color:#9ca3af}
 .hc .top{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
@@ -800,15 +802,29 @@ async function vClassement(){
 
 /* ---------- Historique des parties ---------- */
 const LB_RES={victoire:'Victoire',defaite:'Défaite',nul:'Match nul'};
+let hTab='combats';
+// Les 5 derniers boosters ouverts (23-historique-10-et-boosters.sql)
+async function hBoosters(box){
+  const r=await sb.rpc('mes_boosters_ouverts');
+  if(r.error){box.innerHTML='<p class="ko">Historique des boosters indisponible pour le moment (l\'admin doit d\'abord lancer 23-historique-10-et-boosters.sql dans Supabase).</p>';return}
+  const L=r.data||[],date=d=>new Date(d).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+  if(!L.length){box.innerHTML='<p><small>Aucun booster ouvert pour l\'instant : tes 5 prochaines ouvertures apparaîtront ici.</small></p>';return}
+  box.innerHTML=`<p><small>Tes ${L.length} derniers boosters ouverts.</small></p>`+L.map(x=>{const C=Array.isArray(x.cartes)?x.cartes:[];
+   return `<div class="hb"><div class="top"><b>📦 ${esc(x.booster||'Booster')}</b><small>${date(x.cree_le)} · ${C.length} carte${C.length>1?'s':''}</small></div>
+    <div class="hbc">${C.map(c=>`<figure style="--g:${esc(c.couleur||'#888')}">${c.image?`<img loading="lazy" src="${img(c.image)}" alt="">`:'<div class="ph"></div>'}<figcaption>${esc(c.carte||c.nom||'')}</figcaption></figure>`).join('')}</div></div>`}).join('');
+}
 async function vHistorique(){
-  const r=await sb.rpc('mon_historique',{p_limite:30});
-  if(r.error){main.innerHTML='<p class="ko">Historique indisponible pour le moment (l\'admin doit d\'abord lancer 08-historique.sql dans Supabase).</p>';return}
+  main.innerHTML=`<h3>Historique</h3><div class="row seg" id="hsw">${[['combats','⚔️ Combats'],['boosters','📦 Boosters ouverts']].map(([k,v])=>`<button class="${k==hTab?'on':'sec'}" data-h="${k}">${v}</button>`).join('')}</div><div id="hbox"><p><small>Chargement…</small></p></div>`;
+  main.querySelectorAll('[data-h]').forEach(b=>b.onclick=()=>{hTab=b.dataset.h;vHistorique()});
+  if(hTab==='boosters'){await hBoosters($('#hbox'));return}
+  const box=$('#hbox'),r=await sb.rpc('mon_historique',{p_limite:10});
+  if(r.error){box.innerHTML='<p class="ko">Historique indisponible pour le moment (l\'admin doit d\'abord lancer 08-historique.sql dans Supabase).</p>';return}
   let L=r.data||[];
   {const c=await sb.rpc('combats_caches');if(!c.error&&c.data){const H=new Set(c.data.map(x=>String(typeof x==='object'?Object.values(x)[0]:x)));L=L.filter(x=>!H.has(String(x.id)))}}   // combats encore en cours d'animation à l'écran : masqués pour ne pas spoiler (21-historique-sans-spoil.sql)
-  if(!L.length){main.innerHTML='<h3>Historique</h3><p><small>Aucun combat enregistré pour l\'instant : tes prochains combats apparaîtront ici avec leur déroulé.</small></p>';return}
+  if(!L.length){box.innerHTML='<p><small>Aucun combat enregistré pour l\'instant : tes prochains combats apparaîtront ici avec leur déroulé.</small></p>';return}
   const date=d=>new Date(d).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
   const trio=(c,m,p)=>[c,m,p].filter(x=>x&&!/^Aucun/.test(x)).map(esc).join(' · ')||'—';
-  main.innerHTML=`<h3>Historique</h3><p><small>Tes ${L.length} derniers combats. Clique sur « Voir le déroulé » pour revoir ce qui s'est passé.</small></p>`+L.map(x=>`
+  box.innerHTML=`<p><small>Tes ${L.length} derniers combats. Clique sur « Voir le déroulé » pour revoir ce qui s'est passé.</small></p>`+L.map(x=>`
   <div class="hc ${esc(x.resultat)}" data-id="${x.id}">
    <div class="top"><span><b class="${x.resultat=='victoire'?'ok':x.resultat=='defaite'?'ko':''}">${LB_RES[x.resultat]||''}</b> contre <b>${esc(x.adversaire)}</b></span>
     <small>${date(x.cree_le)} · ${x.mode=='payant'?'Duel':'Combat du jour'} · ${x.tours} tour${x.tours>1?'s':''} · +${x.gain??0} 💰</small></div>
