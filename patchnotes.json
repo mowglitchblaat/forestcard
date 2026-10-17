@@ -1,5 +1,17 @@
 [
   {
+    "date": "2026-10-17",
+    "intro": "L’historique ne gâche plus la surprise des combats.",
+    "groupes": [
+      {
+        "titre": "Site",
+        "points": [
+          "Un combat n’apparaît dans l’historique qu’une fois son animation terminée en live : plus de spoil du résultat."
+        ]
+      }
+    ]
+  },
+  {
     "date": "2026-10-16",
     "intro": "La Transcendance gagne trois niveaux et vole désormais de la vie.",
     "groupes": [

@@ -650,7 +650,8 @@ const LB_RES={victoire:'Victoire',defaite:'Défaite',nul:'Match nul'};
 async function vHistorique(){
   const r=await sb.rpc('mon_historique',{p_limite:30});
   if(r.error){main.innerHTML='<p class="ko">Historique indisponible pour le moment (l\'admin doit d\'abord lancer 08-historique.sql dans Supabase).</p>';return}
-  const L=r.data||[];
+  let L=r.data||[];
+  {const c=await sb.rpc('combats_caches');if(!c.error&&c.data){const H=new Set(c.data.map(x=>String(typeof x==='object'?Object.values(x)[0]:x)));L=L.filter(x=>!H.has(String(x.id)))}}   // combats encore en cours d'animation à l'écran : masqués pour ne pas spoiler (21-historique-sans-spoil.sql)
   if(!L.length){main.innerHTML='<h3>Historique</h3><p><small>Aucun combat enregistré pour l\'instant : tes prochains combats apparaîtront ici avec leur déroulé.</small></p>';return}
   const date=d=>new Date(d).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
   const trio=(c,m,p)=>[c,m,p].filter(x=>x&&!/^Aucun/.test(x)).map(esc).join(' · ')||'—';

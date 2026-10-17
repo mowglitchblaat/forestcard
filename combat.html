@@ -1452,6 +1452,7 @@ async function jouer(res){
    if(e.t==='fin'){[0,1].forEach(i=>{faceMagie(i);const p=$('#p'+i);if(p)p.classList.remove('actif','idle')});fxAll.forEach(s=>s());fxAll.clear();document.querySelectorAll('canvas.fx').forEach(k=>k.remove());{const rw=e.recompenses[e.gagnant??0];$('#ban').textContent=e.txt+(rw>0?` (+${rw})`:'')+(e.bounty?(e.bounty.tout?` · 💰 Bounty ${e.bounty.total} : le gagnant rafle tout !`:` · 💰 Bounty ${e.bounty.total} !`):'');if(e.bounty){bourseBounty(e.bounty.parts);[0,1].forEach(i=>{if(e.bounty.parts[i]>0)setTimeout(()=>flot(i,'💰 Bounty +'+e.bounty.parts[i],'#fcd34d'),2100)})}}if(e.gagnant!=null){briser(1-e.gagnant);auraFx(e.gagnant,{gold:1,dur:5.2})}else[0,1].forEach(i=>{if(e.pv&&e.pv[i]<=0)briser(i)})}   // double KO : les deux cartes se brisent
    await wait(ms);
   }
+  if(!TEST&&!DEMO&&R.seed!=null)fetch('https://bjsvqikjnvaomyoifiml.supabase.co/rest/v1/rpc/combat_affiche',{method:'POST',headers:{apikey:'sb_publishable_-3cPqDCyE-zhb3z5r6dPhg_DJFKGAI6','Content-Type':'application/json'},body:JSON.stringify({p_seed:String(R.seed)})}).catch(()=>{});   // le combat apparaît dans l'historique du site seulement maintenant (pas de spoil)
   if(!TEST&&!DEMO&&R.annonce&&wsLive&&wsLive.readyState===1)wsLive.send(JSON.stringify({request:'DoAction',id:'fin-combat',action:{name:ACTION_FIN},args:{message:R.annonce}}));   // annonce du résultat dans le chat, une fois l'animation terminée
   if(!TEST){$('#scene').classList.remove('on');await wait(800)}
   verrouLacher('combat');
