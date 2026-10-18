@@ -343,6 +343,19 @@ test('détonation : une carte tuée par l\'explosion ne se réanime pas (passif,
   assert.equal(lignes(r2, e => e.t === 'reanim').length, 1);
 });
 
+test('missiles : chaque missile explose (dégâts bruts + détonation des statuts), puis pose son statut pour le suivant', () => {
+  const ult = { type: 'missiles', frappes: 3, val: 20, bonus: 50, mstatut: 'brulure', sval: 1, tours: 2, apres_tours: 1, utilisations: 1 };
+  const r = combat([C('a', 0, 5000, { ultime: ult })], [C('b', 0, 1000)], { regles: { maxTours: 2, maxProlong: 0 } });
+  assert.equal(lignes(r, e => e.t === 'missile').length, 3);
+  // n°1 : 20 bruts · n°2 et n°3 : brûlure 10 × 2 = 20, +50 % = 30, + 20 bruts = 50
+  assert.deepEqual(lignes(r, e => /\(missile\)$/.test(e.txt || '')).map(e => e.n), [20, 50, 50]);
+  assert.ok(r.journal.filter(e => e.t === 'detonation').every(e => e.mis === 1));
+  // la cible meurt : la volée s'arrête, et pas de réanimation
+  const r2 = combat([C('a', 0, 5000, { ultime: { ...ult, val: 200 } })], [C('b', 0, 300, { passif: { type: 'reanimation', pctrev: 50 } })], { regles: { maxTours: 2, maxProlong: 0 } });
+  assert.equal(lignes(r2, e => e.t === 'missile').length, 2);
+  assert.equal(lignes(r2, e => e.t === 'reanim').length, 0);
+});
+
 test('solidification : bloque l\'étourdissement, une fracture la brise, la purification ne la retire pas', () => {
   const etourdit = { type: 'etourdir', chance: 100 };
   // magie : solidifié 3 tours, l'adversaire étourdit à chaque coup → aucun étourdissement
