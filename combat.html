@@ -757,8 +757,12 @@ const MIROIR_URL='https://mowglitchblaat.github.io/forestcard/img/';let MIROIR=n
 const chargerMiroir=()=>Promise.race([fetch(MIROIR_URL+'liste.json').then(r=>r.ok?r.json():[]).then(a=>{if(Array.isArray(a))MIROIR=new Set(a)}).catch(()=>{}),new Promise(r=>setTimeout(r,2500))]);
 const urlImg=p=>p?(MIROIR.has(p)?MIROIR_URL+encodeURI(p):STORAGE+p):'';   // GitHub si l'image y est déjà, sinon Supabase
 chargerMiroir();
-const $=s=>document.querySelector(s),wait=ms=>new Promise(r=>setTimeout(r,ms*+$('#vit').value));
 const TEST=location.search.includes('test'),DEMO=location.search.includes('demo')||location.search.includes('test');
+// Vitesse : en live, réglée dans l'admin (Réglages → Vitesse des combats) ; sur la page de test, la liste « Vitesse »
+let VIT_LIVE=null;const vit=()=>{const v=VIT_LIVE!=null&&!TEST&&!DEMO?VIT_LIVE:+(document.getElementById('vit')||{value:1}).value;return v>0?v:1};
+const chargerVitesse=()=>Promise.race([fetch('https://bjsvqikjnvaomyoifiml.supabase.co/rest/v1/rpc/vitesse_combat',{method:'POST',headers:{apikey:'sb_publishable_-3cPqDCyE-zhb3z5r6dPhg_DJFKGAI6','Content-Type':'application/json'},body:'{}'})
+  .then(r=>r.ok?r.json():null).then(v=>{v=+v;if(v>=.25&&v<=3)VIT_LIVE=v}).catch(()=>{}),new Promise(r=>setTimeout(r,1200))]);
+const $=s=>document.querySelector(s),wait=ms=>new Promise(r=>setTimeout(r,ms*vit()));
 if(location.search.includes('fond'))$('#scene').classList.add('dark');
 if(!TEST&&!DEMO)document.body.classList.add('obs');
 
@@ -770,12 +774,12 @@ function zoomCarte(id,e,kind){return new Promise(res=>{const src=$('#'+id);if(!s
  z.className='zoom '+kind;z.style.cssText=`left:${(vw-W)/2}px;top:${(vh-H)/2}px;width:${W}px;height:${H}px`;
  if(e.img)z.style.backgroundImage=`url('${urlImg(e.img)}')`;else z.textContent=e.carte||'';
  document.body.appendChild(z);
- const dx=r.left+r.width/2-vw/2,dy=r.top+r.height/2-vh/2,k=r.width/W,pt=`translate(${dx}px,${dy}px) scale(${k})`,d=2100*+$('#vit').value;
+ const dx=r.left+r.width/2-vw/2,dy=r.top+r.height/2-vh/2,k=r.width/W,pt=`translate(${dx}px,${dy}px) scale(${k})`,d=2100*vit();
  let fini=false;const f=()=>{if(fini)return;fini=true;z.remove();res()};
  const a=z.animate([{transform:pt,opacity:.3},{transform:'none',opacity:1,offset:.2},{transform:'scale(1.04)',opacity:1,offset:.5},{transform:'none',opacity:1,offset:.78},{transform:pt,opacity:0}],{duration:d,easing:'ease-in-out'});
  a.onfinish=f;setTimeout(f,d+300)})}
 function retourner(el,milieu){return new Promise(res=>{if(!el||!el.animate){milieu&&milieu();res();return}
- const d=330*+$('#vit').value;const a1=el.animate([{transform:'perspective(900px) rotateY(0)'},{transform:'perspective(900px) rotateY(90deg)'}],{duration:d,easing:'ease-in',fill:'forwards'});a1.onfinish=()=>{milieu&&milieu();a1.cancel();
+ const d=330*vit();const a1=el.animate([{transform:'perspective(900px) rotateY(0)'},{transform:'perspective(900px) rotateY(90deg)'}],{duration:d,easing:'ease-in',fill:'forwards'});a1.onfinish=()=>{milieu&&milieu();a1.cancel();
   el.animate([{transform:'perspective(900px) rotateY(-90deg)'},{transform:'perspective(900px) rotateY(0)'}],{duration:d,easing:'ease-out'}).onfinish=()=>res()}})}
 function faceMagie(i){const m=$('#m'+i),j=JOUEURS[i];if(!m||!j||!m.classList.contains('back'))return;m.classList.remove('back','dos','mag');m.style.backgroundImage=j.magieImg?`url('${urlImg(j.magieImg)}')`:'';m.textContent=j.magieImg?'':j.magie}
 function mini(img,txt){return img?`style="background-image:url('${urlImg(img)}')"`:''}
@@ -946,7 +950,7 @@ function fsSize(){const d=Math.min(1.5,window.devicePixelRatio||1);FS.width=inne
 function addFx(dur,draw){fxL.push({t0:performance.now(),dur,draw});if(!fxRaf)fxRaf=requestAnimationFrame(fxLoop)}
 let fxLast=0;
 function fxLoop(){const d=Math.min(1.5,window.devicePixelRatio||1),x=FS.getContext('2d'),now=performance.now();if(now-fxLast<14&&fxLast){fxRaf=requestAnimationFrame(fxLoop);return}fxLast=now;x.setTransform(d,0,0,d,0,0);x.clearRect(0,0,innerWidth,innerHeight);
- for(const f of fxL.slice()){const t=(now-f.t0)/1000;if(t>=f.dur){fxL.splice(fxL.indexOf(f),1);continue}x.save();f.draw(x,t,t/f.dur);x.restore()}
+ const vk=vit();for(const f of fxL.slice()){const t=(now-f.t0)/1000/vk;if(t>=f.dur){fxL.splice(fxL.indexOf(f),1);continue}x.save();f.draw(x,t,t/f.dur);x.restore()}
  fxRaf=fxL.length?requestAnimationFrame(fxLoop):0;if(!fxL.length)x.clearRect(0,0,innerWidth,innerHeight)}
 const rc=c=>{const r=$('#p'+c+' .card').getBoundingClientRect();return{x:r.left,y:r.top,w:r.width,h:r.height,cx:r.left+r.width/2,cy:r.top+r.height/2}};
 const sleep=ms=>new Promise(r=>setTimeout(r,ms)),ez=u=>1-Math.pow(1-u,3),cl=(v,a=0,b=1)=>Math.min(b,Math.max(a,v));
@@ -1584,7 +1588,7 @@ function verrouLacher(nom){clearInterval(battement);const v=lireVerrou();if(v&&v
 const ACTION_FIN=new URLSearchParams(location.search).get('action')||'Combat - Résultat';
 async function jouer(res){
  file.push(res);if(enCours)return;enCours=true;
- while(file.length){const R=file.shift();await verrouPrendre('combat');journalRecap=R;$('#log').innerHTML='';
+ while(file.length){const R=file.shift();await verrouPrendre('combat');if(!TEST&&!DEMO)await chargerVitesse();journalRecap=R;$('#log').innerHTML='';
   for(let ix=0;ix<R.journal.length;ix++){const e=R.journal[ix];
    $('#ban').className=e.t;$('#ban').textContent=e.txt;$('#log').innerHTML+=e.txt+'<br>';$('#log').scrollTop=1e5;
    if(e.t==='debut'){st={};fxL.length=0;fxAll.forEach(s=>s());fxAll.clear();JOUEURS=[];[0,1].forEach(i=>$('#p'+i).classList.remove('actif','idle'));e.joueurs.forEach((j,i)=>panneau(i,j));$('#scene').classList.add('on');maj(e);await wait(2200);   // les 3 dos de chaque joueur, puis les combattants se retournent

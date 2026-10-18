@@ -1858,6 +1858,9 @@ async function aReglages(){
   $('#sub').innerHTML=`<div class="f" style="flex-direction:column;align-items:flex-start"><b>Images : réduire la consommation Supabase</b>
     <small>Convertit les images des cartes, boosters et dos déjà en ligne en WebP plus léger (jusqu'à 1200 px de haut) et les garde 1 an en cache. Les originaux sont conservés : « Revenir aux originaux » annule tout. Une fois que tout te plaît, « Supprimer les originaux » libère la place (définitif) ; « Supprimer les images inutilisées » fait le ménage complet, depuis n'importe quel navigateur (script 20-images-inutilisees.sql). Les nouvelles images sont déjà allégées à l'envoi. À lancer une fois, ça peut prendre quelques minutes : laisse la page ouverte.</small>
     <div class="row"><button id="optim">⚡ Optimiser les images existantes</button><button class="sec" id="optback">↩ Revenir aux originaux</button><button class="sec" id="optdel">🗑️ Supprimer les originaux</button><button class="sec" id="optorph">🧹 Supprimer les images inutilisées</button></div><pre id="optlog" style="max-height:220px;overflow:auto;white-space:pre-wrap;font-size:12px;margin:0"></pre></div>
+   <form class="f" id="fvit"><label><b>⏱️ Vitesse des combats</b> (overlay OBS)<br>
+    <small>Vitesse des animations et des pauses pendant les combats en live. Prise en compte dès le combat suivant, sans recharger OBS. (La page de test garde sa propre liste « Vitesse ».)</small><br>
+    <select name="v"><option value="0.5"${String(+(v.vitesse_combat??1))==='0.5'?' selected':''}>⚡⚡ Très rapide (×2)</option><option value="0.75"${String(+(v.vitesse_combat??1))==='0.75'?' selected':''}>⚡ Rapide</option><option value="1"${String(+(v.vitesse_combat??1))==='1'?' selected':''}>Normal</option><option value="1.3"${String(+(v.vitesse_combat??1))==='1.3'?' selected':''}>🐢 Lent</option><option value="1.6"${String(+(v.vitesse_combat??1))==='1.6'?' selected':''}>🐢🐢 Très lent</option></select></label><button>Enregistrer</button></form>
    <form class="f" id="fr"><label><b>Combats gratuits par jour</b> (commande !combat)<br>
     <small>0 = désactivés. Le compteur repart de zéro chaque jour à minuit, heure de Paris.</small><br>
     <input name="n" type="number" min="0" max="50" value="${esc(v.combats_gratuits_par_jour??1)}" style="width:90px"></label><button>Enregistrer</button></form>
@@ -1905,6 +1908,8 @@ async function aReglages(){
       const r=await sb.from(tab).update({[col]:p}).eq('id',id);if(r.error)L.textContent+='✗ '+k+' : '+r.error.message+'\n';else{n++;localStorage.removeItem(k)}}
     L.textContent+=n+' image(s) remise(s) à l\'original.'};
   $('#optim').onclick=async()=>{if(!(await uiConfirm('Optimiser toutes les images déjà en ligne ? Les anciens fichiers seront remplacés par des versions WebP plus légères.')))return;const b=$('#optim'),L=$('#optlog');b.disabled=true;L.textContent='';await optimiserImages(t=>{L.textContent+=t+'\n';L.scrollTop=1e9});b.disabled=false};
+  $('#fvit').onsubmit=async e=>{e.preventDefault();const v=e.target.v.value;
+    await q(sb.from('reglages_jeu').upsert({cle:'vitesse_combat',valeur:v}));uiAlert('Vitesse des combats enregistrée : '+e.target.v.selectedOptions[0].textContent+'. (Si rien ne change en live, lance 27-vitesse-combat.sql dans Supabase.)');aReglages()};
   $('#fr').onsubmit=async e=>{e.preventDefault();const n=Math.max(0,Math.min(50,parseInt(e.target.n.value,10)||0));
     await q(sb.from('reglages_jeu').upsert({cle:'combats_gratuits_par_jour',valeur:String(n)}));uiAlert('Enregistré : '+n+' combat'+(n>1?'s':'')+' gratuit'+(n>1?'s':'')+' par jour.');aReglages()};
   $('#fgain').onsubmit=async e=>{e.preventDefault();const f=e.target,n=(x,max)=>Math.max(0,Math.min(max,+x||0));
