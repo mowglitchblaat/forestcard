@@ -305,7 +305,16 @@ function simuler(pA,pB,opt={}){
     // Missiles : N missiles ; chacun EXPLOSE (détonation : dégâts bruts val + statuts consumés, bonus, dégâts de zone) puis peut poser un statut (que le missile suivant fera exploser)
     for(let k=1;k<=N&&x.pv>0&&o.pv>0;k++){
      L('missile',`${nom(o)} tire un missile${N>1?` (${k}/${N})`:''} !`,{c:id(x),from:id(o),n:k,tot:N});
-     detoner(o,x,e,true,1);
+     if(esquiver(x)){L('esquive',`${nom(x)} esquive le missile : il explose à côté !`,{c:id(x),k:'missile_esq'});   // esquivé : l'explosion à côté touche les deux cartes (dégâts de zone)
+      const z=rd(Math.max(0,+e.val||0)*Math.max(0,+e.recul||0)/100);
+      if(z>0){L('detonation',`💥 Le missile explose à côté de ${nom(x)} !`,{c:id(x),from:id(o),parts:[],mis:1,esq:1});
+       for(const [s,v] of [[o,x],[x,o]]){if(v.pv<=0)continue;let b;NOREV=1;try{b=dmg(s,v,z)}finally{NOREV=0}if(b>0)L('degats',`${nom(v)} subit ${b} dégâts (souffle de l'explosion)`,{c:id(v),n:b,k:'detonation'})}}
+      if(over())break;continue}
+     const blq=o.st.blk>0;let n=0;if(blq){o.st.blk=0;L('bloque',`Le missile de ${nom(o)} est bloqué`,{c:id(x)})}   // bloqué : pas d'explosion, le statut passe quand même
+     else n=detoner(o,x,e,true,1)||0;
+     if(n>0&&o.pv>0){const rv=renvoiTot(x,n);if(rv>0){L('missile',`${nom(x)} renvoie le missile !`,{c:id(o),from:id(x),n:k,tot:N,retour:1});   // renvoi : le missile repart vers le tireur et explose sur lui
+       let b;NOREV=1;try{b=dmg(x,o,rv)}finally{NOREV=0}L('detonation',`💥 Le missile renvoyé explose sur ${nom(o)} !`,{c:id(o),from:id(x),parts:[],mis:1});if(b>0)L('degats',`${nom(o)} subit ${b} dégâts (missile renvoyé)`,{c:id(o),n:b,k:'detonation'})}}
+     if(o.pv<=0||over())break;
      const st=e.mstatut==='aleatoire'?ELS[Math.floor(r()*ELS.length)]:(ELS.includes(e.mstatut)?e.mstatut:null);
      if(st&&x.pv>0){const ch=e.chance==null||e.chance===''?100:(+e.chance||0),v=+e.sval||0,t=Math.max(1,parseInt(e.tours,10)||2);
       if(roll(ch))fx({brulure:{type:'brulure_effet',ciblem:'adversaire',pctpv:v,tours:t},gel:{type:'gel',ciblem:'adversaire',annul:v,stunch:0,tours:t},malediction:{type:'malediction',ciblem:'adversaire',val:v,tours:t},
@@ -316,7 +325,9 @@ function simuler(pA,pB,opt={}){
     // statut « aleatoire » : un statut tiré au hasard à CHAQUE souffle · rechance : X % de souffler encore (retente, s'arrête au 1er échec, remax souffles en plus au maximum, 3 par défaut)
     const un=(k)=>{const el=e.statut==='aleatoire'?ELS[Math.floor(r()*ELS.length)]:(ELS.includes(e.statut)?e.statut:'brulure');
     L('souffle',`${nom(o)} crache un souffle ${NS[el]}${k>1?` (souffle n°${k})`:''} !`,{c:id(x),from:id(o),el,...(k>1?{n:k}:{})});
-    if(+e.val>0){const n=dmg(o,x,+e.val);L('degats',`${nom(x)} subit ${n} dégâts (souffle)`,{c:id(x),n,k:'souffle'})}
+    if(esquiver(x)){L('esquive',`${nom(x)} esquive le souffle !`,{c:id(x)});return}   // esquivé : ni dégâts ni statut
+    const blq=o.st.blk>0;if(blq){o.st.blk=0;L('bloque',`Le souffle de ${nom(o)} est bloqué`,{c:id(x)})}   // bloqué : 0 dégât, le statut passe quand même
+    if(+e.val>0&&!blq){const n=dmg(o,x,reduire(x,+e.val));L('degats',`${nom(x)} subit ${n} dégâts (souffle)`,{c:id(x),n,k:'souffle'});renvoyer(x,o,n)}   // renvoi : seulement les dégâts
     if(x.pv>0){const ch=e.chance==null||e.chance===''?100:(+e.chance||0),v=+e.sval||0,t=Math.max(1,parseInt(e.tours,10)||2);
      if(roll(ch))fx({brulure:{type:'brulure_effet',ciblem:'adversaire',pctpv:v,tours:t},gel:{type:'gel',ciblem:'adversaire',annul:v,stunch:0,tours:t},malediction:{type:'malediction',ciblem:'adversaire',val:v,tours:t},
       poison:{type:'poison_effet',ciblem:'adversaire',degtour:v,tours:t},saignement:{type:'saignement',ciblem:'adversaire',pctpv:v,reducsoin:+e.reducsoin||0,tours:t},fatigue:{type:'fatigue',ciblem:'adversaire',fatval:v,u:'pct',fattours:t}}[el],o,x,mg,rt);
@@ -381,7 +392,13 @@ function simuler(pA,pB,opt={}){
   n0+=brut;   // dégâts bruts de l'explosion : jamais réduits
   NOREV=1;let n;try{n=dmg(o,t,n0)}finally{NOREV=0}   // une carte tuée par l'explosion ne peut pas être réanimée
   L('degats',`${nom(t)} subit ${n} dégâts (${mis?'missile':'détonation'})`,{c:id(t),n,k:'detonation'});
-  const rc=Math.max(0,+q.recul||0);if(rc>0&&o!==t&&o.pv>0){let b;NOREV=1;try{b=dmg(t,o,rd(n*rc/100))}finally{NOREV=0}if(b>0)L('degats',`${nom(o)} subit ${b} dégâts (souffle de l'explosion)`,{c:id(o),n:b,k:'detonation'})}}   // dégâts de zone : le poseur prend X % du souffle
+  const rc=Math.max(0,+q.recul||0);if(rc>0&&o!==t&&o.pv>0){let b;NOREV=1;try{b=dmg(t,o,rd(n*rc/100))}finally{NOREV=0}if(b>0)L('degats',`${nom(o)} subit ${b} dégâts (souffle de l'explosion)`,{c:id(o),n:b,k:'detonation'})}return n}   // dégâts de zone : le poseur prend X % du souffle
+ // Défenses contre les souffles et les missiles (comme contre une attaque)
+ function esquiver(d){const ech=Math.min(reg.plafondEsquive,d.pl.filter(p=>p.type==='esquive').reduce((q,p)=>q+(p.chance||0),0)+d.st.esqb);return ech>0&&roll(ech)}
+ function reduire(d,n){d.pl.filter(p=>p.type==='reduc_degats').forEach(p=>{if(n>0&&roll(p.chance)){L('bloque',`${nom(d)} bloque une partie des dégâts`,{c:id(d)});n=Math.max(0,n-amt(p,n))}});return n}
+ function renvoiTot(d,n){if(n<=0)return 0;let t=0;d.pl.filter(p=>p.type==='renvoi').forEach(p=>{t+=amt(p,n)});d.st.ren.forEach(R=>{t+=n*R.pct/100});return rd(t)}
+ function renvoyer(d,a,n){if(n<=0||a.pv<=0)return;d.pl.filter(p=>p.type==='renvoi').forEach(p=>{const b=dmg(d,a,amt(p,n));L('degats',`${nom(a)} subit ${b} dégâts renvoyés`,{c:id(a),n:b,k:'renvoi',from:id(d)})});
+  d.st.ren.forEach(R=>{const b=dmg(d,a,n*R.pct/100);if(b>0)L('degats',`${nom(a)} subit ${b} dégâts renvoyés`,{c:id(a),n:b,k:'renvoi',from:id(d)})})}
  function tikUn(s,kind,d){const x=adv(s);
   if(kind==='dots'){const n=dmg(x,s,d.n);L('degats',`${nom(s)} subit ${n} (${d.k})`,{c:id(s),n,k:d.k})}
   else if(kind==='bleeds'){const n=dmg(x,s,rd(s.max*d.pct/100));L('degats',`${nom(s)} subit ${n} (saignement)`,{c:id(s),n,k:'saignement'})}
@@ -1685,6 +1702,7 @@ if(DEMO){
  const cardOf=c=>$('#p'+c+' .card'),has=(c,k)=>!!cardOf(c).querySelector('canvas.fx.'+k);
  const S=[
   ['Statuts','Détonation (feu + poison + sang)',c=>{detoFx(c,['brulure','poison','saignement']);setTimeout(()=>flot(c,'DÉTONATION !','#fb923c','big'),260)},2300],
+  ['Statuts','Missile renvoyé',async c=>{await missileFx(1-c,c,1);detoFx(c,[],{s:.6});await wait(350);await missileFx(c,1-c,2);detoFx(1-c,[],{s:.6})},2400],
   ['Statuts','Missiles (3 missiles)',async c=>{for(let k=1;k<=3;k++){await missileFx(1-c,c,k);detoFx(c,k>1?['brulure']:[],{s:.6});await wait(450)}},3600],
   ['Statuts','Réduit en cendres (tué par une détonation)',c=>{cendresFx(c);setTimeout(()=>flot(c,'RÉDUIT EN CENDRES','#fdba74','big'),400);setTimeout(()=>{const k=$('#p'+c+' .cw .card');if(k){['filter','transition','opacity','mask-image','-webkit-mask-image','--b'].forEach(z=>k.style.removeProperty(z));delete k.dataset.cendre}},3600)},3800],
   ['Programmation','Passif programmé (en attente)',c=>{progFx(c,'p');flot(c,'Passif programmé','#7dd3fc')},1700],

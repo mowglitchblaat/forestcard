@@ -356,6 +356,24 @@ test('missiles : chaque missile explose (dégâts bruts + détonation des statut
   assert.equal(lignes(r2, e => e.t === 'reanim').length, 0);
 });
 
+test('souffle et missiles : esquivables, souffle réduit et renvoyé (dégâts seulement), missile renvoyé', () => {
+  const souf = { type: 'souffle', val: 100, statut: 'poison', chance: 100, sval: 5, tours: 2, rechance: 100, remax: 6, apres_tours: 1, utilisations: 1 };
+  const esq = combat([C('a', 0, 5000, { ultime: souf })], [C('b', 0, 5000, { passif: { type: 'esquive', chance: 100 } })], { regles: { maxTours: 2, maxProlong: 0 } });
+  assert.ok(lignes(esq, e => /esquive le souffle/.test(e.txt || '')).length > 0, 'souffle esquivé');
+  const ren = combat([C('a', 0, 5000, { ultime: souf })], [C('b', 0, 5000, { passif: { briques: [{ type: 'renvoi', val: 50, u: 'pct' }, { type: 'reduc_degats', chance: 100, val: 20, u: 'pts' }] } })], { regles: { maxTours: 2, maxProlong: 0 } });
+  assert.ok(lignes(ren, e => e.txt === 'b subit 80 dégâts (souffle)').length > 0, 'souffle réduit de 20');
+  assert.ok(lignes(ren, e => e.txt === 'a subit 40 dégâts renvoyés').length > 0, 'renvoi de 50 %');
+  assert.ok(!lignes(ren, e => e.t === 'statut' && e.c === 0 && e.k === 'poison').length, 'le statut n\'est pas renvoyé');
+  const mis = { type: 'missiles', frappes: 4, val: 100, recul: 50, apres_tours: 1, utilisations: 1 };
+  const m1 = combat([C('a', 0, 5000, { ultime: mis })], [C('b', 0, 5000, { passif: { type: 'esquive', chance: 100 } })], { regles: { maxTours: 2, maxProlong: 0 } });
+  assert.ok(lignes(m1, e => e.k === 'missile_esq').length > 0, 'missile esquivé');
+  const i = m1.journal.findIndex(e => e.k === 'missile_esq');
+  assert.deepEqual(m1.journal.slice(i, i + 4).filter(e => e.t === 'degats').map(e => [e.c, e.n]), [[1, 50], [0, 50]], 'esquivé : le souffle de l\'explosion touche les deux');
+  const m2 = combat([C('a', 0, 5000, { ultime: { ...mis, recul: 0 } })], [C('b', 0, 5000, { passif: { type: 'renvoi', val: 30, u: 'pct' } })], { regles: { maxTours: 2, maxProlong: 0 } });
+  assert.equal(lignes(m2, e => e.t === 'missile' && e.retour).length, 4);
+  assert.equal(lignes(m2, e => e.txt === 'a subit 30 dégâts (missile renvoyé)').length, 4);
+});
+
 test('solidification : bloque l\'étourdissement, une fracture la brise, la purification ne la retire pas', () => {
   const etourdit = { type: 'etourdir', chance: 100 };
   // magie : solidifié 3 tours, l'adversaire étourdit à chaque coup → aucun étourdissement
