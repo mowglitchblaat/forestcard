@@ -7,7 +7,9 @@
         "titre": "Effets",
         "points": [
           "Souffle élémentaire : nouveau statut « Aléatoire », un statut différent tiré au hasard à chaque souffle (brûlure, gel, malédiction, poison, saignement ou fatigue).",
-          "Souffles en chaîne : un souffle peut avoir X % de chances d’en relancer un autre aussitôt, et ainsi de suite jusqu’au premier échec (nombre maximum réglable)."
+          "Souffles en chaîne : un souffle peut avoir X % de chances d’en relancer un autre aussitôt, et ainsi de suite jusqu’au premier échec (nombre maximum réglable).",
+          "Nouvel effet « Bloque la prochaine attaque » (magie, piège, ultime) : l’attaque touche sans faire de dégâts, mais ses statuts et ses marques (exécution, avalage) s’appliquent. À ne pas confondre avec « Annule la prochaine attaque » : là, l’attaque n’a pas lieu du tout et rien ne passe.",
+          "Quand une réduction de dégâts absorbe tout le coup, il compte comme une attaque bloquée : les statuts de l’attaquant s’appliquent quand même."
         ]
       },
       {

@@ -125,7 +125,8 @@ function core(e,pas){   // texte de l'effet (sans le « donne à l'attaque de ba
   case'vol_vie':return`Inflige ${e.val} dégâts et se soigne d'autant`;
   case'degats_tours':return`Inflige ${e.val} dégâts après ${T(e.tours)}`;
   case'double_degats':return`Double ses dégâts pendant ${T(e.tours)}`;
-  case'annule_attaque':return"Annule la prochaine attaque de l'adversaire";
+  case'annule_attaque':return"Annule la prochaine attaque de l'adversaire (rien ne passe)";
+  case'bloque_attaque':return"Bloque la prochaine attaque de l'adversaire (0 dégât, mais statuts et marques passent)";
   case'insensible_piege':return`Insensible aux pièges adverses pendant ${T(e.tours)}`;
   case'annule_magies':return(+e.tours>0?`Annule la magie adverse pendant ${e.tours} tour${e.tours>1?'s':''}`:"Annule la magie adverse jusqu'à la fin du combat");
   case'echange_atq':return"Échange son ATQ avec celle de l'adversaire";

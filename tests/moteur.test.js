@@ -271,6 +271,21 @@ test('souffle : statut aléatoire à chaque souffle et souffles en chaîne', () 
   assert.equal(s2[0].el, 'gel');
 });
 
+test('attaque annulée ≠ attaque bloquée : annulée = rien ne passe, bloquée = 0 dégât mais statuts et marques', () => {
+  const atk = { passif: { briques: [{ type: 'saignement', chance: 100, pctpv: 5, tours: 3 }, { type: 'execution', chance: 100 }] } };
+  const run = eff => combat([C('a', 50, SOLIDE, atk)], [C('b', 10, SOLIDE), MAG('M', eff)], { regles: { maxTours: 1, maxProlong: 0 } });
+  // annulée : aucune frappe, aucun statut, aucune marque
+  const r1 = run({ type: 'annule_attaque' });
+  assert.ok(r1.journal.some(e => /est annulée$/.test(e.txt || '')));
+  assert.ok(!r1.journal.some(e => /saigne|marque/.test(e.txt || '')), 'rien ne passe');
+  // bloquée : 0 dégât, mais saignement et marque d'exécution
+  const r2 = run({ type: 'bloque_attaque' });
+  assert.ok(r2.journal.some(e => /est bloquée$/.test(e.txt || '')));
+  assert.ok(!r2.journal.some(e => e.t === 'degats' && e.c === 1 && e.n > 0), 'aucun dégât sur b');
+  assert.ok(r2.journal.some(e => /b saigne/.test(e.txt || '')), 'le statut passe');
+  assert.ok(r2.journal.some(e => /marque/.test(e.txt || '')), 'la marque passe');
+});
+
 test('solidification : bloque l\'étourdissement, une fracture la brise, la purification ne la retire pas', () => {
   const etourdit = { type: 'etourdir', chance: 100 };
   // magie : solidifié 3 tours, l'adversaire étourdit à chaque coup → aucun étourdissement

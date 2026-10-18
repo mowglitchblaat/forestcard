@@ -18,7 +18,7 @@ function simuler(pA,pB,opt={}){
  const normPas=p=>!p?[]:p.briques?p.briques.filter(b=>b&&b.type).map(canonP):(p.type?[canonP(p)]:[]);   // passif unique (ancien format) ou plusieurs passifs { briques:[…] }
  const nw=(p,ex,cur)=>{const c=tire(p.deck,'combattant',ex,cur);if(!c)throw new Error(p.pseudo+" n'a aucun combattant dans son deck");const pl=normPas(c.passif);
   return{pseudo:p.pseudo,deck:p.deck,dos:p.dos||null,card:c,mag:tire(p.deck,'magie',ex,cur)||VM,pie:tire(p.deck,'piege',ex,cur)||VP,atq:c.atq,pv:c.pv,max:c.pv,pl:pl,ult:c.ultime,
-   uh:[{u:c.ultime,uses:0,last:-99}],magOn:1,pieOn:1,decl:0,mdelta:[],st:{rage:[],fat:[],pcnt:[],rUsed:[],reanL:[],purs:[],hots:[],cl:0,bleeds:[],frost:[],fract:[],stun:0,skip:0,dbl:0,solide:0,marques:0,mseuil:0,joues:0,trA:null,transc:0,dots:[],cret:[],curses:[],atkfx:[],esqb:0,ren:[],insens:0,prog:[],vols:[],volDiff:[],pvol:[],av:0,avaleur:null,avale:null,repos:0,evite:pl.some(p=>p.type==='evite_mort')?1:0,mortUsed:0,bonus:0},
+   uh:[{u:c.ultime,uses:0,last:-99}],magOn:1,pieOn:1,decl:0,mdelta:[],st:{rage:[],fat:[],pcnt:[],rUsed:[],reanL:[],purs:[],hots:[],cl:0,bleeds:[],frost:[],fract:[],stun:0,skip:0,blk:0,dbl:0,solide:0,marques:0,mseuil:0,joues:0,trA:null,transc:0,dots:[],cret:[],curses:[],atkfx:[],esqb:0,ren:[],insens:0,prog:[],vols:[],volDiff:[],pvol:[],av:0,avaleur:null,avale:null,repos:0,evite:pl.some(p=>p.type==='evite_mort')?1:0,mortUsed:0,bonus:0},
    cum:0,coups:0,rt:0,uses:0,last:-99,pend:0}};
  const S=[nw(pA),nw(pB)],id=s=>S.indexOf(s),adv=s=>S[1-id(s)],nom=s=>s.card.nom;
  S.forEach(s=>{if(s.mag.vide)s.magOn=0;if(s.pie.vide)s.pieOn=0});
@@ -86,7 +86,7 @@ function simuler(pA,pB,opt={}){
   o.decl++;L('piege',`Piège de ${o.pseudo} : ${o.pie.nom} !`,{c:i,carte:o.pie.nom,img:o.pie.image||null});if(c.type==='proprio_meurt')rv=1;const s0=SRC;SRC='piege';PCH++;try{fx(e.effet,o,x)}finally{PCH--}SRC=s0;rv=0;S.forEach(s=>s.pend=1);
  })}
  // Effets : o = propriétaire de l'effet, x = adversaire. mg=true : effet de magie (annulable/volable)
- const SANS_CIBLE=['voler','detruire','annule_magies','vol_ultime','copie_ultime','echange_atq','echange_atq_def','echange_pv','echange_tout','annule_attaque','marque_avalage','execution_direct'];   // sans objet quand la carte visée (avalée) est remplacée par celle qui joue l'effet
+ const SANS_CIBLE=['voler','detruire','annule_magies','vol_ultime','copie_ultime','echange_atq','echange_atq_def','echange_pv','echange_tout','annule_attaque','bloque_attaque','marque_avalage','execution_direct'];   // sans objet quand la carte visée (avalée) est remplacée par celle qui joue l'effet
  const UNEFOIS=['degats','vol_vie','soin','echange_atq','echange_atq_def','echange_pv','echange_tout','purification','vol_ultime','copie_ultime','reset_ultime','aleatoire','detruire','voler','equiper'];
  function fx(e,o,x,mg,rt){   // rt : retour d'une magie annulée pour X tours — ses effets « une seule fois » ne se rejouent pas
   if(!e)return;
@@ -97,15 +97,15 @@ function simuler(pA,pB,opt={}){
   const T=e.cible==='adversaire'?x:o;
   const delta=(s,k,d)=>{if(mg)o.mdelta.push({s,k,d})};
   const U=f=>{if(mg)o.mdelta.push({undo:f})};
-  const sv=M=>({cu:M.st.curses[0]&&{...M.st.curses[0]},bl:M.st.bleeds[0]&&{...M.st.bleeds[0]},dt:M.st.dots.map(z=>({...z})),fr:M.st.frost.length,fc:M.st.fract.length,st:M.st.stun,sk:M.st.skip});
+  const sv=M=>({cu:M.st.curses[0]&&{...M.st.curses[0]},bl:M.st.bleeds[0]&&{...M.st.bleeds[0]},dt:M.st.dots.map(z=>({...z})),fr:M.st.frost.length,fc:M.st.fract.length,st:M.st.stun,sk:M.st.skip,bk:M.st.blk});
   const fin=(M,k,t)=>L('finstatut',t,{c:id(M),k});
   const back=(M,b)=>U(()=>{   // retire ce que l'effet de magie a ajouté sur la carte M (statuts encore en cours)
    const c=M.st.curses[0];if(c){if(!b.cu){M.st.curses=[];fin(M,'malediction',`La malédiction de ${nom(M)} se termine`)}else c.n=b.cu.n}
    const l=M.st.bleeds[0];if(l){if(!b.bl){M.st.bleeds=[];fin(M,'saignement',`Le saignement de ${nom(M)} s'arrête`)}else{l.pct=b.bl.pct;l.r=b.bl.r}}
    M.st.dots.filter(z=>!b.dt.some(y=>y.k===z.k)).forEach(z=>fin(M,z.k==='poison'?'poison':'brulure',`${z.k} de ${nom(M)} se termine`));M.st.dots=M.st.dots.filter(z=>b.dt.some(y=>y.k===z.k));M.st.dots.forEach(z=>{const y=b.dt.find(q=>q.k===z.k);if(y)z.n=y.n});
    if(M.st.frost.length>b.fr&&!b.fr)fin(M,'gel',`${nom(M)} n'est plus gelé`);if(M.st.fract.length>b.fc&&!b.fc)fin(M,'fracture',`La fracture de ${nom(M)} guérit`);if(M.st.stun>b.st&&!b.st)fin(M,'etourdi',`${nom(M)} n'est plus étourdi`);
-   M.st.frost=M.st.frost.slice(0,b.fr);M.st.fract=M.st.fract.slice(0,b.fc);M.st.stun=Math.min(M.st.stun,b.st);M.st.skip=Math.min(M.st.skip,b.sk)});
-  if(mg&&['malediction','saignement','gel','fracture','poison_effet','brulure_effet','etourdir_effet','annule_attaque'].includes(e.type)){const M=e.type==='annule_attaque'?x:((e.ciblem||e.cible)==='soi'?o:x);back(M,sv(M))}
+   M.st.frost=M.st.frost.slice(0,b.fr);M.st.fract=M.st.fract.slice(0,b.fc);M.st.stun=Math.min(M.st.stun,b.st);M.st.skip=Math.min(M.st.skip,b.sk);M.st.blk=Math.min(M.st.blk,b.bk)});
+  if(mg&&['malediction','saignement','gel','fracture','poison_effet','brulure_effet','etourdir_effet','annule_attaque','bloque_attaque'].includes(e.type)){const M=e.type==='annule_attaque'||e.type==='bloque_attaque'?x:((e.ciblem||e.cible)==='soi'?o:x);back(M,sv(M))}
   switch(e.type){
    case'atq_mod':{const d=amt(e,T.atq);T.atq=Math.max(0,T.atq+d);delta(T,'atq',d);L('stat',`ATQ de ${nom(T)} ${d>=0?'+':''}${d}`,{c:id(T),k:'mod',s:'ATQ',d});break}
    case'pv_mod':{const d=amt(e,T.max);T.max=Math.max(1,T.max+d);T.pv=Math.max(1,Math.min(T.max,T.pv+d));delta(T,'max',d);L('stat',`PV max de ${nom(T)} ${d>=0?'+':''}${d}`,{c:id(T),k:'mod',s:'PV max',d});break}
@@ -121,6 +121,8 @@ function simuler(pA,pB,opt={}){
    case'degats':{const n=dmg(o,x,e.val);L('degats',`${nom(x)} subit ${n} dégâts directs`,{c:id(x),n});break}
    case'vol_vie':{const n=dmg(o,x,e.val);L('degats',`${nom(x)} subit ${n} dégâts`,{c:id(x),n});heal(o,n);break}
    case'annule_attaque':x.st.skip=1;L('statut',`La prochaine attaque de ${nom(x)} est annulée`,{c:id(x)});break;
+   // Attaque BLOQUÉE (≠ annulée) : l'attaque a lieu et touche, sans aucun dégât, mais ses statuts et ses marques (exécution, avalage) s'appliquent
+   case'bloque_attaque':x.st.blk=1;L('statut',`La prochaine attaque de ${nom(x)} sera bloquée`,{c:id(x)});break;
    case'renvoi':{const R={pct:e.val,t:e.tours||1};o.st.ren.push(R);U(()=>{o.st.ren=o.st.ren.filter(z=>z!==R)});break}
    case'insensible_piege':o.st.insens=e.tours||1;U(()=>{o.st.insens=0});break;
    case'annule_magies':if(x.magAnn===1){x.magAnn=2;if(x.mag.effet)L('magie',`Magie de ${x.pseudo} : ${x.mag.nom}`,{c:id(x),carte:x.mag.nom,img:x.mag.image||null});L('statut',`La magie de ${x.pseudo} est annulée${x.magAnnT?` (${x.magAnnT} tour${x.magAnnT>1?'s':''})`:''}`,{c:id(x),k:'magie_annulee'})}   // annulée avant d'agir (début du combat) : elle est montrée puis barrée
@@ -269,7 +271,7 @@ function simuler(pA,pB,opt={}){
 // Purification : retire les statuts négatifs de t (sauf l'étourdissement) et lui rend l'ATQ perdu par malédiction
  function purifier(t,silent){const z=t.st,pk=[];z.pg=(z.pg||0)+1;
   z.dots.forEach(d=>pk.push(d.k==='poison'?'poison':'brulure'));z.curses.forEach(()=>pk.push('malediction'));z.bleeds.forEach(()=>pk.push('saignement'));z.frost.forEach(()=>pk.push('gel'));z.fat.forEach(()=>pk.push('fatigue'));z.fract.forEach(()=>pk.push('fracture'));
-  const etd=z.skip>0,rest=z.cl,restF=z.fat.reduce((q,f)=>q+(f.q||0),0);if(etd)pk.push('annule');z.dots=[];z.curses=[];z.bleeds=[];z.frost=[];z.fract=[];z.fat=[];z.skip=0;z.cl=0;z.cret=[];   // l'étourdissement n'est JAMAIS retiré : il fait toujours sauter la prochaine attaque
+  const etd=z.skip>0||z.blk>0,rest=z.cl,restF=z.fat.reduce((q,f)=>q+(f.q||0),0);if(etd)pk.push('annule');z.dots=[];z.curses=[];z.bleeds=[];z.frost=[];z.fract=[];z.fat=[];z.skip=0;z.blk=0;z.cl=0;z.cret=[];   // l'étourdissement n'est JAMAIS retiré : il fait toujours sauter la prochaine attaque
   if(!silent)L('statut',`${nom(t)} est purifié${pk.length||rest?(z.stun>0?" (sauf l'étourdissement)":''):(z.stun>0?" (l'étourdissement reste)":' (rien à retirer)')} !`,{c:id(t),k:'purif'});
   if(rest>0){t.atq+=rest;L('stat',`ATQ de ${nom(t)} +${rest} (malédiction levée)`,{c:id(t),k:'mod',s:'ATQ',d:rest})}
   if(restF>0){t.atq+=restF;L('stat',`ATQ de ${nom(t)} +${restF} (fatigue levée)`,{c:id(t),k:'mod',s:'ATQ',d:restF})}
@@ -319,6 +321,7 @@ function simuler(pA,pB,opt={}){
   if(a.st.repos>0){a.st.repos--;L('statut',`${nom(a)} digère : il n'attaque pas`,{c:ia,k:'digere'});return}
   if(a.st.stun){a.st.stun--;L('statut',`${nom(a)} est étourdi, il n'attaque pas`,{c:ia,k:a.st.stun>0?'etourdi_tour':'etourdi_fin'});return}
   if(a.st.skip){a.st.skip=0;L('bloque',`L'attaque de ${nom(a)} est annulée`,{c:id(adv(a))});return}
+  const blq=a.st.blk>0;if(blq)a.st.blk=0;   // attaque bloquée : elle a lieu, chaque frappe touche à 0 dégât
   if(a.st.frost.length){const fa=Math.min(100,a.st.frost.reduce((q,f)=>q+f.ann,0)),fs=Math.min(100,a.st.frost.reduce((q,f)=>q+f.sn,0));
    if(roll(fa)){L('statut',`${nom(a)} est gelé : son attaque est annulée !`,{c:ia,k:'gel_bloque'});return}
    if(roll(fs)){L('statut',`${nom(a)} est paralysé par le givre : il n'attaque pas !`,{c:ia,k:'gel_bloque'});return}}
@@ -337,17 +340,18 @@ function simuler(pA,pB,opt={}){
    if(!avF&&d.pv>0&&d.st.av>=2&&!a.st.avale&&!d.st.avaleur){const q=[...a.pl,...a.st.atkfx].find(q=>q.type==='avalage');   // 3e attaque réussie : l'avalage remplace les dégâts (s'il échoue, les marques tombent et le coup porte normalement)
     if(q){avF=1;if(avaler(a,d,q))break}}
    let n=Math.max(0,a.atq*(a.st.dbl>0?2:1)+a.st.bonus+a.st.rage.reduce((q,g)=>q+g.n,0));a.st.bonus=0;   // rage : dégâts en plus · fatigue : dégâts en moins
-   d.pl.filter(p=>p.type==='reduc_degats').forEach(p=>{if(roll(p.chance)){L('bloque',`${nom(d)} bloque une partie des dégâts`,{c:idd});n=Math.max(0,n-amt(p,n))}});
+   let bloquee=blq;if(blq){n=0;L('bloque',`L'attaque de ${nom(a)} est bloquée`,{c:idd})}
+   else d.pl.filter(p=>p.type==='reduc_degats').forEach(p=>{if(roll(p.chance)){L('bloque',`${nom(d)} bloque une partie des dégâts`,{c:idd});n=Math.max(0,n-amt(p,n));if(n<=0)bloquee=true}});   // tout absorbé = attaque bloquée
    d.rt++;n=dmg(a,d,n);L('degats',`${nom(d)} subit ${n} dégâts`,{c:idd,n});
    for(const q of [...a.pl,...a.st.atkfx])if(q.type==='execution'&&d.pv>0&&roll(q.chance==null||q.chance===''?100:+q.chance))marquer(d,1,q.seuilexec);   // Exécution : X % de poser une marque à chaque coup
    if(d.pv>0&&d.st.marques>=3&&d.pv<d.max*(d.st.mseuil||10)/100)executer(a,d);   // 3 marques et sous le seuil : exécutée (ignore « évite la mort »)
-   if(a.st.transc&&d.pv>0){const z=d.st;if(z.dots.length||z.curses.length||z.bleeds.length||z.frost.length||z.fract.length||z.fat.length||z.skip>0||z.cl>0)purifier(d)}   // Transcendance : chaque coup qui touche purifie l'adversaire
+   if(a.st.transc&&d.pv>0){const z=d.st;if(z.dots.length||z.curses.length||z.bleeds.length||z.frost.length||z.fract.length||z.fat.length||z.skip>0||z.blk>0||z.cl>0)purifier(d)}   // Transcendance : chaque coup qui touche purifie l'adversaire
    d.pl.filter(p=>p.type==='renvoi').forEach(p=>{if(n>0){const b=dmg(d,a,amt(p,n));L('degats',`${nom(a)} subit ${b} dégâts renvoyés`,{c:ia,n:b,k:'renvoi',from:idd})}});
    d.st.ren.forEach(R=>{const b=dmg(d,a,n*R.pct/100);if(b>0)L('degats',`${nom(a)} subit ${b} dégâts renvoyés`,{c:ia,n:b,k:'renvoi',from:idd})});
    if(a.pv<=0||over())return;
-   if(n>0&&d.pv>0){
-    if(a.st.transc&&a.st.trA){const p=a.st.trA.vv[a.st.transc-1]||0;if(p>0)heal(a,rd(n*p/100))}   // Transcendance : vol de vie du niveau atteint (% des dégâts infligés)
-    a.pl.filter(p=>p.type==='vol_pct_atq').forEach(p=>{if(roll(p.chance))heal(a,rd(n*p.pctatq/100))});
+   if((n>0||bloquee)&&d.pv>0){   // coup bloqué : pas de vol de vie (aucun dégât), mais étourdissement et statuts s'appliquent
+    if(n>0){if(a.st.transc&&a.st.trA){const p=a.st.trA.vv[a.st.transc-1]||0;if(p>0)heal(a,rd(n*p/100))}   // Transcendance : vol de vie du niveau atteint (% des dégâts infligés)
+    a.pl.filter(p=>p.type==='vol_pct_atq').forEach(p=>{if(roll(p.chance))heal(a,rd(n*p.pctatq/100))})}
     {const SQ=[...a.pl,...a.st.atkfx].filter(q=>q.type==='etourdir'&&(+q.chance||0)>0).map(q=>({...q,chance:+q.chance})),ec=SQ.reduce((q,p)=>q+p.chance,0);   // chances d'étourdir cumulables (passifs + effets de magie)
      const ess=Math.max(1,...SQ.map(q=>parseInt(q.essais,10)||1));let okS=false;for(let k=0;k<ess&&ec>0&&!okS;k++)okS=roll(Math.min(100,ec));
      if(ec>0&&okS){let u=r()*ec,src=SQ[SQ.length-1];for(const q of SQ){if(u<q.chance){src=q;break}u-=q.chance}   // la durée est celle de la source qui a déclenché
@@ -474,7 +478,7 @@ function simuler(pA,pB,opt={}){
   s.pl.forEach((p,pi)=>{
    // Passif de purification : tous les X tours (vide = chaque tour), X fois au maximum (vide = illimité) ; ne se déclenche que s'il y a un statut négatif à retirer
    if(p.type==='purification'&&(!p.every||tour%p.every===0)&&(!p.fois||(s.st.pcnt[pi]||0)<p.fois)){const z=s.st;
-    if(z.dots.length||z.curses.length||z.bleeds.length||z.frost.length||z.fract.length||z.fat.length||z.skip>0||z.cl>0){s.st.pcnt[pi]=(s.st.pcnt[pi]||0)+1;purifier(s)}}
+    if(z.dots.length||z.curses.length||z.bleeds.length||z.frost.length||z.fract.length||z.fat.length||z.skip>0||z.blk>0||z.cl>0){s.st.pcnt[pi]=(s.st.pcnt[pi]||0)+1;purifier(s)}}
   });
   if(s.pv<=0)return;
   s.st.prog=s.st.prog.filter(p=>{if(--p.t>0)return true;const n=dmg(p.src,s,p.n);L('degats',`${nom(s)} subit ${n} (dégâts différés)`,{c:id(s),n});return false});

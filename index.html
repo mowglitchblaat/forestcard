@@ -469,7 +469,8 @@ function fxEffet(e){
     case 'purification':return[`Purification ${e.cible==='adversaire'?"de l'adversaire":'de sa carte'} : retire les statuts négatifs${nz(e.fois)>1?` (${e.fois} fois, ${tousT(nz(e.every))})`:''}`];
     case 'degats':return[`Inflige ${v} dégâts directs`];
     case 'vol_vie':return[`Vole ${v} PV à l'adversaire`];
-    case 'annule_attaque':return["Annule la prochaine attaque de l'adversaire"];
+    case 'annule_attaque':return["Annule la prochaine attaque de l'adversaire (elle n'a pas lieu : ni dégâts, ni statuts, ni marques)"];
+    case 'bloque_attaque':return["Bloque la prochaine attaque de l'adversaire : elle touche sans faire de dégâts, mais ses statuts et ses marques (exécution, avalage) s'appliquent"];
     case 'renvoi':return[`Renvoie ${v} % des dégâts reçus pendant ${trs(T)}`];
     case 'insensible_piege':return[`Insensible aux pièges pendant ${trs(T)}`];
     case 'annule_magies':return[nz(e.tours)>0?`Annule la magie de l'adversaire pendant ${trs(nz(e.tours))}`:"Annule la magie de l'adversaire jusqu'à la fin du combat"];
@@ -1457,7 +1458,7 @@ const PAS={voler:['Vol de magie / de piège : au début de son X-ième tour (1er
  avalage:["Avalage : à chaque attaque réussie, X % de chances de poser 🍴 puis 🔪 ; à la 3e attaque réussie, avale la cible si ses PV actuels ≥ X × l'ATQ de la cible (sinon les marques tombent). Avalée : mâchée à chaque tour (X % de ses PV), X fois, puis recrachée ; la carte digère ensuite X tours. Pendant l'avalage personne n'attaque et tout ce qui visait la carte avalée la touche. Statuts négatifs de la cible : transmis ×1,5, une seule mâche",'chance','ratio','pctmache','machebase','tours','repos']};
 const ULT={degats:["Dégâts directs à l'adversaire",'val'],voler:['Vole une magie/un piège (gardé X tours, ou tout le combat)','carte','duree'],detruire:['Détruit une magie/un piège','carte'],
  equiper:['Équipe une autre magie/piège du deck','carte'],soin:['Se soigne','val','u'],vol_vie:['Vole de la vie','val'],echange_atq:["Échange l'attaque avec l'adversaire"],
- annule_attaque:['Annule la prochaine attaque'],double_degats:['Double ses dégâts pendant X tours','tours'],echange_atq_def:["Échange l'ATQ et la défense (PV) de la cible (adversaire par défaut, ou soi)",'ciblem'],
+ annule_attaque:['Annule la prochaine attaque (rien ne passe)'],bloque_attaque:['Bloque la prochaine attaque (0 dégât, mais statuts et marques passent)'],double_degats:['Double ses dégâts pendant X tours','tours'],echange_atq_def:["Échange l'ATQ et la défense (PV) de la cible (adversaire par défaut, ou soi)",'ciblem'],
  malediction:["Malédiction : l'ATQ baisse de X points par tour pendant X tours",'ciblem','val','tours'],
  saignement:["Saignement : X % des PV max par tour + soins réduits, pendant X tours",'ciblem','pctpv','reducsoin','tours'],
  gel:["Gel : chance d'annuler l'attaque / d'être étourdi, pendant X tours",'ciblem','annul','stunch','tours'],
@@ -1481,7 +1482,7 @@ atk_avalage:["Avalage (attaque de base) : donne la capacité d'avaler — 🍴 p
  marque_avalage:["Avalage : pose directement X marques d'avalage (🍴 puis 🔪, 2 maximum) sur l'adversaire",'nbmarques'],
  execution_direct:["Exécution : pose directement X marques sur l'adversaire. À 3 marques, une attaque qui le laisse sous X % de ses PV max l'exécute (même s'il devait éviter la mort ; la réanimation reste possible)",'nbmarques','seuilexec']};
 const MAG={voler:['Vole la magie / le piège de l\'adversaire (tout de suite, ou au début de son X-ième tour)','carte','tourdecl','duree'],atq_mod:["Modifie l'ATQ (négatif = baisse)",'cible','val','u'],pv_mod:['Modifie les PV max (négatif = baisse)','cible','val','u'],
- soin:['Soigne son combattant','val','u'],degats:["Dégâts directs à l'adversaire",'val'],annule_attaque:["Annule la prochaine attaque de l'adversaire"],
+ soin:['Soigne son combattant','val','u'],degats:["Dégâts directs à l'adversaire",'val'],annule_attaque:["Annule la prochaine attaque de l'adversaire (rien ne passe)"],bloque_attaque:["Bloque la prochaine attaque de l'adversaire (0 dégât, mais statuts et marques passent)"],
  renvoi:['Renvoie une part des dégâts pendant X tours','val','tours'],insensible_piege:['Insensible aux pièges pendant X tours','tours'],
  annule_magies:['Annule la magie adverse pendant X tours (0 = jusqu\'à la fin du combat)','tours'],mort_evitee:['Évite la mort si condition (reste à 1 PV, retire les statuts négatifs, une fois)','cond','seuil'],reanimation:['Réanimation : la carte est détruite puis revient avec X % de ses PV max (une fois)','pctrev'],
  degats_tours:['Inflige X dégâts après X tours','val','tours'],
