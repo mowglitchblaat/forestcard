@@ -131,6 +131,7 @@ function simuler(pA,pB,opt={}){
     if(n>0){const h={t,every:Math.max(1,e.every||1),left:n,c:0};o.st.purs.push(h);if(mg)o.mdelta.push({undo:()=>{o.st.purs=o.st.purs.filter(z=>z!==h)}})}break}
    case'degats':{const n=dmg(o,x,e.val);L('degats',`${nom(x)} subit ${n} dégâts directs`,{c:id(x),n});break}
    case'vol_vie':{const n=dmg(o,x,e.val);L('degats',`${nom(x)} subit ${n} dégâts`,{c:id(x),n});heal(o,n);break}
+   case'detonation':detoner(o,(e.ciblem||e.cible)==='soi'?o:x,e);break;
    case'annule_attaque':x.st.skip=1;L('statut',`La prochaine attaque de ${nom(x)} est annulée`,{c:id(x)});break;
    // Attaque BLOQUÉE (≠ annulée) : l'attaque a lieu et touche, sans aucun dégât, mais ses statuts et ses marques (exécution, avalage) s'appliquent
    case'bloque_attaque':x.st.blk=1;L('statut',`La prochaine attaque de ${nom(x)} sera bloquée`,{c:id(x)});break;
@@ -179,7 +180,7 @@ function simuler(pA,pB,opt={}){
     if(!ok){L('statut',`${nom(M)} résiste à l'étourdissement (${ch} % de chances${ess>1?', '+ess+' tentatives':''})`,{c:id(M)});break}
     if(M.st.solide>0){L('statut',`${nom(M)} est solidifié : l'étourdissement n'a aucun effet`,{c:id(M),k:'solide_bloque'});break}
     M.st.stun=Math.max(M.st.stun,T);L('statut',`${nom(M)} est étourdi (${T} tour${T>1?'s':''}) !`,{c:id(M),k:'etourdi'});break}
-   case'atk_fatigue':case'atk_enchainement':case'atk_brulure':case'atk_poison':case'atk_etourdir':case'atk_saignement':case'atk_malediction':case'atk_fracture':case'atk_gel':{const q={...e,type:e.type.slice(4)};o.st.atkfx.push(q);if(mg)o.mdelta.push({undo:()=>{o.st.atkfx=o.st.atkfx.filter(z=>z!==q)}});
+   case'atk_fatigue':case'atk_detonation':case'atk_enchainement':case'atk_brulure':case'atk_poison':case'atk_etourdir':case'atk_saignement':case'atk_malediction':case'atk_fracture':case'atk_gel':{const q={...e,type:e.type.slice(4)};o.st.atkfx.push(q);if(mg)o.mdelta.push({undo:()=>{o.st.atkfx=o.st.atkfx.filter(z=>z!==q)}});
     L('statut',`L'attaque de ${nom(o)} peut maintenant ${{fatigue:'fatiguer',enchainement:'enchaîner les frappes',brulure:'brûler',poison:'empoisonner',etourdir:'étourdir',saignement:'faire saigner',malediction:'maudire',fracture:'fracturer',gel:'geler'}[q.type]} (${q.chance} %)`);break}
    case'esquive_mod':{const d=e.val||0;T.st.esqb+=d;if(mg)o.mdelta.push({undo:()=>{T.st.esqb-=d}});L('stat',`Esquive de ${nom(T)} ${d>=0?'+':''}${d} %`,{c:id(T),k:'esq',d});break}
    case'reset_ultime':T.uh.forEach(h=>{h.uses=0;h.last=-99});L('statut',`L'ultime de ${nom(T)} est réinitialisé !`,{c:id(T)});break;
@@ -200,6 +201,18 @@ function simuler(pA,pB,opt={}){
  // ── Statuts à TIK (brûlure, poison, saignement, malédiction) ──
  // « t tours » = t TIK au total, comptés sur les tours de la carte touchée. Malédiction : TIK au début de son tour, avant son attaque. Brûlure, poison, saignement : TIK à la fin de son tour, juste après son attaque.
  // Un seul statut de chaque sorte par carte : il garde la même intensité à chaque tik. Si quelque chose le réapplique par-dessus, l'intensité s'additionne et la durée repart à zéro.
+ // DÉTONATION : consume la brûlure, le poison et le saignement de la cible et inflige d'un coup tous leurs dégâts restants (+ bonus %, + X dégâts fixes)
+ function detoner(o,t,q,muet){if(t.pv<=0)return;const z=t.st,parts=[];let tot=0;
+  z.dots.forEach(d=>{tot+=(d.n||0)*Math.max(0,d.t);parts.push(d.k==='poison'?'poison':'brulure')});
+  z.bleeds.forEach(b=>{tot+=rd(t.max*(b.pct||0)/100)*Math.max(0,b.t);parts.push('saignement')});
+  const bon=q.bonus==null||q.bonus===''?50:(+q.bonus||0),base=Math.max(0,+q.val||0);
+  if(!parts.length&&!base){if(!muet)L('statut',`${nom(t)} n'a aucun statut à faire exploser`,{c:id(t),k:'deto_rien'});return}
+  z.dots=[];z.bleeds=[];
+  L('detonation',`💥 DÉTONATION sur ${nom(t)} !`,{c:id(t),from:id(o),parts});
+  parts.forEach(k=>L('finstatut',`${k==='brulure'?'La brûlure':k==='poison'?'Le poison':'Le saignement'} de ${nom(t)} explose`,{c:id(t),k}));
+  let n0=rd(tot*(1+bon/100))+base;if(t.st.solide>0){n0=rd(n0/2);L('statut',`${nom(t)} est solidifié : la détonation est amortie de moitié`,{c:id(t),k:'solide_bloque'})}   // solidification : moitié des dégâts
+  const n=dmg(o,t,n0);L('degats',`${nom(t)} subit ${n} dégâts (détonation)`,{c:id(t),n,k:'detonation'});
+  const rc=Math.max(0,+q.recul||0);if(rc>0&&o!==t&&o.pv>0){const b=dmg(t,o,rd(n*rc/100));if(b>0)L('degats',`${nom(o)} subit ${b} dégâts (souffle de l'explosion)`,{c:id(o),n:b,k:'detonation'})}}   // dégâts de zone : le poseur prend X % du souffle
  function tikUn(s,kind,d){const x=adv(s);
   if(kind==='dots'){const n=dmg(x,s,d.n);L('degats',`${nom(s)} subit ${n} (${d.k})`,{c:id(s),n,k:d.k})}
   else if(kind==='bleeds'){const n=dmg(x,s,rd(s.max*d.pct/100));L('degats',`${nom(s)} subit ${n} (saignement)`,{c:id(s),n,k:'saignement'})}
@@ -367,6 +380,8 @@ function simuler(pA,pB,opt={}){
      const ess=Math.max(1,...SQ.map(q=>parseInt(q.essais,10)||1));let okS=false;for(let k=0;k<ess&&ec>0&&!okS;k++)okS=roll(Math.min(100,ec));
      if(ec>0&&okS){let u=r()*ec,src=SQ[SQ.length-1];for(const q of SQ){if(u<q.chance){src=q;break}u-=q.chance}   // la durée est celle de la source qui a déclenché
       const T=Math.max(1,parseInt(src.tours,10)||1);if(d.st.solide>0)L('statut',`${nom(d)} est solidifié : l'étourdissement n'a aucun effet`,{c:idd,k:'solide_bloque'});else{d.st.stun=Math.max(d.st.stun,T);L('statut',`${nom(d)} est étourdi${T>1?` (${T} tours)`:''} !`,{c:idd,k:'etourdi'})}}}
+    for(const q of [...a.pl,...a.st.atkfx])if(q.type==='detonation'&&d.pv>0&&roll(q.chance==null||q.chance===''?100:+q.chance))detoner(a,d,q,true);   // détonation AVANT les nouveaux statuts du coup : elle consume ceux déjà posés
+    if(d.pv<=0||a.pv<=0||over())return;
     for(const q of [...a.pl,...a.st.atkfx]){   // statuts donnés par les passifs et par les effets d'attaque de base
      if(q.type==='brulure'&&roll(q.chance))dotUn(d,'brûlure',rd(d.max*(q.pctpv||0)/100),q.tours||1);
      if(q.type==='poison'&&roll(q.chance))dotUn(d,'poison',q.degtour||0,q.tours||1);

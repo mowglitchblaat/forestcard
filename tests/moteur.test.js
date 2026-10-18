@@ -302,6 +302,22 @@ test('programmation : N passives d\'abord, puis l\'activation réveille les pass
   if (acts.length > 1 && nbU) assert.ok(r.journal.slice(acts[1]).some(e => /ULTIME programmé/.test(e.txt || '')), 'relancés à chaque activation');
 });
 
+test('détonation : consume brûlure, poison et saignement (dégâts restants + bonus), moitié si solidifié, dégâts de zone', () => {
+  const pose = MAG('Pose', { briques: [{ type: 'poison_effet', ciblem: 'adversaire', degtour: 10, tours: 3 }, { type: 'brulure_effet', ciblem: 'adversaire', pctpv: 1, tours: 2 }] });
+  const ult = { type: 'detonation', bonus: 50, val: 0, recul: 20, apres_tours: 1, utilisations: 1 };
+  const r = combat([C('a', 0, 5000, { ultime: ult }), pose], [C('b', 0, 1000)], { regles: { maxTours: 1, maxProlong: 0 } });
+  const i = r.journal.findIndex(e => e.t === 'detonation');
+  assert.ok(i > 0, 'détonation');
+  assert.deepEqual([...r.journal[i].parts].sort(), ['brulure', 'poison']);
+  // b joue en premier : 1 TIK déjà passé → reste poison 10 × 2 + brûlure 10 × 1 = 30, +50 % = 45
+  assert.ok(r.journal.some(e => e.txt === 'b subit 45 dégâts (détonation)'), JSON.stringify(r.journal.filter(e => e.k === 'detonation').map(e => e.txt)));
+  assert.ok(r.journal.some(e => e.txt === "a subit 9 dégâts (souffle de l'explosion)"), 'dégâts de zone 20 %');
+  assert.ok(!r.journal.slice(i).some(e => /\((poison|brûlure)\)/.test(e.txt || '')), 'plus aucun TIK ensuite');
+  // solidifié : moitié
+  const r2 = combat([C('a', 0, 5000, { ultime: ult }), pose], [C('b', 0, 1000, { passif: { type: 'solidification', chance: 100, tours: 9 } })], { regles: { maxTours: 1, maxProlong: 0 } });
+  assert.ok(r2.journal.some(e => /b subit 2[23] dégâts \(détonation\)/.test(e.txt || '')), JSON.stringify(r2.journal.filter(e => e.k === 'detonation').map(e => e.txt)));
+});
+
 test('solidification : bloque l\'étourdissement, une fracture la brise, la purification ne la retire pas', () => {
   const etourdit = { type: 'etourdir', chance: 100 };
   // magie : solidifié 3 tours, l'adversaire étourdit à chaque coup → aucun étourdissement
