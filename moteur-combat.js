@@ -191,15 +191,20 @@ function simuler(pA,pB,opt={}){
  // « t tours » = t TIK au total, comptés sur les tours de la carte touchée. Malédiction : TIK au début de son tour, avant son attaque. Brûlure, poison, saignement : TIK à la fin de son tour, juste après son attaque.
  // Un seul statut de chaque sorte par carte : il garde la même intensité à chaque tik. Si quelque chose le réapplique par-dessus, l'intensité s'additionne et la durée repart à zéro.
  // DÉTONATION : consume la brûlure, le poison et le saignement de la cible et inflige d'un coup tous leurs dégâts restants (+ bonus %, + X dégâts fixes)
- function detoner(o,t,q,muet){if(t.pv<=0)return;const z=t.st,parts=[];let tot=0;
-  z.dots.forEach(d=>{tot+=(d.n||0)*Math.max(0,d.t);parts.push(d.k==='poison'?'poison':'brulure')});
-  z.bleeds.forEach(b=>{tot+=rd(t.max*(b.pct||0)/100)*Math.max(0,b.t);parts.push('saignement')});
-  const bon=q.bonus==null||q.bonus===''?50:(+q.bonus||0),base=Math.max(0,+q.val||0);
-  if(!parts.length&&!base){if(!muet)L('statut',`${nom(t)} n'a aucun statut à faire exploser`,{c:id(t),k:'deto_rien'});return}
-  z.dots=[];z.bleeds=[];
+ function detoner(o,t,q,muet){if(t.pv<=0)return;const z=t.st,parts=[],fin=[];let tot=0;
+  const cs=q.conso==null||q.conso===''?100:Math.max(0,Math.min(100,+q.conso||0));   // % des statuts consumé tout de suite (100 = tout)
+  if(cs>=100){z.dots.forEach(d=>{tot+=(d.n||0)*Math.max(0,d.t);const k=d.k==='poison'?'poison':'brulure';parts.push(k);fin.push(k)});
+   z.bleeds.forEach(b=>{tot+=rd(t.max*(b.pct||0)/100)*Math.max(0,b.t);parts.push('saignement');fin.push('saignement')})}
+  else{z.dots.forEach(d=>{const p=rd((d.n||0)*cs/100);if(p<=0)return;tot+=p*Math.max(0,d.t);d.n-=p;const k=d.k==='poison'?'poison':'brulure';parts.push(k);if(d.n<=0)fin.push(k)});   // l'intensité baisse, la durée reste
+   z.bleeds.forEach(b=>{const p=Math.round((b.pct||0)*cs)/100;if(p<=0)return;tot+=rd(t.max*p/100)*Math.max(0,b.t);b.pct=Math.round((b.pct-p)*100)/100;parts.push('saignement');if(b.pct<=0)fin.push('saignement')})}
+  const bon=q.bonus==null||q.bonus===''?50:(+q.bonus||0),brut=Math.max(0,+q.val||0);
+  if(!parts.length&&!brut){if(!muet)L('statut',`${nom(t)} n'a aucun statut à faire exploser`,{c:id(t),k:'deto_rien'});return}
+  z.dots=z.dots.filter(d=>cs<100&&d.n>0);z.bleeds=z.bleeds.filter(b=>cs<100&&b.pct>0);
   L('detonation',`💥 DÉTONATION sur ${nom(t)} !`,{c:id(t),from:id(o),parts});
-  parts.forEach(k=>L('finstatut',`${k==='brulure'?'La brûlure':k==='poison'?'Le poison':'Le saignement'} de ${nom(t)} explose`,{c:id(t),k}));
-  let n0=rd(tot*(1+bon/100))+base;if(t.st.solide>0){n0=rd(n0/2);L('statut',`${nom(t)} est solidifié : la détonation est amortie de moitié`,{c:id(t),k:'solide_bloque'})}   // solidification : moitié des dégâts
+  fin.forEach(k=>L('finstatut',`${k==='brulure'?'La brûlure':k==='poison'?'Le poison':'Le saignement'} de ${nom(t)} explose`,{c:id(t),k}));
+  if(cs<100&&parts.length>fin.length)L('statut',`Les statuts restants de ${nom(t)} sont affaiblis (−${cs} %)`,{c:id(t),k:'deto_part'});
+  let n0=rd(tot*(1+bon/100));if(t.st.solide>0&&n0>0){n0=rd(n0/2);L('statut',`${nom(t)} est solidifié : la détonation est amortie de moitié`,{c:id(t),k:'solide_bloque'})}   // solidification : moitié des dégâts des statuts
+  n0+=brut;   // dégâts bruts de l'explosion : jamais réduits
   const n=dmg(o,t,n0);L('degats',`${nom(t)} subit ${n} dégâts (détonation)`,{c:id(t),n,k:'detonation'});
   const rc=Math.max(0,+q.recul||0);if(rc>0&&o!==t&&o.pv>0){const b=dmg(t,o,rd(n*rc/100));if(b>0)L('degats',`${nom(o)} subit ${b} dégâts (souffle de l'explosion)`,{c:id(o),n:b,k:'detonation'})}}   // dégâts de zone : le poseur prend X % du souffle
  function tikUn(s,kind,d){const x=adv(s);

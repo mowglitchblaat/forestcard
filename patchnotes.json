@@ -11,7 +11,7 @@
           "Nouvel effet « Bloque la prochaine attaque » (magie, piège, ultime) : l’attaque touche sans faire de dégâts, mais ses statuts et ses marques (exécution, avalage) s’appliquent. À ne pas confondre avec « Annule la prochaine attaque » : là, l’attaque n’a pas lieu du tout et rien ne passe.",
           "Quand une réduction de dégâts absorbe tout le coup, il compte comme une attaque bloquée : les statuts de l’attaquant s’appliquent quand même.",
           "Nouveau passif « Programmation » (collection mécanique) : à chaque tour, la carte peut se programmer. D’abord elle acquiert en secret des passifs ou des ultimes de sa liste, puis une programmation active les réveille tous et relance tous ses ultimes programmés, à chaque nouvelle activation.",
-          "Nouveau statut « Détonation » (passif, ultime, magie, piège et attaque de base) : il fait exploser la brûlure, le poison et le saignement de la cible, qui prend d’un coup tous leurs dégâts restants avec un bonus. Option dégâts de zone (le poseur prend une partie du souffle) ; une carte solidifiée n’en subit que la moitié."
+          "Nouveau statut « Détonation » (passif, ultime, magie, piège et attaque de base) : une explosion qui consume X % de la brûlure, du poison et du saignement de la cible (tout par défaut ; le reste continue, plus faible) et inflige d’un coup ces dégâts avec un bonus, plus ses propres dégâts bruts. Option dégâts de zone (le poseur prend une partie du souffle) ; une carte solidifiée ne subit que la moitié des dégâts des statuts."
         ]
       },
       {

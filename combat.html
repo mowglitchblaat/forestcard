@@ -354,15 +354,20 @@ function simuler(pA,pB,opt={}){
  // « t tours » = t TIK au total, comptés sur les tours de la carte touchée. Malédiction : TIK au début de son tour, avant son attaque. Brûlure, poison, saignement : TIK à la fin de son tour, juste après son attaque.
  // Un seul statut de chaque sorte par carte : il garde la même intensité à chaque tik. Si quelque chose le réapplique par-dessus, l'intensité s'additionne et la durée repart à zéro.
  // DÉTONATION : consume la brûlure, le poison et le saignement de la cible et inflige d'un coup tous leurs dégâts restants (+ bonus %, + X dégâts fixes)
- function detoner(o,t,q,muet){if(t.pv<=0)return;const z=t.st,parts=[];let tot=0;
-  z.dots.forEach(d=>{tot+=(d.n||0)*Math.max(0,d.t);parts.push(d.k==='poison'?'poison':'brulure')});
-  z.bleeds.forEach(b=>{tot+=rd(t.max*(b.pct||0)/100)*Math.max(0,b.t);parts.push('saignement')});
-  const bon=q.bonus==null||q.bonus===''?50:(+q.bonus||0),base=Math.max(0,+q.val||0);
-  if(!parts.length&&!base){if(!muet)L('statut',`${nom(t)} n'a aucun statut à faire exploser`,{c:id(t),k:'deto_rien'});return}
-  z.dots=[];z.bleeds=[];
+ function detoner(o,t,q,muet){if(t.pv<=0)return;const z=t.st,parts=[],fin=[];let tot=0;
+  const cs=q.conso==null||q.conso===''?100:Math.max(0,Math.min(100,+q.conso||0));   // % des statuts consumé tout de suite (100 = tout)
+  if(cs>=100){z.dots.forEach(d=>{tot+=(d.n||0)*Math.max(0,d.t);const k=d.k==='poison'?'poison':'brulure';parts.push(k);fin.push(k)});
+   z.bleeds.forEach(b=>{tot+=rd(t.max*(b.pct||0)/100)*Math.max(0,b.t);parts.push('saignement');fin.push('saignement')})}
+  else{z.dots.forEach(d=>{const p=rd((d.n||0)*cs/100);if(p<=0)return;tot+=p*Math.max(0,d.t);d.n-=p;const k=d.k==='poison'?'poison':'brulure';parts.push(k);if(d.n<=0)fin.push(k)});   // l'intensité baisse, la durée reste
+   z.bleeds.forEach(b=>{const p=Math.round((b.pct||0)*cs)/100;if(p<=0)return;tot+=rd(t.max*p/100)*Math.max(0,b.t);b.pct=Math.round((b.pct-p)*100)/100;parts.push('saignement');if(b.pct<=0)fin.push('saignement')})}
+  const bon=q.bonus==null||q.bonus===''?50:(+q.bonus||0),brut=Math.max(0,+q.val||0);
+  if(!parts.length&&!brut){if(!muet)L('statut',`${nom(t)} n'a aucun statut à faire exploser`,{c:id(t),k:'deto_rien'});return}
+  z.dots=z.dots.filter(d=>cs<100&&d.n>0);z.bleeds=z.bleeds.filter(b=>cs<100&&b.pct>0);
   L('detonation',`💥 DÉTONATION sur ${nom(t)} !`,{c:id(t),from:id(o),parts});
-  parts.forEach(k=>L('finstatut',`${k==='brulure'?'La brûlure':k==='poison'?'Le poison':'Le saignement'} de ${nom(t)} explose`,{c:id(t),k}));
-  let n0=rd(tot*(1+bon/100))+base;if(t.st.solide>0){n0=rd(n0/2);L('statut',`${nom(t)} est solidifié : la détonation est amortie de moitié`,{c:id(t),k:'solide_bloque'})}   // solidification : moitié des dégâts
+  fin.forEach(k=>L('finstatut',`${k==='brulure'?'La brûlure':k==='poison'?'Le poison':'Le saignement'} de ${nom(t)} explose`,{c:id(t),k}));
+  if(cs<100&&parts.length>fin.length)L('statut',`Les statuts restants de ${nom(t)} sont affaiblis (−${cs} %)`,{c:id(t),k:'deto_part'});
+  let n0=rd(tot*(1+bon/100));if(t.st.solide>0&&n0>0){n0=rd(n0/2);L('statut',`${nom(t)} est solidifié : la détonation est amortie de moitié`,{c:id(t),k:'solide_bloque'})}   // solidification : moitié des dégâts des statuts
+  n0+=brut;   // dégâts bruts de l'explosion : jamais réduits
   const n=dmg(o,t,n0);L('degats',`${nom(t)} subit ${n} dégâts (détonation)`,{c:id(t),n,k:'detonation'});
   const rc=Math.max(0,+q.recul||0);if(rc>0&&o!==t&&o.pv>0){const b=dmg(t,o,rd(n*rc/100));if(b>0)L('degats',`${nom(o)} subit ${b} dégâts (souffle de l'explosion)`,{c:id(o),n:b,k:'detonation'})}}   // dégâts de zone : le poseur prend X % du souffle
  function tikUn(s,kind,d){const x=adv(s);
@@ -985,19 +990,29 @@ function activFx(c){const K=rc(c),traces=[];
  setTimeout(()=>{const z=pgmSlots(c);if(z)z.querySelectorAll('i').forEach((i,n)=>setTimeout(()=>{i.classList.add('on','flash');setTimeout(()=>i.classList.remove('flash'),900)},n*90))},550)}
 
 // DÉTONATION : les statuts de la carte (feu, poison, sang) sont aspirés au centre, puis explosion (boule de feu, onde de choc, débris, écran qui tremble)
-function detoFx(c,parts){const K=rc(c),COL={brulure:'255,140,40',poison:'90,220,90',saignement:'220,30,40'},cols=(parts&&parts.length?parts:['brulure']).map(k=>COL[k]||COL.brulure);
- const P=Array.from({length:42},(_,i)=>({c:cols[i%cols.length],a:Math.random()*6.28,d:K.w*(.45+Math.random()*.4)}));
- const D=Array.from({length:30},()=>({a:Math.random()*6.28,v:K.w*(.6+Math.random()*1.1),s:2+Math.random()*4,c:Math.random()<.5?'255,200,90':cols[Math.floor(Math.random()*cols.length)]}));
- addFx(1.9,(x,t)=>{const cx=K.cx,cy=K.cy;x.globalCompositeOperation='lighter';
-  if(t<.5){const u=ez(t/.5);for(const p of P){const r=p.d*(1-u),px=cx+Math.cos(p.a+u*2)*r,py=cy+Math.sin(p.a+u*2)*r;orb(x,px,py,K.w*.05,`rgba(${p.c},${.9})`,`rgba(${p.c},0)`)}
-   orb(x,cx,cy,K.w*.12*u,`rgba(255,255,255,${u})`,'rgba(255,200,120,0)');return}
-  const u=t-.5,f=1-cl(u/1.3);
-  if(u<.18){x.fillStyle=`rgba(255,245,220,${.75*(1-u/.18)})`;x.fillRect(0,0,innerWidth,innerHeight)}   // flash
-  const R=K.w*(.25+1.1*ez(cl(u/.5)));orb(x,cx,cy,R,`rgba(255,240,200,${.95*f})`,'rgba(255,90,20,0)');orb(x,cx,cy,R*.65,`rgba(255,180,60,${f})`,'rgba(255,60,0,0)');
-  for(let k=0;k<2;k++){const q=cl((u-k*.12)/.7),rr=K.w*(.3+1.6*q);if(q>0&&q<1){x.strokeStyle=`rgba(255,220,160,${.8*(1-q)})`;x.lineWidth=6*(1-q)+1;x.beginPath();x.arc(cx,cy,rr,0,7);x.stroke()}}   // ondes de choc
-  for(const d of D){const q=cl(u/1.2),r=d.v*ez(q);x.fillStyle=`rgba(${d.c},${1-q})`;x.beginPath();x.arc(cx+Math.cos(d.a)*r,cy+Math.sin(d.a)*r+K.h*.25*q*q,d.s,0,7);x.fill()}   // débris
+function detoFx(c,parts){const K=rc(c),W=K.w,COL={brulure:'255,140,40',poison:'120,230,90',saignement:'230,40,50'},cols=(parts&&parts.length?parts:['brulure']).map(k=>COL[k]||COL.brulure),RN=Math.random,T0=.2;
+ const PF=Array.from({length:18},()=>({a:RN()*6.28,d:W*(.06+RN()*.34),r:W*(.15+RN()*.2),up:W*(.15+RN()*.3),dl:RN()*.12}));   // boules de feu puis fumée
+ const SP=Array.from({length:50},()=>({a:RN()*6.28,v:W*(.9+RN()*1.7),l:.45+RN()*.6,c:RN()<.35?cols[Math.floor(RN()*cols.length)]:RN()<.5?'255,235,160':'255,150,50'}));   // étincelles (aux couleurs des statuts)
+ const DB=Array.from({length:16},()=>({a:-.2-RN()*2.74,v:W*(.5+RN()*1.1),s:2.5+RN()*5,ro:RN()*6,vr:(RN()-.5)*16}));   // débris
+ addFx(2.3,(x,t)=>{const cx=K.cx,cy=K.cy;
+  if(t<T0){const u=t/T0;x.globalCompositeOperation='lighter';   // les statuts sont avalés en un point brûlant…
+   cols.forEach((cc,i)=>{for(let j=0;j<3;j++){const a=i*2.1+j*2.09+u*5,r=W*.4*(1-ez(u));orb(x,cx+Math.cos(a)*r,cy+Math.sin(a)*r,W*.06,`rgba(${cc},.9)`,`rgba(${cc},0)`)}});
+   orb(x,cx,cy,W*.12*u,`rgba(255,255,255,${u})`,'rgba(255,220,150,0)');return}
+  const u=t-T0;   // … puis BOUM
+  if(u<.16){x.fillStyle=`rgba(255,240,210,${.85*(1-u/.16)})`;x.fillRect(0,0,innerWidth,innerHeight)}   // flash
+  for(const p of PF){const q=cl((u-p.dl)/1.9);if(q<=0)continue;const e=ez(cl(q*2.2)),px=cx+Math.cos(p.a)*p.d*e,py=cy+Math.sin(p.a)*p.d*e-p.up*q,rr=p.r*(.5+e+q*.5),al=.7*(1-q)*cl(q*4);   // fumée
+   const g=x.createRadialGradient(px,py,0,px,py,rr);g.addColorStop(0,`rgba(95,85,78,${al})`);g.addColorStop(1,'rgba(40,32,28,0)');x.fillStyle=g;x.beginPath();x.arc(px,py,rr,0,7);x.fill()}
+  {const q=cl(u/1.1);if(q<1){x.strokeStyle=`rgba(160,125,90,${.5*(1-q)})`;x.lineWidth=W*.09*(1-q)+1;x.beginPath();x.ellipse(cx,cy+K.h*.4,W*(.3+1.2*ez(q)),W*(.05+.17*ez(q)),0,0,7);x.stroke()}}   // poussière au sol
+  for(const b of DB){const q=cl(u/1.4);if(q>=1)continue;x.save();x.translate(cx+Math.cos(b.a)*b.v*q,cy+Math.sin(b.a)*b.v*q+K.h*1.3*q*q);x.rotate(b.ro+b.vr*q);x.fillStyle=`rgba(35,25,20,${1-q})`;x.fillRect(-b.s,-b.s*.6,b.s*2,b.s*1.2);x.restore()}
+  x.globalCompositeOperation='lighter';
+  for(const p of PF){const q=cl((u-p.dl)/1.25);if(q<=0||q>=1)continue;const e=ez(cl(q*2.5)),h=1-q,px=cx+Math.cos(p.a)*p.d*e,py=cy+Math.sin(p.a)*p.d*e-p.up*q*.6;   // boule de feu qui refroidit
+   orb(x,px,py,p.r*(.45+.85*e),`rgba(${h>.6?'255,250,225':h>.3?'255,190,80':'255,95,25'},${.95*h})`,'rgba(255,60,0,0)')}
+  {const q=cl(u/.45);if(q<1)orb(x,cx,cy,W*(.25+.55*ez(q)),`rgba(255,255,245,${1-q})`,'rgba(255,170,60,0)')}   // noyau blanc
+  for(let k=0;k<2;k++){const q=cl((u-k*.09)/.6);if(q>0&&q<1){x.strokeStyle=`rgba(255,235,200,${.9*(1-q)})`;x.lineWidth=(11-k*5)*(1-q)+1;x.beginPath();x.arc(cx,cy,W*(.3+2.1*ez(q)),0,7);x.stroke()}}   // ondes de choc
+  x.lineCap='round';for(const s of SP){const q=cl(u/s.l);if(q>=1)continue;const d=s.v*ez(q)*.6,gy=K.h*.5*q*q,px=cx+Math.cos(s.a)*d,py=cy+Math.sin(s.a)*d+gy,bk=W*.09*(1-q);
+   x.strokeStyle=`rgba(${s.c},${1-q})`;x.lineWidth=2.6*(1-q)+.6;x.beginPath();x.moveTo(px-Math.cos(s.a)*bk,py-Math.sin(s.a)*bk);x.lineTo(px,py);x.stroke()}
  });
- setTimeout(()=>{try{document.body.animate([{transform:'translate(0,0)'},{transform:'translate(-9px,5px)'},{transform:'translate(8px,-6px)'},{transform:'translate(-6px,-4px)'},{transform:'translate(5px,6px)'},{transform:'translate(0,0)'}],{duration:450})}catch(e){}},520)}
+ setTimeout(()=>{try{const f=[];for(let i=0;i<=12;i++){const a=14*(1-i/12);f.push({transform:i===12?'translate(0,0)':`translate(${(RN()-.5)*2*a}px,${(RN()-.5)*2*a}px)`})}document.body.animate(f,{duration:650})}catch(e){}},T0*1000)}
 function annuleFx(c){const k=$('#p'+c+' .card');if(!k)return;k.classList.remove('annul');void k.offsetWidth;k.classList.add('annul');const R=k.getBoundingClientRect(),x=document.createElement('div');x.className='annx';Object.assign(x.style,{position:'fixed',left:R.left+'px',top:R.top+'px',width:R.width+'px',height:R.height+'px'});document.body.appendChild(x);/* hors de la carte : le gris de la carte ne doit pas éteindre le ✖ */setTimeout(()=>{x.remove();k.classList.remove('annul')},1300)}
 function bouclier(c,o={}){const K=rc(c),sx=c===0?1:-1,sw=K.w*.8,sh=K.h*.72,cx=K.cx,cy=K.cy,P={x:cx+sx*sw*.2,y:cy-sh*.08},sc=K.w/320;
  const cr=[];for(let b=0;b<4;b++){let a=Math.random()*6.28,px=P.x,py=P.y;const pts=[[px,py]];for(let i=0;i<6;i++){a+=R(-.7,.7);const l=sw*R(.05,.1);px+=Math.cos(a)*l;py+=Math.sin(a)*l;pts.push([px,py])}cr.push(pts)}
@@ -1534,7 +1549,7 @@ async function jouer(res){
    else if(e.t==='statut'&&e.k==='marque'){lameIn(e.c,e.n||1);flot(e.c,`Marque ${e.n||1}/3`,'#fca5a5');await wait((e.n||1)>=3?1300:900)}
    else if(e.t==='statut'&&e.k==='exec_prep'){flot(e.c,'Exécution','#fca5a5');await wait(600)}
    else if(e.t==='statut'&&e.k==='execution'){await executionFx(e.c);await wait(300)}
-   else if(e.t==='detonation'){detoFx(e.c,e.parts);setTimeout(()=>flot(e.c,'DÉTONATION !','#fb923c','big'),500);await wait(1500)}
+   else if(e.t==='detonation'){detoFx(e.c,e.parts);setTimeout(()=>flot(e.c,'DÉTONATION !','#fb923c','big'),260);await wait(1500)}
    else if(e.t==='statut'&&e.k==='prog'){if(e.quoi)progFx(e.c,e.quoi);flot(e.c,e.quoi==='u'?'Ultime programmé':e.quoi==='p'?'Passif programmé':'Rien à programmer',e.quoi==='u'?'#fdba74':'#7dd3fc');await wait(1500)}   // programmation passive : l'élément dort (emplacement éteint) jusqu'à l'activation
    else if(e.t==='statut'&&e.k==='prog_act'){activFx(e.c);flot(e.c,'ACTIVATION !','#38bdf8','big');await wait(1900)}
    else if(e.t==='statut'&&e.k==='prog_on'){await wait(200)}
@@ -1620,7 +1635,7 @@ if(DEMO){
  const mk=()=>{$('#ban').textContent='';$('#tour').textContent='';fxAll.forEach(s=>s());fxAll.clear();fxL.length=0;st={};document.getAnimations().forEach(a=>a.cancel());document.querySelectorAll('canvas.fx').forEach(k=>k.remove());[0,1].forEach(i=>panneau(i,J(i)));maj({pv:[70,70],max:[70,70],atq:[12,12]});$('#scene').classList.add('on')};
  const cardOf=c=>$('#p'+c+' .card'),has=(c,k)=>!!cardOf(c).querySelector('canvas.fx.'+k);
  const S=[
-  ['Statuts','Détonation (feu + poison + sang)',c=>{detoFx(c,['brulure','poison','saignement']);setTimeout(()=>flot(c,'DÉTONATION !','#fb923c','big'),500)},2000],
+  ['Statuts','Détonation (feu + poison + sang)',c=>{detoFx(c,['brulure','poison','saignement']);setTimeout(()=>flot(c,'DÉTONATION !','#fb923c','big'),260)},2300],
   ['Programmation','Passif programmé (en attente)',c=>{progFx(c,'p');flot(c,'Passif programmé','#7dd3fc')},1700],
   ['Programmation','Ultime programmé (en attente)',c=>{progFx(c,'u');flot(c,'Ultime programmé','#fdba74')},1700],
   ['Programmation','Programmation active',c=>{activFx(c);flot(c,'ACTIVATION !','#38bdf8','big')},2300],
