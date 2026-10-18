@@ -201,7 +201,27 @@ function simuler(pA,pB,opt={}){
     // PCH : profondeur de la chaîne de pièges en cours (un piège qui en déclenche un autre…)
    // EXEC : exécution en cours (ignore « évite la mort »)   // pendRev : réanimations en attente · pendEv : effets (pièges, « évite la mort ») à jouer APRÈS l'affichage des dégâts
  const L=(t,txt,o={})=>{if(t==='degats'&&o.n===0){flush();return}if(t==='stat'&&o.d===0)return;   // rien à montrer pour 0 dégât ou une stat inchangée
-  J.push({t,txt,...o,tour,pv:S.map(s=>s.pv),max:S.map(s=>s.max),atq:S.map(s=>s.atq)});if(t==='degats')flush()};
+  J.push({t,txt,...o,tour,pv:S.map(s=>s.pv),max:S.map(s=>s.max),atq:S.map(s=>s.atq)});if(TRIG)trig(t,o,txt);if(t==='degats')flush()};
+ // Déclencheurs d'ultime et conditions de piège « sur événement » (statut reçu, esquive, gros coup, piège, tour X…) : actifs seulement si une carte des decks s'en sert
+ const NEWC=new Set(['proprio_statut','adv_statut','proprio_esquive','adv_esquive','proprio_attaque','proprio_coup_fort','adv_piege','tour_n','proprio_bloque','proprio_ultime']);
+ const TRP=[...(pA.deck||[]),...(pB.deck||[])].some(c=>c&&c.effet&&c.effet.condition&&NEWC.has(c.effet.condition.type));
+ const TRIG=TRP||[...(pA.deck||[]),...(pB.deck||[])].some(c=>c&&c.ultime&&c.ultime.udecl);
+ const NEGK=new Set(['brulure','poison','saignement','malediction','gel','fatigue','etourdi','fracture']);
+ function trig(t,o,txt){let ev=null;
+  if(t==='statut'&&NEGK.has(o.k))ev={t:'st',who:o.c};
+  else if(t==='esquive')ev={t:'esq',who:o.c};
+  else if(t==='degats'&&o.n>0&&!['brûlure','brulure','poison','saignement'].includes(o.k))ev={t:'coup',who:o.c,n:o.n};
+  else if(t==='piege'&&!o.k)ev={t:'piege',who:o.c};
+  else if(t==='tour')ev={t:'tour',who:o.c,n:parseInt(String(txt).replace(/\D+/g,''),10)||0};
+  else if(t==='bloque')ev={t:'bloque',who:o.c};
+  else if(t==='soin')ev={t:'soin2',who:o.c};
+  else if(t==='ultime')ev={t:'ult',who:o.c};
+  else if(t==='attaque'&&!o.k)ev={t:'atk',who:o.c};
+  if(!ev)return;
+  S.forEach((s,i)=>s.uh.forEach(h=>{const u=h.u;if(!u||!u.udecl)return;const X=Math.max(1,parseInt(u.udx,10)||1),me=ev.who===i,ad=ev.who===1-i;
+   if({coups_recus:ev.t==='atk'&&ad&&S[1-i].coups%X===0,attaques:ev.t==='atk'&&me&&s.coups%X===0,son_piege:ev.t==='piege'&&me,piege_adv:ev.t==='piege'&&ad,adv_ultime:ev.t==='ult'&&ad,
+       statut:ev.t==='st'&&me,esquive:ev.t==='esq'&&me,soigne:ev.t==='soin2'&&me,coup_fort:ev.t==='coup'&&me&&ev.n>=X,bloque:ev.t==='bloque'&&me}[u.udecl])h.trg=1}));
+  if(TRP)pendEv.push(()=>scan(ev))}
  const amt=(e,b)=>e.u==='pct'?rd(b*e.val/100):(e.val||0);
  const over=()=>{flush();return S.some(s=>s.pv<=0)};
 
@@ -254,7 +274,10 @@ function simuler(pA,pB,opt={}){
   const ok={adv_attaque:ev.t==='attaque'&&ev.by===ia&&x.coups>0&&x.coups%Math.max(1,parseInt(c.coups,10)||1)===0,   // toutes les N attaques de l'adversaire (N, 2N, 3N…), jusqu'au nombre de déclenchements max
   adv_ultime:ev.t==='ultime'&&ev.by===ia,
    proprio_pv_sous:ev.t==='pv'&&o.pv>0&&o.pv/o.max*100<c.seuilpv,adv_pv_bas:ev.t==='pv'&&x.pv>0&&x.pv/x.max*100<c.seuilpv,
-   adv_soigne:ev.t==='soin'&&ev.who===ia,proprio_soigne:ev.t==='soin'&&ev.who===i,proprio_meurt:ev.t==='mort'&&ev.who===i}[c.type];
+   adv_soigne:ev.t==='soin'&&ev.who===ia,proprio_soigne:ev.t==='soin'&&ev.who===i,proprio_meurt:ev.t==='mort'&&ev.who===i,
+   proprio_statut:ev.t==='st'&&ev.who===i,adv_statut:ev.t==='st'&&ev.who===ia,proprio_esquive:ev.t==='esq'&&ev.who===i,adv_esquive:ev.t==='esq'&&ev.who===ia,
+   proprio_attaque:ev.t==='atk'&&ev.who===i&&o.coups>0&&o.coups%Math.max(1,parseInt(c.coups,10)||1)===0,proprio_coup_fort:ev.t==='coup'&&ev.who===i&&ev.n>=Math.max(1,parseInt(c.seuildeg,10)||1),
+   adv_piege:ev.t==='piege'&&ev.who===ia,tour_n:ev.t==='tour'&&ev.n===Math.max(1,parseInt(c.ntour,10)||1),proprio_bloque:ev.t==='bloque'&&ev.who===i,proprio_ultime:ev.t==='ult'&&ev.who===i}[c.type];
   if(!ok)return;
   if(PCH>=3)return;   // chaîne de pièges limitée à 3 (sinon deux pièges qui se déclenchent l'un l'autre tournent sans fin) : le piège reste armé pour plus tard
   if(x.st.insens>0){o.decl++;const reste=o.decl<(e.declenchements||1);o.pbl=reste?1:0;   // insensible : le piège se déclenche quand même (le déclenchement est consommé) mais son effet ne fait rien
@@ -532,8 +555,9 @@ function simuler(pA,pB,opt={}){
   for(const h of s.uh.slice()){const u=h.u;if(!u||!u.type)continue;
    if(u.utilisations>0&&h.uses>=u.utilisations)continue;
    if(tour-h.last<(u.delai_tours||0))continue;
-   if(!((u.apres_tours&&tour>=u.apres_tours)||(u.sur_carte&&s.pend)))continue;
-   h.uses++;h.last=tour;s.pend=0;L('ultime',`ULTIME de ${nom(s)} !`,{c:id(s)});{const s0=SRC;SRC='ultime';fx(u,s,adv(s));SRC=s0}scan({t:'ultime',by:id(s)});if(over())break}
+   const ud=u.udecl,uX=parseInt(u.udx,10)||50,etat=ud==='pv_sous'?s.pv/s.max*100<uX:ud==='adv_pv_sous'?adv(s).pv>0&&adv(s).pv/adv(s).max*100<uX:false;   // déclencheurs d'état : vérifiés au début de son tour
+   if(!((u.apres_tours&&tour>=u.apres_tours)||(u.sur_carte&&s.pend)||h.trg||etat))continue;
+   h.uses++;h.last=tour;s.pend=0;h.trg=0;L('ultime',`ULTIME de ${nom(s)} !`,{c:id(s)});{const s0=SRC;SRC='ultime';fx(u,s,adv(s));SRC=s0}scan({t:'ultime',by:id(s)});if(over())break}
  }
  function attaque(a){
   const d=adv(a),ia=id(a),idd=id(d);
@@ -735,7 +759,7 @@ function simuler(pA,pB,opt={}){
  const tAnn=e=>{const b=e.type==='annule_magies'?e:(e.briques||[]).find(b=>b&&b.type==='annule_magies');return Math.max(0,parseInt(b&&b.tours,10)||0)};   // 0 ou vide = jusqu'à la fin du combat
  const magies=()=>{
   ordre.forEach(s=>{const x=adv(s);if(s.magOn&&aMag(s.mag.effet)&&x.magOn){x.magOn=0;x.magAnn=1;x.magAnnT=tAnn(s.mag.effet);x.magNew=1}});
-  ordre.forEach(s=>{if(s.mag.effet&&s.magAnn!==1&&s.magAnn!==2&&!s.magVol){L('magie',`Magie de ${s.pseudo} : ${s.mag.nom}`,{c:id(s),carte:s.mag.nom,img:s.mag.image||null});fx(s.mag.effet,s,adv(s),true);S.forEach(k=>k.pend=1)}})};
+  ordre.forEach(s=>{if(s.mag.effet&&s.magAnn!==1&&s.magAnn!==2&&!s.magVol){L('magie',`Magie de ${s.pseudo} : ${s.mag.nom}`,{c:id(s),carte:s.mag.nom,img:s.mag.image||null});fx(s.mag.effet,s,adv(s),true)}})};   // la magie du début ne compte pas comme « une carte s'active » (sinon l'ultime partait toujours au 1er tour)
  magies();
  // Prolongation : au dernier tour, si aucune carte n'est tombée, chaque joueur tire 3 nouvelles cartes de son deck (1 combattant, 1 magie, 1 piège) et le combat continue, jusqu'au KO.
  // Après reg.maxProlong prolongations (3 par défaut), la carte qui a le plus de PV l'emporte (PV égaux = match nul).
@@ -1807,14 +1831,14 @@ if(DEMO){
   $('#dl').after(sec);
   const LB={evite_mort:'évite la mort une fois',soin_tour:'se soigne chaque tour',renvoi:'renvoie des dégâts',atq_tours:"augmente l'ATQ tous les X tours",pv_tours:'augmente les PV tous les X tours',multi_frappe:'frappe plusieurs fois',reduc_degats:'réduit les dégâts reçus',bonus_frappe:'bonus de dégâts si frappé',etourdir:'étourdit',vol_pct_atq:'vole de la vie',brulure:'brûlure',poison:'poison',esquive:'esquive',degats:'dégâts directs',voler:'vole une carte',detruire:'détruit une carte',equiper:'équipe une carte',soin:'se soigne',vol_vie:'vole de la vie',echange_atq:"échange l'ATQ",annule_attaque:"annule l'attaque",double_degats:'double ses dégâts',echange_atq_def:"échange ATQ et PV de l'adversaire"};
   Object.assign(LB,{souffle:'souffle élémentaire (dégâts + statut au choix)',execution:'exécution (marques puis exécution sous X % de PV)',execution_direct:'exécution (pose X marques)',avalage:'avalage (🍴, 🔪, puis avale la cible)',atk_avalage:'attaque de base : avalage',marque_avalage:'avalage (pose X marques)',transcendance:'transcendance (après X tours : purifiée, ATQ et PV en hausse)',solidification:'solidification (insensible à l\'étourdissement)',rage:'rage puis fatigue',fatigue:'fatigue (réduit les dégâts)',aleatoire:'effet aléatoire',atk_fatigue:'attaque de base : fatigue',purification:'purification (retire les statuts négatifs)',reanimation:'réanimation (meurt puis revient)',soin_tours:'régénération (soigne chaque tour)',purification:'purification (retire les statuts négatifs)',atk_enchainement:'attaque de base : enchaînement',atk_saignement:'attaque de base : saignement',atk_malediction:'attaque de base : malédiction',atk_fracture:'attaque de base : fracture',atk_gel:'attaque de base : gel',saignement:'saignement (dégâts sur la durée, soins réduits)',gel:'gel (attaque annulée ou étourdi)',fracture:'fracture (se blesse en attaquant)',vol_ultime:"vole l'ultime",malediction:'malédiction (ATQ en baisse par tour)',enchainement:'enchaîne les frappes tant que ça réussit',poison_effet:'poison',brulure_effet:'brûlure',etourdir_effet:'étourdit',atk_brulure:"attaque de base : brûlure",atk_poison:"attaque de base : poison",atk_etourdir:"attaque de base : étourdissement",esquive_mod:"modifie l'esquive (%)",reset_ultime:"réinitialise l'ultime",atq_mod:"modifie l'ATQ",pv_mod:'modifie les PV max',insensible_piege:'insensible aux pièges',annule_magies:'annule les magies',mort_evitee:'évite la mort (1 PV)',degats_tours:'dégâts différés'});
-  const CL={adv_attaque:"l'adversaire a attaqué X fois",adv_ultime:"l'adversaire utilise son ultime",proprio_pv_sous:'le propriétaire passe sous X % de PV',adv_pv_bas:"l'adversaire passe sous X % de PV",adv_soigne:"l'adversaire se soigne",proprio_soigne:'le propriétaire se soigne',proprio_meurt:'le propriétaire meurt'};
+  const CL={adv_attaque:"l'adversaire a attaqué X fois",adv_ultime:"l'adversaire utilise son ultime",proprio_pv_sous:'le propriétaire passe sous X % de PV',adv_pv_bas:"l'adversaire passe sous X % de PV",adv_soigne:"l'adversaire se soigne",proprio_soigne:'le propriétaire se soigne',proprio_meurt:'le propriétaire meurt',proprio_statut:'le propriétaire reçoit un statut',adv_statut:"l'adversaire reçoit un statut",proprio_esquive:'le propriétaire esquive',adv_esquive:"l'adversaire esquive",proprio_attaque:'le propriétaire a attaqué X fois',proprio_coup_fort:'le propriétaire subit X dégâts en un coup',proprio_bloque:'le propriétaire bloque',adv_piege:'le piège adverse se déclenche',proprio_ultime:'le propriétaire lance son ultime',tour_n:'au tour X'};
   const KL={ratio:'ratio PV/ATQ',pctmache:'% de mâche',machebase:'mâche sur',repos:'tours de digestion',tourdecl:'au tour',duree:'volée pendant X tours',nbalea:"nombre d'effets tirés",ragev:'rage : dégâts en plus',ragetours:'rage : tours',fatval:'fatigue : dégâts en moins',fattours:'fatigue : tours',pctrev:'% PV au retour',every:'tous les X tours',fois:'nombre de fois',reducsoin:'soins en moins %',annul:'attaque annulée %',stunch:'étourdi %',fchance:'se blesse %',degfrac:'dégâts en attaquant',val:'valeur',chance:'chance %',apres_tours:'après N tours',degtour:'dégâts par tour',pctpv:'% des PV max',pctatq:'% de l\'ATQ',tours:'tours',frappes:'frappes',coups:'coups',carte:'carte'};
-  const fmt=o=>!o||!o.type?'aucun':(LB[o.type]||o.type)+' ('+Object.entries(o).filter(([k,v])=>!['type','utilisations','delai_tours','sur_carte','u'].includes(k)&&v!=null&&v!==false&&v!==0).map(([k,v])=>(KL[k]||k)+' '+v+(k==='val'&&o.u==='pct'?' %':'')).join(', ')+')';
+  const fmt=o=>!o||!o.type?'aucun':(LB[o.type]||o.type)+' ('+Object.entries(o).filter(([k,v])=>!['type','utilisations','delai_tours','sur_carte','u','udecl','udx'].includes(k)&&v!=null&&v!==false&&v!==0).map(([k,v])=>(KL[k]||k)+' '+v+(k==='val'&&o.u==='pct'?' %':'')).join(', ')+')';
   const fmtE=e=>!e?'aucun':e.briques?e.briques.map(fmtE).join(' + '):fmt(e);
   const fmtC=c=>!c||!c.effet?'aucun effet':c.type==='piege'?`Quand ${(c.effet.condition&&CL[c.effet.condition.type])||'?'}${c.effet.condition&&c.effet.condition.coups?' ('+c.effet.condition.coups+')':''}${c.effet.condition&&c.effet.condition.seuilpv?' ('+c.effet.condition.seuilpv+' %)':''} → ${fmtE(c.effet.effet)}`:fmtE(c.effet);
   const info=c=>{if(!c)return'Choix au hasard parmi les cartes chargées';const u=c.ultime;let x=`Passif : ${fmtE(c.passif)}<br>Ultime : ${fmt(u)}`;
-   if(u&&u.type&&!u.apres_tours&&!u.sur_carte)x+=' <b style="color:#fca5a5">⚠ aucun déclencheur : ne se lancera jamais</b>';
-   else if(u&&u.sur_carte&&!u.apres_tours)x+=' <b style="color:#fcd34d">(seulement quand une magie/piège s\'active : pas de magie ni de piège ici)</b>';return x};
+   if(u&&u.type&&!u.apres_tours&&!u.sur_carte&&!u.udecl)x+=' <b style="color:#fca5a5">⚠ aucun déclencheur : ne se lancera jamais</b>';
+   else if(u&&u.sur_carte&&!u.apres_tours&&!u.udecl)x+=' <b style="color:#fcd34d">(seulement quand un piège se déclenche)</b>';return x};
   const REEL={cartes:[],magies:[],pieges:[]},poolC=()=>{const r=$('#rrf')?$('#rrf').value:'';return r?REEL.cartes.filter(c=>c.rarete===r):REEL.cartes},pick=v=>v===''?(l=>l[Math.floor(Math.random()*l.length)])(poolC()):REEL.cartes.find(c=>String(c.id)===v);
   const TOUS=()=>[...REEL.cartes,...REEL.magies,...REEL.pieges],rndl=l=>l.length?l[Math.floor(Math.random()*l.length)]:null;
   // magie / piège : '' = aucun, 'r' = au hasard, sinon id de la carte

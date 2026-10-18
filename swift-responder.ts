@@ -38,7 +38,27 @@ function simuler(pA,pB,opt={}){
     // PCH : profondeur de la chaîne de pièges en cours (un piège qui en déclenche un autre…)
    // EXEC : exécution en cours (ignore « évite la mort »)   // pendRev : réanimations en attente · pendEv : effets (pièges, « évite la mort ») à jouer APRÈS l'affichage des dégâts
  const L=(t,txt,o={})=>{if(t==='degats'&&o.n===0){flush();return}if(t==='stat'&&o.d===0)return;   // rien à montrer pour 0 dégât ou une stat inchangée
-  J.push({t,txt,...o,tour,pv:S.map(s=>s.pv),max:S.map(s=>s.max),atq:S.map(s=>s.atq)});if(t==='degats')flush()};
+  J.push({t,txt,...o,tour,pv:S.map(s=>s.pv),max:S.map(s=>s.max),atq:S.map(s=>s.atq)});if(TRIG)trig(t,o,txt);if(t==='degats')flush()};
+ // Déclencheurs d'ultime et conditions de piège « sur événement » (statut reçu, esquive, gros coup, piège, tour X…) : actifs seulement si une carte des decks s'en sert
+ const NEWC=new Set(['proprio_statut','adv_statut','proprio_esquive','adv_esquive','proprio_attaque','proprio_coup_fort','adv_piege','tour_n','proprio_bloque','proprio_ultime']);
+ const TRP=[...(pA.deck||[]),...(pB.deck||[])].some(c=>c&&c.effet&&c.effet.condition&&NEWC.has(c.effet.condition.type));
+ const TRIG=TRP||[...(pA.deck||[]),...(pB.deck||[])].some(c=>c&&c.ultime&&c.ultime.udecl);
+ const NEGK=new Set(['brulure','poison','saignement','malediction','gel','fatigue','etourdi','fracture']);
+ function trig(t,o,txt){let ev=null;
+  if(t==='statut'&&NEGK.has(o.k))ev={t:'st',who:o.c};
+  else if(t==='esquive')ev={t:'esq',who:o.c};
+  else if(t==='degats'&&o.n>0&&!['brûlure','brulure','poison','saignement'].includes(o.k))ev={t:'coup',who:o.c,n:o.n};
+  else if(t==='piege'&&!o.k)ev={t:'piege',who:o.c};
+  else if(t==='tour')ev={t:'tour',who:o.c,n:parseInt(String(txt).replace(/\D+/g,''),10)||0};
+  else if(t==='bloque')ev={t:'bloque',who:o.c};
+  else if(t==='soin')ev={t:'soin2',who:o.c};
+  else if(t==='ultime')ev={t:'ult',who:o.c};
+  else if(t==='attaque'&&!o.k)ev={t:'atk',who:o.c};
+  if(!ev)return;
+  S.forEach((s,i)=>s.uh.forEach(h=>{const u=h.u;if(!u||!u.udecl)return;const X=Math.max(1,parseInt(u.udx,10)||1),me=ev.who===i,ad=ev.who===1-i;
+   if({coups_recus:ev.t==='atk'&&ad&&S[1-i].coups%X===0,attaques:ev.t==='atk'&&me&&s.coups%X===0,son_piege:ev.t==='piege'&&me,piege_adv:ev.t==='piege'&&ad,adv_ultime:ev.t==='ult'&&ad,
+       statut:ev.t==='st'&&me,esquive:ev.t==='esq'&&me,soigne:ev.t==='soin2'&&me,coup_fort:ev.t==='coup'&&me&&ev.n>=X,bloque:ev.t==='bloque'&&me}[u.udecl])h.trg=1}));
+  if(TRP)pendEv.push(()=>scan(ev))}
  const amt=(e,b)=>e.u==='pct'?rd(b*e.val/100):(e.val||0);
  const over=()=>{flush();return S.some(s=>s.pv<=0)};
 
@@ -91,7 +111,10 @@ function simuler(pA,pB,opt={}){
   const ok={adv_attaque:ev.t==='attaque'&&ev.by===ia&&x.coups>0&&x.coups%Math.max(1,parseInt(c.coups,10)||1)===0,   // toutes les N attaques de l'adversaire (N, 2N, 3N…), jusqu'au nombre de déclenchements max
   adv_ultime:ev.t==='ultime'&&ev.by===ia,
    proprio_pv_sous:ev.t==='pv'&&o.pv>0&&o.pv/o.max*100<c.seuilpv,adv_pv_bas:ev.t==='pv'&&x.pv>0&&x.pv/x.max*100<c.seuilpv,
-   adv_soigne:ev.t==='soin'&&ev.who===ia,proprio_soigne:ev.t==='soin'&&ev.who===i,proprio_meurt:ev.t==='mort'&&ev.who===i}[c.type];
+   adv_soigne:ev.t==='soin'&&ev.who===ia,proprio_soigne:ev.t==='soin'&&ev.who===i,proprio_meurt:ev.t==='mort'&&ev.who===i,
+   proprio_statut:ev.t==='st'&&ev.who===i,adv_statut:ev.t==='st'&&ev.who===ia,proprio_esquive:ev.t==='esq'&&ev.who===i,adv_esquive:ev.t==='esq'&&ev.who===ia,
+   proprio_attaque:ev.t==='atk'&&ev.who===i&&o.coups>0&&o.coups%Math.max(1,parseInt(c.coups,10)||1)===0,proprio_coup_fort:ev.t==='coup'&&ev.who===i&&ev.n>=Math.max(1,parseInt(c.seuildeg,10)||1),
+   adv_piege:ev.t==='piege'&&ev.who===ia,tour_n:ev.t==='tour'&&ev.n===Math.max(1,parseInt(c.ntour,10)||1),proprio_bloque:ev.t==='bloque'&&ev.who===i,proprio_ultime:ev.t==='ult'&&ev.who===i}[c.type];
   if(!ok)return;
   if(PCH>=3)return;   // chaîne de pièges limitée à 3 (sinon deux pièges qui se déclenchent l'un l'autre tournent sans fin) : le piège reste armé pour plus tard
   if(x.st.insens>0){o.decl++;const reste=o.decl<(e.declenchements||1);o.pbl=reste?1:0;   // insensible : le piège se déclenche quand même (le déclenchement est consommé) mais son effet ne fait rien
@@ -369,8 +392,9 @@ function simuler(pA,pB,opt={}){
   for(const h of s.uh.slice()){const u=h.u;if(!u||!u.type)continue;
    if(u.utilisations>0&&h.uses>=u.utilisations)continue;
    if(tour-h.last<(u.delai_tours||0))continue;
-   if(!((u.apres_tours&&tour>=u.apres_tours)||(u.sur_carte&&s.pend)))continue;
-   h.uses++;h.last=tour;s.pend=0;L('ultime',`ULTIME de ${nom(s)} !`,{c:id(s)});{const s0=SRC;SRC='ultime';fx(u,s,adv(s));SRC=s0}scan({t:'ultime',by:id(s)});if(over())break}
+   const ud=u.udecl,uX=parseInt(u.udx,10)||50,etat=ud==='pv_sous'?s.pv/s.max*100<uX:ud==='adv_pv_sous'?adv(s).pv>0&&adv(s).pv/adv(s).max*100<uX:false;   // déclencheurs d'état : vérifiés au début de son tour
+   if(!((u.apres_tours&&tour>=u.apres_tours)||(u.sur_carte&&s.pend)||h.trg||etat))continue;
+   h.uses++;h.last=tour;s.pend=0;h.trg=0;L('ultime',`ULTIME de ${nom(s)} !`,{c:id(s)});{const s0=SRC;SRC='ultime';fx(u,s,adv(s));SRC=s0}scan({t:'ultime',by:id(s)});if(over())break}
  }
  function attaque(a){
   const d=adv(a),ia=id(a),idd=id(d);
@@ -572,7 +596,7 @@ function simuler(pA,pB,opt={}){
  const tAnn=e=>{const b=e.type==='annule_magies'?e:(e.briques||[]).find(b=>b&&b.type==='annule_magies');return Math.max(0,parseInt(b&&b.tours,10)||0)};   // 0 ou vide = jusqu'à la fin du combat
  const magies=()=>{
   ordre.forEach(s=>{const x=adv(s);if(s.magOn&&aMag(s.mag.effet)&&x.magOn){x.magOn=0;x.magAnn=1;x.magAnnT=tAnn(s.mag.effet);x.magNew=1}});
-  ordre.forEach(s=>{if(s.mag.effet&&s.magAnn!==1&&s.magAnn!==2&&!s.magVol){L('magie',`Magie de ${s.pseudo} : ${s.mag.nom}`,{c:id(s),carte:s.mag.nom,img:s.mag.image||null});fx(s.mag.effet,s,adv(s),true);S.forEach(k=>k.pend=1)}})};
+  ordre.forEach(s=>{if(s.mag.effet&&s.magAnn!==1&&s.magAnn!==2&&!s.magVol){L('magie',`Magie de ${s.pseudo} : ${s.mag.nom}`,{c:id(s),carte:s.mag.nom,img:s.mag.image||null});fx(s.mag.effet,s,adv(s),true)}})};   // la magie du début ne compte pas comme « une carte s'active » (sinon l'ultime partait toujours au 1er tour)
  magies();
  // Prolongation : au dernier tour, si aucune carte n'est tombée, chaque joueur tire 3 nouvelles cartes de son deck (1 combattant, 1 magie, 1 piège) et le combat continue, jusqu'au KO.
  // Après reg.maxProlong prolongations (3 par défaut), la carte qui a le plus de PV l'emporte (PV égaux = match nul).

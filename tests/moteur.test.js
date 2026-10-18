@@ -374,6 +374,29 @@ test('souffle et missiles : esquivables, souffle réduit et renvoyé (dégâts s
   assert.equal(lignes(m2, e => e.txt === 'a subit 30 dégâts (missile renvoyé)').length, 4);
 });
 
+test('déclencheurs : ultime sur événement ou sous X % de PV, nouvelles conditions de piège, magie du début sans effet sur « une carte s\'active »', () => {
+  const R = { regles: { maxTours: 6, maxProlong: 0 } }, ult = (x) => ({ type: 'degats', val: 1, utilisations: 1, ...x });
+  const tourUlt = r => { const i = r.journal.findIndex(e => e.t === 'ultime' && e.c === 0); return i < 0 ? null : r.journal.slice(0, i).filter(e => e.t === 'tour').length; };
+  // ultime « quand une carte s'active » + une magie : ne part plus au 1er tour
+  const r0 = combat([C('a', 5, 500, { ultime: ult({ sur_carte: true }) }), MAG('M', { type: 'soin', val: 1 })], [C('b', 5, 500)], R);
+  assert.equal(tourUlt(r0), null, 'la magie du début ne déclenche plus l\'ultime');
+  // ultime quand il reçoit un statut : l'adversaire empoisonne à chaque coup
+  const r1 = combat([C('a', 5, 500, { ultime: ult({ udecl: 'statut' }) })], [C('b', 5, 500, { passif: { type: 'poison', chance: 100, degtour: 2, tours: 2 } })], R);
+  assert.ok(tourUlt(r1) !== null && tourUlt(r1) > 1, 'ultime après le 1er statut reçu');
+  // ultime sous 50 % de PV
+  const r2 = combat([C('a', 0, 100, { ultime: ult({ udecl: 'pv_sous', udx: 50 }) })], [C('b', 30, 500)], R);
+  const i2 = r2.journal.findIndex(e => e.t === 'ultime');
+  assert.ok(i2 > 0 && r2.journal[i2].pv[0] < 50, 'parti sous 50 %');
+  // piège au tour 3 du combat
+  const r3 = combat([C('a', 5, 500), PIE('T3', { type: 'tour_n', ntour: 3 }, { type: 'degats', val: 7 })], [C('b', 5, 500)], R);
+  const i3 = r3.journal.findIndex(e => e.t === 'piege');
+  assert.equal(r3.journal.slice(0, i3).filter(e => e.t === 'tour').length, 3);
+  // piège quand le propriétaire esquive
+  const r4 = combat([C('a', 5, 500, { passif: { type: 'esquive', chance: 75 } }), PIE('Contre', { type: 'proprio_esquive' }, { type: 'degats', val: 7 })], [C('b', 5, 500)], R);
+  const i4 = r4.journal.findIndex(e => e.t === 'piege');
+  assert.ok(i4 > 0 && r4.journal.slice(0, i4).some(e => e.t === 'esquive' && e.c === 0));
+});
+
 test('solidification : bloque l\'étourdissement, une fracture la brise, la purification ne la retire pas', () => {
   const etourdit = { type: 'etourdir', chance: 100 };
   // magie : solidifié 3 tours, l'adversaire étourdit à chaque coup → aucun étourdissement
