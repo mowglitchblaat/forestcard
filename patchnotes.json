@@ -1,5 +1,18 @@
 [
   {
+    "date": "2026-10-18",
+    "intro": "Les souffles élémentaires deviennent imprévisibles.",
+    "groupes": [
+      {
+        "titre": "Effets",
+        "points": [
+          "Souffle élémentaire : nouveau statut « Aléatoire », un statut différent tiré au hasard à chaque souffle (brûlure, gel, malédiction, poison, saignement ou fatigue).",
+          "Souffles en chaîne : un souffle peut avoir X % de chances d’en relancer un autre aussitôt, et ainsi de suite jusqu’au premier échec (nombre maximum réglable)."
+        ]
+      }
+    ]
+  },
+  {
     "date": "2026-10-17",
     "intro": "Nouvel atelier de deck, historique sans spoil et site plus confortable sur téléphone.",
     "groupes": [

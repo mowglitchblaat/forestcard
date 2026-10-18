@@ -283,13 +283,18 @@ function simuler(pA,pB,opt={}){
    case'echange_tout':[o.atq,x.atq]=[x.atq,o.atq];[o.pv,x.pv]=[x.pv,o.pv];[o.max,x.max]=[x.max,o.max];L('stat',`${nom(o)} et ${nom(x)} échangent ATQ et PV`,{k:'echange',cs:[id(o),id(x)],col:'mixte'});break;
    case'malediction':maudire((e.ciblem||e.cible)==='soi'?o:x,e.val||0,e.tours||1);break;
    case'saignement':saigner((e.ciblem||e.cible)==='soi'?o:x,e.pctpv||0,e.reducsoin||0,e.tours||1);break;
-   case'souffle':{const el=['brulure','gel','malediction','poison','saignement','fatigue'].includes(e.statut)?e.statut:'brulure',NS={brulure:'de feu',gel:'de glace',malediction:'maudit',poison:'empoisonné',saignement:'de sang',fatigue:"d'épuisement"};
-    L('souffle',`${nom(o)} crache un souffle ${NS[el]} !`,{c:id(x),from:id(o),el});
+   case'souffle':{const ELS=['brulure','gel','malediction','poison','saignement','fatigue'],NS={brulure:'de feu',gel:'de glace',malediction:'maudit',poison:'empoisonné',saignement:'de sang',fatigue:"d'épuisement"};
+    // statut « aleatoire » : un statut tiré au hasard à CHAQUE souffle · rechance : X % de souffler encore (retente, s'arrête au 1er échec, remax souffles en plus au maximum, 3 par défaut)
+    const un=(k)=>{const el=e.statut==='aleatoire'?ELS[Math.floor(r()*ELS.length)]:(ELS.includes(e.statut)?e.statut:'brulure');
+    L('souffle',`${nom(o)} crache un souffle ${NS[el]}${k>1?` (souffle n°${k})`:''} !`,{c:id(x),from:id(o),el,...(k>1?{n:k}:{})});
     if(+e.val>0){const n=dmg(o,x,+e.val);L('degats',`${nom(x)} subit ${n} dégâts (souffle)`,{c:id(x),n,k:'souffle'})}
     if(x.pv>0){const ch=e.chance==null||e.chance===''?100:(+e.chance||0),v=+e.sval||0,t=Math.max(1,parseInt(e.tours,10)||2);
      if(roll(ch))fx({brulure:{type:'brulure_effet',ciblem:'adversaire',pctpv:v,tours:t},gel:{type:'gel',ciblem:'adversaire',annul:v,stunch:0,tours:t},malediction:{type:'malediction',ciblem:'adversaire',val:v,tours:t},
       poison:{type:'poison_effet',ciblem:'adversaire',degtour:v,tours:t},saignement:{type:'saignement',ciblem:'adversaire',pctpv:v,reducsoin:+e.reducsoin||0,tours:t},fatigue:{type:'fatigue',ciblem:'adversaire',fatval:v,u:'pct',fattours:t}}[el],o,x,mg,rt);
-     else L('statut',`${nom(x)} résiste au souffle (${ch} % de chances)`,{c:id(x)})}
+     else L('statut',`${nom(x)} résiste au souffle (${ch} % de chances)`,{c:id(x)})}};
+    un(1);
+    const rc=+e.rechance||0,rm=e.remax==null||e.remax===''?3:Math.max(0,parseInt(e.remax,10)||0);
+    if(rc>0)for(let k=2;k<=rm+1&&x.pv>0&&o.pv>0&&!over();k++){if(!roll(rc))break;un(k)}
     break}
    case'execution':{const q={type:'execution',chance:e.chance==null||e.chance===''?100:+e.chance||0,seuilexec:e.seuilexec};o.st.atkfx.push(q);if(mg)o.mdelta.push({undo:()=>{o.st.atkfx=o.st.atkfx.filter(z=>z!==q)}});L('statut',`L'attaque de ${nom(o)} peut maintenant marquer la cible (${q.chance} %)`,{c:id(o),k:'exec_prep'});break}
    case'atk_avalage':{const q={type:'avalage',chance:e.chance,ratio:e.ratio,pctmache:e.pctmache,machebase:e.machebase,tours:e.tours,repos:e.repos};o.st.atkfx.push(q);if(mg)o.mdelta.push({undo:()=>{o.st.atkfx=o.st.atkfx.filter(z=>z!==q)}});L('statut',`L'attaque de ${nom(o)} peut maintenant préparer un avalage`,{c:id(o),k:'aval_prep'});break}

@@ -257,6 +257,20 @@ test('copie d\'ultime : la carte copie l\'ultime adverse, l\'adversaire le garde
   assert.equal(lignes(r, e => e.k === 'copie_ultime').length, 1, 'pas de double copie');
 });
 
+test('souffle : statut aléatoire à chaque souffle et souffles en chaîne', () => {
+  const ult = { type: 'souffle', val: 5, statut: 'aleatoire', chance: 100, sval: 3, tours: 2, rechance: 100, remax: 4, apres_tours: 1, utilisations: 1 };
+  const r = combat([C('Dragon', 10, SOLIDE, { ultime: ult })], [C('b', 10, SOLIDE)], { regles: { maxTours: 3, maxProlong: 0 } });
+  const s = r.journal.filter(e => e.t === 'souffle');
+  assert.equal(s.length, 5, '1 souffle + 4 en chaîne (100 %, max 4)');
+  assert.ok(s.every(e => ['brulure', 'gel', 'malediction', 'poison', 'saignement', 'fatigue'].includes(e.el)), 'un statut valide à chaque souffle');
+  assert.ok(new Set(s.map(e => e.el)).size > 1, 'les statuts varient');
+  // sans les nouvelles options, le souffle reste unique et garde son statut
+  const r2 = combat([C('Dragon', 10, SOLIDE, { ultime: { type: 'souffle', val: 5, statut: 'gel', chance: 100, sval: 3, tours: 2, apres_tours: 1, utilisations: 1 } })], [C('b', 10, SOLIDE)], { regles: { maxTours: 3, maxProlong: 0 } });
+  const s2 = r2.journal.filter(e => e.t === 'souffle');
+  assert.equal(s2.length, 1);
+  assert.equal(s2[0].el, 'gel');
+});
+
 test('solidification : bloque l\'étourdissement, une fracture la brise, la purification ne la retire pas', () => {
   const etourdit = { type: 'etourdir', chance: 100 };
   // magie : solidifié 3 tours, l'adversaire étourdit à chaque coup → aucun étourdissement
