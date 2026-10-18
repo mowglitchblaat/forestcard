@@ -44,6 +44,11 @@ canvas.fx.malediction{box-shadow:inset 0 0 40px 10px rgba(150,70,230,.7);animati
 .mini.annule::before{content:'';position:absolute;inset:0;border-radius:8px;background:rgba(0,0,0,.5)}
 .mini.annule::after{content:'✖';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:6.5vh;font-weight:900;color:#ef2d2d;text-shadow:0 0 6px #000,0 0 14px #000;animation:croix .5s ease-out}
 @keyframes croix{from{transform:scale(2.4);opacity:0}to{transform:scale(1);opacity:1}}
+/* attaque ANNULÉE : la carte s'élance, est stoppée net et s'éteint, un ✖ rouge tamponne la carte (pas de bouclier : rien n'a été bloqué, l'attaque n'a pas eu lieu) */
+.card.annul{animation:annul 1s ease-out}
+@keyframes annul{0%{transform:none;filter:none}22%{transform:scale(1.07) translateY(-1.2vh)}34%{transform:scale(.96) translateY(.4vh);filter:grayscale(.9) brightness(.6)}70%{filter:grayscale(.9) brightness(.6)}100%{transform:none;filter:none}}
+.annx{pointer-events:none;z-index:60;animation:croix .35s ease-out,annxo .5s ease-in .75s forwards}.annx::before,.annx::after{content:'';position:absolute;left:50%;top:50%;width:62%;height:9%;margin:-4.5% 0 0 -31%;border-radius:999px;background:#ef2d2d;box-shadow:0 0 12px #000,0 0 26px rgba(239,45,45,.7)}.annx::before{transform:rotate(45deg)}.annx::after{transform:rotate(-45deg)}
+@keyframes annxo{to{opacity:0;transform:scale(.8)}}
 .mini.back{background:linear-gradient(135deg,#7f1d1d,#1e1b4b);border:3px solid #f87171;font-size:4vh}
 .mini.back.dos{background-color:#111;background-size:cover;background-position:center;border:2px solid rgba(255,255,255,.35)}
 .mini.rev{animation:rev .8s;box-shadow:0 0 20px #f87171}
@@ -901,6 +906,7 @@ function vent(c){const K=rc(c),dir=c===0?-1:1,cw=$('#p'+c+' .cw'),card=cw.queryS
 
 // BLOCAGE : bouclier qui encaisse (fissure) ; avec o.to : RENVOI (piques vers l'adversaire)
 function bPath(x,cx,cy,w,h){const l=cx-w/2,r=cx+w/2,t=cy-h/2,b=cy+h/2;x.beginPath();x.moveTo(l,t+h*.05);x.quadraticCurveTo(cx,t-h*.08,r,t+h*.05);x.lineTo(r,cy+h*.1);x.quadraticCurveTo(r,b-h*.25,cx,b);x.quadraticCurveTo(l,b-h*.25,l,cy+h*.1);x.closePath()}
+function annuleFx(c){const k=$('#p'+c+' .card');if(!k)return;k.classList.remove('annul');void k.offsetWidth;k.classList.add('annul');const R=k.getBoundingClientRect(),x=document.createElement('div');x.className='annx';Object.assign(x.style,{position:'fixed',left:R.left+'px',top:R.top+'px',width:R.width+'px',height:R.height+'px'});document.body.appendChild(x);/* hors de la carte : le gris de la carte ne doit pas éteindre le ✖ */setTimeout(()=>{x.remove();k.classList.remove('annul')},1300)}
 function bouclier(c,o={}){const K=rc(c),sx=c===0?1:-1,sw=K.w*.8,sh=K.h*.72,cx=K.cx,cy=K.cy,P={x:cx+sx*sw*.2,y:cy-sh*.08},sc=K.w/320;
  const cr=[];for(let b=0;b<4;b++){let a=Math.random()*6.28,px=P.x,py=P.y;const pts=[[px,py]];for(let i=0;i<6;i++){a+=R(-.7,.7);const l=sw*R(.05,.1);px+=Math.cos(a)*l;py+=Math.sin(a)*l;pts.push([px,py])}cr.push(pts)}
  const sp=[];for(let i=0;i<18;i++)sp.push({a:Math.random()*6.28,v:R(40,130)*sc});
@@ -1419,7 +1425,7 @@ async function jouer(res){
    if(e.t==='degats'){card.classList.add('hit');if(e.k==='fracture')os(e.c);const gros=e.n/e.max[e.c]>=.2&&e.k!=='poison'&&e.k!=='brûlure'&&e.k!=='saignement';flot(e.c,'-'+e.n,e.k==='poison'?'#22ff55':e.k==='brûlure'?'#ff8a00':e.k==='saignement'?'#c4121e':e.k==='fracture'?'#fde68a':gros?'#ff1111':'#ff6a6a',gros?'big':'');setTimeout(()=>card.classList.remove('hit'),450)}
    else if(e.t==='soin'){flot(e.c,'+'+e.n,'#4ade80');soin(e.c);if(e.k==='revive')aureole(e.c)}
    else if(e.t==='esquive'){flot(e.c,'Esquive !','#e5e7eb');vent(e.c)}
-   else if(e.t==='bloque'){if(/une partie/.test(e.txt||'')){bouclier(e.c,{partiel:1});flot(e.c,'Dégâts réduits','#fcd34d')}else if(/est bloquée/.test(e.txt||'')){bouclier(e.c,{partiel:1});flot(e.c,'Attaque bloquée','#fcd34d')}else{bouclier(e.c);flot(e.c,'Attaque annulée','#bae6fd')}}   // annulée = rien ne passe · bloquée / partiel = le coup touche (statuts et marques passent)   // annulée = rien ne passe · partiel = le coup touche quand même
+   else if(e.t==='bloque'){if(/une partie/.test(e.txt||'')){bouclier(e.c,{partiel:1});flot(e.c,'Dégâts réduits','#fcd34d')}else if(/est bloquée/.test(e.txt||'')){bouclier(e.c,{partiel:1});flot(e.c,'Attaque bloquée','#fcd34d')}else{annuleFx(1-e.c);flot(1-e.c,'Attaque annulée','#fca5a5')}}   // annulée = rien ne passe · bloquée / partiel = le coup touche (statuts et marques passent)   // annulée = rien ne passe · partiel = le coup touche quand même
    else if(e.t==='protege')ailes(e.c);
    else if(e.t==='reanim_mort'){document.querySelectorAll('#p'+e.c+' .card canvas.fx').forEach(k=>k.remove());Object.keys(st).filter(k=>k.startsWith(String(e.c))).forEach(k=>st[k]=0);briser(e.c);await wait(3100)}
    else if(e.t==='reanim'){reforme(e.c);flot(e.c,'+'+e.n,'#4ade80');await wait(2100)}
@@ -1514,6 +1520,7 @@ if(DEMO){
  const cardOf=c=>$('#p'+c+' .card'),has=(c,k)=>!!cardOf(c).querySelector('canvas.fx.'+k);
  const S=[
   ['Défense','Esquive',c=>{flot(c,'Esquive !','#e5e7eb');vent(c)},1700],
+  ['Défense','Attaque annulée (✖ sur l\'attaquant)',c=>{annuleFx(1-c);flot(1-c,'Attaque annulée','#fca5a5')},1600],
   ['Défense','Blocage (bouclier)',c=>bouclier(c),1600],
   ['Défense','Attaque bloquée (statuts et marques passent)',c=>{bouclier(c,{partiel:1});flot(c,'Attaque bloquée','#fcd34d')},1600],
   ['Défense','Blocage partiel (dégâts réduits)',c=>{bouclier(c,{partiel:1});flot(c,'Dégâts réduits','#fcd34d')},1600],
