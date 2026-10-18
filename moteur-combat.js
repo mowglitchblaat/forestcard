@@ -23,7 +23,8 @@ function simuler(pA,pB,opt={}){
  const S=[nw(pA),nw(pB)],id=s=>S.indexOf(s),adv=s=>S[1-id(s)],nom=s=>s.card.nom;
  S.forEach(s=>{if(s.mag.vide)s.magOn=0;if(s.pie.vide)s.pieOn=0});
  let tour=0,rv=0,SRC='magie';   // SRC : d'où vient l'effet en cours (magie, piege, ultime, passif) — sert à placer une carte volée
- let pendRev=[],pendEv=[],EXEC=0,PCH=0;   // PCH : profondeur de la chaîne de pièges en cours (un piège qui en déclenche un autre…)
+ let pendRev=[],pendEv=[],EXEC=0,PCH=0,NOREV=0;   // NOREV : dégâts de détonation (pas de réanimation)
+    // PCH : profondeur de la chaîne de pièges en cours (un piège qui en déclenche un autre…)
    // EXEC : exécution en cours (ignore « évite la mort »)   // pendRev : réanimations en attente · pendEv : effets (pièges, « évite la mort ») à jouer APRÈS l'affichage des dégâts
  const L=(t,txt,o={})=>{if(t==='degats'&&o.n===0){flush();return}if(t==='stat'&&o.d===0)return;   // rien à montrer pour 0 dégât ou une stat inchangée
   J.push({t,txt,...o,tour,pv:S.map(s=>s.pv),max:S.map(s=>s.max),atq:S.map(s=>s.atq)});if(t==='degats')flush()};
@@ -48,14 +49,15 @@ function simuler(pA,pB,opt={}){
    }}
    // 2) pas de protection : les autres pièges « le propriétaire meurt » (dont la réanimation) se déclenchent maintenant
    //    Piège qui contient une réanimation : il se déclenche maintenant, mais il n'est MONTRÉ qu'après la mort : la carte se brise, se reforme, puis le piège apparaît (effet de surprise)
-   if(!after){const pe=dst.pieOn&&dst.pie.effet,pf=pe&&pe.effet,rb=pf&&(pf.type==='reanimation'?pf:(pf.briques||[]).find(b=>b&&b.type==='reanimation')),x=adv(dst);
+   if(!after){const pe=dst.pieOn&&dst.pie.effet,pf=pe&&pe.effet,rb=!NOREV&&pf&&(pf.type==='reanimation'?pf:(pf.briques||[]).find(b=>b&&b.type==='reanimation')),x=adv(dst);
     if(rb&&pe.condition&&pe.condition.type==='proprio_meurt'&&dst.decl<(pe.declenchements||1)&&!(x.st.insens>0)){   // tout le piège est joué APRÈS la réanimation ; seule la réanimation est préparée maintenant
      dst.decl++;dst.st.reanL.push({pctrev:rb.pctrev||0});const reste=pf.briques?{briques:pf.briques.filter(b=>b!==rb)}:null;
      capR=()=>{L('piege',`Piège de ${dst.pseudo} : ${dst.pie.nom} !`,{c:id(dst),carte:dst.pie.nom,img:dst.pie.image||null});if(reste){rv=1;fx(reste,dst,x);rv=0}S.forEach(s=>s.pend=1)}}
     else scan({t:'mort',who:id(dst),skip:1})}
   }
   const lethal=n>=dst.pv;dst.pv=Math.max(0,dst.pv-n);src.cum+=n;   // les PV s'arrêtent à 0 (jamais négatifs)
-  if(lethal){const rs=reanSrc(dst);if(rs){dst.st.rUsed.push(rs);dst.pv=0;pendRev.push({d:dst,pct:rs.pctrev||0,cap:capR});capR=null}}
+  if(lethal&&NOREV&&reanSrc(dst))pendEv.push(()=>L('statut',`${nom(dst)} est pulvérisé par l'explosion : pas de réanimation !`,{c:id(dst),k:'anti_rea'}));
+  if(lethal&&!NOREV){const rs=reanSrc(dst);if(rs){dst.st.rUsed.push(rs);dst.pv=0;pendRev.push({d:dst,pct:rs.pctrev||0,cap:capR});capR=null}}
   if(capR)pendEv.push(capR);   // pas de réanimation au final : le piège se montre juste après les dégâts   // la carte meurt vraiment ; elle revient juste après (voir flush)
   if(after)pendEv.push(after);pendEv.push(()=>scan({t:'pv'}));return n;   // les effets se jouent juste après les dégâts, pas avant
  }
@@ -191,22 +193,21 @@ function simuler(pA,pB,opt={}){
  // « t tours » = t TIK au total, comptés sur les tours de la carte touchée. Malédiction : TIK au début de son tour, avant son attaque. Brûlure, poison, saignement : TIK à la fin de son tour, juste après son attaque.
  // Un seul statut de chaque sorte par carte : il garde la même intensité à chaque tik. Si quelque chose le réapplique par-dessus, l'intensité s'additionne et la durée repart à zéro.
  // DÉTONATION : consume la brûlure, le poison et le saignement de la cible et inflige d'un coup tous leurs dégâts restants (+ bonus %, + X dégâts fixes)
- function detoner(o,t,q,muet){if(t.pv<=0)return;const z=t.st,parts=[],fin=[];let tot=0;
-  const cs=q.conso==null||q.conso===''?100:Math.max(0,Math.min(100,+q.conso||0));   // % des statuts consumé tout de suite (100 = tout)
-  if(cs>=100){z.dots.forEach(d=>{tot+=(d.n||0)*Math.max(0,d.t);const k=d.k==='poison'?'poison':'brulure';parts.push(k);fin.push(k)});
-   z.bleeds.forEach(b=>{tot+=rd(t.max*(b.pct||0)/100)*Math.max(0,b.t);parts.push('saignement');fin.push('saignement')})}
-  else{z.dots.forEach(d=>{const p=rd((d.n||0)*cs/100);if(p<=0)return;tot+=p*Math.max(0,d.t);d.n-=p;const k=d.k==='poison'?'poison':'brulure';parts.push(k);if(d.n<=0)fin.push(k)});   // l'intensité baisse, la durée reste
-   z.bleeds.forEach(b=>{const p=Math.round((b.pct||0)*cs)/100;if(p<=0)return;tot+=rd(t.max*p/100)*Math.max(0,b.t);b.pct=Math.round((b.pct-p)*100)/100;parts.push('saignement');if(b.pct<=0)fin.push('saignement')})}
+ function detoner(o,t,q,muet){if(t.pv<=0)return;const z=t.st,parts=[];let tot=0;
+  const cs=q.conso==null||q.conso===''?100:Math.max(0,+q.conso||0);   // % des dégâts restants des statuts infligés d'un coup (100 = tout) ; les statuts sont TOUJOURS purgés
+  z.dots.forEach(d=>{tot+=(d.n||0)*Math.max(0,d.t);parts.push(d.k==='poison'?'poison':'brulure')});
+  z.bleeds.forEach(b=>{tot+=rd(t.max*(b.pct||0)/100)*Math.max(0,b.t);parts.push('saignement')});
+  if(cs!==100)tot=rd(tot*cs/100);
   const bon=q.bonus==null||q.bonus===''?50:(+q.bonus||0),brut=Math.max(0,+q.val||0);
   if(!parts.length&&!brut){if(!muet)L('statut',`${nom(t)} n'a aucun statut à faire exploser`,{c:id(t),k:'deto_rien'});return}
-  z.dots=z.dots.filter(d=>cs<100&&d.n>0);z.bleeds=z.bleeds.filter(b=>cs<100&&b.pct>0);
+  z.dots=[];z.bleeds=[];
   L('detonation',`💥 DÉTONATION sur ${nom(t)} !`,{c:id(t),from:id(o),parts});
-  fin.forEach(k=>L('finstatut',`${k==='brulure'?'La brûlure':k==='poison'?'Le poison':'Le saignement'} de ${nom(t)} explose`,{c:id(t),k}));
-  if(cs<100&&parts.length>fin.length)L('statut',`Les statuts restants de ${nom(t)} sont affaiblis (−${cs} %)`,{c:id(t),k:'deto_part'});
+  parts.forEach(k=>L('finstatut',`${k==='brulure'?'La brûlure':k==='poison'?'Le poison':'Le saignement'} de ${nom(t)} explose`,{c:id(t),k}));
   let n0=rd(tot*(1+bon/100));if(t.st.solide>0&&n0>0){n0=rd(n0/2);L('statut',`${nom(t)} est solidifié : la détonation est amortie de moitié`,{c:id(t),k:'solide_bloque'})}   // solidification : moitié des dégâts des statuts
   n0+=brut;   // dégâts bruts de l'explosion : jamais réduits
-  const n=dmg(o,t,n0);L('degats',`${nom(t)} subit ${n} dégâts (détonation)`,{c:id(t),n,k:'detonation'});
-  const rc=Math.max(0,+q.recul||0);if(rc>0&&o!==t&&o.pv>0){const b=dmg(t,o,rd(n*rc/100));if(b>0)L('degats',`${nom(o)} subit ${b} dégâts (souffle de l'explosion)`,{c:id(o),n:b,k:'detonation'})}}   // dégâts de zone : le poseur prend X % du souffle
+  NOREV=1;let n;try{n=dmg(o,t,n0)}finally{NOREV=0}   // une carte tuée par l'explosion ne peut pas être réanimée
+  L('degats',`${nom(t)} subit ${n} dégâts (détonation)`,{c:id(t),n,k:'detonation'});
+  const rc=Math.max(0,+q.recul||0);if(rc>0&&o!==t&&o.pv>0){let b;NOREV=1;try{b=dmg(t,o,rd(n*rc/100))}finally{NOREV=0}if(b>0)L('degats',`${nom(o)} subit ${b} dégâts (souffle de l'explosion)`,{c:id(o),n:b,k:'detonation'})}}   // dégâts de zone : le poseur prend X % du souffle
  function tikUn(s,kind,d){const x=adv(s);
   if(kind==='dots'){const n=dmg(x,s,d.n);L('degats',`${nom(s)} subit ${n} (${d.k})`,{c:id(s),n,k:d.k})}
   else if(kind==='bleeds'){const n=dmg(x,s,rd(s.max*d.pct/100));L('degats',`${nom(s)} subit ${n} (saignement)`,{c:id(s),n,k:'saignement'})}

@@ -318,7 +318,7 @@ test('détonation : consume brûlure, poison et saignement (dégâts restants + 
   assert.ok(r2.journal.some(e => /b subit 2[23] dégâts \(détonation\)/.test(e.txt || '')), JSON.stringify(r2.journal.filter(e => e.k === 'detonation').map(e => e.txt)));
 });
 
-test('détonation partielle : consume X % des statuts (le reste continue, plus faible) + dégâts bruts jamais réduits', () => {
+test('détonation partielle : X % des dégâts restants, statuts purgés quand même + dégâts bruts jamais réduits', () => {
   const pose = MAG('Pose', { briques: [{ type: 'poison_effet', ciblem: 'adversaire', degtour: 10, tours: 3 }, { type: 'brulure_effet', ciblem: 'adversaire', pctpv: 1, tours: 2 }] });
   const ult = { type: 'detonation', bonus: 50, val: 100, conso: 50, apres_tours: 1, utilisations: 1 };
   const r = combat([C('a', 0, 5000, { ultime: ult }), pose], [C('b', 0, 1000)], { regles: { maxTours: 3, maxProlong: 0 } });
@@ -326,10 +326,21 @@ test('détonation partielle : consume X % des statuts (le reste continue, plus f
   assert.ok(i > 0, 'détonation');
   // reste poison 10 × 2 + brûlure 10 × 1 → moitié consumée : 5 × 2 + 5 × 1 = 15, +50 % = 22,5 → 22 ou 23, + 100 bruts
   assert.ok(r.journal.some(e => /^b subit 12[23] dégâts \(détonation\)$/.test(e.txt || '')), JSON.stringify(r.journal.filter(e => e.k === 'detonation').map(e => e.txt)));
-  assert.ok(r.journal.slice(i).some(e => e.txt === 'b subit 5 (poison)'), 'le poison continue, à moitié');
+  assert.ok(!r.journal.slice(i).some(e => /\((poison|brûlure)\)/.test(e.txt || '')), 'les statuts sont purgés quand même');
   // solidifié : seuls les dégâts des statuts sont divisés par deux, pas les dégâts bruts
   const r2 = combat([C('a', 0, 5000, { ultime: ult }), pose], [C('b', 0, 1000, { passif: { type: 'solidification', chance: 100, tours: 9 } })], { regles: { maxTours: 1, maxProlong: 0 } });
   assert.ok(r2.journal.some(e => /^b subit 11[12] dégâts \(détonation\)$/.test(e.txt || '')), JSON.stringify(r2.journal.filter(e => e.k === 'detonation').map(e => e.txt)));
+});
+
+test('détonation : une carte tuée par l\'explosion ne se réanime pas (passif, magie ou piège)', () => {
+  const ult = { type: 'detonation', val: 500, apres_tours: 1, utilisations: 1 };
+  const r = combat([C('a', 0, 5000, { ultime: ult })], [C('b', 0, 100, { passif: { type: 'reanimation', pctrev: 50 } })], { regles: { maxTours: 2, maxProlong: 0 } });
+  assert.equal(lignes(r, e => e.t === 'reanim').length, 0, 'pas de réanimation');
+  assert.ok(lignes(r, e => e.k === 'anti_rea').length === 1, 'annonce « pulvérisé »');
+  assert.equal(r.gagnant, 0);
+  // sans détonation, la même carte se réanime bien
+  const r2 = combat([C('a', 0, 5000, { ultime: { type: 'degats', val: 500, apres_tours: 1, utilisations: 1 } })], [C('b', 0, 100, { passif: { type: 'reanimation', pctrev: 50 } })], { regles: { maxTours: 2, maxProlong: 0 } });
+  assert.equal(lignes(r2, e => e.t === 'reanim').length, 1);
 });
 
 test('solidification : bloque l\'étourdissement, une fracture la brise, la purification ne la retire pas', () => {
