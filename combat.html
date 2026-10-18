@@ -148,6 +148,17 @@ canvas.fx.solide{box-shadow:inset 0 0 30px 8px rgba(120,113,108,.75)}
 .ventre .pts{position:absolute;left:50%;bottom:-24%;translate:-50% 0;display:flex;gap:4px}.ventre .pts i{width:.9vh;height:.9vh;border-radius:50%;background:#3b0b1c;border:1px solid #f9a8d4}.ventre .pts i.on{background:#f472b6;box-shadow:0 0 6px #f472b6}
 @keyframes vbat{0%,100%{scale:1}50%{scale:1.06}}
 .dents{position:absolute;inset:0;z-index:8;pointer-events:none;overflow:hidden;border-radius:12px}.dents svg{position:absolute;left:-4%;width:108%;height:46%}
+.exan{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(.85);opacity:0;z-index:80;pointer-events:none;transition:opacity .5s,transform .5s cubic-bezier(.2,1.4,.4,1);font-family:inherit;text-align:center;color:#fff}
+.exan.on{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.exti{font-size:46px;font-weight:900;letter-spacing:2px;color:#fde68a;-webkit-text-stroke:2px #7c2d12;text-shadow:0 0 24px rgba(251,191,36,.8);margin-bottom:14px}
+.exro{display:flex;align-items:center;gap:26px;background:rgba(10,8,20,.72);border:2px solid rgba(167,139,250,.6);border-radius:18px;padding:16px 22px;box-shadow:0 0 40px rgba(124,58,237,.5)}
+.exco{display:flex;flex-direction:column;align-items:center;gap:8px;transition:transform 1.1s cubic-bezier(.6,-.3,.3,1.3)}
+.exps{font-size:24px;font-weight:800;text-shadow:0 2px 6px #000}
+.exls{display:flex;gap:8px;transition:transform 1.1s cubic-bezier(.6,-.3,.3,1.3)}
+.exk{width:110px;display:flex;flex-direction:column;gap:4px;font-size:13px}.exk img{width:110px;aspect-ratio:5/7;object-fit:cover;border-radius:8px;box-shadow:0 0 0 3px var(--g),0 0 18px var(--g)}
+.exfl{font-size:44px;color:#a78bfa;text-shadow:0 0 18px #7c3aed;animation:exrot 1.2s ease-in-out infinite alternate}
+@keyframes exrot{from{transform:scale(1)}to{transform:scale(1.25)}}
+.exan.swap .ea .exls{transform:translateX(var(--dx,260px))}.exan.swap .eb .exls{transform:translateX(calc(-1 * var(--dx,260px)))}.exan.swap .exls{z-index:1}
 </style></head><body>
 <div id="scene"><div class="p" id="p0"></div>
 <div id="mid"><div id="tour"></div><div id="ban"></div></div><div class="p" id="p1"></div></div>
@@ -1706,6 +1717,7 @@ if(DEMO){
  const cardOf=c=>$('#p'+c+' .card'),has=(c,k)=>!!cardOf(c).querySelector('canvas.fx.'+k);
  const S=[
   ['Statuts','Détonation (feu + poison + sang)',c=>{detoFx(c,['brulure','poison','saignement']);setTimeout(()=>flot(c,'DÉTONATION !','#fb923c','big'),260)},2300],
+  ['Statuts','🔄 Annonce d\'échange (overlay)',()=>annonceEchange({a:'Toi',b:'Bot',cartes_a:DECK.slice(0,1).map(c=>({nom:c.nom,image:c.image||null,couleur:'#f59e0b',quantite:1})),cartes_b:DECK.slice(1,3).map(c=>({nom:c.nom,image:c.image||null,couleur:'#a855f7',quantite:1}))}),5500],
   ['Statuts','Missile renvoyé',async c=>{await missileFx(1-c,c,1);detoFx(c,[],{s:.6});await wait(350);await missileFx(c,1-c,2);detoFx(1-c,[],{s:.6})},2400],
   ['Statuts','Missiles (3 missiles)',async c=>{for(let k=1;k<=3;k++){await missileFx(1-c,c,k);detoFx(c,k>1?['brulure']:[],{s:.6});await wait(450)}},3600],
   ['Statuts','Réduit en cendres (tué par une détonation)',c=>{cendresFx(c);setTimeout(()=>flot(c,'RÉDUIT EN CENDRES','#fdba74','big'),400);setTimeout(()=>{const k=$('#p'+c+' .cw .card');if(k){['filter','transition','opacity','mask-image','-webkit-mask-image','--b'].forEach(z=>k.style.removeProperty(z));delete k.dataset.cendre}},3600)},3800],
@@ -1983,5 +1995,17 @@ if(TEST||DEMO){const dm=$('#demo');if(dm){const row=document.createElement('div'
   let nb=0;$('#bbty').onclick=()=>{const tout=++nb%3===0,total=5+Math.floor(Math.random()*86),pg=tout?total:Math.round(total*.7),parts=[pg,total-pg];   // aperçu seulement : rien n'est enregistré (1 essai sur 3 : « le gagnant rafle tout »)
    const b=$('#ban');if(b)b.textContent='Aperçu : A remporte le combat ! (+50)'+(tout?` · 💰 Bounty ${total} : le gagnant rafle tout !`:` · 💰 Bounty ${total} !`);
    bourseBounty(parts);[0,1].forEach(i=>{if(parts[i]>0&&$('#p'+i))setTimeout(()=>flot(i,'💰 Bounty +'+parts[i],'#fcd34d'),2100)})}}}
+
+// ---------- Annonce des échanges réussis entre joueurs (28-echanges.sql) ----------
+async function annonceEchange(d){if(!d)return;const A=d.cartes_a||[],B=d.cartes_b||[],esc2=t=>String(t??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+ const fig=c=>`<div class="exk" style="--g:${esc2(c.couleur||'#888')}">${c.image?`<img src="${urlImg(c.image)}" alt="">`:''}<b>${c.quantite>1?c.quantite+'× ':''}${esc2(c.nom)}</b></div>`;
+ const el=document.createElement('div');el.className='exan';
+ el.innerHTML=`<div class="exti">🔄 ÉCHANGE !</div><div class="exro"><div class="exco ea"><div class="exps">${esc2(d.a)}</div><div class="exls">${A.map(fig).join('')}</div></div><div class="exfl">⇄</div><div class="exco eb"><div class="exps">${esc2(d.b)}</div><div class="exls">${B.map(fig).join('')}</div></div></div>`;
+ document.body.appendChild(el);{const la=el.querySelector('.ea .exls').getBoundingClientRect(),lb=el.querySelector('.eb .exls').getBoundingClientRect();el.style.setProperty('--dx',((lb.left+lb.width/2)-(la.left+la.width/2))+'px')}await sleep(60);el.classList.add('on');await sleep(1700);el.classList.add('swap');await sleep(2600);el.classList.remove('on');await sleep(700);el.remove()}
+async function guetterEchanges(){if(TEST||DEMO)return;
+ if(!enCours){try{const r=await fetch('https://bjsvqikjnvaomyoifiml.supabase.co/rest/v1/rpc/echange_a_annoncer',{method:'POST',headers:{apikey:'sb_publishable_-3cPqDCyE-zhb3z5r6dPhg_DJFKGAI6','Content-Type':'application/json'},body:'{}'});
+  const d=r.ok?await r.json():null;if(d&&d.id){enCours=true;try{await verrouPrendre('combat');await annonceEchange(d)}finally{verrouLacher('combat');enCours=false;if(file.length)jouer(file.shift())}}}catch(e){}}
+ setTimeout(guetterEchanges,20000)}
 if(!TEST&&!DEMO)connect();
+if(!TEST&&!DEMO)setTimeout(guetterEchanges,5000);
 </script></body></html>

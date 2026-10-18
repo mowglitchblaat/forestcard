@@ -114,6 +114,12 @@ button.chm:disabled:not(.vise){opacity:.45}
 .prog details summary{cursor:pointer;color:#c4b5fd;font-size:13px;font-weight:600}.pcol{margin:8px 0}.pcol .pbar{height:6px;margin:3px 0}.pcol .pbar i{background:linear-gradient(90deg,#16a34a,#4ade80)}.prr{display:flex;flex-wrap:wrap;gap:4px}.prr span{font-size:11px;padding:1px 7px;border-radius:9px;border:1px solid var(--g);color:var(--g)}
 .hb{background:#1d1d27;border:1px solid #2c2c38;border-radius:10px;padding:10px 14px;margin:10px 0}.hb .top{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
 .hbc{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:10px;margin-top:10px}.hbc figure{margin:0;display:flex;flex-direction:column;gap:4px;min-width:0}.hbc img,.hbc .ph{width:100%;aspect-ratio:5/7;object-fit:cover;border-radius:7px;box-shadow:0 0 0 2px var(--g),0 0 10px var(--g);background:#262633}.hbc figcaption{font-size:11.5px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.exc{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:start;margin-top:8px}.exa{align-self:center;font-size:24px;color:#a78bfa}
+.expot .bar{height:10px;background:#2c2c38;border-radius:6px;overflow:hidden;display:flex;margin:10px 0 4px}.expot .me{background:#7c3aed}.expot .lui{background:#22c55e}
+.exg{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:12px}.exg input{width:100%;margin:6px 0}.exg figure{cursor:pointer;position:relative}.exg figure.sel img{outline:3px solid #fbbf24;outline-offset:2px}.exg figure.vide{opacity:.35}
+.hbc figure .nb{position:absolute;top:4px;right:4px;background:#fbbf24;color:#111;border-radius:10px;padding:0 7px;font-weight:700;font-size:12px}.hbc figure .dk{position:absolute;top:4px;left:4px;font-size:14px}.hbc figure .qt{position:absolute;bottom:38px;right:4px;background:rgba(0,0,0,.7);border-radius:6px;padding:0 5px;font-size:11px}
+.hb [data-xd],.hb [data-xr]{cursor:pointer}
+@media(max-width:700px){.exg{grid-template-columns:1fr}.exc{grid-template-columns:1fr}.exa{transform:rotate(90deg);justify-self:center}}
 .hc{background:#1d1d27;border:1px solid #2c2c38;border-left:4px solid #444;border-radius:10px;padding:10px 14px;margin:10px 0}
 .hc.victoire{border-left-color:#4ade80}.hc.defaite{border-left-color:#f87171}.hc.nul{border-left-color:#9ca3af}
 .hc .top{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
@@ -212,7 +218,7 @@ code.cmd{color:#fbbf24;font-weight:700}
 .cmb[data-t=ul]{border-color:transparent;background:linear-gradient(160deg,color-mix(in srgb,var(--g) 14%,#1b1b25),#12121a 65%) padding-box,conic-gradient(from var(--ang),#ff3b6b,#ffb703,#5eead4,#60a5fa,#c084fc,#ff3b6b) border-box;animation:ctpop .45s cubic-bezier(.2,.9,.3,1.25) backwards,ctspin 4s linear infinite}
 .uim{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px;animation:uif .15s}
 .uib{background:#1d1d27;border:1px solid #3a3a4a;border-radius:12px;padding:18px 20px;max-width:440px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.6)}
-.uit{white-space:pre-wrap;line-height:1.45;margin-bottom:14px}.uii{width:100%;box-sizing:border-box;margin-bottom:14px}.uia{display:flex;justify-content:flex-end;gap:8px}
+.uit{white-space:pre-wrap;line-height:1.45;margin-bottom:14px}.uii{width:100%;box-sizing:border-box;margin-bottom:14px}.uia{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
 @keyframes uif{from{opacity:0}to{opacity:1}}
 /* ---------- Onglet Deck ---------- */
 .dk{display:grid;grid-template-columns:minmax(290px,330px) minmax(0,1fr);gap:18px;align-items:start;margin-top:8px}
@@ -298,6 +304,11 @@ function uiBoite(msg,{ok='OK',annuler=null,saisie=null,danger=false}={}){return 
   fond.onclick=e=>{if(e.target===fond&&annuler)fin(saisie!==null?null:false)};
   document.addEventListener('keydown',kb);document.body.appendChild(fond);(inp||fond.querySelector('[data-r="1"]')).focus()})}
 const uiAlert=m=>uiBoite(m);
+// Choix entre plusieurs boutons : renvoie la clé choisie, ou null (Annuler / Échap)
+function uiChoix(msg,choix){return new Promise(res=>{const fond=document.createElement('div');fond.className='uim';
+  fond.innerHTML=`<div class="uib" role="dialog" aria-modal="true"><div class="uit"></div><div class="uia"><button class="sec" data-k="">Annuler</button>${choix.map(([k,l])=>`<button data-k="${esc(k)}">${esc(l)}</button>`).join('')}</div></div>`;
+  fond.querySelector('.uit').textContent=String(msg??'');const fin=v=>{document.removeEventListener('keydown',kb);fond.remove();res(v||null)};const kb=e=>{if(e.key==='Escape')fin(null)};
+  fond.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>fin(b.dataset.k));fond.onclick=e=>{if(e.target===fond)fin(null)};document.addEventListener('keydown',kb);document.body.appendChild(fond)})}
 const uiConfirm=(m,o={})=>uiBoite(m,{ok:'Confirmer',annuler:'Annuler',danger:/définiti|supprim|vider|retirer|remise? à zéro|TOUS/i.test(String(m)),...o});
 const uiPrompt=(m,v='')=>uiBoite(m,{ok:'Valider',annuler:'Annuler',saisie:v});
 const MIROIR_URL='https://mowglitchblaat.github.io/forestcard/img/';let MIROIR=new Set();   // images des cartes recopiées chaque nuit sur GitHub (img/liste.json) : servies par GitHub au lieu de Supabase (quota)
@@ -308,7 +319,7 @@ function voirActif(el){if(!el)return;const b=el.querySelector('button.on');if(!b
 async function q(p){const r=await p;if(r.error){uiAlert(r.error.message);throw r.error}return r.data}
 let user,joueur,isAdmin,tab='profil',sub='cartes',B={};   // ouverture sur le profil : pas d'images à charger (économise le quota Supabase)
 const opts=(a,l='nom')=>a.map(x=>`<option value="${x.id}">${esc(x[l])}</option>`).join('');
-const TABS={collection:'Ma collection',boutique:'Boutique',jeux:'🎲 Jeux du jour',deck:'Mon deck',dos:'Dos de cartes',historique:'Historique',profil:'Profils',classement:'🏆 Classement',regles:'Comment jouer',propos:'🎨 Propositions',patch:'📜 Patch notes'};
+const TABS={collection:'Ma collection',boutique:'Boutique',jeux:'🎲 Jeux du jour',deck:'Mon deck',echanges:'🔄 Échanges',dos:'Dos de cartes',historique:'Historique',profil:'Profils',classement:'🏆 Classement',regles:'Comment jouer',propos:'🎨 Propositions',patch:'📜 Patch notes'};
 
 // Erreur renvoyée par Twitch / Supabase après une connexion ratée (dans l'adresse) : on l'affiche au lieu de rien
 function erreurConnexion(){
@@ -348,7 +359,7 @@ function header(){
 }
 async function refreshJoueur(){joueur=await q(sb.from('joueurs').select('*').eq('id',user.id).single());header()}
 // L'onglet ouvert est gardé dans l'adresse (#classement, #admin/joueurs…) : un rafraîchissement reste sur la même page
-const VUES=['collection','boutique','jeux','deck','dos','historique','profil','classement','regles','propos','patch','admin'];
+const VUES=['collection','boutique','jeux','deck','echanges','dos','historique','profil','classement','regles','propos','patch','admin'];
 function lireAncre(){const [t,s]=decodeURIComponent(location.hash.slice(1)).split('/');if(VUES.includes(t)&&(t!=='admin'||isAdmin)){tab=t;if(t==='admin'&&s)sub=s}}
 function ecrireAncre(){const a='#'+tab+(tab==='admin'?'/'+sub:'');if(location.hash!==a)history.replaceState(null,'',a)}
 window.addEventListener('hashchange',()=>{if(!user)return;const av=tab+'/'+sub;lireAncre();if(tab+'/'+sub!==av)show(tab)});
@@ -357,7 +368,7 @@ function show(t){
   tab=t;ecrireAncre();const T={...TABS};if(isAdmin)T.admin='⚙️ Admin';
   $('#nav').innerHTML=Object.entries(T).map(([k,v])=>`<button class="${k==t?'on':'sec'}" data-t="${k}">${v}</button>`).join('');
   $('#nav').querySelectorAll('button').forEach(b=>b.onclick=()=>show(b.dataset.t));voirActif($('#nav'));
-  ({collection:vCollection,boutique:vBoutique,jeux:vJeux,deck:vDeck,dos:vDos,historique:vHistorique,profil:vProfil,classement:vClassement,regles:vRegles,propos:vPropos,patch:vPatch,admin:vAdmin})[t]();
+  ({collection:vCollection,boutique:vBoutique,jeux:vJeux,deck:vDeck,echanges:vEchanges,dos:vDos,historique:vHistorique,profil:vProfil,classement:vClassement,regles:vRegles,propos:vPropos,patch:vPatch,admin:vAdmin})[t]();
 }
 
 /* ---------- Collection ---------- */
@@ -558,18 +569,22 @@ let PRIX=null;
 async function chargerPrix(){if(PRIX)return PRIX;PRIX={...PRIX_DEF};try{const r=await sb.rpc('prix_recyclage');(r.data||[]).forEach(p=>{PRIX[p.rang]={gold:p.gold,fragments:p.fragments}})}catch(e){}return PRIX}
 const rangDe=x=>['ggez','legendaire','epique','rare','commun'][rangRar(x.variantes_carte.cartes.raretes)[0]]||'commun';
 const surplus=x=>Math.max(0,(x.quantite||1)-1);
-const gainDe=x=>{const p=(PRIX||PRIX_DEF)[rangDe(x)]||PRIX_DEF.commun,n=surplus(x);return{n,gold:n*p.gold,fragments:n*p.fragments}};
-const gainTxt=g=>`+${g.gold} gold`+(g.fragments?` · +${g.fragments} fragment${g.fragments>1?'s':''}`:'');
-function gainTotal(){return collData.reduce((a,x)=>{const g=gainDe(x);a.n+=g.n;a.gold+=g.gold;a.fragments+=g.fragments;return a},{n:0,gold:0,fragments:0})}
-async function recycler(varianteId,msg){
-  if(!(await uiConfirm(msg)))return;
-  const r=await sb.rpc('recycler_doublons',varianteId?{p_variante:varianteId}:{});
+const FRAG_DEF={commun:2,rare:4,epique:12,legendaire:25,ggez:40};let FRAG=null;   // recyclage en fragments (au choix du joueur, 28-echanges.sql)
+async function chargerFrag(){if(FRAG)return FRAG;FRAG={...FRAG_DEF};try{const r=await sb.rpc('prix_fragments_recyclage');if(!r.error&&r.data){FRAG={...FRAG_DEF,...r.data};FRAG.ok=1}}catch(e){}return FRAG}
+const gainDe=x=>{const p=(PRIX||PRIX_DEF)[rangDe(x)]||PRIX_DEF.commun,n=surplus(x),f=+((FRAG||FRAG_DEF)[rangDe(x)])||0;return{n,gold:n*p.gold,fragments:n*p.fragments,frag:n*f}};
+const gainTxt=g=>`+${g.gold} gold`+(FRAG&&FRAG.ok?` ou +${g.frag} 🧩`:'');
+function gainTotal(){return collData.reduce((a,x)=>{const g=gainDe(x);a.n+=g.n;a.gold+=g.gold;a.fragments+=g.fragments;a.frag+=g.frag;return a},{n:0,gold:0,fragments:0,frag:0})}
+async function recycler(varianteId,msg,g){
+  let mode='gold';
+  if(FRAG&&FRAG.ok){mode=await uiChoix(msg+'\nTu choisis : du gold OU des fragments 🧩 (pour les échanges).',[['gold',`💰 +${g.gold} gold`],['frag',`🧩 +${g.frag} fragments`]]);if(!mode)return}
+  else if(!(await uiConfirm(msg+`\nTu reçois ${g.gold} gold.`)))return;
+  const r=await sb.rpc(mode==='frag'?'recycler_doublons_fragments':'recycler_doublons',varianteId?{p_variante:varianteId}:{});
   if(r.error){uiAlert(String(r.error.message).includes('RIEN_A_RECYCLER')?'Aucun doublon à recycler.':r.error.message);return}
   await Promise.all([loadColl(),refreshJoueur()]);mdClose();if(curView)curView();
-  const d=r.data||{};uiAlert(`♻ ${d.cartes} carte${d.cartes>1?'s':''} recyclée${d.cartes>1?'s':''} : +${d.gold} gold`+(d.fragments?` et +${d.fragments} fragment${d.fragments>1?'s':''}`:'')+'.')}
+  const d=r.data||{};uiAlert(`♻ ${d.cartes} carte${d.cartes>1?'s':''} recyclée${d.cartes>1?'s':''} : `+[d.gold?`+${d.gold} gold`:'',d.fragments?`+${d.fragments} fragment${d.fragments>1?'s':''} 🧩`:''].filter(Boolean).join(' et ')+'.')}
 function bindRecycle(){main.querySelectorAll('button[data-rec]').forEach(b=>b.onclick=()=>{const v=+b.dataset.rec,x=collData.find(y=>y.variantes_carte.id===v);if(!x)return;const g=gainDe(x);
-  recycler(v,`Recycler ${g.n} exemplaire${g.n>1?'s':''} en trop de « ${x.variantes_carte.cartes.nom} » ?\nTu en gardes 1. Tu reçois ${gainTxt(g).replace(/\+/g,'')}.`)});
-  const all=$('#recall');if(all)all.onclick=()=>{const t=gainTotal();recycler(null,`Recycler tous tes doublons (${t.n} carte${t.n>1?'s':''}) ?\nTu gardes 1 exemplaire de chaque carte. Tu reçois ${gainTxt(t).replace(/\+/g,'')}.`)}}
+  recycler(v,`Recycler ${g.n} exemplaire${g.n>1?'s':''} en trop de « ${x.variantes_carte.cartes.nom} » ?\nTu en gardes 1.`,g)});
+  const all=$('#recall');if(all)all.onclick=()=>{const t=gainTotal();recycler(null,`Recycler tous tes doublons (${t.n} carte${t.n>1?'s':''}) ?\nTu gardes 1 exemplaire de chaque carte.`,t)}}
 const TYPE_L={combattant:['⚔️','Combattant'],magie:['✨','Magie'],piege:['🪤','Piège']};
 function cardHTML(x,i){
   const v=x.variantes_carte,c=v.cartes,on=deck.has(c.id),col=c.raretes.couleur||'#888',L=lignesCarte(c);
@@ -636,7 +651,7 @@ function bindToggle(redraw){
 async function vCollection(){
   apercu=false;await loadColl();await loadDecks();
   if(!collData.length&&!isAdmin){main.innerHTML='<p>Tu n\'as encore aucune carte. Achète un booster dans la boutique, puis ouvre-le en live avec !booster.</p>';return}
-  await chargerPrix();
+  await Promise.all([chargerPrix(),chargerFrag()]);
   main.innerHTML='<div id="dbar" class="dbar"></div><div id="prog"></div><div class="row" id="rbar"></div><div class="row seg" id="flt"></div><div class="row chips" id="fcol"></div><div class="cgrid" id="gr"></div>';
   drawColl();progression();
 }
@@ -1018,6 +1033,112 @@ async function hBoosters(box){
    return `<div class="hb"><div class="top"><b>📦 ${esc(x.booster||'Booster')}</b><small>${date(x.cree_le)} · ${C.length} carte${C.length>1?'s':''}</small></div>
     <div class="hbc">${C.map(c=>`<figure style="--g:${esc(c.couleur||'#888')}">${c.image?`<img loading="lazy" src="${img(c.image)}" alt="">`:'<div class="ph"></div>'}<figcaption>${esc(c.carte||c.nom||'')}</figcaption></figure>`).join('')}</div></div>`}).join('');
 }
+/* ---------- Échanges entre joueurs (28-echanges.sql) ---------- */
+const RNG_LIB={commun:'Commune',rare:'Rare',epique:'Épique',legendaire:'Légendaire',ggez:'GGEZ'},RNG_ORD=['commun','rare','epique','legendaire','ggez'];
+let exInfos=null,exC=null;   // exC : offre en cours de composition
+const exErr=e=>{const m=String((e&&e.message)||e||'');return /does not exist|Could not find the function|schema cache/i.test(m)?'Les échanges ne sont pas encore installés : l\'admin doit lancer 28-echanges.sql dans Supabase.':m.replace(/^ECHANGE(_IMPOSSIBLE)?:\s*/,'')};
+const exFig=(c,att='')=>`<figure style="--g:${esc(c.couleur||'#888')}" ${att}>${c.image||c.image_path?`<img loading="lazy" src="${img(c.image||c.image_path)}" alt="">`:'<div class="ph"></div>'}<figcaption>${c.quantite>1?c.quantite+'× ':''}${esc(c.nom)}${c.variante&&c.variante!=='Standard'?` <small>(${esc(c.variante)})</small>`:''}<br><small>🧩 ${c.prix}</small></figcaption></figure>`;
+const exDate=d=>new Date(d).toLocaleString('fr-FR',{weekday:'short',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+// Cartes qui vont quitter le deck de combat (dernier exemplaire donné)
+async function exAlerteDeck(donne){const r=await sb.rpc('echange_collection',{p_joueur:user.id});if(r.error)return '';const C=r.data||[];
+  const parCarte={};C.forEach(c=>{parCarte[c.carte_id]=(parCarte[c.carte_id]||0)+c.quantite});
+  const out=new Set();donne.forEach(d=>{const c=C.find(z=>+z.variante_id===+d.variante_id);if(c&&c.au_deck){parCarte[c.carte_id]-=d.quantite;if(parCarte[c.carte_id]<=0)out.add(c.nom)}});
+  return out.size?`\n\n⚠ Cette carte est dans ton deck de combat et en sortira : ${[...out].join(', ')}. Pense à compléter ton deck (10 cartes) avant ton prochain combat.`:''}
+async function exMettre(x,m,accepte){
+  const r=await sb.rpc('echange_contribuer',{p_id:x.id,p_montant:m});
+  if(r.error){uiAlert(exErr(r.error));return}
+  await refreshJoueur();
+  if(r.data==='valide')await uiAlert(`🎉 Échange réussi avec ${x.autre} ! Les cartes sont dans ta collection.`);
+  else if(r.data==='annule')await uiAlert('Échange annulé : une des cartes n\'est plus dans la collection de son propriétaire. Tes fragments t\'ont été rendus.');
+  else uiAlert(accepte?`Échange accepté. Il manque encore des fragments dans le pot : ${x.autre} doit compléter.`:'Fragments ajoutés au pot.');
+  vEchanges()}
+async function vEchanges(){
+  exC=null;main.innerHTML='<h3>🔄 Échanges</h3><div id="exbox"><p><small>Chargement…</small></p></div>';
+  const [I,M]=await Promise.all([sb.rpc('echange_infos'),sb.rpc('mes_echanges')]);const box=$('#exbox');
+  if(I.error||M.error){box.innerHTML='<p class="ko">'+esc(exErr(I.error||M.error))+'</p>';return}
+  const inf=exInfos=I.data,L=M.data||[],prix=RNG_ORD.map(k=>`${RNG_LIB[k]} ${inf.prix[k]}`).join(' · ');
+  const ST={valide:'<b class="ok">✅ Échange fait</b>',refuse:'<b class="ko">✖ Refusé</b>',annule:'<b class="ko">✖ Annulé</b>',expire:'<b>⌛ Expiré</b>'};
+  box.innerHTML=`<div class="hb"><div class="top"><b>Tes fragments : 🧩 ${inf.fragments}</b>${inf.ok?'<b class="ok">✅ Tu peux échanger aujourd\'hui</b>':`<b class="ko">⛔ ${esc((inf.raisons||[]).join(' · '))}</b>`}</div>
+    <p style="margin:8px 0"><small>Chaque carte échangée ajoute sa valeur au <b>pot</b> (🧩 ${prix}). Vous remplissez le pot à deux, comme vous voulez : quand il est plein et que les deux ont accepté, l'échange se fait et les fragments du pot disparaissent.<br>
+    ${inf.par_jour} échange par jour · compte d'au moins ${inf.age_min} jours (toi : ${inf.age_jours ?? 0}) · au moins ${inf.boosters_min} boosters ouverts (toi : ${inf.boosters}) · une offre expire au bout de ${inf.expiration_h} h.<br>
+    Les fragments s'obtiennent en recyclant tes doublons (onglet Ma collection → ♻ Recycler → 🧩).</small></p>
+    <button id="exnew" ${inf.ok?'':'disabled title="Tu ne peux pas encore échanger"'}>➕ Proposer un échange</button></div>
+    ${L.length?'':'<p><small>Aucun échange pour l\'instant.</small></p>'}
+    ${L.map((x,i)=>{const reste=Math.max(0,x.pot-x.ma_part-x.sa_part),pc=v=>x.pot?Math.round(100*v/x.pot):0;
+     let act='';
+     if(x.ouvert){
+      if(!x.moi_propose&&!x.ok_pour)act=`<div class="row"><label><small>Ta part du pot</small><br><input type="number" min="0" max="${reste}" value="${reste}" data-m="${i}" style="width:90px"></label><button data-acc="${i}">✅ Accepter</button><button class="sec" data-ctr="${i}">↩ Contre-proposer</button><button class="sec" data-ann="${i}">✖ Refuser</button></div>`;
+      else act=`<small>${x.moi_propose&&!x.ok_pour?`En attente de la réponse de <b>${esc(x.autre)}</b>.`:reste>0?`Accepté par les deux : il manque <b>${reste} 🧩</b> dans le pot.`:''}</small>
+       <div class="row">${reste>0?`<label><small>Ajouter au pot</small><br><input type="number" min="1" max="${reste}" value="${reste}" data-m="${i}" style="width:90px"></label><button data-add="${i}">🧩 Ajouter</button>`:''}<button class="sec" data-ann="${i}">${x.moi_propose?'Annuler l\'offre':'✖ Refuser'}</button></div>`}
+     return `<div class="hb"><div class="top"><b>${x.moi_propose?'Ton offre à':'Offre de'} ${esc(x.autre)}</b><small>${x.ouvert?'⏳ en cours · expire '+exDate(x.expire_le):(ST[x.statut]||esc(x.statut))+' · '+exDate(x.fini_le||x.cree_le)}</small></div>
+      <div class="exc"><div><small>Tu donnes</small><div class="hbc">${x.je_donne.map(c=>exFig(c)).join('')}</div></div><div class="exa">⇄</div><div><small>Tu reçois</small><div class="hbc">${x.je_recois.map(c=>exFig(c)).join('')}</div></div></div>
+      ${x.ouvert||x.statut==='valide'?`<div class="expot"><div class="bar"><i class="me" style="width:${pc(x.ma_part)}%"></i><i class="lui" style="width:${pc(x.sa_part)}%"></i></div><small>Pot : ${x.ma_part+x.sa_part} / ${x.pot} 🧩 — toi ${x.ma_part} · ${esc(x.autre)} ${x.sa_part}</small></div>`:''}
+      ${!x.ouvert&&x.raison?`<small>${esc(x.raison)}</small>`:''}${act}</div>`}).join('')}`;
+  const nb=i=>{const e=box.querySelector(`[data-m="${i}"]`);return Math.max(0,parseInt(e&&e.value,10)||0)};
+  $('#exnew').onclick=()=>exChoisirJoueur();
+  box.querySelectorAll('[data-acc]').forEach(b=>b.onclick=async()=>{const x=L[+b.dataset.acc],m=nb(b.dataset.acc);
+    if(m>inf.fragments)return uiAlert(`Tu n'as que 🧩 ${inf.fragments}.`);
+    const al=await exAlerteDeck(x.je_donne);
+    if(!(await uiConfirm(`Accepter l'échange avec ${x.autre} et mettre 🧩 ${m} dans le pot ?${m+x.sa_part<x.pot?`\nIl manquera encore ${x.pot-m-x.sa_part} 🧩 : ${x.autre} devra compléter.`:'\nLe pot sera plein : l\'échange se fait tout de suite.'}${al}`,{ok:'Accepter'})))return;
+    exMettre(x,m,true)});
+  box.querySelectorAll('[data-add]').forEach(b=>b.onclick=async()=>{const x=L[+b.dataset.add],m=nb(b.dataset.add);if(m<1)return;
+    if(m>inf.fragments)return uiAlert(`Tu n'as que 🧩 ${inf.fragments}.`);
+    const al=x.ok_pour&&m>=x.pot-x.ma_part-x.sa_part?await exAlerteDeck(x.je_donne):'';
+    if(!(await uiConfirm(`Mettre 🧩 ${m} dans le pot ?${al}`,{ok:'Ajouter'})))return;exMettre(x,m,false)});
+  box.querySelectorAll('[data-ann]').forEach(b=>b.onclick=async()=>{const x=L[+b.dataset.ann];
+    if(!(await uiConfirm(x.moi_propose?'Annuler cette offre ? Chacun récupère ses fragments.':`Refuser l'offre de ${x.autre} ? Chacun récupère ses fragments.`,{danger:true,ok:x.moi_propose?'Annuler l\'offre':'Refuser'})))return;
+    const r=await sb.rpc('echange_annuler',{p_id:x.id});if(r.error)return uiAlert(exErr(r.error));await refreshJoueur();vEchanges()});
+  box.querySelectorAll('[data-ctr]').forEach(b=>b.onclick=async()=>{const x=L[+b.dataset.ctr];
+    if(!(await uiConfirm(`Contre-proposer à ${x.autre} ? Son offre sera refusée (chacun récupère ses fragments) et tu pourras modifier les cartes.`,{ok:'Contre-proposer'})))return;
+    const r=await sb.rpc('echange_annuler',{p_id:x.id});if(r.error)return uiAlert(exErr(r.error));await refreshJoueur();
+    const lst=a=>a.flatMap(c=>Array(c.quantite).fill(+c.variante_id));
+    const j=await sb.rpc('echange_joueurs',{p_recherche:x.autre}),p=((j.data)||[]).find(z=>z.pseudo===x.autre);
+    if(!p)return vEchanges();exComposer(p.id,p.pseudo,{d:lst(x.je_donne),r:lst(x.je_recois)})});
+}
+async function exChoisirJoueur(){
+  main.innerHTML=`<h3>🔄 Nouvel échange</h3><button class="sec" id="exret">← Retour</button><p><small>Avec qui veux-tu échanger ?</small></p>
+   <input id="exq" placeholder="Rechercher un pseudo…" style="width:100%;max-width:360px"><div id="exj" class="row" style="margin-top:10px;flex-wrap:wrap"></div>`;
+  $('#exret').onclick=vEchanges;let t=0;
+  const go=async()=>{const r=await sb.rpc('echange_joueurs',{p_recherche:$('#exq').value.trim()});const bx=$('#exj');if(!bx)return;
+    if(r.error){bx.innerHTML='<p class="ko">'+esc(exErr(r.error))+'</p>';return}
+    bx.innerHTML=(r.data||[]).map((p,i)=>`<button class="${p.peut?'':'sec'}" data-p="${i}" ${p.peut?'':`disabled title="${esc((p.raisons||[]).join(', '))}"`}>${esc(p.pseudo)}${p.peut?'':' ⛔'}</button>`).join('')||'<small>Aucun joueur trouvé.</small>';
+    bx.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{const p=r.data[+b.dataset.p];exComposer(p.id,p.pseudo)})};
+  $('#exq').oninput=()=>{clearTimeout(t);t=setTimeout(go,250)};go();$('#exq').focus()}
+async function exComposer(id,pseudo,pre){
+  main.innerHTML=`<h3>🔄 Échange avec ${esc(pseudo)}</h3><p><small>Chargement des collections…</small></p>`;
+  const [a,b,I]=await Promise.all([sb.rpc('echange_collection',{p_joueur:user.id}),sb.rpc('echange_collection',{p_joueur:id}),exInfos?{data:exInfos}:sb.rpc('echange_infos')]);
+  if(a.error||b.error||I.error){main.innerHTML+='<p class="ko">'+esc(exErr(a.error||b.error||I.error))+'</p>';return}
+  exInfos=I.data;const tri=l=>(l||[]).sort((x,y)=>y.prix-x.prix||String(x.nom).localeCompare(y.nom));
+  exC={id,pseudo,mes:tri(a.data),ses:tri(b.data),d:new Map(),r:new Map(),fd:'',fr:''};
+  if(pre){pre.d.forEach(v=>exC.d.set(v,(exC.d.get(v)||0)+1));pre.r.forEach(v=>exC.r.set(v,(exC.r.get(v)||0)+1))}
+  exDessin()}
+function exDessin(){const C=exC,inf=exInfos,mx=inf.max_cartes||5,tot=m=>[...m.values()].reduce((a,b)=>a+b,0);
+  const pot=[...C.d].reduce((s,[v,n])=>s+n*((C.mes.find(c=>+c.variante_id===v)||{}).prix||0),0)+[...C.r].reduce((s,[v,n])=>s+n*((C.ses.find(c=>+c.variante_id===v)||{}).prix||0),0);
+  const grille=(L,M,k,f)=>L.filter(c=>!f||(c.nom+' '+(c.rarete||'')).toLowerCase().includes(f.toLowerCase())).map(c=>{const n=M.get(+c.variante_id)||0,plein=n>=c.quantite;
+    return exFig({...c,quantite:0},`data-${k}="${c.variante_id}" class="${n?'sel':''} ${plein?'vide':''}" title="Tu en as ${c.quantite}${c.au_deck?' · dans le deck':''}"`).replace('</figure>',`${n?`<span class="nb">${n}</span>`:''}${c.au_deck&&k==='d'?'<span class="dk" title="Dans ton deck">🃏</span>':''}<small class="qt">×${c.quantite}</small></figure>`)}).join('')||'<small>Aucune carte.</small>';
+  const choisis=(L,M,k)=>[...M].map(([v,n])=>{const c=L.find(z=>+z.variante_id===v);return c?exFig({...c,quantite:n},`data-x${k}="${v}" title="Cliquer pour retirer"`):''}).join('')||'<small>—</small>';
+  const part=Math.min(inf.fragments,Math.ceil(pot/2));
+  main.innerHTML=`<h3>🔄 Échange avec ${esc(C.pseudo)}</h3><button class="sec" id="exret">← Retour</button>
+   <div class="hb"><div class="exc"><div><small>Tu donnes (${tot(C.d)}/${mx})</small><div class="hbc">${choisis(C.mes,C.d,'d')}</div></div><div class="exa">⇄</div><div><small>Tu reçois (${tot(C.r)}/${mx})</small><div class="hbc">${choisis(C.ses,C.r,'r')}</div></div></div>
+    <div class="expot"><small>Pot : <b>${pot} 🧩</b> · tu as 🧩 ${inf.fragments}</small></div>
+    <div class="row"><label><small>Ta part du pot</small><br><input id="expart" type="number" min="0" max="${pot}" value="${part}" style="width:90px"></label><button id="exgo" ${tot(C.d)&&tot(C.r)?'':'disabled'}>📨 Proposer l'échange</button></div>
+    <small>${esc(C.pseudo)} complètera le reste du pot en acceptant (ou vous ajusterez ensuite).</small></div>
+   <div class="exg"><div><b>Tes cartes</b><input id="exfd" placeholder="Filtrer…" value="${esc(C.fd)}"><div class="hbc">${grille(C.mes,C.d,'d',C.fd)}</div></div>
+    <div><b>Cartes de ${esc(C.pseudo)}</b><input id="exfr" placeholder="Filtrer…" value="${esc(C.fr)}"><div class="hbc">${grille(C.ses,C.r,'r',C.fr)}</div></div></div>`;
+  $('#exret').onclick=vEchanges;
+  const add=(M,v,L)=>{const c=L.find(z=>+z.variante_id===v);if(!c)return;if(tot(M)>=mx)return uiAlert(`${mx} cartes maximum de chaque côté.`);if((M.get(v)||0)>=c.quantite)return;M.set(v,(M.get(v)||0)+1);exDessin()};
+  const del=(M,v)=>{const n=(M.get(v)||0)-1;if(n>0)M.set(v,n);else M.delete(v);exDessin()};
+  main.querySelectorAll('[data-d]').forEach(e=>e.onclick=()=>add(C.d,+e.dataset.d,C.mes));main.querySelectorAll('[data-r]').forEach(e=>e.onclick=()=>add(C.r,+e.dataset.r,C.ses));
+  main.querySelectorAll('[data-xd]').forEach(e=>e.onclick=()=>del(C.d,+e.dataset.xd));main.querySelectorAll('[data-xr]').forEach(e=>e.onclick=()=>del(C.r,+e.dataset.xr));
+  const flt=(id,k)=>{const e=$(id);e.oninput=()=>{C[k]=e.value;const p=e.selectionStart;exDessin();const n=$(id);n.focus();try{n.setSelectionRange(p,p)}catch(x){}}};flt('#exfd','fd');flt('#exfr','fr');
+  $('#exgo').onclick=async()=>{const m=Math.max(0,Math.min(pot,parseInt($('#expart').value,10)||0));
+    if(m>inf.fragments)return uiAlert(`Tu n'as que 🧩 ${inf.fragments}.`);
+    const donne=[...C.d].map(([v,n])=>({variante_id:v,quantite:n})),al=await exAlerteDeck(donne);
+    if(!(await uiConfirm(`Proposer cet échange à ${C.pseudo} ?\nPot : ${pot} 🧩 · tu en mets ${m} (retenus jusqu'à la fin de l'offre, rendus si elle est refusée, annulée ou expirée).${al}`,{ok:'Proposer'})))return;
+    const ar=M=>[...M].flatMap(([v,n])=>Array(n).fill(v));
+    const r=await sb.rpc('echange_proposer',{p_pour:C.id,p_donne:ar(C.d),p_recoit:ar(C.r),p_part:m});
+    if(r.error)return uiAlert(exErr(r.error));await refreshJoueur();exInfos=null;uiAlert(`📨 Offre envoyée à ${C.pseudo}. Elle la verra dans son onglet 🔄 Échanges.`);vEchanges()};
+}
 async function vHistorique(){
   main.innerHTML=`<h3>Historique</h3><div class="row seg" id="hsw">${[['combats','⚔️ Combats'],['boosters','📦 Boosters ouverts']].map(([k,v])=>`<button class="${k==hTab?'on':'sec'}" data-h="${k}">${v}</button>`).join('')}</div><div id="hbox"><p><small>Chargement…</small></p></div>`;
   main.querySelectorAll('[data-h]').forEach(b=>b.onclick=()=>{hTab=b.dataset.h;vHistorique()});
@@ -1315,6 +1436,7 @@ function vRegles(){
    ${c('Boutique du site','Les boosters s\'achètent avec des gold, à partir de 250 gold (une confirmation est demandée avant chaque achat). Ils vont dans ton stock, en attente d\'être ouverts. « Détails du contenu » montre les cartes à l\'affiche et ce que contient chaque booster.')}
    ${c('Ouverture en live','Tape <code class="cmd">!booster</code> pendant le stream : l\'animation d\'ouverture s\'affiche à l\'écran et les cartes rejoignent ta collection.')}
    ${c('Cadeau du jour','Avec <code class="cmd">!quotidien</code>, récupère chaque jour entre 1 et 3 boosters gratuits.')}
+   ${c('🔄 Échanges entre joueurs',ul(['Onglet « Échanges » : choisis un joueur, les cartes que tu donnes et celles que tu veux (5 max de chaque côté).','Chaque carte ajoute sa valeur au <b>pot</b> de fragments 🧩 (plus la carte est rare, plus elle vaut). Vous remplissez le pot à deux, comme vous voulez ; quand il est plein et que les deux ont accepté, l\'échange se fait et les fragments du pot disparaissent.','Les fragments s\'obtiennent en recyclant tes doublons : tu choisis gold <b>ou</b> fragments.','1 échange par jour, à partir de 7 jours d\'ancienneté et 50 boosters ouverts. Une offre expire au bout de 48 h (fragments rendus).','Une carte donnée qui était dans ton deck en sort : pense à compléter ton deck.']))}
   </div>
 
   ${h('Ton deck','b','Simple et volontairement limité.')}
@@ -1887,8 +2009,16 @@ async function aReglages(){
      <label><small>Jusqu'à (facultatif)</small><br><input name="fin" type="datetime-local" value="${esc(finLocale(v.bounty_fin))}"></label></div>
     <small>${etatBounty(v)}</small>
     <div class="row"><button>Enregistrer</button><button type="button" class="sec" id="bgo">🎯 Lancer le Bounty (6 h)</button><button type="button" class="sec" id="bstop">⏹ Arrêter le Bounty</button></div></form>
-   <h3>Recyclage des doublons</h3><form class="f" id="frc"><small>Ce que rapporte chaque exemplaire en trop. Les fragments sont prêts pour un futur craft : laisse 0 tant qu'il n'existe pas.</small>
+   <h3>Recyclage des doublons</h3><form class="f" id="frc"><small>Ce que rapporte chaque exemplaire en trop quand le joueur choisit le <b>gold</b>. La colonne Fragments donne des fragments EN PLUS du gold : laisse-la à 0 (le recyclage en fragments se règle dans « Échanges » ci-dessous).</small>
    <table><tr><th></th><th>Gold</th><th>Fragments</th></tr>${[['commun','Commun'],['rare','Rare'],['epique','Épique'],['legendaire','Légendaire'],['ggez','GGEZ']].map(([k,n],i)=>`<tr><td>${n}</td><td><input name="g_${k}" type="number" min="0" value="${esc(v['recyclage_gold_'+k]??[5,10,35,80,80][i])}" style="width:80px"></td><td><input name="f_${k}" type="number" min="0" value="${esc(v['recyclage_fragments_'+k]??0)}" style="width:80px"></td></tr>`).join('')}</table><button>Enregistrer le recyclage</button></form>
+   <h3>🔄 Échanges</h3><form class="f" id="fech" style="flex-direction:column;align-items:flex-start"><small>Chaque carte échangée ajoute son prix au pot ; les joueurs le remplissent à deux. Les fragments s'obtiennent en recyclant les doublons (le joueur choisit gold OU fragments). Nécessite 28-echanges.sql.</small>
+    <table><tr><th></th><th>Prix dans le pot 🧩</th><th>Recyclage d'un doublon 🧩</th></tr><tr><td>Commune</td><td><input name="p_commun" type="number" min="0" value="${esc(v.echange_prix_commun??5)}" style="width:80px"></td><td><input name="f_commun" type="number" min="0" value="${esc(v.fragments_recyclage_commun??2)}" style="width:80px"></td></tr><tr><td>Rare</td><td><input name="p_rare" type="number" min="0" value="${esc(v.echange_prix_rare??10)}" style="width:80px"></td><td><input name="f_rare" type="number" min="0" value="${esc(v.fragments_recyclage_rare??4)}" style="width:80px"></td></tr><tr><td>Épique</td><td><input name="p_epique" type="number" min="0" value="${esc(v.echange_prix_epique??30)}" style="width:80px"></td><td><input name="f_epique" type="number" min="0" value="${esc(v.fragments_recyclage_epique??12)}" style="width:80px"></td></tr><tr><td>Légendaire</td><td><input name="p_legendaire" type="number" min="0" value="${esc(v.echange_prix_legendaire??60)}" style="width:80px"></td><td><input name="f_legendaire" type="number" min="0" value="${esc(v.fragments_recyclage_legendaire??25)}" style="width:80px"></td></tr><tr><td>GGEZ</td><td><input name="p_ggez" type="number" min="0" value="${esc(v.echange_prix_ggez??100)}" style="width:80px"></td><td><input name="f_ggez" type="number" min="0" value="${esc(v.fragments_recyclage_ggez??40)}" style="width:80px"></td></tr></table>
+    <div class="row"><label><small>Échanges par jour</small><br><input name="pj" type="number" min="0" max="20" value="${esc(v.echange_par_jour??1)}" style="width:80px"></label>
+     <label><small>Ancienneté min (jours)</small><br><input name="age" type="number" min="0" max="365" value="${esc(v.echange_age_jours??7)}" style="width:80px"></label>
+     <label><small>Boosters ouverts min</small><br><input name="bo" type="number" min="0" max="10000" value="${esc(v.echange_boosters_min??50)}" style="width:80px"></label>
+     <label><small>Expiration d'une offre (h)</small><br><input name="exp" type="number" min="1" max="720" value="${esc(v.echange_expiration_h??48)}" style="width:80px"></label>
+     <label><small>Cartes max par côté</small><br><input name="mx" type="number" min="1" max="20" value="${esc(v.echange_max_cartes??5)}" style="width:80px"></label></div>
+    <button>Enregistrer</button></form>
    <h3>Tests</h3><div class="f"><button class="sec" id="rzc">Remettre à zéro les combats gratuits du jour (tous les joueurs)</button></div>`;
   $('#optorph').onclick=async()=>{const L=$('#optlog');L.textContent='Recherche des images inutilisées…\n';   // images du stockage qui ne servent plus à aucune carte (active ou non), booster, dos ni proposition (20-images-inutilisees.sql)
     const r=await sb.rpc('admin_images_inutilisees');if(r.error){L.textContent+='✗ '+r.error.message+'\n(lance d\'abord 20-images-inutilisees.sql dans Supabase)';return}
@@ -1930,6 +2060,10 @@ async function aReglages(){
   $('#frc').onsubmit=async e=>{e.preventDefault();const f=e.target,rows=[];
     for(const k of['commun','rare','epique','legendaire','ggez']){rows.push({cle:'recyclage_gold_'+k,valeur:String(Math.max(0,parseInt(f['g_'+k].value,10)||0))},{cle:'recyclage_fragments_'+k,valeur:String(Math.max(0,parseInt(f['f_'+k].value,10)||0))})}
     await q(sb.from('reglages_jeu').upsert(rows));PRIX=null;uiAlert('Prix de recyclage enregistrés.');aReglages()};
+  $('#fech').onsubmit=async e=>{e.preventDefault();const f=e.target,n=(x,mn,mx)=>String(Math.max(mn,Math.min(mx,parseInt(x,10)||0))),rows=[];
+    for(const k of['commun','rare','epique','legendaire','ggez']){rows.push({cle:'echange_prix_'+k,valeur:n(f['p_'+k].value,0,100000)},{cle:'fragments_recyclage_'+k,valeur:n(f['f_'+k].value,0,100000)})}
+    rows.push({cle:'echange_par_jour',valeur:n(f.pj.value,0,20)},{cle:'echange_age_jours',valeur:n(f.age.value,0,365)},{cle:'echange_boosters_min',valeur:n(f.bo.value,0,10000)},{cle:'echange_expiration_h',valeur:n(f.exp.value,1,720)},{cle:'echange_max_cartes',valeur:n(f.mx.value,1,20)});
+    await q(sb.from('reglages_jeu').upsert(rows));FRAG=null;uiAlert('Réglages des échanges enregistrés.');aReglages()};
   $('#rzc').onclick=async()=>{if(!(await uiConfirm('Remettre à zéro le compteur de combats gratuits de tous les joueurs ?')))return;
     await q(sb.rpc('admin_reset_combats_jour'));uiAlert('Compteurs remis à zéro.')};
 }
