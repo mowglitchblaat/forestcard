@@ -219,7 +219,7 @@ function simuler(pA,pB,opt={}){
     else scan({t:'mort',who:id(dst),skip:1})}
   }
   const lethal=n>=dst.pv;dst.pv=Math.max(0,dst.pv-n);src.cum+=n;   // les PV s'arrêtent à 0 (jamais négatifs)
-  if(lethal&&NOREV&&reanSrc(dst))pendEv.push(()=>L('statut',`${nom(dst)} est pulvérisé par l'explosion : pas de réanimation !`,{c:id(dst),k:'anti_rea'}));
+  if(lethal&&NOREV&&reanSrc(dst))pendEv.push(()=>L('statut',`${nom(dst)} est réduit en cendres : pas de réanimation !`,{c:id(dst),k:'anti_rea'}));
   if(lethal&&!NOREV){const rs=reanSrc(dst);if(rs){dst.st.rUsed.push(rs);dst.pv=0;pendRev.push({d:dst,pct:rs.pctrev||0,cap:capR});capR=null}}
   if(capR)pendEv.push(capR);   // pas de réanimation au final : le piège se montre juste après les dégâts   // la carte meurt vraiment ; elle revient juste après (voir flush)
   if(after)pendEv.push(after);pendEv.push(()=>scan({t:'pv'}));return n;   // les effets se jouent juste après les dégâts, pas avant
@@ -1087,6 +1087,23 @@ function fleches(c,lbl,d){const K=rc(c),up=d>0,A=up?[[90,255,130],[20,150,60]]:[
   x.strokeStyle=`rgba(0,0,0,${env})`;x.strokeText(txt,K.cx,ty);x.fillStyle=up?`rgba(190,255,205,${env})`:`rgba(255,195,195,${env})`;x.fillText(txt,K.cx,ty)})}
 
 // DÉFAITE : tremblement + fissures, flash, puis la carte éclate en morceaux (dessinés sur un seul canvas : pas de lag)
+// Réduit en cendres (carte tuée par une détonation : pas de réanimation) : la carte noircit, se consume depuis le bas et s'envole en cendres
+function cendresFx(c){const card=$('#p'+c+' .cw .card');if(!card)return;card.dataset.cendre='1';const K=rc(c),RN=Math.random;
+ document.querySelectorAll('#p'+c+' .lame').forEach(l=>l.remove());
+ card.style.transition='filter .7s ease-out';card.style.filter='sepia(1) saturate(2.2) brightness(.55) contrast(1.3)';
+ setTimeout(()=>{card.style.transition='filter .6s';card.style.filter='grayscale(1) brightness(.18) contrast(1.6)'},650);
+ const D=2.6,B0=.75,B1=2.05,X0=K.cx-K.w/2,Y0=K.cy-K.h/2;
+ const F=Array.from({length:240},()=>{const u=RN(),v=RN();return{x:X0+u*K.w,y:Y0+v*K.h,t:B0+(1-v)*(B1-B0)*.85+RN()*.15,vx:K.w*(.05+RN()*.35),vy:-K.h*(.25+RN()*.6),s:1+RN()*3.2,r:RN()*6,w:RN()*6.28,e:RN()<.22}});   // flocons, partis du bas vers le haut
+ setTimeout(()=>{card.style.transition='none';card.style.webkitMaskImage=card.style.maskImage='linear-gradient(to top,transparent 0%,transparent var(--b),#000 calc(var(--b) + 6%))';
+  let t0=performance.now();(function f(){const q=Math.min(1,(performance.now()-t0)/((B1-B0)*1000));const b=(-6+106*q*q)+'%';card.style.setProperty('--b',b);if(q<1)requestAnimationFrame(f);else card.style.opacity='0'})()},B0*1000);
+ addFx(D+.8,(x,t)=>{
+  if(t>B0&&t<B1+.1){const q=cl((t-B0)/(B1-B0)),yb=Y0+K.h*(1-q*q);   // front de braise qui monte
+   x.globalCompositeOperation='lighter';const g=x.createLinearGradient(0,yb-K.h*.08,0,yb+K.h*.05);g.addColorStop(0,'rgba(255,120,30,0)');g.addColorStop(.6,'rgba(255,150,50,.85)');g.addColorStop(1,'rgba(255,60,0,0)');x.fillStyle=g;x.fillRect(X0-4,yb-K.h*.08,K.w+8,K.h*.13);x.globalCompositeOperation='source-over'}
+  for(const p of F){const a=t-p.t;if(a<=0)continue;const q=a/1.6;if(q>=1)continue;
+   const px=p.x+p.vx*a+Math.sin(p.w+a*3)*6,py=p.y+p.vy*a*(1+a*.4);
+   if(p.e){x.globalCompositeOperation='lighter';orb(x,px,py,p.s*2.2,`rgba(255,${150+Math.floor(80*(1-q))},60,${1-q})`,'rgba(255,80,0,0)');x.globalCompositeOperation='source-over'}
+   else{x.save();x.translate(px,py);x.rotate(p.r+a*4);x.fillStyle=`rgba(${165-70*q|0},${155-65*q|0},${145-60*q|0},${.95*(1-q)})`;x.fillRect(-p.s,-p.s*.55,p.s*2,p.s*1.1);x.restore()}}
+ })}
 function briser(c,el){if(!el)document.querySelectorAll('#p'+c+' .lame').forEach(l=>l.remove());const card=el||$('#p'+c+' .cw .card'),K=el?(r=>({x:r.left,y:r.top,w:r.width,h:r.height,cx:r.left+r.width/2,cy:r.top+r.height/2}))(el.getBoundingClientRect()):rc(c),cr=[];   // el : une autre carte à briser (ex. piège détruit)
  const branch=(px,py,a,len,dep)=>{const pts=[[px,py]];for(let i=0;i<6;i++){a+=R(-.5,.5);px+=Math.cos(a)*len*R(.7,1.1);py+=Math.sin(a)*len*R(.7,1.1);pts.push([px,py]);if(dep<2&&i>1&&Math.random()<.35)branch(px,py,a+R(-1,1),len*.8,dep+1)}cr.push(pts)};
  const ox=K.cx+R(-.1,.1)*K.w,oy=K.cy+R(-.1,.1)*K.h;for(let b=0;b<8;b++)branch(ox,oy,b*.785+R(-.25,.25),K.w*.1,0);
@@ -1558,7 +1575,7 @@ async function jouer(res){
    else if(e.t==='statut'&&e.k==='transc'){auraFx(e.c,{gold:1});aureole(e.c,{croix:false});flot(e.c,'Transcendance '+(['I','II','III'][(e.niv||1)-1])+' !','#fef3c7');if(!st[e.c+'transc'])statut(e.c,'transc',true);await wait(2600)}
    else if(e.t==='finstatut'&&e.k==='transc_prep'){}
    else if(e.t==='statut'&&e.k==='solide'){if(!st[e.c+'solide'])statut(e.c,'solide',true);flot(e.c,'Solidifié !','#d6d3d1');await wait(900)}
-   else if(e.t==='statut'&&e.k==='anti_rea'){flot(e.c,'PULVÉRISÉ !','#f87171','big');await wait(900)}
+   else if(e.t==='statut'&&e.k==='anti_rea'){cendresFx(e.c);setTimeout(()=>flot(e.c,'RÉDUIT EN CENDRES','#fdba74','big'),400);await wait(3000)}
    else if(e.t==='statut'&&e.k==='solide_bloque'){solideCoup(e.c);flot(e.c,'Solide !','#e7e5e4');await wait(500)}
    else if(e.t==='statut'&&e.k==='solide_brise'){if(st[e.c+'solide'])statut(e.c,'solide',false);solideBrise(e.c);flot(e.c,'Brisé !','#a8a29e');await wait(900)}
    else if(e.t==='statut'&&e.k==='gel_bloque'){givreCoup(e.c);flot(e.c,'Gelé !','#bae6fd');await wait(500)}
@@ -1588,7 +1605,7 @@ async function jouer(res){
    else if(e.t==='piege'){revele(e.c,e);await zoomCarte('g'+e.c,e,'piege');$('#g'+e.c).classList.toggle('annule',e.k==='bloque')}
    let ms={magie:600,piege:600,ultime:2200,fin:5000,degats:900,soin:1300,esquive:1100,bloque:1500,statut:1100,stat:1500,vol:1500,protege:2900,finstatut:250,frappe:350}[e.t]||900;
    if(e.t==='degats'&&R.journal.slice(ix+1,ix+4).some(z=>z.t==='protege'&&z.c===e.c))ms=200;   // coup fatal évité : les dégâts et l'effet « évite la mort » apparaissent presque ensemble
-   if(e.t==='fin'){[0,1].forEach(i=>{faceMagie(i);const p=$('#p'+i);if(p)p.classList.remove('actif','idle')});fxAll.forEach(s=>s());fxAll.clear();document.querySelectorAll('canvas.fx').forEach(k=>k.remove());{const rw=e.recompenses[e.gagnant??0];$('#ban').textContent=e.txt+(rw>0?` (+${rw})`:'')+(e.bounty?(e.bounty.tout?` · 💰 Bounty ${e.bounty.total} : le gagnant rafle tout !`:` · 💰 Bounty ${e.bounty.total} !`):'');if(e.bounty){bourseBounty(e.bounty.parts);[0,1].forEach(i=>{if(e.bounty.parts[i]>0)setTimeout(()=>flot(i,'💰 Bounty +'+e.bounty.parts[i],'#fcd34d'),2100)})}}if(e.gagnant!=null){briser(1-e.gagnant);auraFx(e.gagnant,{gold:1,dur:5.2})}else[0,1].forEach(i=>{if(e.pv&&e.pv[i]<=0)briser(i)})}   // double KO : les deux cartes se brisent
+   if(e.t==='fin'){[0,1].forEach(i=>{faceMagie(i);const p=$('#p'+i);if(p)p.classList.remove('actif','idle')});fxAll.forEach(s=>s());fxAll.clear();document.querySelectorAll('canvas.fx').forEach(k=>k.remove());{const rw=e.recompenses[e.gagnant??0];$('#ban').textContent=e.txt+(rw>0?` (+${rw})`:'')+(e.bounty?(e.bounty.tout?` · 💰 Bounty ${e.bounty.total} : le gagnant rafle tout !`:` · 💰 Bounty ${e.bounty.total} !`):'');if(e.bounty){bourseBounty(e.bounty.parts);[0,1].forEach(i=>{if(e.bounty.parts[i]>0)setTimeout(()=>flot(i,'💰 Bounty +'+e.bounty.parts[i],'#fcd34d'),2100)})}}const cendre=i=>{const k=$('#p'+i+' .cw .card');return k&&k.dataset.cendre==='1'};if(e.gagnant!=null){if(!cendre(1-e.gagnant))briser(1-e.gagnant);auraFx(e.gagnant,{gold:1,dur:5.2})}else[0,1].forEach(i=>{if(e.pv&&e.pv[i]<=0&&!cendre(i))briser(i)})}   // double KO : les deux cartes se brisent
    await wait(ms);
   }
   if(!TEST&&!DEMO&&R.seed!=null)fetch('https://bjsvqikjnvaomyoifiml.supabase.co/rest/v1/rpc/combat_affiche',{method:'POST',headers:{apikey:'sb_publishable_-3cPqDCyE-zhb3z5r6dPhg_DJFKGAI6','Content-Type':'application/json'},body:JSON.stringify({p_seed:String(R.seed)})}).catch(()=>{});   // le combat apparaît dans l'historique du site seulement maintenant (pas de spoil)
@@ -1638,6 +1655,7 @@ if(DEMO){
  const cardOf=c=>$('#p'+c+' .card'),has=(c,k)=>!!cardOf(c).querySelector('canvas.fx.'+k);
  const S=[
   ['Statuts','Détonation (feu + poison + sang)',c=>{detoFx(c,['brulure','poison','saignement']);setTimeout(()=>flot(c,'DÉTONATION !','#fb923c','big'),260)},2300],
+  ['Statuts','Réduit en cendres (tué par une détonation)',c=>{cendresFx(c);setTimeout(()=>flot(c,'RÉDUIT EN CENDRES','#fdba74','big'),400);setTimeout(()=>{const k=$('#p'+c+' .cw .card');if(k){['filter','transition','opacity','mask-image','-webkit-mask-image','--b'].forEach(z=>k.style.removeProperty(z));delete k.dataset.cendre}},3600)},3800],
   ['Programmation','Passif programmé (en attente)',c=>{progFx(c,'p');flot(c,'Passif programmé','#7dd3fc')},1700],
   ['Programmation','Ultime programmé (en attente)',c=>{progFx(c,'u');flot(c,'Ultime programmé','#fdba74')},1700],
   ['Programmation','Programmation active',c=>{activFx(c);flot(c,'ACTIVATION !','#38bdf8','big')},2300],

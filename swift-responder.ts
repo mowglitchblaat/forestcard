@@ -67,7 +67,7 @@ function simuler(pA,pB,opt={}){
     else scan({t:'mort',who:id(dst),skip:1})}
   }
   const lethal=n>=dst.pv;dst.pv=Math.max(0,dst.pv-n);src.cum+=n;   // les PV s'arrêtent à 0 (jamais négatifs)
-  if(lethal&&NOREV&&reanSrc(dst))pendEv.push(()=>L('statut',`${nom(dst)} est pulvérisé par l'explosion : pas de réanimation !`,{c:id(dst),k:'anti_rea'}));
+  if(lethal&&NOREV&&reanSrc(dst))pendEv.push(()=>L('statut',`${nom(dst)} est réduit en cendres : pas de réanimation !`,{c:id(dst),k:'anti_rea'}));
   if(lethal&&!NOREV){const rs=reanSrc(dst);if(rs){dst.st.rUsed.push(rs);dst.pv=0;pendRev.push({d:dst,pct:rs.pctrev||0,cap:capR});capR=null}}
   if(capR)pendEv.push(capR);   // pas de réanimation au final : le piège se montre juste après les dégâts   // la carte meurt vraiment ; elle revient juste après (voir flush)
   if(after)pendEv.push(after);pendEv.push(()=>scan({t:'pv'}));return n;   // les effets se jouent juste après les dégâts, pas avant
