@@ -1394,7 +1394,12 @@ function bourseBounty(parts){const tot=(parts[0]||0)+(parts[1]||0);if(!tot)retur
      {transform:`translate(${cx-12+dx}px,${cy-12+dy}px) scale(.3)`,opacity:0}],{duration:900+Math.random()*300,delay:dl,easing:'cubic-bezier(.3,.6,.5,1)',fill:'forwards'});
     setTimeout(()=>pc.remove(),dl+1400)}});
   setTimeout(()=>{sac.animate([{opacity:1},{opacity:0,transform:`translate(${sx}px,${sy+30}px) scale(.7)`}],{duration:500,fill:'forwards'}).onfinish=()=>sac.remove()},1700)},950)}
-function flot(i,txt,col,cls){const d=document.createElement('div');d.className='fl'+(cls?' '+cls:'');d.textContent=txt;d.style.color=col;$('#p'+i).appendChild(d);setTimeout(()=>d.remove(),1300)}
+function flot(i,txt,col,cls){const d=document.createElement('div');d.className='fl'+(cls?' '+cls:'');d.textContent=txt;d.style.color=col;const P=$('#p'+i);P.appendChild(d);
+ // le texte reste dans l'écran : trop large → police réduite, trop près d'un bord → recentré vers l'intérieur
+ try{const K=1.35,W=innerWidth,m=W*.015,maxW=Math.min(W-2*m,Math.max(P.getBoundingClientRect().width*1.7,W*.32)),w=d.scrollWidth*K;   // K : grossissement maximal de l'animation
+  if(w>maxW){d.style.fontSize=(parseFloat(getComputedStyle(d).fontSize)*maxW/w)+'px'}
+  const place=()=>{const pr=P.getBoundingClientRect(),w2=d.scrollWidth*K,c=pr.left+pr.width/2,cc=Math.min(W-m-w2/2,Math.max(m+w2/2,c));d.style.left=(cc-pr.left)+'px'};place();setTimeout(place,120)}catch(e){}   // replacé une 2e fois si la carte bouge (avalage…)
+ setTimeout(()=>d.remove(),1300)}
 let enCours=false;const file=[];
 let journalRecap=null,wsLive=null;
 // Verrou partagé avec l'overlay des boosters (même navigateur OBS) : un seul des deux à l'écran à la fois
