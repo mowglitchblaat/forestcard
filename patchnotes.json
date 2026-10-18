@@ -9,6 +9,12 @@
           "Souffle élémentaire : nouveau statut « Aléatoire », un statut différent tiré au hasard à chaque souffle (brûlure, gel, malédiction, poison, saignement ou fatigue).",
           "Souffles en chaîne : un souffle peut avoir X % de chances d’en relancer un autre aussitôt, et ainsi de suite jusqu’au premier échec (nombre maximum réglable)."
         ]
+      },
+      {
+        "titre": "Animations",
+        "points": [
+          "Le bouclier ne veut plus dire deux choses : bleu + « Attaque annulée » quand rien ne passe, ambré + « Dégâts réduits » quand la carte bloque seulement une partie du coup (qui touche donc quand même)."
+        ]
       }
     ]
   },
