@@ -447,6 +447,8 @@ function fxPassif(p){
     case 'gel':return `${c} % de chances de geler la cible (${nz(p.annul)} % d'attaque annulée, ${nz(p.stunch)} % d'être étourdie, ${trs(T)})`;
     case 'execution':return `${X.chance==null||X.chance===''||+X.chance>=100?'Marque la cible à chaque coup':`À chaque coup, ${nz(X.chance)} % de chances de marquer la cible`}. À 3 marques, une attaque qui la laisse sous ${nz(X.seuilexec)||10} % de ses PV max l'exécute (ignore « évite la mort »)`;
     case 'avalage':return avTxt(p);
+    case 'programmation':{const ls=x=>!x?[]:x.briques?x.briques:[x],it=[...ls(p.passifs).map(q=>q.lib||q.type),...ls(p.ultimes).map(q=>'ultime '+(q.lib||q.type))];const ch=p.chance==null||p.chance===''?50:nz(p.chance),N=p.nbpassif==null||p.nbpassif===''?2:nz(p.nbpassif);
+      return `Programmation : à chaque tour, ${ch} % de chances de se programmer (les ${N} premières fois en passif, puis 50 % passif / 50 % actif). Passif : acquiert au hasard ${it.length?it.join(', '):'—'}, qui reste en attente. Actif : réveille les passifs programmés et lance tous les ultimes programmés`}
     case 'transcendance':return `Au début de ses tours ${(nz(p.tours)||4)}, ${(nz(p.tours)||4)*2} et ${(nz(p.tours)||4)*3}, avant d'attaquer, monte d'un niveau (I, II, III) jusqu'à la fin du combat : à chaque niveau purifiée (étourdissement compris), ATQ +${p.patq==null||p.patq===''?15:nz(p.patq)} %, PV max +${p.ppv==null||p.ppv===''?15:nz(p.ppv)} % ; ses attaques purifient l'adversaire et volent ${['vv1','vv2','vv3'].map((k,i)=>p[k]==null||p[k]===''?[10,20,30][i]:nz(p[k])).join(' / ')} % des dégâts selon le niveau`;
     case 'solidification':return `À chacun de ses tours, ${c<100?c+' % de chances de se solidifier':'se solidifie'} pendant ${trs(T)} de l'adversaire (insensible à l'étourdissement, ne se purge pas, brisée par une fracture)`;
     case 'fracture':return `${c} % de chances de fracturer la cible (${nz(p.fchance)} % de se blesser de ${nz(p.degfrac)} PV en attaquant, ${trs(T)})`;
@@ -1566,7 +1568,13 @@ async function aCartes(){
     <label><input type="checkbox" name="ucarte"> ou quand une magie/piège s'active</label></div>
     <div class="row"><label><small>Utilisations max (0 = illimité)</small><br><input name="uuses" type="number" min="0" value="1" style="width:90px"></label>
     <label><small>Délai entre 2 utilisations (tours)</small><br><input name="ucd" type="number" min="0" value="0" style="width:90px"></label></div>
-    <b>Passifs</b> <small>(tu peux en cumuler plusieurs)</small><div id="b-pas"></div></div>
+    <b>Passifs</b> <small>(tu peux en cumuler plusieurs)</small><div id="b-pas"></div>
+    <b>Programmation</b> <small>(collection mécanique)</small><br><label><input type="checkbox" name="prog"> Cette carte se programme</label>
+    <div id="s-prog" style="display:none;border-left:3px solid #38bdf8;padding-left:10px;margin:6px 0">
+     <small>À chaque tour (avant d'attaquer) : X % de chances de lancer une programmation. Les N premières sont passives (la carte acquiert au hasard un passif ou un ultime de la liste ci-dessous, qui dort), ensuite 50 % passive / 50 % active. Une programmation active réveille les passifs programmés (pour toujours) et lance tous les ultimes programmés. Un « évite la mort » ou une réanimation déjà utilisés ne reviennent pas.</small>
+     <div class="row"><label><small>% de chances à chaque tour</small><br><input name="pchance" type="number" min="0" max="100" value="50" style="width:90px"></label>
+     <label><small>Programmations passives d'abord (N)</small><br><input name="pnb" type="number" min="0" value="2" style="width:90px"></label></div>
+     <b>Passifs programmables</b><div id="b-ppas"></div><b>Ultimes programmables</b><div id="b-pult"></div></div></div>
    <div id="s-mag" style="display:none"><b>Effet de la magie</b><div id="b-mag"></div></div>
    <div id="s-pie" style="display:none"><b>Condition du piège</b><div id="b-con"></div><b>Effet du piège</b><div id="b-pef"></div>
     <label><small>Déclenchements max</small><br><input name="decl" type="number" min="1" value="1" style="width:90px"></label></div>
@@ -1580,7 +1588,8 @@ async function aCartes(){
   <td><button class="sec" data-a="${c.id}" data-v="${c.actif}">${c.actif?'<span class="ok">Oui</span>':'<span class="ko">Non</span>'}</button></td>
   <td><button class="sec" data-edit="${c.id}" title="Modifier cette carte">✏️</button> <button class="sec" data-del="${c.id}" data-nom="${esc(c.nom)}" title="Supprimer cette carte">🗑️</button></td></tr>`).join('')}</table>`;
   const fc=$('#fc');
-  B={ult:mk($('#b-ult'),CAT.ult),pas:mkMulti($('#b-pas'),CAT.pas,'+ Ajouter un passif','✕ Retirer ce passif'),mag:mkMulti($('#b-mag'),CAT.mag),con:mk($('#b-con'),CAT.con),pef:mkMulti($('#b-pef'),{...CAT.ult,...CAT.mag,voler:CAT.ult.voler})};
+  B={ult:mk($('#b-ult'),CAT.ult),pas:mkMulti($('#b-pas'),CAT.pas,'+ Ajouter un passif','✕ Retirer ce passif'),mag:mkMulti($('#b-mag'),CAT.mag),con:mk($('#b-con'),CAT.con),pef:mkMulti($('#b-pef'),{...CAT.ult,...CAT.mag,voler:CAT.ult.voler}),ppas:mkMulti($('#b-ppas'),CAT.pas,'+ Ajouter un passif programmable','✕ Retirer'),pult:mkMulti($('#b-pult'),CAT.ult,'+ Ajouter un ultime programmable','✕ Retirer')};
+  fc.prog.onchange=()=>{$('#s-prog').style.display=fc.prog.checked?'':'none'};
   const toggle=()=>{const t=fc.type.value;
     $('#r-stats').style.display=$('#s-comb').style.display=t=='combattant'?'':'none';
     $('#s-mag').style.display=t=='magie'?'':'none';$('#s-pie').style.display=t=='piege'?'':'none'};
@@ -1588,7 +1597,10 @@ async function aCartes(){
   $('#fcolad').onchange=e=>{const v=e.target.value;$('#sub').querySelectorAll('tr[data-col]').forEach(tr=>tr.style.display=!v||tr.dataset.col==v?'':'none')};
   fc.onsubmit=async e=>{e.preventDefault();const f=e.target,v=n=>f[n].value,t=v('type');
     try{let ult=null,pas=null,eff=null;
-     if(t=='combattant'){ult=B.ult.get();if(ult){if(+f.utours.value)ult.apres_tours=+f.utours.value;if(f.ucarte.checked)ult.sur_carte=true;ult.utilisations=+f.uuses.value||0;ult.delai_tours=+f.ucd.value||0}pas=B.pas.get()}
+     if(t=='combattant'){ult=B.ult.get();if(ult){if(+f.utours.value)ult.apres_tours=+f.utours.value;if(f.ucarte.checked)ult.sur_carte=true;ult.utilisations=+f.uuses.value||0;ult.delai_tours=+f.ucd.value||0}pas=B.pas.get();
+      if(f.prog.checked){const lb=q=>{const v=['val','chance','pctpv','degtour','ragev','tours'].filter(k=>q[k]!=null&&q[k]!=='').map(k=>q[k]);return{...q,lib:String(cat(q.type)||q.type).split(/ ?[:(]/)[0].slice(0,40)+(v.length?' ('+v.join(' · ')+')':'')}},ml=x=>!x?null:x.briques?{briques:x.briques.map(lb)}:lb(x);   // programmation : rangée dans les passifs
+       const pb={type:'programmation',chance:f.pchance.value===''?50:+f.pchance.value,nbpassif:f.pnb.value===''?2:+f.pnb.value,passifs:ml(B.ppas.get()),ultimes:ml(B.pult.get())};
+       pas=!pas?pb:pas.briques?{briques:[...pas.briques,pb]}:{briques:[pas,pb]}}}
      else if(t=='magie')eff=B.mag.get();
      else{const c=B.con.get(),x=B.pef.get();if(c||x)eff={condition:c,effet:x,declenchements:+f.decl.value||1}}
      const cb=t=='combattant';
@@ -1613,7 +1625,9 @@ async function aCartes(){
     f.col.value=c.collection_id||'';f.rar.value=c.rarete_id;f.atq.value=c.atq??'';f.pv.value=c.pv??'';f.desc.value=c.description||'';f.actif.checked=c.actif;
     f.file.required=false;
     const u=c.ultime||{};B.ult.set(c.ultime);f.utours.value=u.apres_tours||'';f.ucarte.checked=!!u.sur_carte;f.uuses.value=u.utilisations??1;f.ucd.value=u.delai_tours??0;
-    B.pas.set(c.passif);if(c.type=='magie')B.mag.set(c.effet);
+    {let pz=c.passif,pg=null;if(pz){const arr=pz.briques||[pz];pg=arr.find(b=>b&&b.type==='programmation')||null;if(pg){const rest=arr.filter(b=>b!==pg);pz=!rest.length?null:rest.length==1?rest[0]:{briques:rest}}}
+     f.prog.checked=!!pg;$('#s-prog').style.display=pg?'':'none';if(pg){f.pchance.value=pg.chance??50;f.pnb.value=pg.nbpassif??2;B.ppas.set(pg.passifs);B.pult.set(pg.ultimes)}
+     B.pas.set(pz)}if(c.type=='magie')B.mag.set(c.effet);
     if(c.type=='piege'&&c.effet){B.con.set(c.effet.condition);B.pef.set(c.effet.effet);f.decl.value=c.effet.declenchements||1}
     $('#ftitle').textContent='Modifier : '+c.nom;$('#fbtn').textContent='Enregistrer les modifications';$('#fcancel').style.display='';
     fc.scrollIntoView({behavior:'smooth'});});

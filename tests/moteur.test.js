@@ -286,6 +286,22 @@ test('attaque annulée ≠ attaque bloquée : annulée = rien ne passe, bloquée
   assert.ok(r2.journal.some(e => /marque/.test(e.txt || '')), 'la marque passe');
 });
 
+test('programmation : N passives d\'abord, puis l\'activation réveille les passifs et lance tous les ultimes programmés', () => {
+  const prog = { type: 'programmation', chance: 100, nbpassif: 2, passifs: { type: 'soin_tour', val: 10, u: 'pts', lib: 'Soin' }, ultimes: { type: 'degats', val: 40, lib: 'Dégâts 40' } };
+  const r = combat([C('Robot', 20, SOLIDE, { passif: prog })], [C('b', 20, SOLIDE)], { regles: { maxTours: 8, maxProlong: 0 } });
+  const k = r.journal.filter(e => ['prog', 'prog_act'].includes(e.k)).map(e => e.k);
+  assert.deepEqual(k.slice(0, 2), ['prog', 'prog'], 'les 2 premières sont passives');
+  const iAct = r.journal.findIndex(e => e.k === 'prog_act');
+  assert.ok(iAct > 0, 'une activation a lieu');
+  assert.ok(!r.journal.slice(0, iAct).some(e => /subit 40/.test(e.txt || '') || (e.t === 'soin' && e.c === 0)), 'rien n\'agit avant l\'activation');
+  const apres = r.journal.slice(iAct);
+  const nbU = r.journal.slice(0, iAct).filter(e => e.k === 'prog' && e.quoi === 'u').length;
+  if (nbU) assert.ok(apres.some(e => /ULTIME programmé/.test(e.txt || '')), 'les ultimes programmés se lancent');
+  // une 2e activation relance les ultimes déjà programmés
+  const acts = r.journal.map((e, i) => e.k === 'prog_act' ? i : -1).filter(i => i >= 0);
+  if (acts.length > 1 && nbU) assert.ok(r.journal.slice(acts[1]).some(e => /ULTIME programmé/.test(e.txt || '')), 'relancés à chaque activation');
+});
+
 test('solidification : bloque l\'étourdissement, une fracture la brise, la purification ne la retire pas', () => {
   const etourdit = { type: 'etourdir', chance: 100 };
   // magie : solidifié 3 tours, l'adversaire étourdit à chaque coup → aucun étourdissement

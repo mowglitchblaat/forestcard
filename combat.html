@@ -588,6 +588,25 @@ function simuler(pA,pB,opt={}){
   s.pl.forEach((p,pi)=>{if(p.type==='voler'&&!s.st.pvol[pi]&&nt>=Math.max(1,parseInt(p.tourdecl,10)||1)){s.st.pvol[pi]=1;voler(s,x,p.carte,'passif',p.duree)}});
   if(s.pv<=0||over())return;if(!s.st.trA&&!s.st.transc){const p=s.pl.find(q=>q.type==='transcendance');if(p){porterTransc(s,p,true);s.st.trA.base=0}}   // passif : possédée dès le début du combat
   {const A=s.st.trA;if(A&&!A.stop&&s.st.transc<3&&nt-A.base>=A.n*(s.st.transc+1))transcender(s)}   // Transcendance : niveaux I, II, III au début de ses X-ième, 2X-ième, 3X-ième tours, AVANT l'attaque
+  if(s.pv<=0||over())return;s.pl.filter(p=>p.type==='programmation').forEach(p=>{if(s.pv>0&&!over())programmer(s,p)});   // Programmation : au début de son tour, avant l'attaque
+ }
+ // PROGRAMMATION (collection mécanique) — passif : à chaque tour de la carte, X % de chances de lancer une programmation.
+ //   Les N premières programmations sont PASSIVES, ensuite 50 % passive / 50 % active.
+ //   Passive : la carte acquiert au hasard un passif ou un ultime de sa liste programmable ; il dort (aucun effet) jusqu'à la prochaine activation.
+ //   Active : les passifs programmés s'activent (pour toujours), et TOUS les ultimes programmés (anciens compris) se lancent.
+ //   Un « évite la mort » ou une réanimation déjà utilisés ne reviennent pas.
+ function programmer(s,p){const P=s.st.pgm=s.st.pgm||{n:0,dp:[],du:[],au:[]};
+  if(!roll(p.chance==null||p.chance===''?100:(+p.chance||0)))return;
+  const lst=x=>!x?[]:x.briques?x.briques.filter(b=>b&&b.type):(x.type?[x]:[]),lib=q=>q.lib||String(q.type).replace(/_/g,' ');
+  const N=Math.max(0,parseInt(p.nbpassif,10)||0),passive=P.n<N||roll(50);P.n++;
+  if(passive){const pool=[...normPas(p.passifs).map(q=>({k:'p',q})),...lst(p.ultimes).map(q=>({k:'u',q}))];
+   if(!pool.length){L('statut',`${nom(s)} lance une programmation… mais n'a rien à programmer`,{c:id(s),k:'prog'});return}
+   const it=pool[Math.floor(r()*pool.length)];(it.k==='p'?P.dp:P.du).push(it.q);
+   L('statut',`${nom(s)} se programme : ${it.k==='p'?'passif':'ultime'} « ${lib(it.q)} » (en attente)`,{c:id(s),k:'prog',quoi:it.k});return}
+  L('statut',`${nom(s)} : PROGRAMMATION ACTIVE !`,{c:id(s),k:'prog_act'});
+  if(P.dp.length){const n=P.dp.length;P.dp.forEach(q=>s.pl.push(q));P.dp=[];L('statut',`${n} passif${n>1?'s':''} programmé${n>1?'s':''} de ${nom(s)} ${n>1?"s'activent":"s'active"}`,{c:id(s),k:'prog_on'})}
+  P.au.push(...P.du);P.du=[];
+  for(const u of P.au){if(s.pv<=0||over())break;L('ultime',`ULTIME programmé de ${nom(s)} : ${lib(u)} !`,{c:id(s)});{const s0=SRC;SRC='ultime';fx(u,s,adv(s));SRC=s0}scan({t:'ultime',by:id(s)})}
  }
  // Fin du tour d'une carte : les durées qui dépendent de SES actions (rage, fatigue, gel, fracture, dégâts doublés) baissent d'un tour.
  // Un tour où elle est étourdie ou gelée compte aussi ; le tour de l'adversaire ne compte jamais.
@@ -1442,6 +1461,9 @@ async function jouer(res){
    else if(e.t==='statut'&&e.k==='marque'){lameIn(e.c,e.n||1);flot(e.c,`Marque ${e.n||1}/3`,'#fca5a5');await wait((e.n||1)>=3?1300:900)}
    else if(e.t==='statut'&&e.k==='exec_prep'){flot(e.c,'Exécution','#fca5a5');await wait(600)}
    else if(e.t==='statut'&&e.k==='execution'){await executionFx(e.c);await wait(300)}
+   else if(e.t==='statut'&&e.k==='prog'){flot(e.c,e.quoi==='u'?'⚙ Ultime programmé':e.quoi==='p'?'⚙ Passif programmé':'⚙ Programmation','#7dd3fc');await wait(900)}   // programmation passive : l'effet dort jusqu'à l'activation
+   else if(e.t==='statut'&&e.k==='prog_act'){const k=$('#p'+e.c+' .card');if(k){k.classList.add('ult');setTimeout(()=>k.classList.remove('ult'),1800)}auraFx(e.c);flot(e.c,'⚙ ACTIVATION !','#38bdf8','big');await wait(1400)}
+   else if(e.t==='statut'&&e.k==='prog_on'){flot(e.c,'⚙ Passifs actifs','#a5f3fc');await wait(800)}
    else if(e.t==='statut'&&e.k==='transc_prep'){flot(e.c,'✦ Transcendance','#fde68a');await wait(700)}
    else if(e.t==='statut'&&e.k==='transc'){auraFx(e.c,{gold:1});aureole(e.c,{croix:false});flot(e.c,'Transcendance '+(['I','II','III'][(e.niv||1)-1])+' !','#fef3c7');if(!st[e.c+'transc'])statut(e.c,'transc',true);await wait(2600)}
    else if(e.t==='finstatut'&&e.k==='transc_prep'){}
@@ -1524,6 +1546,8 @@ if(DEMO){
  const mk=()=>{$('#ban').textContent='';$('#tour').textContent='';fxAll.forEach(s=>s());fxAll.clear();fxL.length=0;st={};document.getAnimations().forEach(a=>a.cancel());document.querySelectorAll('canvas.fx').forEach(k=>k.remove());[0,1].forEach(i=>panneau(i,J(i)));maj({pv:[70,70],max:[70,70],atq:[12,12]});$('#scene').classList.add('on')};
  const cardOf=c=>$('#p'+c+' .card'),has=(c,k)=>!!cardOf(c).querySelector('canvas.fx.'+k);
  const S=[
+  ['Programmation','Programmation passive (en attente)',c=>flot(c,'⚙ Ultime programmé','#7dd3fc'),1400],
+  ['Programmation','Programmation active',c=>{const k=cardOf(c);k.classList.add('ult');setTimeout(()=>k.classList.remove('ult'),1800);auraFx(c);flot(c,'⚙ ACTIVATION !','#38bdf8','big')},2200],
   ['Défense','Esquive',c=>{flot(c,'Esquive !','#e5e7eb');vent(c)},1700],
   ['Défense','Attaque annulée (✖ sur l\'attaquant)',c=>{annuleFx(1-c);flot(1-c,'Attaque annulée','#fca5a5')},1600],
   ['Défense','Blocage (bouclier)',c=>bouclier(c),1600],

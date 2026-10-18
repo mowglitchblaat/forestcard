@@ -9,7 +9,8 @@
           "Souffle élémentaire : nouveau statut « Aléatoire », un statut différent tiré au hasard à chaque souffle (brûlure, gel, malédiction, poison, saignement ou fatigue).",
           "Souffles en chaîne : un souffle peut avoir X % de chances d’en relancer un autre aussitôt, et ainsi de suite jusqu’au premier échec (nombre maximum réglable).",
           "Nouvel effet « Bloque la prochaine attaque » (magie, piège, ultime) : l’attaque touche sans faire de dégâts, mais ses statuts et ses marques (exécution, avalage) s’appliquent. À ne pas confondre avec « Annule la prochaine attaque » : là, l’attaque n’a pas lieu du tout et rien ne passe.",
-          "Quand une réduction de dégâts absorbe tout le coup, il compte comme une attaque bloquée : les statuts de l’attaquant s’appliquent quand même."
+          "Quand une réduction de dégâts absorbe tout le coup, il compte comme une attaque bloquée : les statuts de l’attaquant s’appliquent quand même.",
+          "Nouveau passif « Programmation » (collection mécanique) : à chaque tour, la carte peut se programmer. D’abord elle acquiert en secret des passifs ou des ultimes de sa liste, puis une programmation active les réveille tous et relance tous ses ultimes programmés, à chaque nouvelle activation."
         ]
       },
       {

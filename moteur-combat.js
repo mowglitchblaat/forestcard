@@ -433,6 +433,25 @@ function simuler(pA,pB,opt={}){
   s.pl.forEach((p,pi)=>{if(p.type==='voler'&&!s.st.pvol[pi]&&nt>=Math.max(1,parseInt(p.tourdecl,10)||1)){s.st.pvol[pi]=1;voler(s,x,p.carte,'passif',p.duree)}});
   if(s.pv<=0||over())return;if(!s.st.trA&&!s.st.transc){const p=s.pl.find(q=>q.type==='transcendance');if(p){porterTransc(s,p,true);s.st.trA.base=0}}   // passif : possédée dès le début du combat
   {const A=s.st.trA;if(A&&!A.stop&&s.st.transc<3&&nt-A.base>=A.n*(s.st.transc+1))transcender(s)}   // Transcendance : niveaux I, II, III au début de ses X-ième, 2X-ième, 3X-ième tours, AVANT l'attaque
+  if(s.pv<=0||over())return;s.pl.filter(p=>p.type==='programmation').forEach(p=>{if(s.pv>0&&!over())programmer(s,p)});   // Programmation : au début de son tour, avant l'attaque
+ }
+ // PROGRAMMATION (collection mécanique) — passif : à chaque tour de la carte, X % de chances de lancer une programmation.
+ //   Les N premières programmations sont PASSIVES, ensuite 50 % passive / 50 % active.
+ //   Passive : la carte acquiert au hasard un passif ou un ultime de sa liste programmable ; il dort (aucun effet) jusqu'à la prochaine activation.
+ //   Active : les passifs programmés s'activent (pour toujours), et TOUS les ultimes programmés (anciens compris) se lancent.
+ //   Un « évite la mort » ou une réanimation déjà utilisés ne reviennent pas.
+ function programmer(s,p){const P=s.st.pgm=s.st.pgm||{n:0,dp:[],du:[],au:[]};
+  if(!roll(p.chance==null||p.chance===''?100:(+p.chance||0)))return;
+  const lst=x=>!x?[]:x.briques?x.briques.filter(b=>b&&b.type):(x.type?[x]:[]),lib=q=>q.lib||String(q.type).replace(/_/g,' ');
+  const N=Math.max(0,parseInt(p.nbpassif,10)||0),passive=P.n<N||roll(50);P.n++;
+  if(passive){const pool=[...normPas(p.passifs).map(q=>({k:'p',q})),...lst(p.ultimes).map(q=>({k:'u',q}))];
+   if(!pool.length){L('statut',`${nom(s)} lance une programmation… mais n'a rien à programmer`,{c:id(s),k:'prog'});return}
+   const it=pool[Math.floor(r()*pool.length)];(it.k==='p'?P.dp:P.du).push(it.q);
+   L('statut',`${nom(s)} se programme : ${it.k==='p'?'passif':'ultime'} « ${lib(it.q)} » (en attente)`,{c:id(s),k:'prog',quoi:it.k});return}
+  L('statut',`${nom(s)} : PROGRAMMATION ACTIVE !`,{c:id(s),k:'prog_act'});
+  if(P.dp.length){const n=P.dp.length;P.dp.forEach(q=>s.pl.push(q));P.dp=[];L('statut',`${n} passif${n>1?'s':''} programmé${n>1?'s':''} de ${nom(s)} ${n>1?"s'activent":"s'active"}`,{c:id(s),k:'prog_on'})}
+  P.au.push(...P.du);P.du=[];
+  for(const u of P.au){if(s.pv<=0||over())break;L('ultime',`ULTIME programmé de ${nom(s)} : ${lib(u)} !`,{c:id(s)});{const s0=SRC;SRC='ultime';fx(u,s,adv(s));SRC=s0}scan({t:'ultime',by:id(s)})}
  }
  // Fin du tour d'une carte : les durées qui dépendent de SES actions (rage, fatigue, gel, fracture, dégâts doublés) baissent d'un tour.
  // Un tour où elle est étourdie ou gelée compte aussi ; le tour de l'adversaire ne compte jamais.
