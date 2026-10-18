@@ -17,7 +17,8 @@
         "titre": "Animations",
         "points": [
           "Attaque annulée : plus de bouclier, la carte qui attaque est stoppée net, s’éteint et reçoit une grande croix rouge (l’attaque n’a pas eu lieu). Le bouclier ambré est réservé aux attaques bloquées et aux dégâts réduits.",
-          "Les textes d’animation (« Attaque annulée », « Transcendance ! », « Trop gros à avaler ! »…) ne sortent plus de l’écran : ils se recentrent et rétrécissent si besoin."
+          "Les textes d’animation (« Attaque annulée », « Transcendance ! », « Trop gros à avaler ! »…) ne sortent plus de l’écran : ils se recentrent et rétrécissent si besoin.",
+          "Programmation : un balayage holographique écrit le programme et un engrenage (bleu pour un passif, éclair orange pour un ultime) se range en bas de la carte, éteint tant qu’il dort. À l’activation, des circuits s’illuminent sur toute la carte et les emplacements s’allument."
         ]
       }
     ]

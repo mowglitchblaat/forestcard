@@ -45,6 +45,14 @@ canvas.fx.malediction{box-shadow:inset 0 0 40px 10px rgba(150,70,230,.7);animati
 .mini.annule::after{content:'✖';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:6.5vh;font-weight:900;color:#ef2d2d;text-shadow:0 0 6px #000,0 0 14px #000;animation:croix .5s ease-out}
 @keyframes croix{from{transform:scale(2.4);opacity:0}to{transform:scale(1);opacity:1}}
 /* attaque ANNULÉE : la carte s'élance, est stoppée net et s'éteint, un ✖ rouge tamponne la carte (pas de bouclier : rien n'a été bloqué, l'attaque n'a pas eu lieu) */
+.pgm{position:absolute;left:0;right:0;bottom:3%;display:flex;justify-content:center;gap:.6vh;z-index:7;pointer-events:none;flex-wrap:wrap;padding:0 4%}
+.pgm i{width:3.6vh;height:3.6vh;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(8,16,24,.82);border:.25vh solid #3b5568;box-shadow:0 0 .6vh #000;transition:all .5s;animation:pgin .5s cubic-bezier(.2,.9,.3,1.4)}
+.pgm i svg{width:68%;height:68%;fill:#5b7486;transition:fill .5s}
+.pgm i.on.p{border-color:#38bdf8;box-shadow:0 0 1.2vh #38bdf8,0 0 .4vh #000}.pgm i.on.p svg{fill:#bae6fd}
+.pgm i.on.u{border-color:#fb923c;box-shadow:0 0 1.2vh #fb923c,0 0 .4vh #000}.pgm i.on.u svg{fill:#fed7aa}
+.pgm i.flash{animation:pgfl .9s ease-out}
+@keyframes pgin{from{transform:scale(0) rotate(-120deg)}to{transform:none}}
+@keyframes pgfl{0%{transform:scale(1)}30%{transform:scale(1.5);filter:brightness(2)}100%{transform:scale(1)}}
 .card.annul{animation:annul 1s ease-out}
 @keyframes annul{0%{transform:none;filter:none}22%{transform:scale(1.07) translateY(-1.2vh)}34%{transform:scale(.96) translateY(.4vh);filter:grayscale(.9) brightness(.6)}70%{filter:grayscale(.9) brightness(.6)}100%{transform:none;filter:none}}
 .annx{pointer-events:none;z-index:60;animation:croix .35s ease-out,annxo .5s ease-in .75s forwards}.annx::before,.annx::after{content:'';position:absolute;left:50%;top:50%;width:62%;height:9%;margin:-4.5% 0 0 -31%;border-radius:999px;background:#ef2d2d;box-shadow:0 0 12px #000,0 0 26px rgba(239,45,45,.7)}.annx::before{transform:rotate(45deg)}.annx::after{transform:rotate(-45deg)}
@@ -925,6 +933,41 @@ function vent(c){const K=rc(c),dir=c===0?-1:1,cw=$('#p'+c+' .cw'),card=cw.queryS
 
 // BLOCAGE : bouclier qui encaisse (fissure) ; avec o.to : RENVOI (piques vers l'adversaire)
 function bPath(x,cx,cy,w,h){const l=cx-w/2,r=cx+w/2,t=cy-h/2,b=cy+h/2;x.beginPath();x.moveTo(l,t+h*.05);x.quadraticCurveTo(cx,t-h*.08,r,t+h*.05);x.lineTo(r,cy+h*.1);x.quadraticCurveTo(r,b-h*.25,cx,b);x.quadraticCurveTo(l,b-h*.25,l,cy+h*.1);x.closePath()}
+
+// ====== PROGRAMMATION (collection mécanique) ======
+const SVG_ENG='<svg viewBox="0 0 24 24"><path d="M19.4 13a7.5 7.5 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.6 7.6 0 0 0-1.7-1L15 3h-4l-.4 2.9a7.6 7.6 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.5 7.5 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a7.6 7.6 0 0 0 1.7 1L11 21h4l.4-2.9a7.6 7.6 0 0 0 1.7-1l2.5 1 2-3.5L19.4 13zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg>',
+      SVG_ECL='<svg viewBox="0 0 24 24"><path d="M13.5 2 4 14h6.5L9.5 22 20 9.5h-6.6z"/></svg>';
+function engrenage(x,cx,cy,r,rot,col,al){const n=10,ri=r*.78,ro=r;x.save();x.translate(cx,cy);x.rotate(rot);x.beginPath();
+ for(let i=0;i<n*2;i++){const a0=i*Math.PI/n,a1=(i+1)*Math.PI/n,R2=i%2?ri:ro;x.lineTo(Math.cos(a0+.08)*R2,Math.sin(a0+.08)*R2);x.lineTo(Math.cos(a1-.08)*R2,Math.sin(a1-.08)*R2)}
+ x.closePath();x.globalAlpha=al;x.fillStyle=col;x.shadowColor=col;x.shadowBlur=r*.5;x.fill();x.shadowBlur=0;x.globalCompositeOperation='destination-out';x.beginPath();x.arc(0,0,r*.36,0,7);x.fill();x.restore()}
+function pgmSlots(c){const k=$('#p'+c+' .card');if(!k)return null;let z=k.querySelector('.pgm');if(!z){z=document.createElement('div');z.className='pgm';k.appendChild(z)}return z}
+// programmation passive : un balayage holographique « écrit » le programme, un engrenage se forme puis rejoint son emplacement (éteint : il dort)
+function progFx(c,quoi){const K=rc(c),col=quoi==='u'?'#fb923c':'#38bdf8',rgb=quoi==='u'?'251,146,60':'56,189,248';
+ addFx(1.5,(x,t)=>{
+  const sc=cl(t/.6),y=K.y+K.h*sc;   // ligne de balayage de haut en bas
+  if(t<.75){x.save();x.beginPath();x.rect(K.x,K.y,K.w,K.h);x.clip();
+   const g=x.createLinearGradient(0,y-K.h*.25,0,y);g.addColorStop(0,`rgba(${rgb},0)`);g.addColorStop(1,`rgba(${rgb},.35)`);x.fillStyle=g;x.fillRect(K.x,y-K.h*.25,K.w,K.h*.25);
+   x.strokeStyle=`rgba(${rgb},.9)`;x.lineWidth=2;x.shadowColor=col;x.shadowBlur=14;x.beginPath();x.moveTo(K.x,y);x.lineTo(K.x+K.w,y);x.stroke();x.shadowBlur=0;
+   x.globalAlpha=.25*(1-cl((t-.5)/.25));x.strokeStyle=col;x.lineWidth=1;for(let gx=K.x;gx<K.x+K.w;gx+=K.w/10){x.beginPath();x.moveTo(gx,K.y);x.lineTo(gx,y);x.stroke()}for(let gy=K.y;gy<y;gy+=K.w/10){x.beginPath();x.moveTo(K.x,gy);x.lineTo(K.x+K.w,gy);x.stroke()}
+   x.restore()}
+  const ap=cl((t-.25)/.35),vol=ez(cl((t-1)/.45)),cx=K.cx,cy=K.cy+(K.y+K.h*.9-K.cy)*vol,r=K.w*(.22*ez(ap))*(1-.8*vol);
+  if(ap>0&&r>1)engrenage(x,cx,cy,r,t*2.4,col,1-cl((t-1.35)/.15));
+ });
+ setTimeout(()=>{const z=pgmSlots(c);if(z){const i=document.createElement('i');i.className=quoi==='u'?'u':'p';i.innerHTML=quoi==='u'?SVG_ECL:SVG_ENG;z.appendChild(i)}},1350)}
+// programmation active : des circuits partent des emplacements et s'illuminent sur toute la carte, un grand engrenage tourne, les emplacements s'allument
+function activFx(c){const K=rc(c),traces=[];
+ for(let i=0;i<12;i++){let px=K.x+K.w*(.15+.7*Math.random()),py=K.y+K.h*.94;const pts=[[px,py]];for(let j=0;j<5;j++){if(j%2===0)py-=K.h*(.1+.15*Math.random());else px+=(Math.random()<.5?-1:1)*K.w*(.08+.15*Math.random());px=Math.max(K.x+4,Math.min(K.x+K.w-4,px));py=Math.max(K.y+4,py);pts.push([px,py])}traces.push({pts,d:Math.random()*.25})}
+ addFx(2,(x,t)=>{
+  const fade=1-cl((t-1.6)/.4);
+  engrenage(x,K.cx,K.cy,K.w*.34*ez(cl(t/.4)),-t*1.6,'rgba(56,189,248,.35)',.6*fade);
+  engrenage(x,K.cx+K.w*.2,K.cy-K.h*.18,K.w*.14*ez(cl((t-.1)/.4)),t*3.2,'rgba(125,211,252,.5)',.7*fade);
+  x.lineCap='round';x.lineJoin='round';
+  for(const T of traces){const u=cl((t-T.d)/.7);if(u<=0)continue;const P=T.pts,L=P.length-1,n=u*L;x.strokeStyle=`rgba(125,211,252,${.95*fade})`;x.lineWidth=2.5;x.shadowColor='#38bdf8';x.shadowBlur=12;x.beginPath();x.moveTo(P[0][0],P[0][1]);
+   for(let k=1;k<=Math.floor(n);k++)x.lineTo(P[k][0],P[k][1]);const f=n-Math.floor(n),k0=Math.floor(n);if(k0<L){const a=P[k0],b=P[k0+1];x.lineTo(a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f)}x.stroke();
+   for(let k=1;k<=Math.floor(n);k++){x.fillStyle=`rgba(224,242,254,${fade})`;x.beginPath();x.arc(P[k][0],P[k][1],3,0,7);x.fill()}x.shadowBlur=0}
+  if(t>.55&&t<.95){x.fillStyle=`rgba(186,230,253,${.35*(1-cl((t-.55)/.4))})`;x.fillRect(K.x,K.y,K.w,K.h)}   // éclair de mise sous tension
+ });
+ setTimeout(()=>{const z=pgmSlots(c);if(z)z.querySelectorAll('i').forEach((i,n)=>setTimeout(()=>{i.classList.add('on','flash');setTimeout(()=>i.classList.remove('flash'),900)},n*90))},550)}
 function annuleFx(c){const k=$('#p'+c+' .card');if(!k)return;k.classList.remove('annul');void k.offsetWidth;k.classList.add('annul');const R=k.getBoundingClientRect(),x=document.createElement('div');x.className='annx';Object.assign(x.style,{position:'fixed',left:R.left+'px',top:R.top+'px',width:R.width+'px',height:R.height+'px'});document.body.appendChild(x);/* hors de la carte : le gris de la carte ne doit pas éteindre le ✖ */setTimeout(()=>{x.remove();k.classList.remove('annul')},1300)}
 function bouclier(c,o={}){const K=rc(c),sx=c===0?1:-1,sw=K.w*.8,sh=K.h*.72,cx=K.cx,cy=K.cy,P={x:cx+sx*sw*.2,y:cy-sh*.08},sc=K.w/320;
  const cr=[];for(let b=0;b<4;b++){let a=Math.random()*6.28,px=P.x,py=P.y;const pts=[[px,py]];for(let i=0;i<6;i++){a+=R(-.7,.7);const l=sw*R(.05,.1);px+=Math.cos(a)*l;py+=Math.sin(a)*l;pts.push([px,py])}cr.push(pts)}
@@ -1461,9 +1504,9 @@ async function jouer(res){
    else if(e.t==='statut'&&e.k==='marque'){lameIn(e.c,e.n||1);flot(e.c,`Marque ${e.n||1}/3`,'#fca5a5');await wait((e.n||1)>=3?1300:900)}
    else if(e.t==='statut'&&e.k==='exec_prep'){flot(e.c,'Exécution','#fca5a5');await wait(600)}
    else if(e.t==='statut'&&e.k==='execution'){await executionFx(e.c);await wait(300)}
-   else if(e.t==='statut'&&e.k==='prog'){flot(e.c,e.quoi==='u'?'⚙ Ultime programmé':e.quoi==='p'?'⚙ Passif programmé':'⚙ Programmation','#7dd3fc');await wait(900)}   // programmation passive : l'effet dort jusqu'à l'activation
-   else if(e.t==='statut'&&e.k==='prog_act'){const k=$('#p'+e.c+' .card');if(k){k.classList.add('ult');setTimeout(()=>k.classList.remove('ult'),1800)}auraFx(e.c);flot(e.c,'⚙ ACTIVATION !','#38bdf8','big');await wait(1400)}
-   else if(e.t==='statut'&&e.k==='prog_on'){flot(e.c,'⚙ Passifs actifs','#a5f3fc');await wait(800)}
+   else if(e.t==='statut'&&e.k==='prog'){if(e.quoi)progFx(e.c,e.quoi);flot(e.c,e.quoi==='u'?'Ultime programmé':e.quoi==='p'?'Passif programmé':'Rien à programmer',e.quoi==='u'?'#fdba74':'#7dd3fc');await wait(1500)}   // programmation passive : l'élément dort (emplacement éteint) jusqu'à l'activation
+   else if(e.t==='statut'&&e.k==='prog_act'){activFx(e.c);flot(e.c,'ACTIVATION !','#38bdf8','big');await wait(1900)}
+   else if(e.t==='statut'&&e.k==='prog_on'){await wait(200)}
    else if(e.t==='statut'&&e.k==='transc_prep'){flot(e.c,'✦ Transcendance','#fde68a');await wait(700)}
    else if(e.t==='statut'&&e.k==='transc'){auraFx(e.c,{gold:1});aureole(e.c,{croix:false});flot(e.c,'Transcendance '+(['I','II','III'][(e.niv||1)-1])+' !','#fef3c7');if(!st[e.c+'transc'])statut(e.c,'transc',true);await wait(2600)}
    else if(e.t==='finstatut'&&e.k==='transc_prep'){}
@@ -1546,8 +1589,9 @@ if(DEMO){
  const mk=()=>{$('#ban').textContent='';$('#tour').textContent='';fxAll.forEach(s=>s());fxAll.clear();fxL.length=0;st={};document.getAnimations().forEach(a=>a.cancel());document.querySelectorAll('canvas.fx').forEach(k=>k.remove());[0,1].forEach(i=>panneau(i,J(i)));maj({pv:[70,70],max:[70,70],atq:[12,12]});$('#scene').classList.add('on')};
  const cardOf=c=>$('#p'+c+' .card'),has=(c,k)=>!!cardOf(c).querySelector('canvas.fx.'+k);
  const S=[
-  ['Programmation','Programmation passive (en attente)',c=>flot(c,'⚙ Ultime programmé','#7dd3fc'),1400],
-  ['Programmation','Programmation active',c=>{const k=cardOf(c);k.classList.add('ult');setTimeout(()=>k.classList.remove('ult'),1800);auraFx(c);flot(c,'⚙ ACTIVATION !','#38bdf8','big')},2200],
+  ['Programmation','Passif programmé (en attente)',c=>{progFx(c,'p');flot(c,'Passif programmé','#7dd3fc')},1700],
+  ['Programmation','Ultime programmé (en attente)',c=>{progFx(c,'u');flot(c,'Ultime programmé','#fdba74')},1700],
+  ['Programmation','Programmation active',c=>{activFx(c);flot(c,'ACTIVATION !','#38bdf8','big')},2300],
   ['Défense','Esquive',c=>{flot(c,'Esquive !','#e5e7eb');vent(c)},1700],
   ['Défense','Attaque annulée (✖ sur l\'attaquant)',c=>{annuleFx(1-c);flot(1-c,'Attaque annulée','#fca5a5')},1600],
   ['Défense','Blocage (bouclier)',c=>bouclier(c),1600],
