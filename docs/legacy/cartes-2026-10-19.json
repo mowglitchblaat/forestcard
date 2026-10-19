@@ -1,0 +1,3227 @@
+[
+  {
+    "id": 101,
+    "nom": "Anubis",
+    "type": "combattant",
+    "atq": 26,
+    "pv": 107,
+    "actif": true,
+    "passif": {
+      "type": "execution",
+      "chance": 100,
+      "seuilexec": 15
+    },
+    "ultime": {
+      "u": "pct",
+      "type": "fatigue",
+      "ciblem": "adversaire",
+      "fatval": 30,
+      "fattours": 3,
+      "apres_tours": 2,
+      "delai_tours": 2,
+      "utilisations": 0
+    },
+    "effet": null,
+    "description": null,
+    "raretes": {
+      "nom": "Légendaire",
+      "poids": 0.5,
+      "couleur": "#f59e0b"
+    },
+    "collections": {
+      "nom": "Mythe et Fantastique"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "245befb6-e52c-4cca-a483-3969e901e20d.webp"
+      }
+    ]
+  },
+  {
+    "id": 45,
+    "nom": "Dieu Cerf",
+    "type": "combattant",
+    "atq": 35,
+    "pv": 71,
+    "actif": true,
+    "passif": {
+      "briques": [
+        {
+          "fois": 5,
+          "type": "purification",
+          "every": 1
+        },
+        {
+          "u": "pts",
+          "val": 16,
+          "type": "soin_tour"
+        }
+      ]
+    },
+    "ultime": null,
+    "effet": null,
+    "description": null,
+    "raretes": {
+      "nom": "Légendaire",
+      "poids": 0.5,
+      "couleur": "#f59e0b"
+    },
+    "collections": null,
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "210ab2f5-11b4-4d10-bfe5-84e09d13b331.webp"
+      }
+    ]
+  },
+  {
+    "id": 62,
+    "nom": "Dieu Cerf ( Combat) ",
+    "type": "combattant",
+    "atq": 31,
+    "pv": 85,
+    "actif": true,
+    "passif": {
+      "u": "pts",
+      "val": 15,
+      "type": "soin_tour"
+    },
+    "ultime": {
+      "type": "double_degats",
+      "tours": 1,
+      "apres_tours": 3,
+      "delai_tours": 0,
+      "utilisations": 1
+    },
+    "effet": null,
+    "description": null,
+    "raretes": {
+      "nom": "Légendaire",
+      "poids": 0.5,
+      "couleur": "#f59e0b"
+    },
+    "collections": null,
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "4f648589-1049-4cc3-9a36-2a9c1a781b52.webp"
+      }
+    ]
+  },
+  {
+    "id": 84,
+    "nom": "Dragon noir maudit",
+    "type": "combattant",
+    "atq": 26,
+    "pv": 114,
+    "actif": true,
+    "passif": null,
+    "ultime": {
+      "val": 21,
+      "sval": 6,
+      "type": "souffle",
+      "tours": 2,
+      "chance": 50,
+      "statut": "malediction",
+      "reducsoin": null,
+      "apres_tours": 1,
+      "delai_tours": 3,
+      "utilisations": 0
+    },
+    "effet": null,
+    "description": null,
+    "raretes": {
+      "nom": "Légendaire",
+      "poids": 0.5,
+      "couleur": "#f59e0b"
+    },
+    "collections": {
+      "nom": "Mythe et Fantastique"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "f8cea058-9350-49f4-b837-28983686b4dc.webp"
+      }
+    ]
+  },
+  {
+    "id": 13,
+    "nom": "L'Arkat Zombie",
+    "type": "combattant",
+    "atq": 32,
+    "pv": 123,
+    "actif": true,
+    "passif": {
+      "u": "pct",
+      "val": 50,
+      "type": "reduc_degats",
+      "chance": 33
+    },
+    "ultime": null,
+    "effet": null,
+    "description": null,
+    "raretes": {
+      "nom": "Légendaire",
+      "poids": 0.5,
+      "couleur": "#f59e0b"
+    },
+    "collections": {
+      "nom": "Horreurs & Chasseurs"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "9f56138f-f449-40cb-a0cb-b710fd19bb55.webp"
+      }
+    ]
+  },
+  {
+    "id": 96,
+    "nom": "Moine divin",
+    "type": "combattant",
+    "atq": 28,
+    "pv": 56,
+    "actif": true,
+    "passif": {
+      "ppv": 15,
+      "vv1": 10,
+      "vv2": null,
+      "vv3": null,
+      "patq": 15,
+      "type": "transcendance",
+      "tours": 1
+    },
+    "ultime": null,
+    "effet": null,
+    "description": null,
+    "raretes": {
+      "nom": "Légendaire",
+      "poids": 0.5,
+      "couleur": "#f59e0b"
+    },
+    "collections": {
+      "nom": "Mythe et Fantastique"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "8efa3105-5fb3-4334-ae38-d2722c09d9fb.webp"
+      }
+    ]
+  },
+  {
+    "id": 75,
+    "nom": "PLG",
+    "type": "combattant",
+    "atq": 9,
+    "pv": 85,
+    "actif": true,
+    "passif": {
+      "briques": [
+        {
+          "max": 10,
+          "type": "enchainement",
+          "chance": 75
+        },
+        {
+          "type": "saignement",
+          "pctpv": 3,
+          "tours": 2,
+          "chance": 80,
+          "reducsoin": 20
+        }
+      ]
+    },
+    "ultime": null,
+    "effet": null,
+    "description": null,
+    "raretes": {
+      "nom": "Légendaire",
+      "poids": 0.5,
+      "couleur": "#f59e0b"
+    },
+    "collections": {
+      "nom": "Stream et Animals"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "d6c18bf4-8270-49b7-a3cf-fcc52b93b562.webp"
+      }
+    ]
+  },
+  {
+    "id": 15,
+    "nom": "Raidraw Le Bonk",
+    "type": "combattant",
+    "atq": 37,
+    "pv": 92,
+    "actif": true,
+    "passif": {
+      "type": "etourdir",
+      "tours": null,
+      "chance": 35,
+      "essais": null
+    },
+    "ultime": null,
+    "effet": null,
+    "description": null,
+    "raretes": {
+      "nom": "Légendaire",
+      "poids": 0.5,
+      "couleur": "#f59e0b"
+    },
+    "collections": {
+      "nom": "Horreurs & Chasseurs"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "617966f6-6146-44fb-9213-6c857eed28e6.webp"
+      }
+    ]
+  },
+  {
+    "id": 58,
+    "nom": "Sweety",
+    "type": "combattant",
+    "atq": 23,
+    "pv": 85,
+    "actif": true,
+    "passif": {
+      "type": "saignement",
+      "pctpv": 25,
+      "tours": 2,
+      "chance": 50,
+      "reducsoin": 100
+    },
+    "ultime": {
+      "val": 20,
+      "type": "vol_vie",
+      "apres_tours": 2,
+      "delai_tours": 0,
+      "utilisations": 1
+    },
+    "effet": null,
+    "description": null,
+    "raretes": {
+      "nom": "Légendaire",
+      "poids": 0.5,
+      "couleur": "#f59e0b"
+    },
+    "collections": {
+      "nom": "Horreurs & Chasseurs"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "807bb8b5-8450-4fce-afb9-ff34701fe91d.webp"
+      }
+    ]
+  },
+  {
+    "id": 68,
+    "nom": "Marteau du BONK",
+    "type": "magie",
+    "atq": null,
+    "pv": null,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": {
+      "type": "atk_etourdir",
+      "tours": 1,
+      "chance": 20
+    },
+    "description": null,
+    "raretes": {
+      "nom": "Légendaire",
+      "poids": 0.5,
+      "couleur": "#f59e0b"
+    },
+    "collections": {
+      "nom": "Horreurs & Chasseurs"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "ea706b98-6bc7-4602-be8c-911638096100.webp"
+      }
+    ]
+  },
+  {
+    "id": 71,
+    "nom": "La sauce de Mowgli",
+    "type": "piege",
+    "atq": null,
+    "pv": null,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": {
+      "effet": {
+        "briques": [
+          {
+            "u": "pts",
+            "type": "rage",
+            "ragev": 8,
+            "fatval": 7,
+            "fattours": 2,
+            "ragetours": 2
+          },
+          {
+            "type": "reanimation",
+            "pctrev": 45
+          }
+        ]
+      },
+      "condition": {
+        "type": "proprio_meurt"
+      },
+      "declenchements": 1
+    },
+    "description": null,
+    "raretes": {
+      "nom": "Légendaire",
+      "poids": 0.5,
+      "couleur": "#f59e0b"
+    },
+    "collections": {
+      "nom": "Stream et Animals"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "1763164c-150c-411f-8d51-57c6cc7e8cd5.webp"
+      }
+    ]
+  },
+  {
+    "id": 61,
+    "nom": "Yeux de Sweety",
+    "type": "piege",
+    "atq": null,
+    "pv": null,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": {
+      "effet": {
+        "briques": [
+          {
+            "val": 22,
+            "type": "vol_vie"
+          },
+          {
+            "type": "saignement",
+            "pctpv": 9,
+            "tours": 2,
+            "ciblem": "adversaire",
+            "reducsoin": 80
+          }
+        ]
+      },
+      "condition": {
+        "type": "proprio_pv_sous",
+        "seuilpv": 10
+      },
+      "declenchements": 1
+    },
+    "description": null,
+    "raretes": {
+      "nom": "Légendaire",
+      "poids": 0.5,
+      "couleur": "#f59e0b"
+    },
+    "collections": {
+      "nom": "Horreurs & Chasseurs"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "5fc5a276-0572-4f03-b448-4fef270feb9d.webp"
+      }
+    ]
+  },
+  {
+    "id": 94,
+    "nom": "Archange",
+    "type": "combattant",
+    "atq": 15,
+    "pv": 118,
+    "actif": true,
+    "passif": {
+      "briques": [
+        {
+          "type": "multi_frappe",
+          "chance": 50,
+          "frappes": 2
+        },
+        {
+          "ppv": 15,
+          "vv1": null,
+          "vv2": null,
+          "vv3": null,
+          "patq": 15,
+          "type": "transcendance",
+          "tours": 3
+        }
+      ]
+    },
+    "ultime": null,
+    "effet": null,
+    "description": null,
+    "raretes": {
+      "nom": "Epique",
+      "poids": 2,
+      "couleur": "#a855f7"
+    },
+    "collections": {
+      "nom": "Mythe et Fantastique"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "1e7125ab-6690-445b-8cf6-26700b90b8d9.webp"
+      }
+    ]
+  },
+  {
+    "id": 93,
+    "nom": "Bakunawa",
+    "type": "combattant",
+    "atq": 17,
+    "pv": 195,
+    "actif": true,
+    "passif": {
+      "type": "avalage",
+      "ratio": 3,
+      "repos": 1,
+      "tours": 3,
+      "chance": 100,
+      "pctmache": 25,
+      "machebase": "max"
+    },
+    "ultime": null,
+    "effet": null,
+    "description": null,
+    "raretes": {
+      "nom": "Epique",
+      "poids": 2,
+      "couleur": "#a855f7"
+    },
+    "collections": {
+      "nom": "Mythe et Fantastique"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "41db99e0-0ba9-4be5-bb10-ba6209553c58.webp"
+      }
+    ]
+  },
+  {
+    "id": 86,
+    "nom": "Cergo des enfers",
+    "type": "combattant",
+    "atq": 35,
+    "pv": 75,
+    "actif": true,
+    "passif": null,
+    "ultime": {
+      "u": "pts",
+      "type": "rage",
+      "ragev": 18,
+      "fatval": 8,
+      "fattours": 3,
+      "ragetours": 1,
+      "apres_tours": 2,
+      "delai_tours": 4,
+      "utilisations": 0
+    },
+    "effet": null,
+    "description": null,
+    "raretes": {
+      "nom": "Epique",
+      "poids": 2,
+      "couleur": "#a855f7"
+    },
+    "collections": {
+      "nom": "Mythe et Fantastique"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "02dae070-c371-4889-9595-9d9e66fda382.webp"
+      }
+    ]
+  },
+  {
+    "id": 54,
+    "nom": "Colosse de chair",
+    "type": "combattant",
+    "atq": 5,
+    "pv": 100,
+    "actif": true,
+    "passif": {
+      "u": "pts",
+      "val": 33,
+      "type": "pv_tours",
+      "tours": 1
+    },
+    "ultime": {
+      "type": "echange_atq_def",
+      "ciblem": "soi",
+      "apres_tours": 3,
+      "delai_tours": 0,
+      "utilisations": 1
+    },
+    "effet": null,
+    "description": null,
+    "raretes": {
+      "nom": "Epique",
+      "poids": 2,
+      "couleur": "#a855f7"
+    },
+    "collections": {
+      "nom": "Horreurs & Chasseurs"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "cb51da63-5b9d-4b22-870e-8baaf4f077b0.webp"
+      }
+    ]
+  },
+  {
+    "id": 56,
+    "nom": "Esprit de l'ours",
+    "type": "combattant",
+    "atq": 34,
+    "pv": 76,
+    "actif": true,
+    "passif": {
+      "type": "evite_mort"
+    },
+    "ultime": {
+      "u": "pts",
+      "type": "rage",
+      "ragev": 12,
+      "fatval": 30,
+      "fattours": 2,
+      "ragetours": 1,
+      "apres_tours": 3,
+      "delai_tours": 4,
+      "utilisations": 4
+    },
+    "effet": null,
+    "description": null,
+    "raretes": {
+      "nom": "Epique",
+      "poids": 2,
+      "couleur": "#a855f7"
+    },
+    "collections": null,
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "be1f4fed-3097-4c2d-b162-f54512536543.webp"
+      }
+    ]
+  },
+  {
+    "id": 16,
+    "nom": "Esprit du loup",
+    "type": "combattant",
+    "atq": 34,
+    "pv": 65,
+    "actif": true,
+    "passif": {
+      "briques": [
+        {
+          "type": "evite_mort"
+        },
+        {
+          "u": "pts",
+          "val": 10,
+          "type": "soin_tour"
+        }
+      ]
+    },
+    "ultime": null,
+    "effet": null,
+    "description": null,
+    "raretes": {
+      "nom": "Epique",
+      "poids": 2,
+      "couleur": "#a855f7"
+    },
+    "collections": null,
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "0b69a000-2eec-4ea5-ae4b-2d39b2eb45c2.webp"
+      }
+    ]
+  },
+  {
+    "id": 70,
+    "nom": "Lame crepusculaire ecarlate Nezuzu",
+    "type": "combattant",
+    "atq": 22,
+    "pv": 72,
+    "actif": true,
+    "passif": {
+      "briques": [
+        {
+          "type": "esquive",
+          "chance": 40
+        },
+        {
+          "u": "pct",
+          "val": 40,
+          "type": "renvoi"
+        }
+      ]
+    },
+    "ultime": null,
+    "effet": null,
+    "description": null,
+    "raretes": {
+      "nom": "Epique",
+      "poids": 2,
+      "couleur": "#a855f7"
+    },
+    "collections": {
+      "nom": "Horreurs & Chasseurs"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "85fd47e3-1fc2-4059-a5e0-03a84b8628a3.webp"
+      }
+    ]
+  },
+  {
+    "id": 100,
+    "nom": "Le phénix",
+    "type": "combattant",
+    "atq": 18,
+    "pv": 63,
+    "actif": true,
+    "passif": {
+      "type": "brulure",
+      "pctpv": 6,
+      "tours": 3,
+      "chance": 50
+    },
+    "ultime": {
+      "type": "reanimation",
+      "pctrev": 50,
+      "apres_tours": 1,
+      "delai_tours": 3,
+      "utilisations": 3
+    },
+    "effet": null,
+    "description": null,
+    "raretes": {
+      "nom": "Epique",
+      "poids": 2,
+      "couleur": "#a855f7"
+    },
+    "collections": {
+      "nom": "Mythe et Fantastique"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "4013f474-f133-417c-a3a2-fc4e4ff9fc9e.webp"
+      }
+    ]
+  },
+  {
+    "id": 63,
+    "nom": "Mowgli la sauce",
+    "type": "combattant",
+    "atq": 20,
+    "pv": 50,
+    "actif": true,
+    "passif": {
+      "type": "reanimation",
+      "pctrev": 100
+    },
+    "ultime": {
+      "u": "pts",
+      "type": "rage",
+      "ragev": 13,
+      "fatval": 7,
+      "fattours": 2,
+      "ragetours": 2,
+      "sur_carte": true,
+      "delai_tours": 4,
+      "utilisations": 0
+    },
+    "effet": null,
+    "description": null,
+    "raretes": {
+      "nom": "Epique",
+      "poids": 2,
+      "couleur": "#a855f7"
+    },
+    "collections": {
+      "nom": "Stream et Animals"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "1de75b3a-af67-43fa-8d75-7cf80d50db2d.webp"
+      }
+    ]
+  },
+  {
+    "id": 65,
+    "nom": "Ryuukin",
+    "type": "combattant",
+    "atq": 24,
+    "pv": 83,
+    "actif": true,
+    "passif": {
+      "u": "pts",
+      "val": 13,
+      "type": "atq_tours",
+      "tours": 1
+    },
+    "ultime": {
+      "type": "detruire",
+      "carte": "piege",
+      "apres_tours": 2,
+      "delai_tours": 0,
+      "utilisations": 1
+    },
+    "effet": null,
+    "description": null,
+    "raretes": {
+      "nom": "Epique",
+      "poids": 2,
+      "couleur": "#a855f7"
+    },
+    "collections": {
+      "nom": "Stream et Animals"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "101eecb7-0b1c-4d60-9a3d-913cea6c4c10.webp"
+      }
+    ]
+  },
+  {
+    "id": 57,
+    "nom": "Trio chasseurs",
+    "type": "combattant",
+    "atq": 19,
+    "pv": 70,
+    "actif": true,
+    "passif": {
+      "briques": [
+        {
+          "type": "saignement",
+          "pctpv": 7,
+          "tours": 1,
+          "chance": 55,
+          "reducsoin": 40
+        },
+        {
+          "type": "multi_frappe",
+          "chance": 50,
+          "frappes": 3
+        }
+      ]
+    },
+    "ultime": null,
+    "effet": null,
+    "description": null,
+    "raretes": {
+      "nom": "Epique",
+      "poids": 2,
+      "couleur": "#a855f7"
+    },
+    "collections": {
+      "nom": "Horreurs & Chasseurs"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "26629b60-3189-423b-b8b4-73a150bff38a.webp"
+      }
+    ]
+  },
+  {
+    "id": 69,
+    "nom": "Wouedman",
+    "type": "combattant",
+    "atq": 20,
+    "pv": 85,
+    "actif": true,
+    "passif": {
+      "briques": [
+        {
+          "max": 3,
+          "type": "enchainement",
+          "chance": 45
+        },
+        {
+          "u": "pct",
+          "type": "fatigue",
+          "chance": 40,
+          "fatval": 20,
+          "fattours": 2
+        }
+      ]
+    },
+    "ultime": null,
+    "effet": null,
+    "description": null,
+    "raretes": {
+      "nom": "Epique",
+      "poids": 2,
+      "couleur": "#a855f7"
+    },
+    "collections": {
+      "nom": "Stream et Animals"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "e12aed7e-6d83-4164-b3f8-b41655e89414.webp"
+      }
+    ]
+  },
+  {
+    "id": 27,
+    "nom": "Arbre-mere ",
+    "type": "magie",
+    "atq": null,
+    "pv": null,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": {
+      "briques": [
+        {
+          "u": "pct",
+          "val": 50,
+          "type": "pv_mod",
+          "cible": "soi"
+        },
+        {
+          "cond": "aucune",
+          "type": "mort_evitee",
+          "seuil": 1
+        }
+      ]
+    },
+    "description": null,
+    "raretes": {
+      "nom": "Epique",
+      "poids": 2,
+      "couleur": "#a855f7"
+    },
+    "collections": null,
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "c2d294f6-ab29-4587-ae46-501ed601f32a.webp"
+      }
+    ]
+  },
+  {
+    "id": 41,
+    "nom": "Bois de Dieu Cerf",
+    "type": "magie",
+    "atq": null,
+    "pv": null,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": {
+      "briques": [
+        {
+          "fois": 5,
+          "type": "purification",
+          "cible": "soi",
+          "every": 2
+        },
+        {
+          "cond": "aucune",
+          "type": "mort_evitee",
+          "seuil": null
+        }
+      ]
+    },
+    "description": null,
+    "raretes": {
+      "nom": "Epique",
+      "poids": 2,
+      "couleur": "#a855f7"
+    },
+    "collections": null,
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "469ef41f-968f-40ba-9744-986e404ac661.webp"
+      }
+    ]
+  },
+  {
+    "id": 60,
+    "nom": "Colere de l'ours",
+    "type": "magie",
+    "atq": null,
+    "pv": null,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": {
+      "u": "pts",
+      "type": "rage",
+      "ragev": 15,
+      "fatval": 7,
+      "fattours": 2,
+      "ragetours": 5
+    },
+    "description": null,
+    "raretes": {
+      "nom": "Epique",
+      "poids": 2,
+      "couleur": "#a855f7"
+    },
+    "collections": null,
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "8dbdb1b2-333f-4b47-9acc-5c82b341b81c.webp"
+      }
+    ]
+  },
+  {
+    "id": 28,
+    "nom": "Faux de la Mort",
+    "type": "magie",
+    "atq": null,
+    "pv": null,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": {
+      "briques": [
+        {
+          "val": 6,
+          "type": "malediction",
+          "tours": 3,
+          "ciblem": "adversaire"
+        },
+        {
+          "type": "saignement",
+          "pctpv": 9,
+          "tours": 3,
+          "ciblem": "adversaire",
+          "reducsoin": 50
+        }
+      ]
+    },
+    "description": null,
+    "raretes": {
+      "nom": "Epique",
+      "poids": 2,
+      "couleur": "#a855f7"
+    },
+    "collections": {
+      "nom": "Horreurs & Chasseurs"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "e43c8668-0d4b-4287-b2c5-e1bc79ef245b.webp"
+      }
+    ]
+  },
+  {
+    "id": 102,
+    "nom": "Renaissance du phénix",
+    "type": "magie",
+    "atq": null,
+    "pv": null,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": {
+      "type": "reanimation",
+      "pctrev": 50
+    },
+    "description": null,
+    "raretes": {
+      "nom": "Epique",
+      "poids": 2,
+      "couleur": "#a855f7"
+    },
+    "collections": {
+      "nom": "Mythe et Fantastique"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "7e7ccd89-3186-4afe-9acf-77f505a0fc56.webp"
+      }
+    ]
+  },
+  {
+    "id": 43,
+    "nom": "La Mort dechainée",
+    "type": "piege",
+    "atq": null,
+    "pv": null,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": {
+      "effet": {
+        "briques": [
+          {
+            "val": 20,
+            "type": "vol_vie"
+          },
+          {
+            "val": 6,
+            "type": "malediction",
+            "tours": 3,
+            "ciblem": "adversaire"
+          }
+        ]
+      },
+      "condition": {
+        "type": "proprio_pv_sous",
+        "seuilpv": 10
+      },
+      "declenchements": 1
+    },
+    "description": null,
+    "raretes": {
+      "nom": "Epique",
+      "poids": 2,
+      "couleur": "#a855f7"
+    },
+    "collections": {
+      "nom": "Horreurs & Chasseurs"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "50fd30d2-2295-4829-8a2b-6f220131ffdf.webp"
+      }
+    ]
+  },
+  {
+    "id": 36,
+    "nom": "Araignée Humanoide",
+    "type": "combattant",
+    "atq": 15,
+    "pv": 78,
+    "actif": true,
+    "passif": {
+      "briques": [
+        {
+          "max": 3,
+          "type": "enchainement",
+          "chance": 45
+        },
+        {
+          "val": 3,
+          "type": "malediction",
+          "tours": 2,
+          "chance": 40
+        }
+      ]
+    },
+    "ultime": null,
+    "effet": null,
+    "description": null,
+    "raretes": {
+      "nom": "Rare",
+      "poids": 20,
+      "couleur": "#3b82f6"
+    },
+    "collections": {
+      "nom": "Horreurs & Chasseurs"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "bc555876-4355-4947-8842-1a5d6ca87ba4.webp"
+      }
+    ]
+  },
+  {
+    "id": 79,
+    "nom": "Bébé dragon noir maudit",
+    "type": "combattant",
+    "atq": 17,
+    "pv": 73,
+    "actif": true,
+    "passif": null,
+    "ultime": {
+      "val": 14,
+      "sval": 4,
+      "type": "souffle",
+      "tours": 2,
+      "chance": 45,
+      "statut": "malediction",
+      "reducsoin": null,
+      "apres_tours": 3,
+      "delai_tours": 2,
+      "utilisations": 2
+    },
+    "effet": null,
+    "description": null,
+    "raretes": {
+      "nom": "Rare",
+      "poids": 20,
+      "couleur": "#3b82f6"
+    },
+    "collections": {
+      "nom": "Mythe et Fantastique"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "39c6b646-40d0-494c-b0be-2a0ed8dfd812.webp"
+      }
+    ]
+  },
+  {
+    "id": 92,
+    "nom": "Chevalier ailé",
+    "type": "combattant",
+    "atq": 22,
+    "pv": 74,
+    "actif": true,
+    "passif": {
+      "ppv": 15,
+      "vv1": null,
+      "vv2": null,
+      "vv3": null,
+      "patq": 15,
+      "type": "transcendance",
+      "tours": 3
+    },
+    "ultime": null,
+    "effet": null,
+    "description": null,
+    "raretes": {
+      "nom": "Rare",
+      "poids": 20,
+      "couleur": "#3b82f6"
+    },
+    "collections": {
+      "nom": "Mythe et Fantastique"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "8a2f8af4-0c34-4288-8d32-4f19ef58eb16.webp"
+      }
+    ]
+  },
+  {
+    "id": 44,
+    "nom": "Col'Os",
+    "type": "combattant",
+    "atq": 21,
+    "pv": 149,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": null,
+    "description": null,
+    "raretes": {
+      "nom": "Rare",
+      "poids": 20,
+      "couleur": "#3b82f6"
+    },
+    "collections": {
+      "nom": "Horreurs & Chasseurs"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "e4287867-1b8a-4704-833c-07f36a3dc1dc.webp"
+      }
+    ]
+  },
+  {
+    "id": 97,
+    "nom": "Dragon élementaire",
+    "type": "combattant",
+    "atq": 12,
+    "pv": 83,
+    "actif": true,
+    "passif": null,
+    "ultime": {
+      "val": 8,
+      "sval": 5,
+      "type": "souffle",
+      "remax": 4,
+      "tours": 3,
+      "chance": 50,
+      "statut": "aleatoire",
+      "rechance": 100,
+      "reducsoin": 0,
+      "apres_tours": 3,
+      "delai_tours": 2,
+      "utilisations": 0
+    },
+    "effet": null,
+    "description": null,
+    "raretes": {
+      "nom": "Rare",
+      "poids": 20,
+      "couleur": "#3b82f6"
+    },
+    "collections": {
+      "nom": "Mythe et Fantastique"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "0b70f0df-c941-42ed-80b6-8578c1e3a738.webp"
+      }
+    ]
+  },
+  {
+    "id": 38,
+    "nom": "Duo chasseurs",
+    "type": "combattant",
+    "atq": 19,
+    "pv": 63,
+    "actif": true,
+    "passif": {
+      "briques": [
+        {
+          "type": "multi_frappe",
+          "chance": 75,
+          "frappes": 2
+        },
+        {
+          "type": "saignement",
+          "pctpv": 7,
+          "tours": 2,
+          "chance": 50,
+          "reducsoin": 50
+        }
+      ]
+    },
+    "ultime": null,
+    "effet": null,
+    "description": null,
+    "raretes": {
+      "nom": "Rare",
+      "poids": 20,
+      "couleur": "#3b82f6"
+    },
+    "collections": {
+      "nom": "Horreurs & Chasseurs"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "fa82bf3a-1f15-4fcc-a57a-d719989c83cb.webp"
+      }
+    ]
+  },
+  {
+    "id": 55,
+    "nom": "Esprit du serpent",
+    "type": "combattant",
+    "atq": 22,
+    "pv": 59,
+    "actif": true,
+    "passif": {
+      "briques": [
+        {
+          "type": "poison",
+          "tours": 3,
+          "chance": 75,
+          "degtour": 12
+        },
+        {
+          "type": "evite_mort"
+        }
+      ]
+    },
+    "ultime": null,
+    "effet": null,
+    "description": null,
+    "raretes": {
+      "nom": "Rare",
+      "poids": 20,
+      "couleur": "#3b82f6"
+    },
+    "collections": null,
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "00d30681-e353-49fa-a5ab-21089f4da9fe.webp"
+      }
+    ]
+  },
+  {
+    "id": 85,
+    "nom": "Golem de glace",
+    "type": "combattant",
+    "atq": 15,
+    "pv": 115,
+    "actif": true,
+    "passif": {
+      "briques": [
+        {
+          "type": "solidification",
+          "tours": 2,
+          "chance": 50
+        },
+        {
+          "u": "pct",
+          "val": 35,
+          "type": "reduc_degats",
+          "chance": 50
+        }
+      ]
+    },
+    "ultime": null,
+    "effet": null,
+    "description": null,
+    "raretes": {
+      "nom": "Rare",
+      "poids": 20,
+      "couleur": "#3b82f6"
+    },
+    "collections": {
+      "nom": "Mythe et Fantastique"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "0cc0925f-cf1b-4f66-85e6-63a66ff777b3.webp"
+      }
+    ]
+  },
+  {
+    "id": 64,
+    "nom": "L'Horreur Mowgli",
+    "type": "combattant",
+    "atq": 22,
+    "pv": 55,
+    "actif": true,
+    "passif": {
+      "briques": [
+        {
+          "u": "pct",
+          "type": "fatigue",
+          "chance": 65,
+          "fatval": 10,
+          "fattours": 2
+        },
+        {
+          "val": 5,
+          "type": "malediction",
+          "tours": 3,
+          "chance": 65
+        }
+      ]
+    },
+    "ultime": null,
+    "effet": null,
+    "description": null,
+    "raretes": {
+      "nom": "Rare",
+      "poids": 20,
+      "couleur": "#3b82f6"
+    },
+    "collections": {
+      "nom": "Horreurs & Chasseurs"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "e7a59210-b4c1-48f9-a5dd-dc32df304190.webp"
+      }
+    ]
+  },
+  {
+    "id": 11,
+    "nom": "La chauve souris",
+    "type": "combattant",
+    "atq": 32,
+    "pv": 68,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": null,
+    "description": null,
+    "raretes": {
+      "nom": "Rare",
+      "poids": 20,
+      "couleur": "#3b82f6"
+    },
+    "collections": {
+      "nom": "Horreurs & Chasseurs"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "df60d66e-7784-4514-995a-ca2ce4d036f4.webp"
+      }
+    ]
+  },
+  {
+    "id": 14,
+    "nom": "Le faux centaure ",
+    "type": "combattant",
+    "atq": 15,
+    "pv": 86,
+    "actif": true,
+    "passif": {
+      "max": 7,
+      "type": "enchainement",
+      "chance": 35
+    },
+    "ultime": null,
+    "effet": null,
+    "description": null,
+    "raretes": {
+      "nom": "Rare",
+      "poids": 20,
+      "couleur": "#3b82f6"
+    },
+    "collections": {
+      "nom": "Horreurs & Chasseurs"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "a8a39c4e-5377-4be1-9e16-3eec029f9701.webp"
+      }
+    ]
+  },
+  {
+    "id": 19,
+    "nom": "Loup cerf",
+    "type": "combattant",
+    "atq": 33,
+    "pv": 59,
+    "actif": true,
+    "passif": {
+      "u": "pts",
+      "val": 15,
+      "type": "soin_tour"
+    },
+    "ultime": null,
+    "effet": null,
+    "description": null,
+    "raretes": {
+      "nom": "Rare",
+      "poids": 20,
+      "couleur": "#3b82f6"
+    },
+    "collections": null,
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "fb418023-2b18-482a-91a7-eb24aa3eb16d.webp"
+      }
+    ]
+  },
+  {
+    "id": 17,
+    "nom": "Ours colere",
+    "type": "combattant",
+    "atq": 35,
+    "pv": 82,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": null,
+    "description": null,
+    "raretes": {
+      "nom": "Rare",
+      "poids": 20,
+      "couleur": "#3b82f6"
+    },
+    "collections": null,
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "ad33f3d1-a67d-47e2-9602-5b60f8965a05.webp"
+      }
+    ]
+  },
+  {
+    "id": 53,
+    "nom": "Samourai Squelette",
+    "type": "combattant",
+    "atq": 30,
+    "pv": 46,
+    "actif": true,
+    "passif": {
+      "briques": [
+        {
+          "type": "saignement",
+          "pctpv": 8,
+          "tours": 2,
+          "chance": 50,
+          "reducsoin": 50
+        },
+        {
+          "val": 3,
+          "type": "malediction",
+          "tours": 2,
+          "chance": 50
+        },
+        {
+          "type": "esquive",
+          "chance": 40
+        }
+      ]
+    },
+    "ultime": null,
+    "effet": null,
+    "description": null,
+    "raretes": {
+      "nom": "Rare",
+      "poids": 20,
+      "couleur": "#3b82f6"
+    },
+    "collections": {
+      "nom": "Horreurs & Chasseurs"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "7e92de2e-a041-4702-a028-3d086bcb1849.webp"
+      }
+    ]
+  },
+  {
+    "id": 88,
+    "nom": "Wyverne d'os ",
+    "type": "combattant",
+    "atq": 27,
+    "pv": 80,
+    "actif": true,
+    "passif": {
+      "type": "fracture",
+      "tours": 2,
+      "chance": 40,
+      "degfrac": 10,
+      "fchance": 50
+    },
+    "ultime": null,
+    "effet": null,
+    "description": null,
+    "raretes": {
+      "nom": "Rare",
+      "poids": 20,
+      "couleur": "#3b82f6"
+    },
+    "collections": {
+      "nom": "Mythe et Fantastique"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "2246abb2-7ac0-465c-bf93-27502ea2efdf.webp"
+      }
+    ]
+  },
+  {
+    "id": 39,
+    "nom": "Bois de loup cerf",
+    "type": "magie",
+    "atq": null,
+    "pv": null,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": {
+      "u": "pts",
+      "val": 10,
+      "type": "soin_tours",
+      "tours": 10
+    },
+    "description": null,
+    "raretes": {
+      "nom": "Rare",
+      "poids": 20,
+      "couleur": "#3b82f6"
+    },
+    "collections": null,
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "6ab0cbbd-66e9-4847-9a8d-9c64bbeacb5d.webp"
+      }
+    ]
+  },
+  {
+    "id": 82,
+    "nom": "Corne du dragon noir",
+    "type": "magie",
+    "atq": null,
+    "pv": null,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": {
+      "type": "voler",
+      "carte": "magie",
+      "duree": 4,
+      "tourdecl": 2
+    },
+    "description": null,
+    "raretes": {
+      "nom": "Rare",
+      "poids": 20,
+      "couleur": "#3b82f6"
+    },
+    "collections": {
+      "nom": "Mythe et Fantastique"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "0633ff4c-7a82-4e58-9d51-d78a61097715.webp"
+      }
+    ]
+  },
+  {
+    "id": 67,
+    "nom": "Le Marteau Modo",
+    "type": "magie",
+    "atq": null,
+    "pv": null,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": {
+      "u": "pct",
+      "val": -20,
+      "type": "atq_mod",
+      "cible": "adversaire"
+    },
+    "description": null,
+    "raretes": {
+      "nom": "Rare",
+      "poids": 20,
+      "couleur": "#3b82f6"
+    },
+    "collections": {
+      "nom": "Stream et Animals"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "b979b084-4ba4-4ff5-a99c-805ae43bce96.webp"
+      }
+    ]
+  },
+  {
+    "id": 98,
+    "nom": "Souffle élementaire",
+    "type": "magie",
+    "atq": null,
+    "pv": null,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": {
+      "val": 3,
+      "sval": 5,
+      "type": "souffle",
+      "remax": 5,
+      "tours": 2,
+      "chance": 50,
+      "statut": "aleatoire",
+      "rechance": 80,
+      "reducsoin": null
+    },
+    "description": null,
+    "raretes": {
+      "nom": "Rare",
+      "poids": 20,
+      "couleur": "#3b82f6"
+    },
+    "collections": {
+      "nom": "Mythe et Fantastique"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "eb95e013-f374-4671-87c3-a83c8865b938.webp"
+      }
+    ]
+  },
+  {
+    "id": 77,
+    "nom": "PatéPLG",
+    "type": "piege",
+    "atq": null,
+    "pv": null,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": {
+      "effet": {
+        "u": "pct",
+        "val": 10,
+        "type": "atq_mod",
+        "cible": "soi"
+      },
+      "condition": {
+        "type": "adv_pv_bas",
+        "seuilpv": 50
+      },
+      "declenchements": 1
+    },
+    "description": null,
+    "raretes": {
+      "nom": "Rare",
+      "poids": 20,
+      "couleur": "#3b82f6"
+    },
+    "collections": {
+      "nom": "Stream et Animals"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "88511907-da8f-4d5c-b4f3-38db9bb4e6c2.webp"
+      }
+    ]
+  },
+  {
+    "id": 31,
+    "nom": "Piege a serpent",
+    "type": "piege",
+    "atq": null,
+    "pv": null,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": {
+      "effet": {
+        "type": "poison_effet",
+        "tours": 3,
+        "ciblem": "adversaire",
+        "degtour": 10
+      },
+      "condition": {
+        "type": "adv_attaque",
+        "coups": 2
+      },
+      "declenchements": 2
+    },
+    "description": null,
+    "raretes": {
+      "nom": "Rare",
+      "poids": 20,
+      "couleur": "#3b82f6"
+    },
+    "collections": null,
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "f872a27b-a979-4243-b011-4449ecd84730.webp"
+      }
+    ]
+  },
+  {
+    "id": 30,
+    "nom": "Rituel demoniaque",
+    "type": "piege",
+    "atq": null,
+    "pv": null,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": {
+      "effet": {
+        "type": "double_degats",
+        "tours": 1
+      },
+      "condition": {
+        "type": "proprio_pv_sous",
+        "seuilpv": 20
+      },
+      "declenchements": 1
+    },
+    "description": null,
+    "raretes": {
+      "nom": "Rare",
+      "poids": 20,
+      "couleur": "#3b82f6"
+    },
+    "collections": {
+      "nom": "Horreurs & Chasseurs"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "83d3615a-e741-4769-bae2-aab817c97a05.webp"
+      }
+    ]
+  },
+  {
+    "id": 29,
+    "nom": "Toile de l'Araignée Humanoide",
+    "type": "piege",
+    "atq": null,
+    "pv": null,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": {
+      "effet": {
+        "val": 50,
+        "type": "perso_a_une_chance_x_d_etourdir_la_cible"
+      },
+      "condition": {
+        "type": "adv_attaque",
+        "coups": 2
+      },
+      "declenchements": 4
+    },
+    "description": null,
+    "raretes": {
+      "nom": "Rare",
+      "poids": 20,
+      "couleur": "#3b82f6"
+    },
+    "collections": {
+      "nom": "Horreurs & Chasseurs"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "3f4df8fa-3a04-4433-a0b7-9c17c74eaaa9.webp"
+      }
+    ]
+  },
+  {
+    "id": 46,
+    "nom": "Araignée maudite",
+    "type": "combattant",
+    "atq": 12,
+    "pv": 41,
+    "actif": true,
+    "passif": {
+      "val": 4,
+      "type": "malediction",
+      "tours": 3,
+      "chance": 75
+    },
+    "ultime": null,
+    "effet": null,
+    "description": null,
+    "raretes": {
+      "nom": "Commune",
+      "poids": 76,
+      "couleur": "#9ca3af"
+    },
+    "collections": {
+      "nom": "Horreurs & Chasseurs"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "56b0eb19-a865-4e0f-b7f9-e52f66740e6c.webp"
+      }
+    ]
+  },
+  {
+    "id": 80,
+    "nom": "Bébé golem des glaces",
+    "type": "combattant",
+    "atq": 9,
+    "pv": 95,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": null,
+    "description": null,
+    "raretes": {
+      "nom": "Commune",
+      "poids": 76,
+      "couleur": "#9ca3af"
+    },
+    "collections": {
+      "nom": "Mythe et Fantastique"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "b9d0a155-8e1c-47ed-9514-d3fde20f3176.webp"
+      }
+    ]
+  },
+  {
+    "id": 81,
+    "nom": "Bébé wynerne d'os",
+    "type": "combattant",
+    "atq": 17,
+    "pv": 52,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": null,
+    "description": null,
+    "raretes": {
+      "nom": "Commune",
+      "poids": 76,
+      "couleur": "#9ca3af"
+    },
+    "collections": null,
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "3b0b1653-267d-4204-971f-44000fc1d8d8.webp"
+      }
+    ]
+  },
+  {
+    "id": 32,
+    "nom": "Le chasseur ",
+    "type": "combattant",
+    "atq": 19,
+    "pv": 54,
+    "actif": true,
+    "passif": {
+      "type": "saignement",
+      "pctpv": 12,
+      "tours": 2,
+      "chance": 60,
+      "reducsoin": 80
+    },
+    "ultime": null,
+    "effet": null,
+    "description": null,
+    "raretes": {
+      "nom": "Commune",
+      "poids": 76,
+      "couleur": "#9ca3af"
+    },
+    "collections": {
+      "nom": "Horreurs & Chasseurs"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "772deb16-01aa-4f76-b0fd-69bec9e70e4f.webp"
+      }
+    ]
+  },
+  {
+    "id": 8,
+    "nom": "le devoreur",
+    "type": "combattant",
+    "atq": 14,
+    "pv": 94,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": null,
+    "description": null,
+    "raretes": {
+      "nom": "Commune",
+      "poids": 76,
+      "couleur": "#9ca3af"
+    },
+    "collections": {
+      "nom": "Horreurs & Chasseurs"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "2510c0a0-ddd3-40f2-8238-16c91768ee3e.webp"
+      }
+    ]
+  },
+  {
+    "id": 7,
+    "nom": "le domestique",
+    "type": "combattant",
+    "atq": 24,
+    "pv": 67,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": null,
+    "description": null,
+    "raretes": {
+      "nom": "Commune",
+      "poids": 76,
+      "couleur": "#9ca3af"
+    },
+    "collections": {
+      "nom": "Horreurs & Chasseurs"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "8e0da163-7728-4097-b15a-90f323fe23ff.webp"
+      }
+    ]
+  },
+  {
+    "id": 50,
+    "nom": "Les corbeaux",
+    "type": "combattant",
+    "atq": 9,
+    "pv": 53,
+    "actif": true,
+    "passif": {
+      "max": 7,
+      "type": "enchainement",
+      "chance": 65
+    },
+    "ultime": null,
+    "effet": null,
+    "description": null,
+    "raretes": {
+      "nom": "Commune",
+      "poids": 76,
+      "couleur": "#9ca3af"
+    },
+    "collections": {
+      "nom": "Horreurs & Chasseurs"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "4732acac-5418-4ca9-8dd5-5e2bbe885faa.webp"
+      }
+    ]
+  },
+  {
+    "id": 18,
+    "nom": "Meute de loup",
+    "type": "combattant",
+    "atq": 29,
+    "pv": 48,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": null,
+    "description": null,
+    "raretes": {
+      "nom": "Commune",
+      "poids": 76,
+      "couleur": "#9ca3af"
+    },
+    "collections": null,
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "f05ca081-fcd4-498a-979d-31bfc72831f2.webp"
+      }
+    ]
+  },
+  {
+    "id": 87,
+    "nom": "Momie",
+    "type": "combattant",
+    "atq": 18,
+    "pv": 64,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": null,
+    "description": null,
+    "raretes": {
+      "nom": "Commune",
+      "poids": 76,
+      "couleur": "#9ca3af"
+    },
+    "collections": {
+      "nom": "Mythe et Fantastique"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "ed4e14b9-b208-44db-9288-d80fd45f6386.webp"
+      }
+    ]
+  },
+  {
+    "id": 22,
+    "nom": "Serpent",
+    "type": "combattant",
+    "atq": 11,
+    "pv": 45,
+    "actif": true,
+    "passif": {
+      "type": "poison",
+      "tours": 2,
+      "chance": 100,
+      "degtour": 6
+    },
+    "ultime": null,
+    "effet": null,
+    "description": null,
+    "raretes": {
+      "nom": "Commune",
+      "poids": 76,
+      "couleur": "#9ca3af"
+    },
+    "collections": null,
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "164e0fab-e3f2-4575-8230-0546800117ed.webp"
+      }
+    ]
+  },
+  {
+    "id": 89,
+    "nom": "Un ange",
+    "type": "combattant",
+    "atq": 18,
+    "pv": 62,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": null,
+    "description": null,
+    "raretes": {
+      "nom": "Commune",
+      "poids": 76,
+      "couleur": "#9ca3af"
+    },
+    "collections": {
+      "nom": "Mythe et Fantastique"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "89f50d38-0210-47d3-9504-93be50d0b9c7.webp"
+      }
+    ]
+  },
+  {
+    "id": 78,
+    "nom": "Ailes d'ange",
+    "type": "magie",
+    "atq": null,
+    "pv": null,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": {
+      "ppv": 15,
+      "vv1": null,
+      "vv2": null,
+      "vv3": null,
+      "patq": 15,
+      "type": "transcendance",
+      "tours": 3
+    },
+    "description": null,
+    "raretes": {
+      "nom": "Commune",
+      "poids": 76,
+      "couleur": "#9ca3af"
+    },
+    "collections": {
+      "nom": "Mythe et Fantastique"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "9599afd5-6f76-41ad-b229-0e274e1345a2.webp"
+      }
+    ]
+  },
+  {
+    "id": 21,
+    "nom": "Baril de sang",
+    "type": "magie",
+    "atq": null,
+    "pv": null,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": {
+      "u": "pts",
+      "val": 8,
+      "type": "atq_mod",
+      "cible": "soi"
+    },
+    "description": null,
+    "raretes": {
+      "nom": "Commune",
+      "poids": 76,
+      "couleur": "#9ca3af"
+    },
+    "collections": {
+      "nom": "Horreurs & Chasseurs"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "70cca901-36de-4cf4-80c0-5d117dfc9324.webp"
+      }
+    ]
+  },
+  {
+    "id": 40,
+    "nom": "Bouclier d'os",
+    "type": "magie",
+    "atq": null,
+    "pv": null,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": {
+      "type": "annule_attaque"
+    },
+    "description": null,
+    "raretes": {
+      "nom": "Commune",
+      "poids": 76,
+      "couleur": "#9ca3af"
+    },
+    "collections": null,
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "1efe1272-4c88-4393-981e-f739747c3607.webp"
+      }
+    ]
+  },
+  {
+    "id": 59,
+    "nom": "Champignon vert",
+    "type": "magie",
+    "atq": null,
+    "pv": null,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": {
+      "u": "pts",
+      "val": 5,
+      "type": "soin_tours",
+      "tours": 10
+    },
+    "description": null,
+    "raretes": {
+      "nom": "Commune",
+      "poids": 76,
+      "couleur": "#9ca3af"
+    },
+    "collections": null,
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "e9920481-9041-496a-ae34-7f9faca27ad5.webp"
+      }
+    ]
+  },
+  {
+    "id": 99,
+    "nom": "Coeur de golem de glace",
+    "type": "magie",
+    "atq": null,
+    "pv": null,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": {
+      "type": "solidification",
+      "tours": 4,
+      "chance": 70
+    },
+    "description": null,
+    "raretes": {
+      "nom": "Commune",
+      "poids": 76,
+      "couleur": "#9ca3af"
+    },
+    "collections": {
+      "nom": "Mythe et Fantastique"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "aa52018e-f124-4ccf-9dc8-cef246f3de65.webp"
+      }
+    ]
+  },
+  {
+    "id": 23,
+    "nom": "Esprits de la forêt",
+    "type": "magie",
+    "atq": null,
+    "pv": null,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": {
+      "type": "insensible_piege",
+      "tours": 2
+    },
+    "description": null,
+    "raretes": {
+      "nom": "Commune",
+      "poids": 76,
+      "couleur": "#9ca3af"
+    },
+    "collections": null,
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "a9fb6fc2-a7b5-4cbd-a154-c62f3db8544b.webp"
+      }
+    ]
+  },
+  {
+    "id": 35,
+    "nom": "Fleche enflammée",
+    "type": "magie",
+    "atq": null,
+    "pv": null,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": {
+      "type": "atk_brulure",
+      "pctpv": 6,
+      "tours": 3,
+      "chance": 75
+    },
+    "description": null,
+    "raretes": {
+      "nom": "Commune",
+      "poids": 76,
+      "couleur": "#9ca3af"
+    },
+    "collections": null,
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "e11fd2d2-1917-49ec-907e-3e10bf860a60.webp"
+      }
+    ]
+  },
+  {
+    "id": 26,
+    "nom": "fleche poison",
+    "type": "magie",
+    "atq": null,
+    "pv": null,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": {
+      "type": "atk_poison",
+      "tours": 2,
+      "chance": 75,
+      "degtour": 3
+    },
+    "description": null,
+    "raretes": {
+      "nom": "Commune",
+      "poids": 76,
+      "couleur": "#9ca3af"
+    },
+    "collections": null,
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "30e1ab0f-4cd6-4428-8aff-097282a98625.webp"
+      }
+    ]
+  },
+  {
+    "id": 24,
+    "nom": "Grimoire maudit",
+    "type": "magie",
+    "atq": null,
+    "pv": null,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": {
+      "val": 5,
+      "type": "malediction",
+      "tours": 2,
+      "ciblem": "adversaire"
+    },
+    "description": null,
+    "raretes": {
+      "nom": "Commune",
+      "poids": 76,
+      "couleur": "#9ca3af"
+    },
+    "collections": {
+      "nom": "Horreurs & Chasseurs"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "95c05538-88cd-400e-a760-9b858762bcbf.webp"
+      }
+    ]
+  },
+  {
+    "id": 48,
+    "nom": "Katana maudit",
+    "type": "magie",
+    "atq": null,
+    "pv": null,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": {
+      "briques": [
+        {
+          "val": 4,
+          "type": "atk_malediction",
+          "tours": 2,
+          "chance": 50
+        },
+        {
+          "type": "atk_saignement",
+          "pctpv": 5,
+          "tours": 2,
+          "chance": 50,
+          "reducsoin": 25
+        }
+      ]
+    },
+    "description": null,
+    "raretes": {
+      "nom": "Commune",
+      "poids": 76,
+      "couleur": "#9ca3af"
+    },
+    "collections": {
+      "nom": "Horreurs & Chasseurs"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "78e40359-544d-4f58-90c6-9434e24237c6.webp"
+      }
+    ]
+  },
+  {
+    "id": 66,
+    "nom": "L'Epee Modo",
+    "type": "magie",
+    "atq": null,
+    "pv": null,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": {
+      "type": "annule_magies",
+      "tours": 2
+    },
+    "description": null,
+    "raretes": {
+      "nom": "Commune",
+      "poids": 76,
+      "couleur": "#9ca3af"
+    },
+    "collections": {
+      "nom": "Stream et Animals"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "f10fad6e-bf6e-4ea1-aa52-3fbb2b936fe3.webp"
+      }
+    ]
+  },
+  {
+    "id": 37,
+    "nom": "Lance fantomatique",
+    "type": "magie",
+    "atq": null,
+    "pv": null,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": {
+      "val": 4,
+      "type": "atk_malediction",
+      "tours": 2,
+      "chance": 75
+    },
+    "description": null,
+    "raretes": {
+      "nom": "Commune",
+      "poids": 76,
+      "couleur": "#9ca3af"
+    },
+    "collections": {
+      "nom": "Horreurs & Chasseurs"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "8cb898a6-8029-4665-ad60-8d7ac4db963f.webp"
+      }
+    ]
+  },
+  {
+    "id": 76,
+    "nom": "MarsupiRAGE",
+    "type": "magie",
+    "atq": null,
+    "pv": null,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": {
+      "u": "pts",
+      "type": "rage",
+      "ragev": 4,
+      "fatval": 2,
+      "fattours": 2,
+      "ragetours": 6
+    },
+    "description": null,
+    "raretes": {
+      "nom": "Commune",
+      "poids": 76,
+      "couleur": "#9ca3af"
+    },
+    "collections": {
+      "nom": "Stream et Animals"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "34b0baa1-72e8-48ad-9ce7-72fbecb05365.webp"
+      }
+    ]
+  },
+  {
+    "id": 73,
+    "nom": "Pot de peinture du morph",
+    "type": "magie",
+    "atq": null,
+    "pv": null,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": {
+      "type": "aleatoire",
+      "nbalea": 2
+    },
+    "description": null,
+    "raretes": {
+      "nom": "Commune",
+      "poids": 76,
+      "couleur": "#9ca3af"
+    },
+    "collections": {
+      "nom": "Stream et Animals"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "036854ce-c8ca-49fb-849f-f23bef2de5df.webp"
+      }
+    ]
+  },
+  {
+    "id": 91,
+    "nom": "Priere de l'ange",
+    "type": "magie",
+    "atq": null,
+    "pv": null,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": {
+      "fois": 4,
+      "type": "purification",
+      "cible": "soi",
+      "every": 3
+    },
+    "description": null,
+    "raretes": {
+      "nom": "Commune",
+      "poids": 76,
+      "couleur": "#9ca3af"
+    },
+    "collections": {
+      "nom": "Mythe et Fantastique"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "a37fa64e-452a-4846-9fae-a0b7efe64cf4.webp"
+      }
+    ]
+  },
+  {
+    "id": 47,
+    "nom": "Ambuscade de loups",
+    "type": "piege",
+    "atq": null,
+    "pv": null,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": {
+      "effet": {
+        "val": 16,
+        "type": "degats"
+      },
+      "condition": {
+        "type": "proprio_pv_sous",
+        "seuilpv": 10
+      },
+      "declenchements": 1
+    },
+    "description": null,
+    "raretes": {
+      "nom": "Commune",
+      "poids": 76,
+      "couleur": "#9ca3af"
+    },
+    "collections": null,
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "7770798f-b618-48da-9d00-56d95eb61278.webp"
+      }
+    ]
+  },
+  {
+    "id": 25,
+    "nom": "Arbre a liane",
+    "type": "piege",
+    "atq": null,
+    "pv": null,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": {
+      "effet": {
+        "type": "etourdir_effet",
+        "tours": 1,
+        "ciblem": "adversaire"
+      },
+      "condition": {
+        "type": "adv_attaque",
+        "coups": 1
+      },
+      "declenchements": 1
+    },
+    "description": null,
+    "raretes": {
+      "nom": "Commune",
+      "poids": 76,
+      "couleur": "#9ca3af"
+    },
+    "collections": null,
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "e6f58354-3325-4cac-80bf-c3518f993377.webp"
+      }
+    ]
+  },
+  {
+    "id": 52,
+    "nom": "Baril explosif",
+    "type": "piege",
+    "atq": null,
+    "pv": null,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": {
+      "effet": {
+        "briques": [
+          {
+            "val": 25,
+            "type": "degats"
+          },
+          {
+            "type": "brulure_effet",
+            "pctpv": 20,
+            "tours": 3,
+            "ciblem": "adversaire"
+          }
+        ]
+      },
+      "condition": {
+        "type": "proprio_meurt"
+      },
+      "declenchements": 1
+    },
+    "description": null,
+    "raretes": {
+      "nom": "Commune",
+      "poids": 76,
+      "couleur": "#9ca3af"
+    },
+    "collections": {
+      "nom": "Horreurs & Chasseurs"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "ca09ee31-f94e-436d-a665-6b5dd171a94e.webp"
+      }
+    ]
+  },
+  {
+    "id": 34,
+    "nom": "Chaines maudites",
+    "type": "piege",
+    "atq": null,
+    "pv": null,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": {
+      "effet": {
+        "briques": [
+          {
+            "type": "annule_attaque"
+          },
+          {
+            "val": 3,
+            "type": "malediction",
+            "tours": 4,
+            "ciblem": "adversaire"
+          }
+        ]
+      },
+      "condition": {
+        "type": "adv_attaque",
+        "coups": 2
+      },
+      "declenchements": 1
+    },
+    "description": null,
+    "raretes": {
+      "nom": "Commune",
+      "poids": 76,
+      "couleur": "#9ca3af"
+    },
+    "collections": {
+      "nom": "Horreurs & Chasseurs"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "9ce86675-228e-475e-9c05-bddb77daa4e5.webp"
+      }
+    ]
+  },
+  {
+    "id": 83,
+    "nom": "Coup d'aile osseuse",
+    "type": "piege",
+    "atq": null,
+    "pv": null,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": {
+      "effet": {
+        "type": "etourdir_effet",
+        "tours": 1,
+        "chance": 100,
+        "ciblem": "adversaire",
+        "essais": null
+      },
+      "condition": {
+        "type": "adv_pv_bas",
+        "seuilpv": 25
+      },
+      "declenchements": 1
+    },
+    "description": null,
+    "raretes": {
+      "nom": "Commune",
+      "poids": 76,
+      "couleur": "#9ca3af"
+    },
+    "collections": null,
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "76d556f8-34fb-43f2-9f88-858639d64b16.webp"
+      }
+    ]
+  },
+  {
+    "id": 42,
+    "nom": "Deuxieme chance",
+    "type": "piege",
+    "atq": null,
+    "pv": null,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": {
+      "effet": {
+        "cond": "aucune",
+        "type": "mort_evitee",
+        "seuil": null
+      },
+      "condition": {
+        "type": "proprio_meurt"
+      },
+      "declenchements": 1
+    },
+    "description": null,
+    "raretes": {
+      "nom": "Commune",
+      "poids": 76,
+      "couleur": "#9ca3af"
+    },
+    "collections": {
+      "nom": "Horreurs & Chasseurs"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "144b9d49-c3d3-473d-bc02-62fb7d44a22f.webp"
+      }
+    ]
+  },
+  {
+    "id": 51,
+    "nom": "Larve géante",
+    "type": "piege",
+    "atq": null,
+    "pv": null,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": {
+      "effet": {
+        "briques": [
+          {
+            "val": 12,
+            "type": "vol_vie"
+          },
+          {
+            "u": "pts",
+            "val": 5,
+            "type": "soin_tours",
+            "tours": 5
+          }
+        ]
+      },
+      "condition": {
+        "type": "proprio_pv_sous",
+        "seuilpv": 25
+      },
+      "declenchements": 1
+    },
+    "description": null,
+    "raretes": {
+      "nom": "Commune",
+      "poids": 76,
+      "couleur": "#9ca3af"
+    },
+    "collections": {
+      "nom": "Horreurs & Chasseurs"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "9a77ccae-ef53-4a81-878a-1f9c14148daf.webp"
+      }
+    ]
+  },
+  {
+    "id": 20,
+    "nom": "Piege a ours",
+    "type": "piege",
+    "atq": null,
+    "pv": null,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": {
+      "effet": {
+        "val": 12,
+        "type": "degats"
+      },
+      "condition": {
+        "type": "adv_attaque",
+        "coups": 2
+      },
+      "declenchements": 1
+    },
+    "description": null,
+    "raretes": {
+      "nom": "Commune",
+      "poids": 76,
+      "couleur": "#9ca3af"
+    },
+    "collections": null,
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "2517f124-1f4d-4f17-a205-a9ef060e1a51.webp"
+      }
+    ]
+  },
+  {
+    "id": 49,
+    "nom": "Piege arc",
+    "type": "piege",
+    "atq": null,
+    "pv": null,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": {
+      "effet": {
+        "briques": [
+          {
+            "val": 12,
+            "type": "degats"
+          },
+          {
+            "type": "saignement",
+            "pctpv": 3,
+            "tours": 4,
+            "ciblem": "adversaire",
+            "reducsoin": 50
+          }
+        ]
+      },
+      "condition": {
+        "type": "adv_attaque",
+        "coups": 1
+      },
+      "declenchements": 1
+    },
+    "description": null,
+    "raretes": {
+      "nom": "Commune",
+      "poids": 76,
+      "couleur": "#9ca3af"
+    },
+    "collections": null,
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "15902464-c834-4724-8bf3-c1a8dba13267.webp"
+      }
+    ]
+  },
+  {
+    "id": 33,
+    "nom": "Ruche",
+    "type": "piege",
+    "atq": null,
+    "pv": null,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": {
+      "effet": {
+        "type": "poison_effet",
+        "tours": 10,
+        "ciblem": "adversaire",
+        "degtour": 3
+      },
+      "condition": {
+        "type": "adv_attaque",
+        "coups": 1
+      },
+      "declenchements": 1
+    },
+    "description": null,
+    "raretes": {
+      "nom": "Commune",
+      "poids": 76,
+      "couleur": "#9ca3af"
+    },
+    "collections": null,
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "cc32159d-436b-465f-84a8-68e97b32a3be.webp"
+      }
+    ]
+  },
+  {
+    "id": 90,
+    "nom": "Sarcophage",
+    "type": "piege",
+    "atq": null,
+    "pv": null,
+    "actif": true,
+    "passif": null,
+    "ultime": null,
+    "effet": {
+      "effet": {
+        "type": "annule_attaque"
+      },
+      "condition": {
+        "type": "adv_attaque",
+        "coups": 4
+      },
+      "declenchements": 1
+    },
+    "description": null,
+    "raretes": {
+      "nom": "Commune",
+      "poids": 76,
+      "couleur": "#9ca3af"
+    },
+    "collections": {
+      "nom": "Mythe et Fantastique"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "1822bc26-dd2d-44cc-bd5c-c13b5715490b.webp"
+      }
+    ]
+  },
+  {
+    "id": 74,
+    "nom": "Link Baby",
+    "type": "combattant",
+    "atq": 22,
+    "pv": 109,
+    "actif": true,
+    "passif": {
+      "briques": [
+        {
+          "type": "evite_mort"
+        },
+        {
+          "type": "reanimation",
+          "pctrev": 40
+        }
+      ]
+    },
+    "ultime": null,
+    "effet": null,
+    "description": null,
+    "raretes": {
+      "nom": "GGEZ",
+      "poids": 0.1,
+      "couleur": "#ffffff"
+    },
+    "collections": {
+      "nom": "Stream et Animals"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "d52e160c-9da1-4763-ac5a-9e25f6b0b2bc.webp"
+      }
+    ]
+  },
+  {
+    "id": 72,
+    "nom": "Morph de peinture",
+    "type": "combattant",
+    "atq": 8,
+    "pv": 250,
+    "actif": true,
+    "passif": {
+      "type": "aleatoire",
+      "every": 1,
+      "chance": 100
+    },
+    "ultime": {
+      "type": "vol_ultime",
+      "apres_tours": 1,
+      "delai_tours": 2,
+      "utilisations": 3
+    },
+    "effet": null,
+    "description": null,
+    "raretes": {
+      "nom": "GGEZ",
+      "poids": 0.1,
+      "couleur": "#ffffff"
+    },
+    "collections": {
+      "nom": "Fondateurs"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "cb557d5d-5d75-4e5b-b97b-7cf09ca1c1ad.webp"
+      }
+    ]
+  },
+  {
+    "id": 95,
+    "nom": "Rahu dévoreur de lune",
+    "type": "combattant",
+    "atq": 18,
+    "pv": 175,
+    "actif": true,
+    "passif": {
+      "briques": [
+        {
+          "type": "avalage",
+          "ratio": 3,
+          "repos": 2,
+          "tours": 3,
+          "chance": 100,
+          "pctmache": 20,
+          "machebase": "max"
+        },
+        {
+          "ppv": 15,
+          "vv1": null,
+          "vv2": null,
+          "vv3": null,
+          "patq": 10,
+          "type": "transcendance",
+          "tours": 3
+        }
+      ]
+    },
+    "ultime": null,
+    "effet": null,
+    "description": null,
+    "raretes": {
+      "nom": "GGEZ",
+      "poids": 0.1,
+      "couleur": "#ffffff"
+    },
+    "collections": {
+      "nom": "Mythe et Fantastique"
+    },
+    "variantes_carte": [
+      {
+        "nom": "Standard",
+        "image_path": "a9530383-8634-4e95-988b-5918f66131e9.webp"
+      }
+    ]
+  }
+]

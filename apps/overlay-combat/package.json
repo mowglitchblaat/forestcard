@@ -1,0 +1,15 @@
+{
+  "name": "@forestcard/overlay-combat",
+  "version": "0.0.0",
+  "private": true,
+  "description": "OBS combat overlay (combat.html): one self-contained page, the shared engine inlined.",
+  "type": "module",
+  "scripts": {
+    "build": "vp pack && node build.ts",
+    "test": "vp pack && node build.ts && vp test"
+  },
+  "dependencies": {
+    "@forestcard/engine": "workspace:*",
+    "@forestcard/journal": "workspace:*"
+  }
+}

@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <title>Forest Card</title>
+    <script>
+      // Applies the stored mode and palette before the first paint (src/lib/theme.tsx keeps them in
+      // sync; Forest Card is the default palette).
+      (function () {
+        var t = localStorage.getItem('forestcard-theme');
+        var dark =
+          t === 'dark' ||
+          ((t === null || t === 'system') && matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.classList.toggle('dark', dark);
+        var p = localStorage.getItem('forestcard-palette');
+        document.documentElement.dataset.palette = p === 'base' ? 'base' : 'forest';
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

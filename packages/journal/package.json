@@ -1,0 +1,13 @@
+{
+  "name": "@forestcard/journal",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Projection of the engine's domain events into the legacy French combat journal.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@forestcard/engine": "workspace:*"
+  }
+}

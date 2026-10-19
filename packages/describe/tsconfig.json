@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // Pure text, like the engine: no DOM lib, no Node or Deno types.
+    "lib": ["es2023"],
+    "types": []
+  },
+  "include": ["src"]
+}

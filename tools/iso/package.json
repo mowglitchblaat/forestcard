@@ -1,0 +1,10 @@
+{
+  "name": "@forestcard/iso",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Iso run: compares a candidate engine with the legacy oracle on every encounter.",
+  "type": "module",
+  "scripts": {
+    "test": "vp test"
+  }
+}

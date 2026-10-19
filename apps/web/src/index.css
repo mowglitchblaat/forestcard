@@ -1,0 +1,538 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+@import '@fontsource-variable/geist';
+
+@custom-variant dark (&:is(.dark *));
+
+/* The classes of the meaning tokens (src/lib/tones.ts builds them from a name, so Tailwind cannot
+   see them written whole in the sources). */
+@source inline("{bg,border,ring}-{success,danger,warning,new,info,draw,fighter,magic,trap,epic,twitch,status,ultimate,theft,breath,defence,damage,healing,attack,percent,turns,gold,me,opponent}{,/10,/20,/40,/50} text-{success,danger,warning,new,info,draw,fighter,magic,trap,epic,twitch,status,ultimate,theft,breath,defence,damage,healing,attack,percent,turns,gold,me,opponent}-ink");
+
+/* Recycling: the gain rises from the button, coins pop out around it (views/collection/recycle.tsx). */
+@theme {
+  /* Tokens for what the scale does not have (the shadcn lint forbids arbitrary values). */
+  --aspect-proposal: 744 / 1035; /* a proposed card, the size of the drawn frames */
+  --perspective-card: 1100px; /* a card leaning or turning over */
+  --text-chip: 0.85em; /* a chip inside a sentence, relative to it */
+  --text-2xs: 10px;
+  --animate-gain-rise: gain-rise 1.6s ease-out forwards;
+  /* Each coin starts --delay after the previous one (views/collection/recycle.tsx). */
+  --animate-coin-pop: coin-pop 1.1s ease-out var(--delay, 0ms) forwards;
+  /* A card back at rest: a slow sway in 3D (the pointer tilt comes on top). */
+  --animate-back-sway: back-sway 6s ease-in-out infinite;
+  @keyframes back-sway {
+    0%,
+    100% {
+      transform: rotateX(4deg) rotateY(-9deg);
+    }
+    50% {
+      transform: rotateX(-3deg) rotateY(9deg);
+    }
+  }
+  @keyframes gain-rise {
+    0% {
+      opacity: 0;
+      transform: translateY(0.75rem) scale(0.8);
+    }
+    20% {
+      opacity: 1;
+      transform: translateY(0) scale(1.15);
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(-3rem) scale(1);
+    }
+  }
+  @keyframes coin-pop {
+    0% {
+      opacity: 0;
+      transform: translate(0, 0.5rem) scale(0.6);
+    }
+    25% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+      transform: translate(var(--dx), -2.5rem) scale(1) rotate(25deg);
+    }
+  }
+}
+
+@theme inline {
+  --color-success: var(--success);
+  --color-success-ink: var(--success-ink);
+  --color-danger: var(--danger);
+  --color-danger-ink: var(--danger-ink);
+  --color-warning: var(--warning);
+  --color-warning-ink: var(--warning-ink);
+  --color-new: var(--new);
+  --color-new-ink: var(--new-ink);
+  --color-info: var(--info);
+  --color-info-ink: var(--info-ink);
+  --color-draw: var(--draw);
+  --color-draw-ink: var(--draw-ink);
+  --color-fighter: var(--fighter);
+  --color-fighter-ink: var(--fighter-ink);
+  --color-magic: var(--magic);
+  --color-magic-ink: var(--magic-ink);
+  --color-trap: var(--trap);
+  --color-trap-ink: var(--trap-ink);
+  --color-epic: var(--epic);
+  --color-epic-ink: var(--epic-ink);
+  --color-twitch: var(--twitch);
+  --color-twitch-ink: var(--twitch-ink);
+  --color-status: var(--status);
+  --color-status-ink: var(--status-ink);
+  --color-ultimate: var(--ultimate);
+  --color-ultimate-ink: var(--ultimate-ink);
+  --color-theft: var(--theft);
+  --color-theft-ink: var(--theft-ink);
+  --color-breath: var(--breath);
+  --color-breath-ink: var(--breath-ink);
+  --color-defence: var(--defence);
+  --color-defence-ink: var(--defence-ink);
+  --color-damage: var(--damage);
+  --color-damage-ink: var(--damage-ink);
+  --color-healing: var(--healing);
+  --color-healing-ink: var(--healing-ink);
+  --color-attack: var(--attack);
+  --color-attack-ink: var(--attack-ink);
+  --color-percent: var(--percent);
+  --color-percent-ink: var(--percent-ink);
+  --color-turns: var(--turns);
+  --color-turns-ink: var(--turns-ink);
+  --color-gold: var(--gold);
+  --color-gold-ink: var(--gold-ink);
+  --color-me: var(--me);
+  --color-me-ink: var(--me-ink);
+  --color-opponent: var(--opponent);
+  --color-opponent-ink: var(--opponent-ink);
+  --font-heading: var(--font-sans);
+  --font-sans: 'Geist Variable', sans-serif;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  /* Meanings (src/lib/tones.ts), pastel: a fill and an ink to write with. */
+  --success: #86efac;
+  --success-ink: #15803d;
+  --danger: #fca5a5;
+  --danger-ink: #b91c1c;
+  --warning: #fcd34d;
+  --warning-ink: #b45309;
+  --new: #fde68a;
+  --new-ink: #a16207;
+  --info: #7dd3fc;
+  --info-ink: #0369a1;
+  --draw: #cbd5e1;
+  --draw-ink: #475569;
+  --fighter: #fcd34d;
+  --fighter-ink: #b45309;
+  --magic: #c4b5fd;
+  --magic-ink: #6d28d9;
+  --trap: #fca5a5;
+  --trap-ink: #b91c1c;
+  --epic: #d8b4fe;
+  --epic-ink: #7e22ce;
+  --twitch: #c4b5fd;
+  --twitch-ink: #6d28d9;
+  --status: #c4b5fd;
+  --status-ink: #6d28d9;
+  --ultimate: #c4b5fd;
+  --ultimate-ink: #6d28d9;
+  --theft: #c4b5fd;
+  --theft-ink: #6d28d9;
+  --breath: #c4b5fd;
+  --breath-ink: #6d28d9;
+  --defence: #7dd3fc;
+  --defence-ink: #0369a1;
+  --damage: #fca5a5;
+  --damage-ink: #b91c1c;
+  --healing: #86efac;
+  --healing-ink: #15803d;
+  --attack: #fdba74;
+  --attack-ink: #c2410c;
+  --percent: #fde047;
+  --percent-ink: #a16207;
+  --turns: #7dd3fc;
+  --turns-ink: #0369a1;
+  --gold: #fcd34d;
+  --gold-ink: #b45309;
+  --me: #86efac;
+  --me-ink: #15803d;
+  --opponent: #fca5a5;
+  --opponent-ink: #b91c1c;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  /* Meanings (src/lib/tones.ts), pastel: a fill and an ink to write with. */
+  --success: #86efac;
+  --success-ink: #86efac;
+  --danger: #fca5a5;
+  --danger-ink: #fca5a5;
+  --warning: #fcd34d;
+  --warning-ink: #fcd34d;
+  --new: #fde68a;
+  --new-ink: #fde68a;
+  --info: #7dd3fc;
+  --info-ink: #7dd3fc;
+  --draw: #cbd5e1;
+  --draw-ink: #cbd5e1;
+  --fighter: #fcd34d;
+  --fighter-ink: #fcd34d;
+  --magic: #c4b5fd;
+  --magic-ink: #c4b5fd;
+  --trap: #fca5a5;
+  --trap-ink: #fca5a5;
+  --epic: #d8b4fe;
+  --epic-ink: #d8b4fe;
+  --twitch: #c4b5fd;
+  --twitch-ink: #c4b5fd;
+  --status: #c4b5fd;
+  --status-ink: #c4b5fd;
+  --ultimate: #c4b5fd;
+  --ultimate-ink: #c4b5fd;
+  --theft: #c4b5fd;
+  --theft-ink: #c4b5fd;
+  --breath: #c4b5fd;
+  --breath-ink: #c4b5fd;
+  --defence: #7dd3fc;
+  --defence-ink: #7dd3fc;
+  --damage: #fca5a5;
+  --damage-ink: #fca5a5;
+  --healing: #86efac;
+  --healing-ink: #86efac;
+  --attack: #fdba74;
+  --attack-ink: #fdba74;
+  --percent: #fde047;
+  --percent-ink: #fde047;
+  --turns: #7dd3fc;
+  --turns-ink: #7dd3fc;
+  --gold: #fcd34d;
+  --gold-ink: #fcd34d;
+  --me: #86efac;
+  --me-ink: #86efac;
+  --opponent: #fca5a5;
+  --opponent-ink: #fca5a5;
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+/* The Forest Card palette, on top of the base one above (data-palette on <html>, src/lib/theme.tsx):
+   the author's site (legacy/index.html), its greys as they are, with green where it had violet.
+   Violet is kept for Épique (and Twitch). The accent green (#059669) is deeper and bluer than the
+   success green (#4ade80): a button never reads as a win. The charts take the rarity colours.
+   Light mode, which the author's site did not have, uses the same bluish greys. */
+[data-palette='forest'] {
+  --background: #f5f5f8;
+  --field: #ffffff;
+  --foreground: #14141a;
+  --card: #ffffff;
+  --card-foreground: #14141a;
+  --popover: #ffffff;
+  --popover-foreground: #14141a;
+  --primary: #047857;
+  --primary-foreground: #ffffff;
+  --secondary: #ebebf0;
+  --secondary-foreground: #14141a;
+  --muted: #ebebf0;
+  --muted-foreground: #6b6b78;
+  --accent: #e2e2ea;
+  --accent-foreground: #14141a;
+  --border: #dcdce4;
+  --input: #c9c9d4;
+  --ring: #059669;
+  --chart-1: #f59e0b;
+  --chart-2: #a855f7;
+  --chart-3: #3b82f6;
+  --chart-4: #9ca3af;
+  --chart-5: #16a34a;
+  --sidebar: #ececf2;
+  --sidebar-foreground: #14141a;
+  --sidebar-primary: #047857;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e2e2ea;
+  --sidebar-accent-foreground: #14141a;
+  --sidebar-border: #dcdce4;
+  --sidebar-ring: #059669;
+}
+
+[data-palette='forest'].dark {
+  --background: #14141a;
+  --field: #262633;
+  --foreground: #eeeeee;
+  --card: #1d1d27;
+  --card-foreground: #eeeeee;
+  --popover: #1d1d27;
+  --popover-foreground: #eeeeee;
+  --primary: #059669;
+  --primary-foreground: #ffffff;
+  --secondary: #262633;
+  --secondary-foreground: #eeeeee;
+  --muted: #262633;
+  --muted-foreground: #aaaaaa;
+  --accent: #2c2c38;
+  --accent-foreground: #eeeeee;
+  --border: #2c2c38;
+  --input: #444444;
+  --ring: #10b981;
+  --chart-1: #f59e0b;
+  --chart-2: #a855f7;
+  --chart-3: #3b82f6;
+  --chart-4: #9ca3af;
+  --chart-5: #4ade80;
+  --sidebar: #17171f;
+  --sidebar-foreground: #eeeeee;
+  --sidebar-primary: #059669;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #262633;
+  --sidebar-accent-foreground: #eeeeee;
+  --sidebar-border: #2c2c38;
+  --sidebar-ring: #10b981;
+}
+
+/* Fields have their own background in the author's site (#262633 in dark); shadcn draws them
+   transparent. Outside any layer, this wins over the components' utilities. */
+[data-palette='forest'] :is([data-slot='input'], [data-slot='select-trigger']) {
+  background-color: var(--field);
+}
+
+/* Page and row layouts, named (the shadcn lint forbids arbitrary values). */
+@utility grid-tiles-sm {
+  grid-template-columns: repeat(auto-fill, minmax(6rem, 1fr));
+}
+@utility grid-tiles {
+  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+}
+@utility grid-tiles-lg {
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+}
+@utility layout-main-aside-22 {
+  grid-template-columns: minmax(0, 1fr) 22rem;
+}
+@utility layout-main-aside-24 {
+  grid-template-columns: minmax(0, 1fr) 24rem;
+}
+@utility layout-main-aside-26 {
+  grid-template-columns: minmax(0, 1fr) 26rem;
+}
+@utility layout-aside-main-13 {
+  grid-template-columns: 13rem minmax(0, 1fr);
+}
+@utility layout-aside-main-14 {
+  grid-template-columns: 14rem minmax(0, 1fr);
+}
+@utility layout-aside-main-20 {
+  grid-template-columns: 20rem minmax(0, 1fr);
+}
+@utility layout-aside-main-22 {
+  grid-template-columns: 22rem minmax(0, 1fr);
+}
+@utility layout-aside-shrink-main-22 {
+  grid-template-columns: minmax(0, 22rem) minmax(0, 1fr);
+}
+@utility layout-halves-wide-right {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+}
+/* A row: a label, a bar, a value. */
+@utility layout-label-bar-value-sm {
+  grid-template-columns: 4rem 1fr 3rem;
+}
+@utility layout-label-bar-value-md {
+  grid-template-columns: 6rem 1fr 3.5rem;
+}
+@utility layout-label-bar-value {
+  grid-template-columns: 6rem 1fr 4rem;
+}
+@utility layout-record-row {
+  grid-template-columns: minmax(0, 1fr) 5.5rem 6rem;
+}
+@utility max-h-viewport-inset {
+  max-height: calc(100vh - 2rem);
+}
+@utility max-h-dialog {
+  max-height: 85vh;
+}
+/* The live page's player and chat: the viewport under the header. */
+@utility h-live {
+  height: calc(100svh - 8rem);
+}
+/* The game's own back, as the overlay draws it (.dosf): green. */
+@utility back-game {
+  background-image: linear-gradient(135deg, #14532d, #052e16);
+}
+
+/* Composed styles of the cards, named: the shadcn lint forbids inline styles and arbitrary
+   values, so a fixed recipe that reads dynamic custom properties lives here. */
+
+/* The lean toward the pointer (--rx, --ry, set by useTilt) and the turn over (--turn: 0deg or
+   180deg). */
+@utility tilt {
+  transform: rotateX(var(--rx, 0deg)) rotateY(calc(var(--ry, 0deg) + var(--turn, 0deg)));
+}
+/* The glare where the pointer is (--mx, --my, set by useTilt). */
+@utility glare {
+  background: radial-gradient(
+    circle at var(--mx, 50%) var(--my, 25%),
+    rgba(255, 255, 255, 0.42),
+    transparent 45%
+  );
+}
+/* A card's halo and edge in its rarity colour (--glow). */
+@utility glow-halo {
+  box-shadow: 0 0 26px color-mix(in srgb, var(--glow) 60%, transparent);
+}
+@utility glow-edge {
+  border-color: color-mix(in srgb, var(--glow) 55%, #fff);
+}
+/* The back of a card with none of the player's: the legacy page's .bk. */
+@utility back-default {
+  background-image: linear-gradient(135deg, #7f1d1d, #1e1b4b);
+}
+/* A thin ring in a card's rarity colour (--rarity), and the glow of a win around it. */
+@utility rarity-ring {
+  box-shadow: 0 0 0 2px var(--rarity, transparent);
+}
+@utility rarity-ring-glow {
+  box-shadow:
+    0 0 0 2px var(--rarity, transparent),
+    0 0 12px var(--rarity, transparent);
+}
+@utility rarity-glow {
+  box-shadow: 0 0 6px var(--rarity, transparent);
+}
+/* A ticket cell: its border and a 13 % tint in its colour (--cell). */
+@utility cell-tint {
+  border-color: var(--cell);
+  background: color-mix(in srgb, var(--cell) 13%, transparent);
+}
+@utility cell-glow {
+  box-shadow: 0 0 12px var(--cell);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+  /* Whatever reacts to a click shows the hand, as links do: Tailwind's reset gives buttons the
+     default arrow, and menus, tabs and options are not links. Disabled ones keep the arrow. */
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']),
+  [role='tab']:not(:disabled),
+  [role='menuitem']:not([data-disabled]),
+  [role='menuitemcheckbox']:not([data-disabled]),
+  [role='menuitemradio']:not([data-disabled]),
+  [role='option']:not([data-disabled]),
+  [role='checkbox']:not(:disabled),
+  [role='switch']:not(:disabled),
+  summary,
+  label[for],
+  select:not(:disabled) {
+    cursor: pointer;
+  }
+}

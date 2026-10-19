@@ -1,0 +1,227 @@
+[
+  {
+    "date": "2026-10-18",
+    "intro": "Les souffles élémentaires deviennent imprévisibles.",
+    "groupes": [
+      {
+        "titre": "Effets",
+        "points": [
+          "Souffle élémentaire : nouveau statut « Aléatoire », un statut différent tiré au hasard à chaque souffle (brûlure, gel, malédiction, poison, saignement ou fatigue).",
+          "Souffles en chaîne : un souffle peut avoir X % de chances d’en relancer un autre aussitôt, et ainsi de suite jusqu’au premier échec (nombre maximum réglable).",
+          "Nouvel effet « Bloque la prochaine attaque » (magie, piège, ultime) : l’attaque touche sans faire de dégâts, mais ses statuts et ses marques (exécution, avalage) s’appliquent. À ne pas confondre avec « Annule la prochaine attaque » : là, l’attaque n’a pas lieu du tout et rien ne passe.",
+          "Quand une réduction de dégâts absorbe tout le coup, il compte comme une attaque bloquée : les statuts de l’attaquant s’appliquent quand même.",
+          "Nouveau passif « Programmation » (collection mécanique) : à chaque tour, la carte peut se programmer. D’abord elle acquiert en secret des passifs ou des ultimes de sa liste, puis une programmation active les réveille tous et relance tous ses ultimes programmés, à chaque nouvelle activation.",
+          "Nouveau statut « Détonation » (passif, ultime, magie, piège et attaque de base) : une explosion qui purge la brûlure, le poison et le saignement de la cible et lui inflige d’un coup X % de leurs dégâts restants (100 % par défaut) avec un bonus, plus ses propres dégâts bruts. Une carte tuée par l’explosion ne peut pas être réanimée. Option dégâts de zone (le poseur prend une partie du souffle) ; une carte solidifiée ne subit que la moitié des dégâts des statuts.",
+          "Nouvel effet « Missiles » (ultime, magie et piège) : tire X missiles qui explosent chacun pour des dégâts bruts et font détoner la brûlure, le poison et le saignement de la cible. Chaque explosion peut poser un statut, que le missile suivant fera exploser. Une carte tuée par une explosion ne se réanime pas.",
+          "Le souffle élémentaire et les missiles se défendent comme une attaque : esquive, blocage, réduction (souffle) et renvoi de dégâts. Un souffle renvoyé ne renvoie que ses dégâts ; un missile renvoyé repart exploser sur le tireur ; un missile esquivé explose à côté et ses dégâts de zone touchent les deux cartes.",
+          "Ultimes : nouveaux déclencheurs (sous X % de PV, adversaire sous X % de PV, toutes les X attaques reçues ou faites, gros coup reçu, statut reçu, esquive, blocage, soin, piège qui se déclenche, ultime adverse). « Quand une carte s'active » ne part plus au 1er tour à cause de la magie du début de combat : seul un piège (ou une magie qui revient) le déclenche.",
+          "Pièges : nouvelles conditions (le propriétaire ou l'adversaire reçoit un statut ou esquive, le propriétaire a attaqué X fois, subit un gros coup, bloque une attaque ou lance son ultime, le piège adverse se déclenche, au tour X du combat).",
+          "Programmation simplifiée : chaque programmation tire au hasard un passif ou un ultime parmi tous ceux du jeu (valeurs adaptées à la carte), plus besoin de liste.",
+          "Correction : une magie détruite au début du combat par la magie adverse (jouée avant elle) ne se joue plus."
+        ]
+      },
+      {
+        "titre": "Animations",
+        "points": [
+          "Attaque annulée : plus de bouclier, la carte qui attaque est stoppée net, s’éteint et reçoit une grande croix rouge (l’attaque n’a pas eu lieu). Le bouclier ambré est réservé aux attaques bloquées et aux dégâts réduits.",
+          "Les textes d’animation (« Attaque annulée », « Transcendance ! », « Trop gros à avaler ! »…) ne sortent plus de l’écran : ils se recentrent et rétrécissent si besoin.",
+          "Programmation : un balayage holographique écrit le programme et un engrenage (bleu pour un passif, éclair orange pour un ultime) se range en bas de la carte, éteint tant qu’il dort. À l’activation, des circuits s’illuminent sur toute la carte et les emplacements s’allument."
+        ]
+      },
+      {
+        "titre": "Échanges",
+        "points": [
+          "Nouvel onglet « 🔄 Échanges » : propose à un joueur d'échanger tes cartes contre les siennes (jusqu'à 5 de chaque côté, raretés différentes possibles).",
+          "Chaque carte ajoute sa valeur à un pot de fragments 🧩 (Commune 5 · Rare 10 · Épique 30 · Légendaire 60 · GGEZ 100). Vous le remplissez à deux comme vous voulez : quand il est plein et que les deux ont accepté, l'échange se fait et les fragments du pot disparaissent.",
+          "Recyclage des doublons : tu choisis maintenant gold OU fragments (Commune 2 · Rare 4 · Épique 12 · Légendaire 25 · GGEZ 40 par doublon).",
+          "1 échange par jour, à partir de 7 jours d'ancienneté et 50 boosters ouverts. Les boosters ouverts avant le 17 octobre ont été estimés d'après ta collection. Une offre expire au bout de 48 h et les fragments sont rendus.",
+          "Les échanges réussis sont annoncés en live."
+        ]
+      }
+    ]
+  },
+  {
+    "date": "2026-10-17",
+    "intro": "Nouvel atelier de deck, historique sans spoil et site plus confortable sur téléphone.",
+    "groupes": [
+      {
+        "titre": "Jeux du jour",
+        "points": [
+          "Nouvel onglet « 🎲 Jeux du jour » : des petits jeux gratuits, une partie de chaque par jour (remise à zéro à minuit).",
+          "🍄 Les champignons de la forêt : choisis un champignon sur trois et gagne le gold caché dessous, puis tente un quitte ou double si tu l’oses.",
+          "⚔️ Duel d’ATQ : toi contre le bot au meilleur des 3 manches, la plus grosse ATQ gagne. La victoire rapporte un booster !",
+          "❤️ Plus ou moins : devine si la carte suivante a plus ou moins de PV, enchaîne jusqu’à 200 gold… et encaisse avant de te tromper.",
+          "🎟️ Ticket à gratter (bonus) : gratte 6 cartes et trouve 3 fois la même rareté pour gagner du gold… ou 3 boosters 📦 pour remporter un booster !"
+        ]
+      },
+      {
+        "titre": "Effets",
+        "points": [
+          "Nouvel effet « Copie d’ultime » : la carte copie l’ultime de l’adversaire et peut le lancer elle aussi, tandis que l’adversaire garde le sien (contrairement au vol d’ultime).",
+          "Transcendance : quand la carte monte de niveau, chaque statut retiré par sa purification s’affiche (« poison dissipé »…) et disparaît bien de la carte à l’écran."
+        ]
+      },
+      {
+        "titre": "Deck",
+        "points": [
+          "Nouvel onglet « Mon deck » : ton deck à gauche avec ses cases (3 combattants, 3 magies, 3 pièges + 1 carte libre), toutes tes cartes à droite. Touche une carte pour l’ajouter ou la retirer.",
+          "Les cartes se filtrent par type, rareté et collection, se cherchent par nom et se trient par rareté, nom, ATQ, PV ou nombre d’exemplaires.",
+          "Choisis ton deck dans la liste en haut, crée-en un avec « Nouveau », renomme-le ou supprime-le.",
+          "Un deck de combat doit maintenant faire exactement 10 cartes : les anciens decks de 9 cartes ne peuvent plus combattre tant qu’ils ne sont pas complétés dans l’onglet « Mon deck »."
+        ]
+      },
+      {
+        "titre": "Site",
+        "points": [
+          "Un combat n’apparaît dans l’historique qu’une fois son animation terminée en live : plus de spoil du résultat.",
+          "Le site est plus confortable sur téléphone : cartes sur deux colonnes, en-tête plus compact, boutons plus faciles à toucher et formulaires qui ne débordent plus.",
+          "Sur téléphone, les filtres de la collection deviennent un sélecteur d’une ligne (Tout, Combattants, Magies, Pièges) et des pastilles à faire glisser au doigt pour les collections ; le menu se recentre tout seul sur l’onglet ouvert.",
+          "L’onglet Historique garde tes 10 derniers combats et montre aussi tes 5 derniers boosters ouverts, avec les cartes obtenues.",
+          "« Comment jouer » est à jour : deck de 10 cartes, prolongations, rareté GGEZ, recyclage, jeux du jour, Transcendance, votes et propositions."
+        ]
+      },
+      {
+        "titre": "Boutique",
+        "points": [
+          "La boutique est plus épurée : les collections et les cartes à l’affiche sont rangées dans « Détails du contenu » de chaque booster.",
+          "Un achat demande maintenant une confirmation, avec le prix et le gold qu’il te restera, pour éviter les clics par erreur."
+        ]
+      },
+      {
+        "titre": "Animations",
+        "points": [
+          "Un saignement, une brûlure, un poison ou une malédiction réappliqués plusieurs fois ne laissent plus leur effet visuel collé à la carte après une purification ou à la fin du statut."
+        ]
+      },
+      {
+        "titre": "Classement",
+        "points": [
+          "Le classement a maintenant trois vues : 🌍 Global (depuis le début), 📅 Mensuel (remis à zéro chaque 1er du mois) et 🗓️ Hebdo (remis à zéro chaque lundi)."
+        ]
+      }
+    ]
+  },
+  {
+    "date": "2026-10-16",
+    "intro": "La Transcendance gagne trois niveaux et vole désormais de la vie.",
+    "groupes": [
+      {
+        "titre": "Effets",
+        "points": [
+          "La Transcendance monte maintenant en trois niveaux (I, II, III) : au début de ses tours X, 2X et 3X, avant d’attaquer, la carte est purifiée et gagne de l’ATQ et des PV max. Le bonus profite donc tout de suite à l’attaque du tour.",
+          "Dès le niveau I, ses attaques volent de la vie : 10 %, 20 % puis 30 % des dégâts infligés selon le niveau (réglable carte par carte)."
+        ]
+      },
+      {
+        "titre": "Animations",
+        "points": [
+          "Le niveau atteint s’affiche à l’écran au moment où la carte transcende."
+        ]
+      }
+    ]
+  },
+  {
+    "date": "2026-10-15",
+    "intro": "Le vol de cartes devient bien plus riche, les communes arrivent dans tous les boosters et le classement se trie à ta façon.",
+    "groupes": [
+      {
+        "titre": "Magies et pièges",
+        "points": [
+          "Le vol de magie ou de piège existe maintenant en magie, piège, passif et ultime : tout de suite ou à un tour choisi, et parfois pour quelques tours seulement avant que la carte retourne à son propriétaire.",
+          "Une magie volée n’agit plus du tout chez sa victime (stats, marques d’exécution, solidification…), même si elle est volée dès le début du combat.",
+          "Les effets qui étaient en points avant le passage aux pourcentages reviennent en points, en gardant les valeurs d’équilibrage."
+        ]
+      },
+      {
+        "titre": "Animations",
+        "points": [
+          "Une carte volée pour quelques tours repart vers son propriétaire, et les marques d’exécution retirées s’effacent à l’écran."
+        ]
+      },
+      {
+        "titre": "Boutique et boosters",
+        "points": [
+          "Les cartes communes peuvent sortir dans tous les boosters, quelle que soit leur collection, et la boutique les affiche dans le contenu de chaque booster."
+        ]
+      },
+      {
+        "titre": "Site",
+        "points": [
+          "Le classement peut se trier par victoires, % de victoires, combats joués, défaites ou matchs nuls."
+        ]
+      }
+    ]
+  },
+  {
+    "date": "2026-10-14",
+    "intro": "Quatre nouvelles mécaniques de combat avec leurs animations, des pièges plus fiables et un site plus rapide et plus complet.",
+    "groupes": [
+      {
+        "titre": "Combat",
+        "points": [
+          "Nouvelles mécaniques : Solidification (insensible à l'étourdissement, impossible à purger, brisée par une fracture) et Transcendance (après quelques tours, la carte se purifie et gagne ATQ et PV).",
+          "Encore deux nouveautés : Exécution (des marques qui achèvent la cible sous un seuil de PV, même si elle évite la mort) et Souffle élémentaire (dégâts + un statut au choix : feu, glace, poison…).",
+          "Chaque protection qui évite la mort sauve une fois de son côté, la malédiction rend l'ATQ petit à petit, et les combats par jour contre un même adversaire sont limités."
+        ]
+      },
+      {
+        "titre": "Magies et pièges",
+        "points": [
+          "Le piège « l'adversaire a attaqué N fois » se redéclenche toutes les N attaques, et un piège sous insensibilité se déclenche quand même, mais sans effet.",
+          "Les effets en pourcentage deviennent la norme et se calculent sur les stats de la carte."
+        ]
+      },
+      {
+        "titre": "Animations",
+        "points": [
+          "Souffle de dragon coloré selon le statut, lames et épée sombres pour l'Exécution, auréole pour la Transcendance.",
+          "Le contour de rareté se brise avec la carte, et la lueur des ouvertures de boosters sur le stream ne s'accumule plus."
+        ]
+      },
+      {
+        "titre": "Site",
+        "points": [
+          "Le classement a son propre onglet (médailles, % de victoires, ta place) et la collection affiche une jauge de progression par collection et par rareté.",
+          "La boutique détaille le contenu de chaque booster, et les propositions permettent d'assembler ta carte sous son cadre.",
+          "Site plus rapide : images allégées et chargées à l'affichage, gold à jour sans recharger, historique des 30 derniers combats."
+        ]
+      }
+    ]
+  },
+  {
+    "date": "2026-10-13",
+    "intro": "Grosse mise à jour des combats et du site : prolongations, magies et pièges corrigés, nouvelles animations, votes et propositions de splash art.",
+    "groupes": [
+      {
+        "titre": "Combat",
+        "points": [
+          "Plus de victoire aux PV : sans KO au dernier tour, c'est la prolongation avec 3 nouvelles cartes du deck.",
+          "Double KO : les deux cartes se brisent, match nul.",
+          "Les prolongations sont limitées à 3 : ensuite, la carte qui a le plus de PV gagne (PV égaux = match nul)."
+        ]
+      },
+      {
+        "titre": "Magies et pièges",
+        "points": [
+          "La magie qui annule ne laisse plus rien passer, et sa durée fonctionne (0 = tout le combat).",
+          "Un piège bloqué redevient actif à la fin de l'insensibilité ; un piège détruit se brise.",
+          "Le piège de réanimation reste caché jusqu'à ce que la carte se reforme."
+        ]
+      },
+      {
+        "titre": "Animations",
+        "points": [
+          "Une carte volée s'envole jusqu'au camp du voleur."
+        ]
+      },
+      {
+        "titre": "Site",
+        "points": [
+          "Nouvel onglet Patch notes : notes techniques et équilibrage des cartes.",
+          "Nouvel onglet Votes : chaque semaine, choisis jusqu'à 5 cartes à nerf, up ou rework et suis les résultats ; les plus votées remontent directement à l'admin.",
+          "Nouvel onglet Propositions : propose ton splash art (type, rareté, collection ou idée de collection), validé par l'admin avant d'arriver en jeu."
+        ]
+      }
+    ]
+  }
+]

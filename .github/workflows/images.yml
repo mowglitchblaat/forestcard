@@ -1,34 +1,43 @@
+# Copies the new card images from Supabase into assets/img/ every night (served as /img/ by the
+# site, so they no longer use the Supabase quota), then republishes the site when something changed.
 name: Copie des images
-# Recopie chaque nuit les nouvelles images des cartes de Supabase vers le site (dossier img/),
-# pour qu'elles soient servies par GitHub et ne consomment plus le quota Supabase.
 on:
   schedule:
-    - cron: '23 2 * * *'   # chaque nuit vers 4h (heure de Paris)
-  workflow_dispatch: {}    # bouton « Run workflow » dans l'onglet Actions
+    - cron: '23 2 * * *' # every night around 4 am, Paris time
+  workflow_dispatch: {} # "Run workflow" button in the Actions tab
 permissions:
   contents: write
   pages: write
+  id-token: write
 concurrency: copie-images
 jobs:
   copier:
     runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.publish.outputs.changed }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: 24
       - name: Copier les nouvelles images
+        # The script writes to ./img: run from assets/ so it fills assets/img.
+        working-directory: assets
         env:
           SUPABASE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-        run: node outils/copier-images.mjs
+        run: node ../tools/copier-images/copier-images.mjs
       - name: Publier
+        id: publish
         run: |
-          git add img
-          if git diff --cached --quiet; then echo "Rien de nouveau."; exit 0; fi
+          git add assets/img
+          if git diff --cached --quiet; then echo "Rien de nouveau."; echo "changed=false" >> "$GITHUB_OUTPUT"; exit 0; fi
           git config user.name "copie-images"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -q -m "Images : copie depuis Supabase"
           git pull -q --rebase && git push -q
-          gh api -X POST "repos/${{ github.repository }}/pages/builds" >/dev/null 2>&1 || true
-        env:
-          GH_TOKEN: ${{ github.token }}
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+  # A push made with the workflow token does not trigger pages.yml: call it explicitly.
+  pages:
+    needs: copier
+    if: needs.copier.outputs.changed == 'true'
+    uses: ./.github/workflows/pages.yml

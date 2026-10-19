@@ -1,0 +1,5 @@
+# LF in the index and in the working tree, whatever core.autocrlf says on the machine.
+* text=auto eol=lf
+
+# legacy/ is the byte-exact upstream snapshot (the iso oracle): git never converts it.
+legacy/** -text
