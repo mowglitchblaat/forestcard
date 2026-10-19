@@ -4,7 +4,7 @@ Jeu de cartes Twitch : des combats entre decks de viewers, calculés par une edg
 
 Ce repo est la réécriture en TypeScript du moteur de combat et des pages qui l'utilisent. **Un seul moteur** (`packages/engine`) sert l'edge function, l'overlay OBS, le simulateur, le site et le catalogue. Il calcule un combat et émet des événements typés ; le texte du journal et la description des effets vivent à part.
 
-La réécriture a été prouvée **iso** avant la bascule du 19 octobre 2026 : mêmes decks + même seed ⇒ même journal que l'ancien moteur, sur des centaines de millions de combats (`docs/rapports/`). Depuis, l'ancien code et le run d'iso sont retirés : les tests de règles (`packages/engine/test/moteur.test.js`) sont le filet.
+La réécriture a été prouvée **iso** avant la bascule du 19 octobre 2026 : mêmes decks + même seed ⇒ même journal que l'ancien moteur, sur des centaines de millions de combats (`docs/rapports/`). Depuis, l'ancien code et le run d'iso sont retirés : les tests de règles (`packages/engine/test/moteur.regles.js`) sont le filet.
 
 ## Démarrer
 

@@ -9,6 +9,8 @@ const UNTOUCHED = [
   'apps/catalogue/src/catalogue.html',
   'apps/overlay-boosters/src/overlay.html',
   'apps/site/public/patchnotes.json',
+  // The author's rule tests, run by packages/engine/test/legacy-rules.test.ts.
+  'packages/engine/test/moteur.regles.js',
   'tools/copier-images/copier-images.mjs',
   'docs/**',
   // Card images and their lists, written by the nightly copy (tools/copier-images).

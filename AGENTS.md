@@ -6,7 +6,7 @@ Réécriture en TypeScript du moteur de combat de [`mowglitchblaat/forestcard`](
 
 Les décisions du projet, avec leur raison, sont dans `docs/adr/` : à lire avant de proposer un changement de structure ou de contrat.
 
-- **Les tests de règles de l'auteur** (`packages/engine/test/moteur.test.js`) tournent contre le moteur TS (`packages/engine/test/legacy-rules.test.ts`). Une règle nouvelle ou corrigée y ajoute son test. Un test qui casse est une régression.
+- **Les tests de règles de l'auteur** (`packages/engine/test/moteur.regles.js`) tournent contre le moteur TS (`packages/engine/test/legacy-rules.test.ts`). Une règle nouvelle ou corrigée y ajoute son test. Un test qui casse est une régression.
 - **Le texte du journal est un contrat** (`docs/adr/0005-txt-est-un-contrat.md`). Une correction de comportement ou de texte est un changement séparé et explicite, jamais un effet de bord d'un refactor.
 - **Le domaine reste pur.** `packages/engine` n'importe ni DOM, ni Node, ni Deno, et ne contient aucun texte. Le parallélisme, l'affichage et les entrées/sorties vivent dans les utilisations (`apps/`, `tools/`).
 - **Événements de domaine** : des faits typés, pas de texte. Toute information qu'un texte du journal exprime est un champ nommé de l'événement (`source: 'trap'`, `stacked: true`). La **projection** (`packages/journal`) produit le journal legacy en lisant la vue (`CombatView`) pendant l'appel `onEvent`.

@@ -1,4 +1,4 @@
-// Runs the author's rule tests (moteur.test.js, next to this file) against the TypeScript engine:
+// Runs the author's rule tests (moteur.regles.js, next to this file) against the TypeScript engine:
 // the file is executed with a `require` that maps the legacy engine to the engine + journal
 // projection (packages/journal simuler()) and node:test to Vitest. A new or fixed rule adds its
 // test there.
@@ -14,7 +14,7 @@ import { test } from 'vite-plus/test';
 import { simuler } from '../../journal/src/index.ts';
 import { DEFAULT_RULES } from '../src/index.ts';
 
-const LEGACY_TESTS = path.resolve(import.meta.dirname, 'moteur.test.js');
+const LEGACY_TESTS = path.resolve(import.meta.dirname, 'moteur.regles.js');
 const SKIPPED = new Set([
   'les 3 copies du moteur sont identiques (moteur-combat.js, combat.html, swift-responder.ts)',
 ]);

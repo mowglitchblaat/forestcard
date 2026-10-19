@@ -33,7 +33,7 @@ L'ordre est celui dans lequel les erreurs arrivent quand on suit le compilateur.
 
 Ensuite :
 
-- un test de règle dans `packages/engine/test/` (Vitest, contre `simuler()` du journal, importé par chemin relatif `../../journal/src/index.ts` comme dans `legacy-rules.test.ts` : le moteur ne dépend pas du journal), sur le modèle de `legacy/tests/moteur.test.js` ;
+- un test de règle dans `packages/engine/test/` (Vitest, contre `simuler()` du journal, importé par chemin relatif `../../journal/src/index.ts` comme dans `legacy-rules.test.ts` : le moteur ne dépend pas du journal), sur le modèle de `moteur.regles.js` ;
 - `vp check`, puis `vp run test` dans chaque package et chaque app concernés ;
 - le run d'iso sur échantillon (`vp run iso --suite synthetic --count 200000 --candidate packages/journal/src/index.ts`), puis complet (`vp run iso:full`) avant de considérer le travail fini.
 

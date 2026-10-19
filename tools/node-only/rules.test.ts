@@ -1,4 +1,5 @@
-// The author's rule tests (moteur.test.js), run against the TypeScript engine with Node alone:
+// The author's rule tests (packages/engine/test/moteur.regles.js), run against the TypeScript
+// engine with Node alone:
 //
 //   node --test tools/node-only/rules.test.ts
 //
@@ -21,7 +22,7 @@ import { DEFAULT_RULES } from '../../packages/engine/src/index.ts';
 import { simuler } from '../../packages/journal/src/index.ts';
 
 const ROOT = path.resolve(import.meta.dirname, '..', '..');
-const LEGACY_TESTS = path.join(ROOT, 'packages', 'engine', 'test', 'moteur.test.js');
+const LEGACY_TESTS = path.join(ROOT, 'packages', 'engine', 'test', 'moteur.regles.js');
 
 const SKIPPED = new Set([
   'les 3 copies du moteur sont identiques (moteur-combat.js, combat.html, swift-responder.ts)',

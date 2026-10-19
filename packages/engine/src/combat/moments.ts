@@ -1,7 +1,7 @@
 // The moments of a card's turn, and in what order the steps act at each one. This is the ONLY place
 // the order lives, and the order is behaviour: the random draws are one sequence consumed in call
 // order, over() flushes deferred effects, and an early stop changes what comes after. Moving a step
-// in a list changes combats. The rule tests (packages/engine/test/moteur.test.js) are the judge.
+// in a list changes combats. The rule tests (packages/engine/test/moteur.regles.js) are the judge.
 //
 // Where a moment walks the card's own passives (the "every turn" passives, the statuses an attack
 // lays), the order is the card's, not a list here: the step walks them.
