@@ -4,7 +4,7 @@ Jeu de cartes Twitch : des combats entre decks de viewers, calculés par une edg
 
 Ce repo est la réécriture en TypeScript du moteur de combat et des pages qui l'utilisent. **Un seul moteur** (`packages/engine`) sert l'edge function, l'overlay OBS, le simulateur, le site et le catalogue. Il calcule un combat et émet des événements typés ; le texte du journal et la description des effets vivent à part.
 
-La réécriture est **iso** : mêmes decks + même seed ⇒ même journal que l'ancien moteur, champ par champ. La preuve est le run d'iso complet, qui compare les deux moteurs sur des centaines de millions de combats ; la réécriture ne remplace l'ancien code qu'une fois ce run passé sans divergence (`tools/iso/README.md`).
+La réécriture a été prouvée **iso** avant la bascule du 19 octobre 2026 : mêmes decks + même seed ⇒ même journal que l'ancien moteur, sur des centaines de millions de combats (`docs/rapports/`). Depuis, l'ancien code et le run d'iso sont retirés : les tests de règles (`packages/engine/test/moteur.test.js`) sont le filet.
 
 ## Démarrer
 
@@ -35,11 +35,8 @@ apps/
 assets/        fichiers servis tels quels : cadres des cartes, images des cartes (img/)
 db/migrations/ les scripts SQL de la base
 tools/
-  iso/           le run d'iso : nouveau moteur contre l'ancien
   pages/         l'assemblage du site publié
   copier-images/ la copie nocturne des images depuis Supabase
-  legacy-sync/   la synchro avec l'ancien code (tant qu'il reste la référence)
-legacy/        copie exacte de l'ancien code, l'oracle du run d'iso
 docs/          la documentation (en français)
 ```
 

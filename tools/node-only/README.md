@@ -16,14 +16,8 @@ Crée les liens `node_modules/@forestcard/{engine,journal,describe}` vers `packa
 # Les tests de règles de l'auteur, contre le moteur TS (55 tests ; « les 3 copies » est ignoré)
 node --test tools/node-only/rules.test.ts
 
-# Le run d'iso sur échantillon (voir tools/iso/README.md pour les suites et les options)
-node tools/iso/src/cli.ts --suite synthetic --count 200000 --candidate packages/journal/src/index.ts
-node tools/iso/src/cli.ts --suite decks --count 100000 --candidate packages/journal/src/index.ts
-node tools/iso/src/cli.ts --suite dirty --count 200000 --candidate packages/journal/src/index.ts
-node tools/iso/src/cli.ts --suite real --limit 1000000 --candidate packages/journal/src/index.ts
 ```
 
-Le run d'iso ne sert qu'à la réécriture : il compare au moteur de l'auteur tant que `legacy/` existe, et il est retiré à la bascule (`docs/guides/basculement.md`). Après, seuls les tests restent.
 
 ## Ce que `node` seul ne fait pas
 

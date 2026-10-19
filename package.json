@@ -5,11 +5,7 @@
   "type": "module",
   "scripts": {
     "ready": "vp check && vp run -r test",
-    "legacy:sync": "node tools/legacy-sync/sync.ts",
-    "iso": "node tools/iso/src/cli.ts",
-    "iso:mutants": "node tools/iso/src/mutants.ts",
     "sim": "node apps/simulator/src/cli.ts",
-    "iso:full": "node tools/iso/src/full.ts",
     "pages": "vp run -r build && node tools/pages/assemble.ts"
   },
   "devDependencies": {

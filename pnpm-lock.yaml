@@ -351,8 +351,6 @@ importers:
         specifier: 'catalog:'
         version: 6.1.2(vite@8.3.4(@types/node@24.19.2)(jiti@2.7.0))
 
-  legacy: {}
-
   packages/describe:
     dependencies:
       '@forestcard/engine':
@@ -366,10 +364,6 @@ importers:
       '@forestcard/engine':
         specifier: workspace:*
         version: link:../engine
-
-  tools/iso: {}
-
-  tools/legacy-sync: {}
 
 packages:
 

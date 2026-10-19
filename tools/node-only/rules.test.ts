@@ -21,13 +21,7 @@ import { DEFAULT_RULES } from '../../packages/engine/src/index.ts';
 import { simuler } from '../../packages/journal/src/index.ts';
 
 const ROOT = path.resolve(import.meta.dirname, '..', '..');
-// Before the cutover in legacy/tests, after it next to the engine's tests (docs/guides/basculement.md).
-const LEGACY_TESTS = [
-  path.join(ROOT, 'legacy', 'tests', 'moteur.test.js'),
-  path.join(ROOT, 'packages', 'engine', 'test', 'moteur.test.js'),
-].find((file) => fs.existsSync(file));
-if (!LEGACY_TESTS)
-  throw new Error('moteur.test.js not found (legacy/tests or packages/engine/test)');
+const LEGACY_TESTS = path.join(ROOT, 'packages', 'engine', 'test', 'moteur.test.js');
 
 const SKIPPED = new Set([
   'les 3 copies du moteur sont identiques (moteur-combat.js, combat.html, swift-responder.ts)',

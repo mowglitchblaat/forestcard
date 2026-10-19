@@ -1,5 +1,4 @@
 packages:
-  - legacy
   - packages/*
   - apps/*
   - tools/*

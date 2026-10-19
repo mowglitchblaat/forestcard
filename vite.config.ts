@@ -1,10 +1,8 @@
 import { defineConfig } from 'vite-plus';
 
-// legacy/ is a byte-exact upstream snapshot (the iso oracle): never linted, never formatted.
-// The files below under apps/ and tools/ are upstream files copied as is (tools/legacy-sync tests check it).
+// The files below under apps/ and tools/ are the author's pages and files, kept as they are: never linted, never formatted.
 // docs/ is hand-written French prose and data snapshots: not formatted.
 const UNTOUCHED = [
-  'legacy/**',
   'apps/edge/src/swift-responder.js',
   'apps/overlay-combat/src/combat.html',
   'apps/site/src/index.html',

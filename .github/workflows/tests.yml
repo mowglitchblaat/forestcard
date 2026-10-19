@@ -1,5 +1,5 @@
 # Format, lint, types and every test (engine, pages, the author's rule tests) on every push and pull
-# request, plus an iso sample against the legacy engine. A red cross = the last change broke a game
+# request. A red cross = the last change broke a game
 # rule or a page.
 name: Tests
 on:
@@ -17,7 +17,3 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm run ready
-      # A sample only: the full run (pnpm run iso:full) takes hours. Removed at cutover, with the
-      # legacy engine it compares against.
-      - name: Iso sample
-        run: node tools/iso/src/cli.ts --suite synthetic --count 100000 --candidate packages/journal/src/index.ts

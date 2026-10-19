@@ -4,9 +4,7 @@
   "private": true,
   "description": "Balance simulator: the winrate statistics of combat.html, as a multi-core command line tool.",
   "type": "module",
-  "scripts": {
-    "test": "vp test"
-  },
+  "scripts": {},
   "dependencies": {
     "@forestcard/engine": "workspace:*"
   }

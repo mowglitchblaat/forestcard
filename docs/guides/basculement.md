@@ -1,5 +1,7 @@
 # Basculement : ce repo remplace le code de l'auteur
 
+> **Bascule faite le 19 octobre 2026**, ménage compris (étape 4) : `legacy/`, `tools/iso` et `tools/legacy-sync` sont retirés. Retour en arrière : la branche `avant-bascule`.
+
 Ce qui change dans le repo `mowglitchblaat/forestcard` le jour où ce projet y entre, et les gestes à faire à la main. Ce sont nos recommandations : une fois le code chez lui, l'auteur en fait ce qu'il veut.
 
 ## Le run d'iso ne sert qu'à la réécriture

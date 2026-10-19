@@ -21,3 +21,6 @@ dist-ssr
 # Iso run outputs: checkpoints and divergence reports
 tools/iso/.out/
 _site
+
+# The legacy code (removed at cutover)
+legacy/

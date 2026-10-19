@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "build": "vp pack && node build.ts",
-    "test": "vp pack && node build.ts && vp test"
+    "test": "vp pack && node build.ts"
   },
   "dependencies": {
     "@forestcard/engine": "workspace:*",

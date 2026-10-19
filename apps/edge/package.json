@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "build": "vp pack",
-    "test": "vp pack && vp test"
+    "test": "vp pack"
   },
   "dependencies": {
     "@forestcard/journal": "workspace:*"
