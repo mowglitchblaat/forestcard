@@ -13,6 +13,8 @@ const UNTOUCHED = [
   'apps/site/public/patchnotes.json',
   'tools/copier-images/copier-images.mjs',
   'docs/**',
+  // Card images and their lists, written by the nightly copy (tools/copier-images).
+  'assets/img/**',
 ];
 
 export default defineConfig({
