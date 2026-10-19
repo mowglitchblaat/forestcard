@@ -405,6 +405,14 @@ test('programmation sans liste : tire au hasard parmi tous les passifs et ultime
   assert.ok(P.every(e => /« .+ »/.test(e.txt)), 'avec un nom lisible');
 });
 
+test('une magie détruite par la magie adverse (jouée avant elle) ne se joue pas', () => {
+  for (const seed of [1, 2, 3, 4, 5, 6]) {
+    const r = combat([C('a', 5, 500), MAG('Casse', { type: 'detruire', carte: 'magie' })], [C('b', 5, 500), MAG('Soin', { type: 'pv_mod', cible: 'soi', val: 50, u: 'pts' })], { seed, regles: { maxTours: 1, maxProlong: 0 } });
+    const m = r.journal.filter(e => e.t === 'magie').map(e => e.carte);
+    if (m[0] === 'Casse') assert.ok(!m.includes('Soin'), 'seed ' + seed + ' : la magie détruite ne doit pas se jouer');
+  }
+});
+
 test('solidification : bloque l\'étourdissement, une fracture la brise, la purification ne la retire pas', () => {
   const etourdit = { type: 'etourdir', chance: 100 };
   // magie : solidifié 3 tours, l'adversaire étourdit à chaque coup → aucun étourdissement
