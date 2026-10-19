@@ -1,0 +1,7 @@
+# Deux façons d'exécuter le moteur : la chaîne `vp`, et `node` seul
+
+L'auteur et son Claude travaillent parfois dans un environnement sans registre npm (Claude en desktop ou dans le cloud) : ni `pnpm install`, ni `vp`, ni build. On garde donc deux façons d'exécuter le moteur. La chaîne `vp` (`vp check`, `vp run -r test`, les builds, la CI) est la référence, et c'est elle qui produit ce qui part en prod. À côté, `packages/engine` et `packages/journal` restent sans dépendance externe et en syntaxe TypeScript effaçable, pour qu'un `node` récent (22.18 ou plus) les exécute seul. Ce chemin fait tourner les tests de règles de l'auteur et le run d'iso (`tools/node-only/README.md` : `link.ts` crée les liens `node_modules/@forestcard/*`, `rules.test.ts` passe les tests sous `node --test`). C'est ce qui permet de faire une correction du moteur et de la vérifier sans rien installer. Le reste, c'est-à-dire les autres tests, le lint et les builds, est fait par la CI : `pages.yml` ne publie qu'un build vérifié, fichier de l'edge compris (`<site>/edge/swift-responder.ts`).
+
+## Conséquences
+
+Ajouter une dépendance externe à `engine` ou à `journal` casse ce second chemin. Les tests de nos packages restent sous Vitest (`vp run -r test`) : le chemin `node` seul ne les exécute pas, et ne le cherche pas. Une syntaxe TypeScript qui ne s'efface pas (`enum`, `namespace`, propriétés de paramètres) le casserait aussi, mais `vp check` la refuse déjà (`erasableSyntaxOnly`, `tsconfig.base.json`).

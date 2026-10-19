@@ -1,0 +1,297 @@
+/* Fonction Supabase « jeu » (swift-responder) — Jeu de cartes Twitch
+   Gère les combats (!combat et duels payants) et le booster quotidien (!quotidien).
+   Reçoit l'appel de Streamer.bot, prépare les decks, calcule le combat avec le moteur (ci-dessous),
+   enregistre monnaie, statistiques et historique, puis renvoie le journal du combat que l'overlay OBS va rejouer.
+   Secrets à définir dans Supabase : COMBAT_SECRET (obligatoire) et SERVICE_KEY (ta clé secrète Supabase, facultatif si SUPABASE_SERVICE_ROLE_KEY existe). */
+
+// ---------------- Réglages ----------------
+// Le nombre de combats gratuits par jour se règle dans le site : Admin > Réglages (script 07-dos-et-reglages.sql).
+const NOM_MONNAIE = 'gold';
+const REGLES = { gain: 50, perte: 10, nul: 20, maxTours: 10 };   // récompenses du combat et nombre de tours maximum
+const PAYER_ADVERSAIRE = true;   // true : l'adversaire (même absent) reçoit aussi récompense et statistiques ; false : seul le joueur qui lance le combat
+
+import { simuler } from '@forestcard/journal';
+
+
+// ---------------- Serveur ----------------
+const ERREURS = {
+  JOUEUR_INCONNU: "Connecte-toi d'abord au site avec Twitch pour jouer.",
+  DECK_INVALIDE: "Ton deck n'est plus valide : il faut maintenant 10 cartes (3 combattants, 3 magies, 3 pièges + 1 libre). Complète-le dans l'onglet Mon deck du site !",
+  DEJA_JOUE: "Tu as déjà fait ton combat gratuit aujourd'hui, reviens demain !",
+  ADVERSAIRE_INCONNU: "Joueur introuvable : il doit s'être connecté au site au moins une fois.",
+  ADVERSAIRE_SOI: "Tu ne peux pas te défier toi-même.",
+  ADVERSAIRE_SANS_DECK: "Ce joueur n'a pas de deck valide (10 cartes) pour l'instant.",
+  AUCUN_ADVERSAIRE: "Aucun adversaire disponible pour l'instant.",
+  DEJA_RECLAME: 'Tu as déjà récupéré ton booster quotidien, reviens demain !',
+  AUCUN_BOOSTER_QUOTIDIEN: "Aucun booster n'est distribué en ce moment.",
+};
+const txt = (m, status = 200) => new Response(m, { status, headers: { 'content-type': 'text/plain; charset=utf-8' } });
+
+function entetes() {
+  const K = Deno.env.get('SERVICE_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  const h = { apikey: K, 'Content-Type': 'application/json' };
+  if (!K.startsWith('sb_')) h.Authorization = 'Bearer ' + K;
+  return h;
+}
+async function rpc(nom, args) {
+  const U = Deno.env.get('SUPABASE_URL');
+  const r = await fetch(`${U}/rest/v1/rpc/${nom}`, { method: 'POST', headers: entetes(), body: JSON.stringify(args) });
+  const t = await r.text();
+  let data; try { data = JSON.parse(t); } catch { data = t; }
+  return { ok: r.ok, data };
+}
+// Lecture / écriture directe d'une table (clé secrète)
+async function rest(chemin, opt = {}) {
+  const U = Deno.env.get('SUPABASE_URL');
+  const r = await fetch(`${U}/rest/v1/${chemin}`, { method: opt.method || 'GET', headers: { ...entetes(), ...(opt.headers || {}) }, body: opt.body });
+  const t = await r.text();
+  let data; try { data = JSON.parse(t); } catch { data = t; }
+  return { ok: r.ok, data };
+}
+const jourParis = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });   // AAAA-MM-JJ
+// Minuit (heure de Paris) du jour en cours, au format ISO avec décalage horaire (+01:00 l'hiver, +02:00 l'été)
+function debutJourParis() {
+  const j = jourParis(), midi = new Date(j + 'T12:00:00Z');
+  const h = parseInt(midi.toLocaleString('en-GB', { timeZone: 'Europe/Paris', hour: '2-digit', hour12: false }), 10);
+  const dec = h - 12;
+  return `${j}T00:00:00${dec >= 0 ? '+' : '-'}${String(Math.abs(dec)).padStart(2, '0')}:00`;
+}
+// Gains des combats (Admin > Réglages) : gold par victoire / défaite / nul, multiplicateur des soirées spéciales (×2…) avec heure de fin facultative
+async function reglesGains() {
+  const v = {};
+  try {
+    const r = await rest('reglages_jeu?cle=in.(gain_victoire,gain_defaite,gain_nul,multiplicateur_gains,multiplicateur_fin)&select=cle,valeur');
+    if (r.ok && Array.isArray(r.data)) r.data.forEach(x => { v[x.cle] = x.valeur; });
+  } catch { /* réglages illisibles : gains par défaut */ }
+  const nb = (x, d) => { const n = parseFloat(x); return Number.isFinite(n) && n >= 0 ? n : d; };
+  const fin = v.multiplicateur_fin ? new Date(v.multiplicateur_fin) : null;
+  const mult = fin && !isNaN(fin.getTime()) && fin.getTime() < Date.now() ? 1 : Math.min(10, nb(v.multiplicateur_gains, 1));
+  return { mult, gain: Math.round(nb(v.gain_victoire, REGLES.gain) * mult), perte: Math.round(nb(v.gain_defaite, REGLES.perte) * mult), nul: Math.round(nb(v.gain_nul, REGLES.nul) * mult) };
+}
+// Événement Bounty (Admin > Réglages) : une prime aléatoire (entre min et max gold) apparaît à la fin des combats
+// et se partage entre les deux joueurs (ex. 70 % gagnant / 30 % perdant ; match nul : moitié-moitié). Heure de fin facultative.
+async function reglesBounty() {
+  const v = {};
+  try {
+    const r = await rest('reglages_jeu?cle=in.(bounty_actif,bounty_min,bounty_max,bounty_part_gagnant,bounty_chance,bounty_tout,bounty_fin)&select=cle,valeur');
+    if (r.ok && Array.isArray(r.data)) r.data.forEach(x => { v[x.cle] = x.valeur; });
+  } catch { return null; }
+  if (String(v.bounty_actif) !== '1') return null;
+  const fin = v.bounty_fin ? new Date(v.bounty_fin) : null;
+  if (fin && !isNaN(fin.getTime()) && fin.getTime() < Date.now()) return null;
+  const nb = (x, d, max) => { const n = parseFloat(x); return Number.isFinite(n) && n >= 0 ? Math.min(n, max) : d; };
+  const min = Math.round(nb(v.bounty_min, 5, 100000)), max = Math.max(min, Math.round(nb(v.bounty_max, 90, 100000)));
+  return { min, max, part: nb(v.bounty_part_gagnant, 70, 100), chance: nb(v.bounty_chance, 30, 100), tout: nb(v.bounty_tout, 10, 100) };
+}
+// Anti-farm : nombre maximum de combats entre deux mêmes joueurs par jour (Admin > Réglages, 0 = pas de limite)
+async function limiteMemeAdversaire() {
+  try {
+    const r = await rest('reglages_jeu?cle=eq.combats_meme_adversaire_par_jour&select=valeur');
+    if (r.ok && Array.isArray(r.data) && r.data[0]) { const n = parseInt(r.data[0].valeur, 10); if (Number.isFinite(n) && n >= 0) return n; }
+  } catch { /* réglage illisible : valeur par défaut */ }
+  return 3;
+}
+// Combats déjà joués aujourd'hui entre x et y, dans les deux sens (null si le compte est illisible : on ne bloque pas)
+async function combatsEntre(x, y) {
+  try {
+    const r = await rest(`historique_combats?select=id&cree_le=gte.${encodeURIComponent(debutJourParis())}` +
+      `&or=(and(joueur_a.eq.${x},joueur_b.eq.${y}),and(joueur_a.eq.${y},joueur_b.eq.${x}))`);
+    return r.ok && Array.isArray(r.data) ? r.data.length : null;
+  } catch { return null; }
+}
+
+// Rareté de chaque carte (couleur, nom) pour les effets de brillance pendant le combat — ne bloque jamais un combat en cas de souci
+async function ajouterRaretes(cartes) {
+  try {
+    const ids = [...new Set(cartes.map((c) => c && c.id).filter((x) => x != null))];
+    if (!ids.length) return;
+    const r = await rest(`cartes?id=in.(${ids.join(',')})&select=id,raretes(nom,couleur,poids)`);
+    if (!r.ok || !Array.isArray(r.data)) return;
+    const m = {}; r.data.forEach((x) => { m[x.id] = Array.isArray(x.raretes) ? x.raretes[0] : x.raretes; });
+    cartes.forEach((c) => { if (c && m[c.id]) c.rar = m[c.id]; });
+  } catch (_) { /* sans rareté : pas de brillance, rien d'autre */ }
+}
+
+// Dos de carte choisi par chaque joueur (dos de base si aucun choix) — ne bloque jamais un combat en cas de souci
+async function dosDe(ids) {
+  const out = {};
+  try {
+    const rj = await rest(`joueurs?id=in.(${ids.join(',')})&select=id,dos_actif`);
+    const rd = await rest('dos_cartes?select=id,image,par_defaut');
+    const joueurs = rj.ok && Array.isArray(rj.data) ? rj.data : [], dos = rd.ok && Array.isArray(rd.data) ? rd.data : [];
+    const base = dos.find(d => d.par_defaut);
+    for (const id of ids) {
+      const j = joueurs.find(x => x.id === id), choisi = j && j.dos_actif ? dos.find(d => d.id === j.dos_actif) : null;
+      out[id] = (choisi || base || {}).image || null;
+    }
+  } catch { /* pas de dos : l'overlay affiche le dos standard */ }
+  return out;
+}
+
+Deno.serve(async (req) => {
+  if (req.headers.get('x-secret') !== Deno.env.get('COMBAT_SECRET')) return txt('Accès refusé.', 401);
+  let b = {}; try { b = await req.json(); } catch { return txt('Requête illisible.', 400); }
+  if (!b.twitch_id) return txt('Joueur manquant.', 400);
+
+  // ----- Booster quotidien : 1 à 3 boosters, une fois par jour -----
+  if (b.mode === 'booster_quotidien') {
+    const r = await rpc('reclamer_booster_quotidien', { p_twitch_id: String(b.twitch_id) });
+    if (!r.ok) {
+      const code = String((r.data && r.data.message) || '');
+      return txt(ERREURS[code] || 'Impossible de récupérer le booster quotidien (' + code + ').', 409);
+    }
+    const d = r.data, liste = (d.detail || []).map(x => `${x.quantite}× ${x.booster}`).join(', ');
+    return txt(`🎁 ${d.pseudo} reçoit ${d.quantite} booster${d.quantite > 1 ? 's' : ''} : ${liste} ! Ouvre-les avec !booster`);
+  }
+
+  const mode = b.mode === 'payant' ? 'payant' : 'quotidien';
+
+  // Un duel doit toujours viser un joueur précis
+  if (mode === 'payant' && !String(b.adversaire || '').trim()) return txt("Écris le @ du joueur que tu veux défier.", 400);
+
+  // 0) combats gratuits du jour : nombre réglable dans Admin > Réglages
+  let joueurId = null, limite = 1, deja = 0, quota = false;
+  if (mode === 'quotidien') {
+    try {
+      const rj = await rest(`joueurs?twitch_id=eq.${encodeURIComponent(String(b.twitch_id))}&select=id&limit=1`);
+      if (rj.ok && Array.isArray(rj.data) && rj.data[0]) {
+        joueurId = rj.data[0].id;
+        const rr = await rest('reglages_jeu?cle=eq.combats_gratuits_par_jour&select=valeur');
+        if (rr.ok && Array.isArray(rr.data) && rr.data[0]) { const n = parseInt(rr.data[0].valeur, 10); if (Number.isFinite(n) && n >= 0) limite = n; }
+        const rc = await rest(`combats_gratuits_jour?joueur_id=eq.${joueurId}&jour=eq.${jourParis()}&select=nb`);
+        if (!rc.ok) throw new Error('compteur illisible');
+        deja = Array.isArray(rc.data) && rc.data[0] ? rc.data[0].nb : 0;
+        quota = true;
+      }
+    } catch { quota = false; }   // en cas de souci, on garde la règle d'origine (1 combat gratuit par jour)
+    if (quota && deja >= limite) {
+      return txt(limite === 0 ? "Les combats gratuits sont désactivés pour le moment."
+        : `Tu as déjà fait ${limite > 1 ? 'tes ' + limite + ' combats gratuits' : 'ton combat gratuit'} aujourd'hui, reviens demain !`, 409);
+    }
+  }
+
+  // 1) decks et quota quotidien
+  const argsPrep = { p_twitch_id: String(b.twitch_id), p_mode: mode, p_adversaire: b.adversaire || null };
+  let prep = await rpc('preparer_combat', argsPrep);
+  if (!prep.ok && quota && String((prep.data && prep.data.message) || '') === 'DEJA_JOUE') {
+    // Notre compteur autorise encore un combat : on libère le combat gratuit d'origine puis on réessaie
+    await rpc('rendre_combat_quotidien', { p_joueur: joueurId });
+    prep = await rpc('preparer_combat', argsPrep);
+  }
+  if (!prep.ok) {
+    const code = String((prep.data && prep.data.message) || '');
+    return txt(ERREURS[code] || 'Impossible de lancer le combat (' + code + ').', 409);
+  }
+  // 1 bis) decks de 10 cartes obligatoires (3 combattants, 3 magies, 3 pièges + 1 libre) : les anciens decks de 9 cartes ne jouent plus
+  const deckOK = (d) => Array.isArray(d) && new Set(d.map((c) => c && c.id)).size === 10 &&
+    ['combattant', 'magie', 'piege'].every((t) => d.filter((c) => c && c.type === t).length >= 3);
+  for (let essai = 0; ; essai++) {
+    if (!deckOK(prep.data.a.deck)) {
+      if (mode === 'quotidien') await rpc('rendre_combat_quotidien', { p_joueur: prep.data.a.id });
+      return txt(ERREURS.DECK_INVALIDE, 409);
+    }
+    if (deckOK(prep.data.b.deck)) break;
+    if (mode === 'quotidien') await rpc('rendre_combat_quotidien', { p_joueur: prep.data.a.id });
+    if (b.adversaire || essai >= 5) return txt(b.adversaire ? ERREURS.ADVERSAIRE_SANS_DECK : ERREURS.AUCUN_ADVERSAIRE, 409);
+    const p2 = await rpc('preparer_combat', argsPrep);   // adversaire au hasard avec un ancien deck : on en tire un autre
+    if (!p2.ok) { const code = String((p2.data && p2.data.message) || ''); return txt(ERREURS[code] || 'Impossible de lancer le combat (' + code + ').', 409); }
+    prep = p2;
+  }
+  // 1 ter) anti-farm : limite de combats contre le même adversaire par jour
+  const maxPaire = await limiteMemeAdversaire();
+  if (maxPaire > 0) {
+    // Adversaire tiré au hasard (!combat sans @) : on retente quelques fois pour tomber sur un autre joueur
+    for (let essai = 0; ; essai++) {
+      const n = await combatsEntre(prep.data.a.id, prep.data.b.id);
+      if (n === null || n < maxPaire) break;
+      if (mode === 'quotidien') await rpc('rendre_combat_quotidien', { p_joueur: prep.data.a.id });
+      if (b.adversaire || essai >= 4) {
+        return txt(`${prep.data.a.pseudo} et ${prep.data.b.pseudo} se sont déjà affrontés ${maxPaire} fois aujourd'hui : ` +
+          (b.adversaire ? "défie quelqu'un d'autre ou reviens demain !" : "aucun autre adversaire disponible pour l'instant, reviens plus tard !"), 409);
+      }
+      const p2 = await rpc('preparer_combat', argsPrep);
+      if (!p2.ok) { const code = String((p2.data && p2.data.message) || ''); return txt(ERREURS[code] || 'Impossible de lancer le combat (' + code + ').', 409); }
+      prep = p2;
+    }
+  }
+  const { a, b: adv } = prep.data;
+
+  // 2) calcul du combat (une seule fois, ici)
+  let res, G = { mult: 1 };
+  try {
+    const dos = await dosDe([a.id, adv.id]);
+    G = await reglesGains();
+    await ajouterRaretes([...(a.deck || []), ...(adv.deck || [])]);
+    res = simuler({ pseudo: a.pseudo, deck: a.deck, dos: dos[a.id] }, { pseudo: adv.pseudo, deck: adv.deck, dos: dos[adv.id] },
+      { seed: Math.floor(Math.random() * 1e9), regles: { ...REGLES, gain: G.gain, perte: G.perte, nul: G.nul } });
+  } catch (e) {
+    if (mode === 'quotidien') await rpc('rendre_combat_quotidien', { p_joueur: a.id });
+    return txt('Le combat a rencontré une erreur, il n\'est pas décompté.', 500);
+  }
+
+  // 3) récompenses et statistiques
+  const w = res.gagnant;                                         // 0 = lanceur, 1 = adversaire, null = nul
+  const gains = [res.recompenses[0], PAYER_ADVERSAIRE ? res.recompenses[1] : 0];
+  // Bounty : prime aléatoire partagée entre les deux joueurs (s'ajoute aux gains du combat)
+  let bounty = null;
+  try {
+    const B = await reglesBounty();
+    if (B && Math.random() * 100 < B.chance) {
+      const total = B.min + Math.floor(Math.random() * (B.max - B.min + 1));
+      let parts, tout = false;
+      if (w === null) { const h = Math.ceil(total / 2); parts = [h, total - h]; }
+      else { tout = Math.random() * 100 < B.tout; const pg = tout ? total : Math.round(total * B.part / 100); parts = w === 0 ? [pg, total - pg] : [total - pg, pg]; }
+      if (!PAYER_ADVERSAIRE) parts[1] = 0;
+      gains[0] += parts[0]; gains[1] += parts[1];
+      bounty = { total, parts, tout };
+    }
+  } catch { bounty = null; }   // un souci sur la prime ne bloque jamais le combat
+  res.recompenses = gains;
+  const fin = res.journal[res.journal.length - 1]; if (fin && fin.t === 'fin') { fin.recompenses = gains; if (bounty) fin.bounty = bounty; }
+  const dmg = [0, 0], gros = [0, 0]; let tours = 0;
+  for (const e of res.journal) {
+    if (e.t === 'tour') tours++;
+    if (e.t === 'degats' && e.c != null && e.n > 0) { const s = 1 - e.c; dmg[s] += e.n; if (e.n > gros[s]) gros[s] = e.n; }
+  }
+  const debut = res.journal.find(e => e.t === 'debut');
+  const issue = i => w === null ? 'nul' : (w === i ? 'victoire' : 'defaite');
+  const lignes = [[a.id, adv.id, 0]];
+  if (PAYER_ADVERSAIRE) lignes.push([adv.id, a.id, 1]);
+  for (const [jid, aid, i] of lignes) {
+    await rpc('enregistrer_combat', { p_joueur: jid, p_adversaire: aid, p_resultat: issue(i), p_gain: gains[i], p_tours: tours,
+      p_plus_gros_coup: gros[i], p_degats: dmg[i], p_cartes: [...new Set(res.journal.filter(e => (e.t === 'debut' || e.t === 'prolongation') && e.joueurs).flatMap(e => e.joueurs[i].ids || []).filter(Boolean))], p_mode: mode, p_seed: res.seed });
+  }
+
+  // historique des parties : une ligne par combat, avec son déroulé (ne bloque jamais un combat — script 08-historique.sql)
+  try {
+    const J = (debut && debut.joueurs) || [];
+    const deroule = res.journal.filter(e => e.t !== 'debut').map(e => { const o = { tour: e.tour, t: e.t, txt: e.txt }; if (e.c != null) o.c = e.c; return o; });
+    const h = await rest('historique_combats', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({
+      mode, joueur_a: a.id, joueur_b: adv.id, pseudo_a: a.pseudo, pseudo_b: adv.pseudo,
+      carte_a: J[0] ? J[0].carte : null, carte_b: J[1] ? J[1].carte : null,
+      magie_a: J[0] ? J[0].magie : null, magie_b: J[1] ? J[1].magie : null,
+      piege_a: J[0] ? J[0].piege : null, piege_b: J[1] ? J[1].piege : null,
+      gagnant: w, gain_a: gains[0], gain_b: gains[1], tours, seed: res.seed, deroule }) });
+    if (!h.ok) console.error('historique_combats :', JSON.stringify(h.data));
+  } catch (e) { console.error('historique_combats :', String(e)); }
+
+  // compteur des combats gratuits du jour
+  if (mode === 'quotidien' && quota) {
+    try {
+      await rest('combats_gratuits_jour?on_conflict=joueur_id,jour', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+        body: JSON.stringify({ joueur_id: a.id, jour: jourParis(), nb: deja + 1 }) });
+    } catch { /* sans gravité */ }
+  }
+
+  // 4) messages pour le chat
+  const nomW = w === null ? null : (w === 0 ? a.pseudo : adv.pseudo);
+  const gagne = (p, g) => `${p} gagne ${g} ${NOM_MONNAIE}`;
+  const recompenses = PAYER_ADVERSAIRE ? `${gagne(a.pseudo, gains[0])}, ${gagne(adv.pseudo, gains[1])}.` : `${gagne(a.pseudo, gains[0])}.`;
+  res.annonce = w === null ? `🤝 Match nul entre ${a.pseudo} et ${adv.pseudo} ! ${recompenses}`
+    : `🏆 ${nomW} remporte le combat contre ${w === 0 ? adv.pseudo : a.pseudo} ! ${recompenses}`;
+  if (G.mult !== 1) res.annonce += ` (🔥 gains ×${G.mult} !)`;
+  if (bounty) res.annonce += bounty.tout ? ` 💰 BOUNTY de ${bounty.total} ${NOM_MONNAIE} : ${nomW} rafle tout !`
+    : ` 💰 Bounty de ${bounty.total} ${NOM_MONNAIE} : ${a.pseudo} +${bounty.parts[0]}${PAYER_ADVERSAIRE ? `, ${adv.pseudo} +${bounty.parts[1]}` : ''} !`;
+  const intro = `⚔️ ${a.pseudo} affronte ${adv.pseudo} !`;
+  return new Response(JSON.stringify(res), { status: 200, headers: { 'content-type': 'application/json; charset=utf-8', 'x-message': encodeURIComponent(intro) } });
+});

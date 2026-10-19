@@ -1,0 +1,37 @@
+{
+  "name": "@forestcard/web",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The player site and admin, rewritten in React: built next to apps/site, replaces it at cutover (README.md).",
+  "type": "module",
+  "scripts": {
+    "build": "vp build && node fx-preview/build.ts",
+    "build:demo": "vp build --mode demo && node fx-preview/build.ts",
+    "test": "vp test"
+  },
+  "dependencies": {
+    "@fontsource-variable/geist": "catalog:",
+    "@forestcard/describe": "workspace:*",
+    "@forestcard/engine": "workspace:*",
+    "@supabase/supabase-js": "catalog:",
+    "@tanstack/react-query": "catalog:",
+    "@tanstack/react-router": "catalog:",
+    "class-variance-authority": "catalog:",
+    "cn": "catalog:",
+    "lucide-react": "catalog:",
+    "radix-ui": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "recharts": "catalog:",
+    "shadcn": "catalog:",
+    "tailwindcss": "catalog:",
+    "tw-animate-css": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vitejs/plugin-react": "catalog:"
+  }
+}

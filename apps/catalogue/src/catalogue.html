@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Catalogue des cartes</title>
+<style>
+*{box-sizing:border-box}
+html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{margin:0;font:14px/1.35 system-ui,-apple-system,Segoe UI,sans-serif;background:#f3f4f6;color:#111827}
+header{background:#111827;color:#fff;padding:14px 20px}
+header h1{margin:0 0 4px;font-size:22px}
+header small{opacity:.75}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:10px 20px;background:#fff;border-bottom:1px solid #d1d5db;position:sticky;top:0;z-index:5}
+.bar label{display:flex;gap:5px;align-items:center;font-size:13px}
+.bar input[type=text]{padding:6px 9px;border:1px solid #cbd5e1;border-radius:6px;min-width:160px}
+button{padding:7px 14px;border:0;border-radius:6px;background:#2563eb;color:#fff;font-weight:700;cursor:pointer}
+#msg{padding:14px 20px;font-size:14px}
+.legend{display:flex;flex-wrap:wrap;gap:6px;padding:10px 20px;background:#fff;border-bottom:1px solid #e5e7eb}
+h2{margin:18px 20px 8px;font-size:19px;border-bottom:3px solid #111827;padding-bottom:3px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:12px;padding:0 20px 10px}
+.card{background:#fff;border:1px solid #d1d5db;border-radius:10px;padding:10px;break-inside:avoid;page-break-inside:avoid;display:flex;gap:10px}
+.card.off{opacity:.55}
+.card img{width:84px;height:118px;object-fit:cover;border-radius:6px;border:1px solid #cbd5e1;flex:none}
+.body{flex:1;min-width:0}
+.top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.nom{font-weight:800;font-size:16px;line-height:1.15}
+.meta{font-size:11px;color:#6b7280;margin-top:2px}
+.rar{display:inline-block;padding:1px 7px;border-radius:9px;font-size:11px;font-weight:700;color:#fff;background:#6b7280}
+.stats{display:flex;gap:6px;flex:none}
+.st{min-width:38px;text-align:center;border-radius:8px;padding:2px 6px;font-weight:900;font-size:17px;color:#fff;line-height:1.2}
+.st small{display:block;font-size:9px;font-weight:700;opacity:.85}
+.atq{background:#dc2626}.pv{background:#2563eb}
+.sec{margin-top:7px}
+.sec h4{margin:0 0 3px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#6b7280}
+.ch{display:block;margin:0 0 3px;padding:3px 8px;border-radius:6px;font-size:12.5px;line-height:1.3}
+.cond{font-size:12px;margin-bottom:3px;color:#374151;font-style:italic}
+.desc{margin-top:6px;font-size:12px;color:#4b5563}
+.none{color:#9ca3af;font-size:12px}
+/* couleurs des effets */
+.c-sang{background:#b91c1c;color:#fff}.c-gel{background:#38bdf8;color:#06283d}.c-poison{background:#16a34a;color:#fff}
+.c-feu{background:#f97316;color:#fff}.c-mal{background:#9333ea;color:#fff}.c-os{background:#e7dcc0;color:#4a3f22;border:1px solid #cdbf98}
+.c-purif{background:#facc15;color:#3b2f00}.c-soin{background:#4ade80;color:#052e16}.c-etourdi{background:#eab308;color:#2f2500}
+.c-esquive{background:#cbd5e1;color:#1e293b}.c-vie{background:#14b8a6;color:#fff}.c-frappe{background:#e11d48;color:#fff}
+.c-defense{background:#92400e;color:#fff}.c-echange{background:#3b82f6;color:#fff}.c-ultime{background:#111827;color:#fecaca;border:1px solid #dc2626}
+.c-rage{background:#7f1d1d;color:#fde047;border:1px solid #ef4444}.c-fatigue{background:#334155;color:#cbd5e1}.c-alea{background:linear-gradient(90deg,#f43f5e,#f59e0b,#22c55e,#3b82f6,#a855f7);color:#fff}
+.c-degats{background:#be185d;color:#fff}.c-stat{background:#64748b;color:#fff}.c-autre{background:#6b7280;color:#fff}
+@media print{
+ body{background:#fff;font-size:11.5px}
+ .bar,#msg:empty{display:none}
+ header{background:#fff;color:#111827;border-bottom:2px solid #111827;padding:6px 0}
+ .grid{grid-template-columns:repeat(2,1fr);padding:0;gap:8px}
+ h2{margin:12px 0 6px;break-after:avoid}
+ .legend{padding:6px 0;background:#fff}
+ @page{size:A4;margin:10mm}
+}
+</style>
+</head>
+<body>
+<header><h1>Catalogue des cartes</h1><small id="sub">Chargement…</small></header>
+<div class="bar">
+ <button onclick="window.print()">🖨 Imprimer / Enregistrer en PDF</button>
+ <input type="text" id="q" placeholder="Rechercher une carte…">
+ <label><input type="checkbox" id="fi" checked> Images</label>
+ <label><input type="checkbox" id="fa"> Cartes actives seulement</label>
+ <label><input type="checkbox" id="tc" checked> Combattants</label>
+ <label><input type="checkbox" id="tm" checked> Magies</label>
+ <label><input type="checkbox" id="tp" checked> Pièges</label>
+</div>
+<div class="legend" id="legend"></div>
+<div id="msg"></div>
+<div id="out"></div>
+<script>
+/*@@DESCRIBE@@*/
+function cardHTML(c,img){
+ const rar=c.raretes?`<span class="rar" style="background:${esc(c.raretes.couleur||'#6b7280')}">${esc(c.raretes.nom)}</span>`:'';
+ const col=c.collections?.nom?esc(c.collections.nom):'Communes';
+ const ty={combattant:'Combattant',magie:'Magie',piege:'Piège'}[c.type]||c.type;
+ const st=c.type==='combattant'?`<div class="stats"><div class="st atq"><small>ATQ</small>${c.atq??'–'}</div><div class="st pv"><small>PV</small>${c.pv??'–'}</div></div>`:'';
+ const im=(c.variantes_carte||[]).find(v=>v.nom==='Standard')||(c.variantes_carte||[])[0];
+ const secs=sectionsHTML(c);
+ return `<div class="card${c.actif===false?' off':''}">${img&&im?.image_path?`<img loading="lazy" src="${esc(urlImg(im.image_path))}" alt="">`:''}
+  <div class="body"><div class="top"><div><div class="nom">${esc(c.nom)}</div><div class="meta">${ty} · ${col} ${rar}${c.actif===false?' · <b>inactive</b>':''}</div></div>${st}</div>${secs}${c.description?`<div class="desc">${esc(c.description)}</div>`:''}</div></div>`;
+}
+// ======== Chargement et affichage ========
+const STORAGE='https://bjsvqikjnvaomyoifiml.supabase.co/storage/v1/object/public/cartes/';
+const MIROIR_URL='https://mowglitchblaat.github.io/forestcard/img/';let MIROIR=new Set();   // images des cartes recopiées chaque nuit sur GitHub (img/liste.json) : servies par GitHub au lieu de Supabase (quota)
+const chargerMiroir=()=>Promise.race([fetch(MIROIR_URL+'liste.json').then(r=>r.ok?r.json():[]).then(a=>{if(Array.isArray(a))MIROIR=new Set(a)}).catch(()=>{}),new Promise(r=>setTimeout(r,2500))]);
+const urlImg=p=>p?(MIROIR.has(p)?MIROIR_URL+encodeURI(p):STORAGE+p):'';   // GitHub si l'image y est déjà, sinon Supabase
+chargerMiroir();
+let CARTES=[];
+const $=s=>document.querySelector(s);
+function draw(){
+ const q=$('#q').value.trim().toLowerCase(),img=$('#fi').checked,act=$('#fa').checked,on={combattant:$('#tc').checked,magie:$('#tm').checked,piege:$('#tp').checked};
+ const L=CARTES.filter(c=>on[c.type]&&(!act||c.actif!==false)&&(!q||c.nom.toLowerCase().includes(q)));
+ const parts=[['combattant','Combattants'],['magie','Magies'],['piege','Pièges']].map(([t,l])=>{
+  const x=L.filter(c=>c.type===t);return x.length?`<h2>${l} (${x.length})</h2><div class="grid">${x.map(c=>cardHTML(c,img)).join('')}</div>`:''}).join('');
+ $('#out').innerHTML=parts||'<p style="padding:0 20px">Aucune carte à afficher.</p>';
+ $('#sub').textContent=`${L.length} carte${L.length>1?'s':''} · généré le ${new Date().toLocaleDateString('fr-FR')}`;
+}
+$('#legend').innerHTML=Object.entries(COL).map(([k,v])=>`<span class="ch c-${k}" style="display:inline-block;margin:0">${v}</span>`).join('');
+['q','fi','fa','tc','tm','tp'].forEach(i=>$('#'+i).addEventListener('input',draw));
+async function charger(){
+ try{
+  await new Promise((ok,ko)=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';s.onload=ok;s.onerror=()=>ko(new Error('bibliothèque de connexion non chargée (réseau ?)'));document.head.appendChild(s)});
+  const sb=supabase.createClient('https://bjsvqikjnvaomyoifiml.supabase.co','sb_publishable_-3cPqDCyE-zhb3z5r6dPhg_DJFKGAI6');
+  const {data,error}=await sb.from('cartes').select('id,nom,type,atq,pv,actif,passif,ultime,effet,description,raretes(nom,couleur,poids),collections(nom),variantes_carte(nom,image_path)').order('nom');
+  if(error)throw error;
+  const ord={combattant:0,magie:1,piege:2};
+  // rangement : légendaire en premier, puis épique, rare, commun ; puis combattant / magie / piège ; puis par nom
+  const RG=['legendaire','epique','rare','commun'],rg=c=>{const n=String((c.raretes&&c.raretes.nom)||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(),i=RG.findIndex(k=>n.includes(k));return[i<0?9:i,+(c.raretes&&c.raretes.poids)||0]};
+  CARTES=(data||[]).sort((a,b)=>{const x=rg(a),y=rg(b);return(x[0]-y[0])||(x[1]-y[1])||(ord[a.type]-ord[b.type])||a.nom.localeCompare(b.nom,'fr')});
+  if(!CARTES.length){$('#msg').innerHTML='Aucune carte lue. Connecte-toi d\'abord sur le site avec le <b>même navigateur</b> (compte admin), puis recharge cette page.';$('#sub').textContent='Aucune carte';return}
+  $('#msg').textContent='';draw();
+ }catch(e){$('#sub').textContent='Erreur';$('#msg').innerHTML='Impossible de lire les cartes : '+esc(e.message||e)+'<br>Connecte-toi d\'abord sur le site avec le <b>même navigateur</b>, puis recharge.'}
+}
+charger();
+</script>
+</body>
+</html>

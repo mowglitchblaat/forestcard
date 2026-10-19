@@ -1,0 +1,108 @@
+// Effect categories: each effect and passive type belongs to a category with a colour, the legend
+// of the author's printable catalogue (legacy catalogue.html). One colour language for every page:
+// the catalogue colours its effects with it, the site its effect badges.
+// A type without a category (basic attack effects count as their passive) is "autre".
+
+// Legend categories: their label.
+export const CATEGORY_LABELS: Record<string, string> = {
+  sang: 'Saignement',
+  gel: 'Gel',
+  poison: 'Poison',
+  feu: 'Brûlure',
+  mal: 'Malédiction',
+  os: 'Fracture',
+  purif: 'Purification',
+  soin: 'Soin / régénération',
+  etourdi: 'Étourdissement',
+  esquive: 'Esquive',
+  vie: 'Évite la mort / réanimation',
+  frappe: 'Frappes en plus',
+  defense: 'Défense / renvoi',
+  echange: 'Échanges de stats',
+  ultime: 'Ultime (vol, relance)',
+  degats: 'Dégâts directs',
+  stat: 'Modif. ATQ / PV',
+  rage: 'Rage',
+  fatigue: 'Fatigue',
+  alea: 'Effet aléatoire',
+  autre: 'Autres',
+};
+// Category (legend colour) of each effect and passive type.
+const CATEGORY_OF: Record<string, string> = {
+  saignement: 'sang',
+  gel: 'gel',
+  poison: 'poison',
+  poison_effet: 'poison',
+  brulure: 'feu',
+  brulure_effet: 'feu',
+  malediction: 'mal',
+  fracture: 'os',
+  purification: 'purif',
+  soin: 'soin',
+  soin_tour: 'soin',
+  soin_tours: 'soin',
+  vol_pct_atq: 'soin',
+  vol_vie: 'soin',
+  etourdir: 'etourdi',
+  etourdir_effet: 'etourdi',
+  esquive: 'esquive',
+  esquive_mod: 'esquive',
+  evite_mort: 'vie',
+  mort_evitee: 'vie',
+  reanimation: 'vie',
+  enchainement: 'frappe',
+  multi_frappe: 'frappe',
+  double_degats: 'frappe',
+  bonus_frappe: 'frappe',
+  renvoi: 'defense',
+  reduc_degats: 'defense',
+  echange_atq: 'echange',
+  echange_atq_def: 'echange',
+  echange_pv: 'echange',
+  echange_tout: 'echange',
+  vol_ultime: 'ultime',
+  copie_ultime: 'ultime',
+  reset_ultime: 'ultime',
+  degats: 'degats',
+  degats_tours: 'degats',
+  atq_mod: 'stat',
+  pv_mod: 'stat',
+  atq_tours: 'stat',
+  pv_tours: 'stat',
+  rage: 'rage',
+  fatigue: 'fatigue',
+  aleatoire: 'alea',
+};
+export const categoryOf = (t: unknown): string =>
+  CATEGORY_OF[String(t).replace(/^atk_/, '')] || 'autre';
+
+// Colours of each category, as the legacy catalogue's CSS (.c-<category>) writes them.
+export const CATEGORY_STYLES: Record<
+  string,
+  { background: string; color: string; border?: string }
+> = {
+  sang: { background: '#b91c1c', color: '#fff' },
+  gel: { background: '#38bdf8', color: '#06283d' },
+  poison: { background: '#16a34a', color: '#fff' },
+  feu: { background: '#f97316', color: '#fff' },
+  mal: { background: '#9333ea', color: '#fff' },
+  os: { background: '#e7dcc0', color: '#4a3f22', border: '1px solid #cdbf98' },
+  purif: { background: '#facc15', color: '#3b2f00' },
+  soin: { background: '#4ade80', color: '#052e16' },
+  etourdi: { background: '#eab308', color: '#2f2500' },
+  esquive: { background: '#cbd5e1', color: '#1e293b' },
+  vie: { background: '#14b8a6', color: '#fff' },
+  frappe: { background: '#e11d48', color: '#fff' },
+  defense: { background: '#92400e', color: '#fff' },
+  echange: { background: '#3b82f6', color: '#fff' },
+  ultime: { background: '#111827', color: '#fecaca', border: '1px solid #dc2626' },
+  rage: { background: '#7f1d1d', color: '#fde047', border: '1px solid #ef4444' },
+  fatigue: { background: '#334155', color: '#cbd5e1' },
+  alea: {
+    background: 'linear-gradient(90deg,#f43f5e,#f59e0b,#22c55e,#3b82f6,#a855f7)',
+    color: '#fff',
+  },
+  degats: { background: '#be185d', color: '#fff' },
+  stat: { background: '#64748b', color: '#fff' },
+  autre: { background: '#6b7280', color: '#fff' },
+};

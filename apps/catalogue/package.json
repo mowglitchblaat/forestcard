@@ -1,0 +1,14 @@
+{
+  "name": "@forestcard/catalogue",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The printable card catalogue (catalogue.html), with the effect descriptions built from the shared engine model.",
+  "type": "module",
+  "scripts": {
+    "build": "vp pack && node build.ts",
+    "test": "vp pack && node build.ts && vp test"
+  },
+  "dependencies": {
+    "@forestcard/describe": "workspace:*"
+  }
+}

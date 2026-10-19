@@ -1,6 +1,7 @@
-# Lance les tests du moteur de combat à chaque envoi sur GitHub.
-# Une croix rouge sur le dépôt = une règle du jeu a été cassée par la dernière modification.
-name: Tests du moteur
+# Format, lint, types and every test (engine, pages, the author's rule tests) on every push and pull
+# request, plus an iso sample against the legacy engine. A red cross = the last change broke a game
+# rule or a page.
+name: Tests
 on:
   push:
   pull_request:
@@ -8,8 +9,15 @@ jobs:
   tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
-          node-version: 22
-      - run: npm test
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run ready
+      # A sample only: the full run (pnpm run iso:full) takes hours. Removed at cutover, with the
+      # legacy engine it compares against.
+      - name: Iso sample
+        run: node tools/iso/src/cli.ts --suite synthetic --count 100000 --candidate packages/journal/src/index.ts

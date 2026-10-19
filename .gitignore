@@ -1,0 +1,23 @@
+# Execution plans: local working notes, not versioned
+docs/plans/
+
+node_modules
+dist
+dist-ssr
+*.local
+*.log
+
+# dotenv environment variable files
+.env
+.env.*
+!.env.example
+
+.idea
+.DS_Store
+
+# AI agent worktrees
+.claude/worktrees/
+
+# Iso run outputs: checkpoints and divergence reports
+tools/iso/.out/
+_site

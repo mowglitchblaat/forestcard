@@ -1,0 +1,47 @@
+# Builds the pages and publishes the site (tools/pages/assemble.ts: same URLs as before). Runs on
+# every push to main, by hand, and from images.yml after new card images are committed.
+# Requires Settings → Pages → Source: "GitHub Actions".
+name: Site
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+  workflow_call: {}
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # The branch tip, not the triggering commit: from images.yml, it includes the images
+          # commit pushed a moment ago.
+          ref: ${{ github.ref }}
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Never publish a build whose checks fail.
+      - run: pnpm run ready
+      - run: pnpm run pages
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v5

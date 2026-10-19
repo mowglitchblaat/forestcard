@@ -1,0 +1,18 @@
+/* Preview: only the two cards, on a transparent background; the demo panel and the overlay's own
+   interface (banner, pseudos, HP bars, magic and trap) hidden; cards sized for a small frame. */
+html,
+body {
+  background: transparent !important;
+}
+#demo,
+#mid,
+.mp,
+.pj,
+.bar,
+.pv,
+.nm {
+  display: none !important;
+}
+.p {
+  width: 38vw !important;
+}

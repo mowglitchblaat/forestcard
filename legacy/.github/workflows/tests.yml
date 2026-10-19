@@ -1,0 +1,15 @@
+# Lance les tests du moteur de combat à chaque envoi sur GitHub.
+# Une croix rouge sur le dépôt = une règle du jeu a été cassée par la dernière modification.
+name: Tests du moteur
+on:
+  push:
+  pull_request:
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm test

@@ -1,0 +1,31 @@
+# Edge function swift-responder
+
+La fonction Supabase qui calcule les combats (`!combat`, duels payants) et distribue le booster quotidien. Elle est déployée en collant **un seul fichier** dans le dashboard Supabase, sans CLI.
+
+## Générer le fichier à coller
+
+```bash
+vp run build        # depuis apps/edge
+```
+
+Le build produit `apps/edge/dist/swift-responder.ts`. Ce fichier contient le serveur, le moteur et la projection du journal, sans aucun import. On le colle tel quel dans Supabase > Edge Functions > swift-responder, puis on clique sur Deploy.
+
+Sans rien installer, le fichier se récupère sur le site publié : à chaque push sur `main`, le workflow « Site » (`.github/workflows/pages.yml`) le construit après avoir fait passer le lint et tous les tests, et le sert à `<site>/edge/swift-responder.ts` (`tools/pages/assemble.ts`). Il ne contient aucun secret : tout passe par `Deno.env`.
+
+On ne modifie jamais ce fichier généré. On modifie `src/swift-responder.js` ou le moteur, puis on relance le build.
+
+## Ce qui est où
+
+- `src/swift-responder.js` : le code serveur legacy, copié tel quel, avec une seule différence : le moteur est importé (`simuler` de `@forestcard/journal`) au lieu d'être recopié dans le fichier. Les réglages (`NOM_MONNAIE`, `REGLES`, `PAYER_ADVERSAIRE`) sont en tête du fichier.
+- `vite.config.ts` : la configuration du build (un seul fichier ESM, dépendances inlinées, extension `.ts`, en-tête `// @ts-nocheck`).
+- `test/equivalence.test.ts` : la preuve que le fichier généré se comporte comme `legacy/swift-responder.ts`.
+
+## Vérifier
+
+```bash
+vp run test         # depuis apps/edge : reconstruit, puis teste
+```
+
+Le test charge les deux fichiers sous Node, avec un faux `Deno.serve`, un faux Supabase (`fetch`) et un `Math.random` déterministe. Il leur envoie les mêmes requêtes : combats gratuits, duels, bounty, multiplicateur, booster quotidien, et les cas d'erreur (mauvais secret, deck de 9 cartes, quota épuisé, anti-farm). Il exige ensuite des réponses identiques **et** des appels à Supabase identiques. Ces appels portent tout ce que le serveur calcule autour du combat (tours, dégâts totaux, plus gros coup, historique, gains), donc ces calculs sont comparés eux aussi.
+
+Un second test échoue si le code serveur legacy change lors d'une resynchronisation de `legacy/`. Il faut alors reporter le changement dans `src/swift-responder.js`.

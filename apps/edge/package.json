@@ -1,0 +1,14 @@
+{
+  "name": "@forestcard/edge",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Supabase Edge Function swift-responder, built into one self-contained file to paste in the dashboard.",
+  "type": "module",
+  "scripts": {
+    "build": "vp pack",
+    "test": "vp pack && vp test"
+  },
+  "dependencies": {
+    "@forestcard/journal": "workspace:*"
+  }
+}
