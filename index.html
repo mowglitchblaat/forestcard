@@ -376,7 +376,7 @@ let deck=null,typeOf={},flt='tout',fcol='tout',collData=[],savedDecks=[],decksOK
 async function loadDecks(){const r=await sb.rpc('mes_decks');if(r.error){decksOK=false;savedDecks=[];return}decksOK=true;savedDecks=r.data||[]}
 const cn=x=>x.variantes_carte.cartes.collections?.nom||'Communes';
 const TYPES={combattant:'Combattants',magie:'Magies',piege:'Pièges'};
-let apercu=false,ownQ={},ALLCOLS=null;   // ALLCOLS : collections des cartes publiées (filtres stables, avec ou sans aperçu)   // admin : voir toutes les cartes du jeu (rien n'est donné)
+let apercu=false,ownQ={},ALLCOLS=null,apEnCours=false;   // ALLCOLS : collections des cartes publiées (filtres stables, avec ou sans aperçu)   // admin : voir toutes les cartes du jeu (rien n'est donné)
 async function chargerApercu(){
   const sel=c=>sb.from('variantes_carte').select('id,nom,image_path,cartes(id,nom,type,'+c+'collections(nom),raretes(nom,couleur,poids))');
   let r=await sel('actif,atq,pv,description,passif,ultime,effet,');if(r.error)r=await sel('atq,pv,description,passif,ultime,effet,');if(r.error)r=await sel('');
@@ -684,10 +684,11 @@ function drawColl(){
   $('#fcol').innerHTML=[['tout','Toutes les collections'],...names.map(n=>[n,n])].map(([k,v])=>`<button class="${k==fcol?'on':'sec'}" data-k="${esc(k)}">${esc(v)}</button>`).join('');
   $('#fcol').querySelectorAll('button').forEach(b=>b.onclick=()=>{fcol=b.dataset.k;drawColl()});voirActif($('#fcol'));
   const L=collData.filter(x=>(flt=='tout'||x.variantes_carte.cartes.type==flt)&&(fcol=='tout'||cn(x)==fcol));
-  $('#gr').innerHTML=L.map(cardHTML).join('');
+  $('#gr').innerHTML=L.map((x,i)=>{try{return cardHTML(x,i)}catch(e){console.warn('Carte illisible',x,e);return `<div class="card"><small class="ko">Carte illisible : ${esc(((x.variantes_carte||{}).cartes||{}).nom||'?')} (${esc(e.message)})</small></div>`}}).join('');
   const AP=isAdmin?`<button id="apv" class="${apercu?'on':'sec'}" title="Réservé à l'admin : montre toutes les cartes du jeu pour voir à quoi ressemble la collection. Rien n'est donné.">👁 ${apercu?'Aperçu actif : toutes les cartes du jeu':'Aperçu : voir toutes les cartes du jeu'}</button>`:'';
   const T=gainTotal();$('#rbar').innerHTML=AP+(T.n?`<button id="recall" class="sec">♻ Recycler tous mes doublons (${T.n}) · ${gainTxt(T)}</button><small style="color:#9a9aa8">Tu gardes toujours 1 exemplaire de chaque carte.</small>`:'<small style="color:#9a9aa8">♻ Aucun doublon à recycler pour le moment.</small>');
-  const apb=$('#apv');if(apb)apb.onclick=async()=>{apercu=!apercu;await loadColl();drawColl();progression()};
+  const apb=$('#apv');if(apb)apb.onclick=async()=>{if(apEnCours)return;apEnCours=true;apb.disabled=true;apb.textContent='⏳ Chargement…';const av=apercu;   // un seul chargement à la fois (sinon des clics rapprochés s'annulent)
+    try{apercu=!av;await loadColl();drawColl();progression()}catch(e){apercu=av;uiAlert('Aperçu impossible : '+((e&&e.message)||e));try{await loadColl();drawColl()}catch(x){}}finally{apEnCours=false;const b=$('#apv');if(b)b.disabled=false}};
   bindToggle(drawColl);bindOpen(L,drawColl);bindRecycle();updBar();
 }
 
