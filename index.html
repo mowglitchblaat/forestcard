@@ -384,7 +384,7 @@ async function chargerApercu(){
   return r.data.filter(v=>v.cartes&&v.cartes.raretes&&v.cartes.actif!==false).map(v=>({quantite:ownQ[v.id]||0,apercu:true,variantes_carte:v}));   // aperçu : toutes les cartes, avec ce que l'admin possède vraiment
 }
 async function loadColl(){
-  if(!ALLCOLS){try{const r=await sb.from('cartes').select('collections(nom)').eq('actif',true);if(!r.error&&r.data)ALLCOLS=[...new Set(r.data.map(c=>(c.collections&&c.collections.nom)||'Communes'))]}catch(e){}}
+  if(isAdmin&&!ALLCOLS){try{const r=await sb.from('cartes').select('collections(nom)').eq('actif',true);if(!r.error&&r.data)ALLCOLS=[...new Set(r.data.map(c=>(c.collections&&c.collections.nom)||'Communes'))]}catch(e){}}
   if(apercu&&isAdmin){collData=await chargerApercu();collData.sort(cmpColl);typeOf={};collData.forEach(x=>{const c=x.variantes_carte.cartes;typeOf[c.id]=c.type});if(!deck){const dk=await q(sb.from('deck').select('carte_id').eq('joueur_id',user.id));deck=new Set(dk.map(x=>x.carte_id))}return}
   let r=await sb.from('collection_joueur').select('quantite,variantes_carte(id,nom,image_path,cartes(id,nom,type,atq,pv,description,passif,ultime,effet,collections(nom),raretes(nom,couleur,poids)))').eq('joueur_id',user.id);
   if(r.error)r=await sb.from('collection_joueur').select('quantite,variantes_carte(id,nom,image_path,cartes(id,nom,type,collections(nom),raretes(nom,couleur,poids)))').eq('joueur_id',user.id);
@@ -680,7 +680,7 @@ function drawColl(){
   curView=drawColl;
   $('#flt').innerHTML=[['tout','Tout'],...Object.entries(TYPES)].map(([k,v])=>`<button class="${k==flt?'on':'sec'}" data-f="${k}">${v}</button>`).join('');
   $('#flt').querySelectorAll('button').forEach(b=>b.onclick=()=>{flt=b.dataset.f;drawColl()});
-  const names=[...new Set([...collData.map(cn),...(ALLCOLS||[])])].sort();   // toujours les mêmes filtres, avec ou sans aperçu
+  const names=[...new Set([...collData.map(cn),...(isAdmin?ALLCOLS||[]:[])])].sort();   // joueur : seulement les collections qu'il possède · admin : toujours les mêmes filtres, avec ou sans aperçu
   $('#fcol').innerHTML=[['tout','Toutes les collections'],...names.map(n=>[n,n])].map(([k,v])=>`<button class="${k==fcol?'on':'sec'}" data-k="${esc(k)}">${esc(v)}</button>`).join('');
   $('#fcol').querySelectorAll('button').forEach(b=>b.onclick=()=>{fcol=b.dataset.k;drawColl()});voirActif($('#fcol'));
   const L=collData.filter(x=>(flt=='tout'||x.variantes_carte.cartes.type==flt)&&(fcol=='tout'||cn(x)==fcol));
