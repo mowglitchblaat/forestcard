@@ -38,7 +38,7 @@ Une vue de l'ancienne page qui n'est pas encore portée affiche « pas encore po
 | 2. Lecture joueur  | collection (✓, repensée), historique (✓), encyclopédie (✓), profils (✓), classement (✓), patch notes (✓), règles (✓) | ✓                                 |
 | 3. Écriture joueur | decks (✓), dos (✓), recyclage (✓), boutique (✓), jeux du jour (✓), votes (✓), propositions (✓)                       | ✓                                 |
 | 4. Admin           | les 11 sous-vues                                                                                                     | à la reprise (voir « Plus tard ») |
-| 5. Basculement     | `tools/pages/assemble.ts` sert `apps/web` en `/index.html`                                                           | à faire                           |
+| 5. Basculement     | en test à `/nouveau.html` (depuis le 19 octobre 2026) ; puis `tools/pages/assemble.ts` sert `apps/web` en `/index.html` | en test                           |
 
 Ajouts de l'amont pas encore reportés (synchro `5fabe1b`) : la vue Échanges (listée dans `NOT_YET_PORTED`, `test/views.test.ts`, le seul écart que ce test tolère), le recyclage en gold ou en fragments, la visibilité des collections limitée à celles qu'on possède, la section Échanges de « Comment jouer ». Côté admin : les réglages `vitesse_combat` et des échanges, l'éditeur de carte (`udecl` / `udx`, nouvelles conditions, programmation dans la liste des passifs). Les écritures des échanges (proposer, contribuer, annuler) passeront, dans le build de démo, par un magasin en mémoire qui applique les règles de `28-echanges.sql`, comme les propositions.
 

@@ -25,6 +25,12 @@ const FILES: [url: string, source: string][] = [
   // and tested by the workflow, so a change made without any install (tools/node-only) still ends
   // as a file ready to paste. It holds no secret: everything comes from Deno.env.
   ['edge/swift-responder.ts', 'apps/edge/dist/swift-responder.ts'],
+  // The React site (apps/web), on trial next to the author's page until it replaces it: at the root,
+  // so its relative URLs (img/, cadres/, patchnotes.json, catalogue.html) reach the same files.
+  ['nouveau.html', 'apps/web/dist/index.html'],
+  ['assets', 'apps/web/dist/assets'],
+  ['fx-preview.html', 'apps/web/dist/fx-preview.html'],
+  ['favicon.svg', 'apps/web/dist/favicon.svg'],
 ];
 // Written by the nightly image copy (.github/workflows/images.yml): absent from a fresh clone of
 // this repository, so optional here.
