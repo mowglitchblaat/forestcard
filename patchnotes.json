@@ -15,7 +15,8 @@
           "Nouvel effet « Missiles » (ultime, magie et piège) : tire X missiles qui explosent chacun pour des dégâts bruts et font détoner la brûlure, le poison et le saignement de la cible. Chaque explosion peut poser un statut, que le missile suivant fera exploser. Une carte tuée par une explosion ne se réanime pas.",
           "Le souffle élémentaire et les missiles se défendent comme une attaque : esquive, blocage, réduction (souffle) et renvoi de dégâts. Un souffle renvoyé ne renvoie que ses dégâts ; un missile renvoyé repart exploser sur le tireur ; un missile esquivé explose à côté et ses dégâts de zone touchent les deux cartes.",
           "Ultimes : nouveaux déclencheurs (sous X % de PV, adversaire sous X % de PV, toutes les X attaques reçues ou faites, gros coup reçu, statut reçu, esquive, blocage, soin, piège qui se déclenche, ultime adverse). « Quand une carte s'active » ne part plus au 1er tour à cause de la magie du début de combat : seul un piège (ou une magie qui revient) le déclenche.",
-          "Pièges : nouvelles conditions (le propriétaire ou l'adversaire reçoit un statut ou esquive, le propriétaire a attaqué X fois, subit un gros coup, bloque une attaque ou lance son ultime, le piège adverse se déclenche, au tour X du combat)."
+          "Pièges : nouvelles conditions (le propriétaire ou l'adversaire reçoit un statut ou esquive, le propriétaire a attaqué X fois, subit un gros coup, bloque une attaque ou lance son ultime, le piège adverse se déclenche, au tour X du combat).",
+          "Programmation simplifiée : chaque programmation tire au hasard un passif ou un ultime parmi tous ceux du jeu (valeurs adaptées à la carte), plus besoin de liste."
         ]
       },
       {

@@ -458,9 +458,9 @@ function simuler(pA,pB,opt={}){
   if(lost>0)L('stat',`ATQ de ${nom(d)} −${lost} (fatigue)`,{c:id(d),k:'mod',s:'ATQ',d:-lost})}
 
  // Effet aléatoire : tire au hasard (graine du combat) un effet parmi tous ceux du jeu, avec des valeurs adaptées aux stats des cartes
- function effetAlea(o,x){
+ function poolAlea(o,x){
   const ri=(a,b)=>a+Math.floor(r()*(b-a+1)),pv=(b,a,z)=>Math.max(1,rd(b*ri(a,z)/100));
-  const POOL=[
+  return [
    ['ATQ en hausse',()=>({type:'atq_mod',cible:'soi',val:ri(15,40),u:'pct'})],
    ["ATQ adverse en baisse",()=>({type:'atq_mod',cible:'adversaire',val:-ri(15,40),u:'pct'})],
    ['PV max en hausse',()=>({type:'pv_mod',cible:'soi',val:ri(10,30),u:'pct'})],
@@ -506,10 +506,30 @@ function simuler(pA,pB,opt={}){
    ['Attaque de base : saignement',()=>({type:'atk_saignement',chance:ri(30,60),pctpv:ri(3,6),reducsoin:ri(30,50),tours:ri(2,3)})],
    ['Attaque de base : gel',()=>({type:'atk_gel',chance:ri(25,50),annul:ri(30,50),stunch:ri(10,25),tours:2})],
    ['Attaque de base : enchaînement',()=>({type:'atk_enchainement',chance:ri(30,50),max:3})]
-  ];
+  ]}
+ function effetAlea(o,x){const POOL=poolAlea(o,x);
   const[lab,mk]=POOL[Math.floor(r()*POOL.length)],e=mk();
   L('statut',`Effet aléatoire de ${nom(o)} : ${lab} !`,{c:id(o),k:'alea'});
   fx(e,o,x,false)}
+ // Passifs tirables au hasard (Programmation sans liste), valeurs adaptées aux cartes
+ function poolPassifs(o,x){
+  const ri=(a,b)=>a+Math.floor(r()*(b-a+1)),pv=(b,a,z)=>Math.max(1,rd(b*ri(a,z)/100));
+  return [
+   ['Esquive',()=>({type:'esquive',chance:ri(15,30)})],
+   ['Vol de vie',()=>({type:'vol_pct_atq',chance:ri(40,70),pctatq:ri(20,40)})],
+   ['Brûlure',()=>({type:'brulure',chance:ri(30,50),pctpv:ri(3,6),tours:ri(2,3)})],
+   ['Poison',()=>({type:'poison',chance:ri(30,50),degtour:pv(x.max,3,6),tours:ri(2,3)})],
+   ['Saignement',()=>({type:'saignement',chance:ri(30,50),pctpv:ri(3,5),reducsoin:ri(30,50),tours:ri(2,3)})],
+   ['Malédiction',()=>({type:'malediction',chance:ri(30,50),val:pv(o.atq,8,15),tours:ri(2,3)})],
+   ['Étourdissement',()=>({type:'etourdir',chance:ri(15,30),tours:1})],
+   ['Multi-frappe',()=>({type:'multi_frappe',chance:ri(30,50),frappes:2})],
+   ['Enchaînement',()=>({type:'enchainement',chance:ri(30,50),max:3})],
+   ['Réduction de dégâts',()=>({type:'reduc_degats',chance:ri(30,50),val:ri(20,40),u:'pct'})],
+   ['Renvoi de dégâts',()=>({type:'renvoi',val:ri(15,30),u:'pct'})],
+   ['Régénération',()=>({type:'soin_tour',val:ri(3,7),u:'pct'})],
+   ['ATQ qui monte',()=>({type:'atq_tours',val:ri(10,20),u:'pct',tours:2})],
+   ['Détonation',()=>({type:'detonation',chance:ri(20,40)})]
+  ]}
  function geler(d,ann,sn,t){d.st.frost.push({ann,sn,t});L('statut',`${nom(d)} est gelé (${ann} % d'attaque annulée, ${sn} % d'être étourdi, ${t} tour${t>1?'s':''}) !`,{c:id(d),k:'gel'})}
  function fracturer(d,fc,dg,t){if(d.st.solide>0){d.st.solide=0;L('statut',`La solidification de ${nom(d)} se brise !`,{c:id(d),k:'solide_brise'})}d.st.fract.push({fc,dg,t});L('statut',`${nom(d)} est fracturé (${fc} % de se blesser en attaquant, −${dg} PV, ${t} tour${t>1?'s':''}) !`,{c:id(d),k:'fracture'})}
 // Purification : retire les statuts négatifs de t (sauf l'étourdissement) et lui rend l'ATQ perdu par malédiction
@@ -692,8 +712,10 @@ function simuler(pA,pB,opt={}){
   const lst=x=>!x?[]:x.briques?x.briques.filter(b=>b&&b.type):(x.type?[x]:[]),lib=q=>q.lib||String(q.type).replace(/_/g,' ');
   const N=Math.max(0,parseInt(p.nbpassif,10)||0),passive=P.n<N||roll(50);P.n++;
   if(passive){const pool=[...normPas(p.passifs).map(q=>({k:'p',q})),...lst(p.ultimes).map(q=>({k:'u',q}))];
-   if(!pool.length){L('statut',`${nom(s)} lance une programmation… mais n'a rien à programmer`,{c:id(s),k:'prog'});return}
-   const it=pool[Math.floor(r()*pool.length)];(it.k==='p'?P.dp:P.du).push(it.q);
+   let it;
+   if(pool.length)it=pool[Math.floor(r()*pool.length)];
+   else{const k=r()<.5?'p':'u',P0=k==='p'?poolPassifs(s,adv(s)):poolAlea(s,adv(s)),[lb,mk]=P0[Math.floor(r()*P0.length)];it={k,q:{...mk(),lib:lb}}}   /* sans liste : au hasard parmi tous les passifs / ultimes du jeu */
+   (it.k==='p'?P.dp:P.du).push(it.q);
    L('statut',`${nom(s)} se programme : ${it.k==='p'?'passif':'ultime'} « ${lib(it.q)} » (en attente)`,{c:id(s),k:'prog',quoi:it.k});return}
   L('statut',`${nom(s)} : PROGRAMMATION ACTIVE !`,{c:id(s),k:'prog_act'});
   if(P.dp.length){const n=P.dp.length;P.dp.forEach(q=>s.pl.push(q));P.dp=[];L('statut',`${n} passif${n>1?'s':''} programmé${n>1?'s':''} de ${nom(s)} ${n>1?"s'activent":"s'active"}`,{c:id(s),k:'prog_on'})}

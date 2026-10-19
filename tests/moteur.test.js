@@ -397,6 +397,14 @@ test('déclencheurs : ultime sur événement ou sous X % de PV, nouvelles condit
   assert.ok(i4 > 0 && r4.journal.slice(0, i4).some(e => e.t === 'esquive' && e.c === 0));
 });
 
+test('programmation sans liste : tire au hasard parmi tous les passifs et ultimes du jeu', () => {
+  const r = combat([C('Robot', 20, SOLIDE, { passif: { type: 'programmation', chance: 100, nbpassif: 3 } })], [C('b', 20, SOLIDE)], { regles: { maxTours: 8, maxProlong: 0 } });
+  const P = r.journal.filter(e => e.k === 'prog');
+  assert.ok(P.length >= 3, 'des programmations ont lieu');
+  assert.ok(P.every(e => !/rien à programmer/.test(e.txt)), 'toujours quelque chose à programmer');
+  assert.ok(P.every(e => /« .+ »/.test(e.txt)), 'avec un nom lisible');
+});
+
 test('solidification : bloque l\'étourdissement, une fracture la brise, la purification ne la retire pas', () => {
   const etourdit = { type: 'etourdir', chance: 100 };
   // magie : solidifié 3 tours, l'adversaire étourdit à chaque coup → aucun étourdissement
