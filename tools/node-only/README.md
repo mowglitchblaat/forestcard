@@ -15,9 +15,7 @@ Crée les liens `node_modules/@forestcard/{engine,journal,describe}` vers `packa
 ```bash
 # Les tests de règles de l'auteur, contre le moteur TS (55 tests ; « les 3 copies » est ignoré)
 node --test tools/node-only/rules.test.ts
-
 ```
-
 
 ## Ce que `node` seul ne fait pas
 
