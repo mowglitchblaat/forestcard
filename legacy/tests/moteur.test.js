@@ -200,12 +200,19 @@ test('souffle élémentaire : dégâts puis le statut choisi (chaque élément)'
 });
 
 test('exécution : 3 marques puis exécutée sous le seuil, même avec « évite la mort », réanimation possible', () => {
-  // seuil 1 % (10 PV sur 1000) : à 50 PV le coup suivant est mortel → évite la mort (1 PV) → exécutée quand même
+  // seuil 1 % (10 PV sur 1000) : à 50 PV le coup suivant est mortel → c'est ce coup qui exécute : « évite la mort » ne se déclenche pas
   const r = combat([C('a', 95, SOLIDE, { passif: { type: 'execution', chance: 100, seuilexec: 1 } })], [C('b', 1, 1000, { passif: { type: 'evite_mort' } })], { regles: { maxTours: 30, maxProlong: 0 } });
   const k = r.journal.filter(e => ['marque', 'protege', 'execution'].includes(e.k) || e.t === 'protege').map(e => e.k || e.t);
   assert.deepEqual(k.slice(0, 3), ['marque', 'marque', 'marque'], '3 marques au maximum');
   assert.equal(r.journal.filter(e => e.k === 'marque').length, 3);
-  assert.ok(k.indexOf('protege') > 2 && k.indexOf('execution') > k.indexOf('protege'), 'évite la mort puis exécutée');
+  assert.ok(k.indexOf('execution') > 2, 'exécutée');
+  assert.equal(k.indexOf('protege'), -1, 'la 3e marque arrive avec le coup : « évite la mort » ne se déclenche pas');
+  const iX = r.journal.findIndex(e => e.k === 'execution');
+  assert.equal(r.journal[iX - 1].t, 'attaque', 'l\'exécution EST le coup : rien ne passe entre l\'attaque et l\'exécution (ni soin, ni évite la mort)');
+  // la 3e marque posée par le coup mortel exécute tout de suite
+  const r3 = combat([C('a', 600, SOLIDE, { passif: { type: 'execution', chance: 100, seuilexec: 10 } })], [C('b', 1, 1000, { passif: { briques: [{ type: 'evite_mort' }, { type: 'soin_tour', val: 50, u: 'pct' }] } })], { regles: { maxTours: 30, maxProlong: 0 } });
+  const k3 = r3.journal.filter(e => ['marque', 'execution'].includes(e.k) || e.t === 'protege').map(e => e.k || e.t);
+  assert.ok(!k3.includes('protege'));assert.deepEqual(k3.slice(0, 4), ['marque', 'marque', 'marque', 'execution'], '3 marques puis exécution, sans jamais passer par « évite la mort »');
   assert.equal(r.gagnant, 0);
   // ultime / piège : marques posées directement ; la réanimation marche encore après une exécution
   const r2 = combat([C('a', 95, SOLIDE), MAG('Sentence', { type: 'execution_direct', nbmarques: 3 })], [C('b', 1, 1000, { passif: { type: 'reanimation', pctrev: 50 } })], { regles: { maxTours: 30, maxProlong: 0 } });

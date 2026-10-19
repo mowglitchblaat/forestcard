@@ -17,7 +17,8 @@
           "Ultimes : nouveaux déclencheurs (sous X % de PV, adversaire sous X % de PV, toutes les X attaques reçues ou faites, gros coup reçu, statut reçu, esquive, blocage, soin, piège qui se déclenche, ultime adverse). « Quand une carte s'active » ne part plus au 1er tour à cause de la magie du début de combat : seul un piège (ou une magie qui revient) le déclenche.",
           "Pièges : nouvelles conditions (le propriétaire ou l'adversaire reçoit un statut ou esquive, le propriétaire a attaqué X fois, subit un gros coup, bloque une attaque ou lance son ultime, le piège adverse se déclenche, au tour X du combat).",
           "Programmation simplifiée : chaque programmation tire au hasard un passif ou un ultime parmi tous ceux du jeu (valeurs adaptées à la carte), plus besoin de liste.",
-          "Correction : une magie détruite au début du combat par la magie adverse (jouée avant elle) ne se joue plus."
+          "Correction : une magie détruite au début du combat par la magie adverse (jouée avant elle) ne se joue plus.",
+          "Exécution : la marque se pose avec le coup, avant ses dégâts. Si ce coup laisse la cible sous le seuil avec 3 marques, c'est lui qui l'exécute : « évite la mort » ne se déclenche plus et aucun soin ne passe avant (la réanimation reste possible)."
         ]
       },
       {

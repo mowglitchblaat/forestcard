@@ -607,9 +607,10 @@ function simuler(pA,pB,opt={}){
    let n=Math.max(0,a.atq*(a.st.dbl>0?2:1)+a.st.bonus+a.st.rage.reduce((q,g)=>q+g.n,0));a.st.bonus=0;   // rage : dégâts en plus · fatigue : dégâts en moins
    let bloquee=blq;if(blq){n=0;L('bloque',`L'attaque de ${nom(a)} est bloquée`,{c:idd})}
    else d.pl.filter(p=>p.type==='reduc_degats').forEach(p=>{if(roll(p.chance)){L('bloque',`${nom(d)} bloque une partie des dégâts`,{c:idd});n=Math.max(0,n-amt(p,n));if(n<=0)bloquee=true}});   // tout absorbé = attaque bloquée
-   d.rt++;n=dmg(a,d,n);L('degats',`${nom(d)} subit ${n} dégâts`,{c:idd,n});
-   for(const q of [...a.pl,...a.st.atkfx])if(q.type==='execution'&&d.pv>0&&roll(q.chance==null||q.chance===''?100:+q.chance))marquer(d,1,q.seuilexec);   // Exécution : X % de poser une marque à chaque coup
-   if(d.pv>0&&d.st.marques>=3&&d.pv<d.max*(d.st.mseuil||10)/100)executer(a,d);   // 3 marques et sous le seuil : exécutée (ignore « évite la mort »)
+   d.rt++;
+   for(const q of [...a.pl,...a.st.atkfx])if(q.type==='execution'&&d.pv>0&&roll(q.chance==null||q.chance===''?100:+q.chance))marquer(d,1,q.seuilexec);   // Exécution : la marque se pose AVEC le coup, avant ses dégâts
+   if(d.pv>0&&d.st.marques>=3&&d.pv-n<d.max*(d.st.mseuil||10)/100)n=executer(a,d);   // 3 marques et le coup la laisse sous le seuil : ce coup EST l'exécution (« évite la mort » ne joue pas, aucun soin ne passe avant)
+   else{n=dmg(a,d,n);L('degats',`${nom(d)} subit ${n} dégâts`,{c:idd,n})}
    if(a.st.transc&&d.pv>0){const z=d.st;if(z.dots.length||z.curses.length||z.bleeds.length||z.frost.length||z.fract.length||z.fat.length||z.skip>0||z.blk>0||z.cl>0)purifier(d)}   // Transcendance : chaque coup qui touche purifie l'adversaire
    d.pl.filter(p=>p.type==='renvoi').forEach(p=>{if(n>0){const b=dmg(d,a,amt(p,n));L('degats',`${nom(a)} subit ${b} dégâts renvoyés`,{c:ia,n:b,k:'renvoi',from:idd})}});
    d.st.ren.forEach(R=>{const b=dmg(d,a,n*R.pct/100);if(b>0)L('degats',`${nom(a)} subit ${b} dégâts renvoyés`,{c:ia,n:b,k:'renvoi',from:idd})});
@@ -644,7 +645,7 @@ function simuler(pA,pB,opt={}){
  //   même si elle devait éviter la mort. La réanimation reste possible. Les marques ne se purgent pas ; elles disparaissent quand la carte meurt.
  function marquer(d,n,seuil){if(d.pv<=0)return;const s=parseInt(seuil,10);if(Number.isFinite(s)&&s>0)d.st.mseuil=Math.max(d.st.mseuil,s);
   for(let k=0;k<n&&d.st.marques<3;k++){d.st.marques++;L('statut',`${nom(d)} reçoit une marque d'exécution (${d.st.marques}/3)`,{c:id(d),k:'marque',n:d.st.marques})}}
- function executer(a,d){L('statut',`${nom(d)} est EXÉCUTÉ !`,{c:id(d),k:'execution'});EXEC=1;const n=dmg(a,d,d.pv);EXEC=0;d.st.marques=0;L('degats',`${nom(d)} subit ${n} dégâts (exécution)`,{c:id(d),n,k:'execution'})}
+ function executer(a,d){L('statut',`${nom(d)} est EXÉCUTÉ !`,{c:id(d),k:'execution'});EXEC=1;const n=dmg(a,d,d.pv);EXEC=0;d.st.marques=0;L('degats',`${nom(d)} subit ${n} dégâts (exécution)`,{c:id(d),n,k:'execution'});return n}
  // AVALAGE : 🍴 fourchette à la 1re attaque réussie, 🔪 couteau à la 2e, puis à la 3e attaque réussie la carte tente d'avaler sa cible.
  //   Il faut des PV actuels ≥ ratio × l'ATQ de la cible (3 par défaut), sinon les marques tombent. Une fois avalée, la cible est mâchée à chaque tour de la carte
  //   qui avale (X % de ses PV max ou actuels), X fois (3), puis recrachée ; la carte qui avale digère ensuite X tours sans attaquer. Pendant l'avalage, aucune des deux n'attaque

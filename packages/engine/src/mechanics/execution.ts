@@ -1,5 +1,5 @@
-// Execution: marks on the target (3 max). With 3 marks, an attack leaving it under X % of its max HP
-// (10 % by default) executes it, even if it should avoid death. Revive stays possible. Marks are not
+// Execution: marks on the target (3 max), placed with the hit, before its damage. With 3 marks, a hit
+// that would leave it under X % of its max HP (10 % by default) is the execution, even if it should avoid death. Revive stays possible. Marks are not
 // purged; they disappear when the card dies.
 
 import type { Attack } from '../combat/attack.ts';
@@ -29,16 +29,24 @@ export function mark(c: Combat, d: Side, n: number, threshold: Num): void {
   }
 }
 
-export function execute(c: Combat, a: Side, d: Side): void {
+export function execute(c: Combat, a: Side, d: Side): number {
   emit(c, { type: 'executed', side: id(c, d) });
   c.executing = 1;
   const n = damage(c, a, d, d.hp);
   c.executing = 0;
   d.status.executionMarks = 0;
   emit(c, { type: 'damaged', side: id(c, d), amount: n, cause: 'execution' });
+  return n;
 }
 
-// Execution: X % to place a mark on every hit.
+// 3 marks and this hit would leave the target under the threshold: the hit IS the execution
+// (avoid-death never triggers, no heal comes in between). Revive stays possible.
+export const executesNow = (d: Side, n: number): boolean =>
+  d.hp > 0 &&
+  d.status.executionMarks >= 3 &&
+  d.hp - n < (d.maxHp * (d.status.executionThreshold || 10)) / 100;
+
+// Execution: X % to place a mark on every hit, with the hit, before its damage.
 export function executionMarks(c: Combat, { a, d }: Attack): StrikeFlow {
   for (const q of [...a.passives, ...a.status.attackEffects])
     if (
@@ -47,17 +55,6 @@ export function executionMarks(c: Combat, { a, d }: Attack): StrikeFlow {
       roll(c, q.chance == null || q.chance === '' ? 100 : +q.chance)
     )
       mark(c, d, 1, q.seuilexec);
-  return undefined;
-}
-
-// 3 marks and below the threshold: executed (ignores avoid-death).
-export function executed(c: Combat, { a, d }: Attack): StrikeFlow {
-  if (
-    d.hp > 0 &&
-    d.status.executionMarks >= 3 &&
-    d.hp < (d.maxHp * (d.status.executionThreshold || 10)) / 100
-  )
-    execute(c, a, d);
   return undefined;
 }
 

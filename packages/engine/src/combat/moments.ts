@@ -26,7 +26,7 @@ import { counterAtStart } from '../mechanics/counter.ts';
 import { detonationOnHit } from '../mechanics/detonation.ts';
 import { delayedDamages } from '../mechanics/direct-damage.ts';
 import { dodge } from '../mechanics/dodge.ts';
-import { executed, executionMarks } from '../mechanics/execution.ts';
+import { executionMarks } from '../mechanics/execution.ts';
 import { doubleDamageEnd } from '../mechanics/double-damage.ts';
 import { lifeStealOnHit } from '../mechanics/life-steal.ts';
 import { reflected, reflectsEnd } from '../mechanics/reflect.ts';
@@ -99,9 +99,8 @@ const STRIKE: StrikeStep[] = [
   swallowAttempt, // third successful attack: swallowing replaces the damage
   strikePower,
   blockOrReduce,
-  hit,
-  executionMarks,
-  executed, // after the marks of this hit
+  executionMarks, // the mark comes with the hit, before its damage
+  hit, // with 3 marks and a hit leaving the target under the threshold, the hit is the execution
   transcendencePurifies,
   reflected,
 ];

@@ -7,6 +7,7 @@ import { countHit, useCounterBonus } from '../mechanics/counter.ts';
 import { curseOnHit } from '../mechanics/curse.ts';
 import { burnOnHit, poisonOnHit } from '../mechanics/dot.ts';
 import { damageFactor } from '../mechanics/double-damage.ts';
+import { execute, executesNow } from '../mechanics/execution.ts';
 import { fatigueOnHit } from '../mechanics/fatigue.ts';
 import { fractureOnHit } from '../mechanics/fracture.ts';
 import { frostOnHit } from '../mechanics/frost.ts';
@@ -56,6 +57,10 @@ export function strikePower(_c: Combat, { a, blocked }: Attack, st: Strike): Str
 
 export function hit(c: Combat, { a, d, idd }: Attack, st: Strike): StrikeFlow {
   countHit(d);
+  if (executesNow(d, st.n)) {
+    st.n = execute(c, a, d); // the hit is the execution (mechanics/execution.ts)
+    return undefined;
+  }
   st.n = damage(c, a, d, st.n);
   emit(c, { type: 'damaged', side: idd, amount: st.n, cause: 'attack' });
   return undefined;
