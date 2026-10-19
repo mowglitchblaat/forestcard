@@ -376,19 +376,20 @@ let deck=null,typeOf={},flt='tout',fcol='tout',collData=[],savedDecks=[],decksOK
 async function loadDecks(){const r=await sb.rpc('mes_decks');if(r.error){decksOK=false;savedDecks=[];return}decksOK=true;savedDecks=r.data||[]}
 const cn=x=>x.variantes_carte.cartes.collections?.nom||'Communes';
 const TYPES={combattant:'Combattants',magie:'Magies',piege:'Pièges'};
-let apercu=false;   // admin : voir toutes les cartes du jeu (rien n'est donné)
+let apercu=false,ownQ={},ALLCOLS=null;   // ALLCOLS : collections des cartes publiées (filtres stables, avec ou sans aperçu)   // admin : voir toutes les cartes du jeu (rien n'est donné)
 async function chargerApercu(){
   const sel=c=>sb.from('variantes_carte').select('id,nom,image_path,cartes(id,nom,type,'+c+'collections(nom),raretes(nom,couleur,poids))');
-  let r=await sel('atq,pv,description,passif,ultime,effet,');if(r.error)r=await sel('');
+  let r=await sel('actif,atq,pv,description,passif,ultime,effet,');if(r.error)r=await sel('atq,pv,description,passif,ultime,effet,');if(r.error)r=await sel('');
   if(r.error){uiAlert(r.error.message);throw r.error}
-  return r.data.filter(v=>v.cartes&&v.cartes.raretes).map(v=>({quantite:0,apercu:true,variantes_carte:v}));
+  return r.data.filter(v=>v.cartes&&v.cartes.raretes&&v.cartes.actif!==false).map(v=>({quantite:ownQ[v.id]||0,apercu:true,variantes_carte:v}));   // aperçu : toutes les cartes, avec ce que l'admin possède vraiment
 }
 async function loadColl(){
+  if(!ALLCOLS){try{const r=await sb.from('cartes').select('collections(nom)').eq('actif',true);if(!r.error&&r.data)ALLCOLS=[...new Set(r.data.map(c=>(c.collections&&c.collections.nom)||'Communes'))]}catch(e){}}
   if(apercu&&isAdmin){collData=await chargerApercu();collData.sort(cmpColl);typeOf={};collData.forEach(x=>{const c=x.variantes_carte.cartes;typeOf[c.id]=c.type});if(!deck){const dk=await q(sb.from('deck').select('carte_id').eq('joueur_id',user.id));deck=new Set(dk.map(x=>x.carte_id))}return}
   let r=await sb.from('collection_joueur').select('quantite,variantes_carte(id,nom,image_path,cartes(id,nom,type,atq,pv,description,passif,ultime,effet,collections(nom),raretes(nom,couleur,poids)))').eq('joueur_id',user.id);
   if(r.error)r=await sb.from('collection_joueur').select('quantite,variantes_carte(id,nom,image_path,cartes(id,nom,type,collections(nom),raretes(nom,couleur,poids)))').eq('joueur_id',user.id);
   if(r.error){uiAlert(r.error.message);throw r.error}
-  collData=(r.data||[]).filter(x=>x&&x.variantes_carte&&x.variantes_carte.cartes);   // une carte devenue invisible pour le joueur (désactivée, supprimée…) arrive vide : on l'ignore au lieu de bloquer la page
+  collData=(r.data||[]).filter(x=>x&&x.variantes_carte&&x.variantes_carte.cartes);ownQ={};collData.forEach(x=>{ownQ[x.variantes_carte.id]=(ownQ[x.variantes_carte.id]||0)+(x.quantite||0)});   // une carte devenue invisible pour le joueur (désactivée, supprimée…) arrive vide : on l'ignore au lieu de bloquer la page
   if(collData.length<(r.data||[]).length)console.warn('Collection : '+((r.data||[]).length-collData.length)+' carte(s) illisible(s) ignorée(s)');
   collData.sort(cmpColl);   // légendaire en premier, puis épique, rare, commun
   typeOf={};collData.forEach(x=>{const c=x.variantes_carte.cartes;typeOf[c.id]=c.type});
@@ -593,7 +594,7 @@ const TYPE_L={combattant:['⚔️','Combattant'],magie:['✨','Magie'],piege:['�
 function cardHTML(x,i){
   const v=x.variantes_carte,c=v.cartes,on=deck.has(c.id),col=c.raretes.couleur||'#888',L=lignesCarte(c);
     return `<div class="ct${on?' in':''}" data-t="${TIER(c.raretes)}" data-i="${i}" style="--g:${esc(col)};--tx:${txOn(col)};--i:${i}">
-   <div class="ci" data-open>${v.image_path?`<img loading="lazy" src="${img(v.image_path)}" alt="${esc(c.nom)}">`:`<div style="aspect-ratio:5/7;display:flex;align-items:center;justify-content:center;padding:10px;text-align:center;font-weight:700">${esc(c.nom)}</div>`}<span class="cq">${x.apercu?'Aperçu':'×'+x.quantite}</span>${on?'<span class="cd">✓ Deck</span>':''}</div>
+   <div class="ci" data-open>${v.image_path?`<img loading="lazy" src="${img(v.image_path)}" alt="${esc(c.nom)}">`:`<div style="aspect-ratio:5/7;display:flex;align-items:center;justify-content:center;padding:10px;text-align:center;font-weight:700">${esc(c.nom)}</div>`}<span class="cq">${x.apercu&&!x.quantite?'Aperçu':'×'+x.quantite}</span>${on?'<span class="cd">✓ Deck</span>':''}</div>
    <div class="cb">
     <div class="ch"><b class="cn">${esc(c.nom)}</b><span class="rp">${esc(c.raretes.nom)}</span></div>
     <div class="cm">${(TYPE_L[c.type]||['',''])[0]} ${esc((TYPE_L[c.type]||['',c.type])[1])} · ${esc(cn(x))}${v.nom?` · ${esc(v.nom)}`:''}</div>
@@ -624,7 +625,7 @@ function mdDraw(){
    <div class="cmi"><div class="fp"><div class="fi"><div class="tilt face">${v.image_path?`<img loading="lazy" src="${img(v.image_path)}" alt="${esc(c.nom)}">`:`<div style="aspect-ratio:5/7;display:flex;align-items:center;justify-content:center;font-weight:700;padding:14px;text-align:center">${esc(c.nom)}</div>`}<div class="ho"></div><div class="gl"></div></div><div class="bk" id="mbk">🌲<div class="gl"></div></div></div></div>
     <div class="flb"><button class="sec" id="mflip">🔄 Retourner la carte</button><small id="mdosn"></small></div></div>
    <div class="cmd"><h2>${esc(c.nom)}</h2>
-    <div class="pills"><span class="pl r">${esc(c.raretes.nom)}</span><span class="pl">${tl[0]} ${esc(tl[1])}</span><span class="pl">${esc(cn(x))}</span>${v.nom?`<span class="pl">${esc(v.nom)}</span>`:''}<span class="pl">${x.apercu?'Aperçu · non possédée':'Possédée ×'+x.quantite}</span></div>
+    <div class="pills"><span class="pl r">${esc(c.raretes.nom)}</span><span class="pl">${tl[0]} ${esc(tl[1])}</span><span class="pl">${esc(cn(x))}</span>${v.nom?`<span class="pl">${esc(v.nom)}</span>`:''}<span class="pl">${x.quantite?'Possédée ×'+x.quantite:'Aperçu · non possédée'}</span></div>
     ${c.type==='combattant'&&(c.atq!=null||c.pv!=null)?`<div class="sb"><div class="sbr"><span>⚔ ATQ</span><div class="sbar"><i style="width:${Math.min(100,Math.round(nz(c.atq)/mxA*100))}%"></i></div><b>${esc(c.atq??'?')}</b></div><div class="sbr"><span>❤ PV</span><div class="sbar"><i style="width:${Math.min(100,Math.round(nz(c.pv)/mxP*100))}%"></i></div><b>${esc(c.pv??'?')}</b></div></div>`:''}
     ${L.map(s=>`<div class="sec2"><h4>${s.ico} ${esc(s.t)}</h4>${s.meta?`<div class="trg">${esc(s.meta)}</div>`:''}<ul>${s.items.map(t=>`<li>${cz(esc(t))}</li>`).join('')}</ul></div>`).join('')||'<div class="sec2"><small>Cette carte n\'a pas d\'effet particulier.</small></div>'}
     ${c.description?`<div class="dsc">${esc(c.description)}</div>`:''}
@@ -664,7 +665,7 @@ async function progression(){
   const box=$('#prog');if(!box)return;
   const r=await sb.from('cartes').select('id,collections(nom),raretes(nom,couleur,poids)').eq('actif',true);
   if(r.error||!r.data||!r.data.length){box.innerHTML='';return}
-  const own=new Set();if(!apercu)collData.forEach(x=>{if(x.quantite>0)own.add(x.variantes_carte.cartes.id)});
+  const own=new Set();collData.forEach(x=>{if(x.quantite>0)own.add(x.variantes_carte.cartes.id)});
   const T=r.data,tot=T.length,moi=T.filter(c=>own.has(c.id)).length,pc=n=>tot?Math.round(100*n/tot):0;
   const C={};T.forEach(c=>{const k=(c.collections&&c.collections.nom)||'Communes',o=C[k]=C[k]||{n:0,m:0,r:{}};o.n++;const ok=own.has(c.id);if(ok)o.m++;
     const rn=(c.raretes&&c.raretes.nom)||'?',rr=o.r[rn]=o.r[rn]||{n:0,m:0,col:(c.raretes&&c.raretes.couleur)||'#aaa',p:+((c.raretes&&c.raretes.poids)||0)};rr.n++;if(ok)rr.m++});
@@ -679,7 +680,7 @@ function drawColl(){
   curView=drawColl;
   $('#flt').innerHTML=[['tout','Tout'],...Object.entries(TYPES)].map(([k,v])=>`<button class="${k==flt?'on':'sec'}" data-f="${k}">${v}</button>`).join('');
   $('#flt').querySelectorAll('button').forEach(b=>b.onclick=()=>{flt=b.dataset.f;drawColl()});
-  const names=[...new Set(collData.map(cn))].sort();
+  const names=[...new Set([...collData.map(cn),...(ALLCOLS||[])])].sort();   // toujours les mêmes filtres, avec ou sans aperçu
   $('#fcol').innerHTML=[['tout','Toutes les collections'],...names.map(n=>[n,n])].map(([k,v])=>`<button class="${k==fcol?'on':'sec'}" data-k="${esc(k)}">${esc(v)}</button>`).join('');
   $('#fcol').querySelectorAll('button').forEach(b=>b.onclick=()=>{fcol=b.dataset.k;drawColl()});voirActif($('#fcol'));
   const L=collData.filter(x=>(flt=='tout'||x.variantes_carte.cartes.type==flt)&&(fcol=='tout'||cn(x)==fcol));
