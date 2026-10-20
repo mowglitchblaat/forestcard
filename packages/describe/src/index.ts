@@ -104,6 +104,20 @@ const elementText = (el: string, v: number, e: Fx): string | undefined =>
     } as Record<string, string>
   )[el];
 
+// Programming text (the passive, and the effect that gives it).
+function programmingText(p: Fx): string {
+  // Bricks as stored, nulls included: a null brick throws, as on the legacy page.
+  const ls = (x: unknown): Fx[] =>
+    !x ? [] : (x as Fx).briques ? ((x as Fx).briques as Fx[]) : [x as Fx];
+  const it = [
+    ...ls(p.passifs).map((q) => q.lib || q.type),
+    ...ls(p.ultimes).map((q) => 'ultime ' + String((q.lib || q.type) as string)),
+  ];
+  const ch = isEmpty(p.chance) ? 50 : nz(p.chance);
+  const N = isEmpty(p.nbpassif) ? 2 : nz(p.nbpassif);
+  return `Programmation : à chaque tour, ${ch} % de chances de se programmer (les ${N} premières fois en passif, puis 50 % passif / 50 % actif). Passif : acquiert au hasard ${it.length ? (it as string[]).join(', ') : 'un passif ou un ultime parmi tous ceux du jeu'}, qui reste en attente. Actif : réveille les passifs programmés et lance tous les ultimes programmés`;
+}
+
 // ── Passives ──
 type PassiveContext = { c: number; t: number; v: number; T: number };
 const PASSIVE_TEXT: Record<PassiveType, (p: Fx, x: PassiveContext) => string> = {
@@ -113,18 +127,7 @@ const PASSIVE_TEXT: Record<PassiveType, (p: Fx, x: PassiveContext) => string> = 
     const cs = isEmpty(p.conso) ? 100 : nz(p.conso);
     return `${ch < 100 ? ch + ' % de chances, à chaque coup, de faire' : 'À chaque coup, fait'} DÉTONER la brûlure, le poison et le saignement de la cible : ${cs >= 100 ? 'tous leurs dégâts restants' : cs + ' % de leurs dégâts restants'} d'un coup, +${b} %${nz(p.val) ? ` et +${nz(p.val)} dégâts bruts` : ''}${nz(p.recul) ? ` (dégâts de zone : subit ${nz(p.recul)} % du souffle)` : ''} · statuts purgés · dégâts des statuts divisés par 2 contre une carte solidifiée · une carte tuée par l'explosion ne peut pas être réanimée`;
   },
-  programmation: (p) => {
-    // Bricks as stored, nulls included: a null brick throws, as on the legacy page.
-    const ls = (x: unknown): Fx[] =>
-      !x ? [] : (x as Fx).briques ? ((x as Fx).briques as Fx[]) : [x as Fx];
-    const it = [
-      ...ls(p.passifs).map((q) => q.lib || q.type),
-      ...ls(p.ultimes).map((q) => 'ultime ' + String((q.lib || q.type) as string)),
-    ];
-    const ch = isEmpty(p.chance) ? 50 : nz(p.chance);
-    const N = isEmpty(p.nbpassif) ? 2 : nz(p.nbpassif);
-    return `Programmation : à chaque tour, ${ch} % de chances de se programmer (les ${N} premières fois en passif, puis 50 % passif / 50 % actif). Passif : acquiert au hasard ${it.length ? (it as string[]).join(', ') : 'un passif ou un ultime parmi tous ceux du jeu'}, qui reste en attente. Actif : réveille les passifs programmés et lance tous les ultimes programmés`;
-  },
+  programmation: (p) => programmingText(p),
   evite_mort: () => 'Évite la mort une fois (reste à 1 PV, statuts négatifs retirés)',
   voler: (p) => volTx(p, true),
   reanimation: (p) => `Réanimation : revient avec ${nz(p.pctrev)} % de ses PV max (une fois)`,
@@ -299,6 +302,7 @@ const EFFECT_TEXT: Record<EffectType, (e: Fx, x: EffectContext) => string[]> = {
     ];
   },
   transcendance: (e) => [transcendenceText(e)],
+  programmation: (e) => [`Donne le passif ${programmingText(e)} (jusqu'à la fin du combat)`],
   solidification: (e, { T }) => {
     const ch = isEmpty(e.chance) ? 100 : nz(e.chance);
     return [

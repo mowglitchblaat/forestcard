@@ -432,6 +432,20 @@ test('programmation sans liste : tire au hasard parmi tous les passifs et ultime
   assert.ok(P.every(e => /« .+ »/.test(e.txt)), 'avec un nom lisible');
 });
 
+test('programmation en magie : donne le passif Programmation au combattant, une magie détruite le reprend', () => {
+  const opt = { regles: { maxTours: 8, maxProlong: 0 } };
+  const r = combat([C('Robot', 20, SOLIDE), MAG('Puce', { type: 'programmation', chance: 100, nbpassif: 3 })], [C('b', 20, SOLIDE)], opt);
+  const P = r.journal.filter(e => e.k === 'prog' && e.c === 0);
+  assert.ok(P.length >= 3, 'le combattant se programme grâce à la magie');
+  assert.ok(P.every(e => /« .+ »/.test(e.txt)), 'avec un nom lisible');
+  // magie détruite au début du combat : pas de programmation
+  for (const seed of [1, 2, 3, 4, 5, 6]) {
+    const d = combat([C('Robot', 20, SOLIDE), MAG('Puce', { type: 'programmation', chance: 100, nbpassif: 3 })], [C('b', 20, SOLIDE), MAG('Casse', { type: 'detruire', carte: 'magie' })], { seed, ...opt });
+    const m = d.journal.filter(e => e.t === 'magie').map(e => e.carte);
+    if (m[0] === 'Puce' && m.includes('Casse')) assert.equal(d.journal.filter(e => e.k === 'prog' && e.c === 0).length, 0, 'seed ' + seed + ' : magie détruite, plus de programmation');
+  }
+});
+
 test('une magie détruite par la magie adverse (jouée avant elle) ne se joue pas', () => {
   for (const seed of [1, 2, 3, 4, 5, 6]) {
     const r = combat([C('a', 5, 500), MAG('Casse', { type: 'detruire', carte: 'magie' })], [C('b', 5, 500), MAG('Soin', { type: 'pv_mod', cible: 'soi', val: 50, u: 'pts' })], { seed, regles: { maxTours: 1, maxProlong: 0 } });

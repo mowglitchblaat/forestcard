@@ -7,11 +7,17 @@
 //   - Active: the programmed passives wake up (for good), and ALL the programmed ultimates (older
 //     ones included) are launched.
 // An avoid-death or a revive already used does not come back.
+//
+// Effect programmation (a magic's or a trap's): the card playing it gains the programming passive
+// for the rest of the combat, with the effect's settings (`chance`, 50 by default; `nbpassif`, 2 by
+// default, as the admin form fills the passive). A magic that goes (cancelled, destroyed, stolen)
+// takes the passive back; what was already programmed stays.
 
 import type { EffectData } from '../model/card.ts';
 import { emit, id, opponent, over, roll, type Combat } from '../combat/combat.ts';
 import { applyEffect } from '../combat/effects.ts';
 import { normalizePassives, type Side } from '../combat/state.ts';
+import type { EffectContext, EffectRules } from '../combat/effect-context.ts';
 import type { Flow } from '../combat/flow.ts';
 import { scan } from '../combat/traps.ts';
 import type { ProgrammedDraw } from '../events.ts';
@@ -126,3 +132,27 @@ export function programmingAtStart(c: Combat, s: Side): Flow {
     });
   return undefined;
 }
+
+// Effect programmation: gives the programming passive to the card playing it.
+export function programmingEffect({ e, o, fromMagic }: EffectContext): void {
+  const empty = (v: unknown) => v == null || v === '';
+  const passive: EffectData = {
+    ...e,
+    type: 'programmation',
+    chance: empty(e.chance) ? 50 : e.chance,
+    nbpassif: empty(e.nbpassif) ? 2 : e.nbpassif,
+  };
+  o.passives.push(passive);
+  if (fromMagic)
+    o.magicDeltas.push({
+      undo: () => {
+        const i = o.passives.indexOf(passive);
+        if (i >= 0) o.passives.splice(i, 1);
+      },
+    });
+}
+
+// Its effects (the registry of effects.ts).
+export const effects = {
+  programmation: { run: programmingEffect },
+} satisfies EffectRules;

@@ -24,6 +24,7 @@ import { effects as frost } from '../mechanics/frost.ts';
 import { effects as healing } from '../mechanics/healing.ts';
 import { effects as lifeSteal } from '../mechanics/life-steal.ts';
 import { effects as magicCancel } from '../mechanics/magic-cancel.ts';
+import { effects as programming } from '../mechanics/programming.ts';
 import { effects as purification } from '../mechanics/purification.ts';
 import { effects as rage } from '../mechanics/rage.ts';
 import { effects as random } from '../mechanics/random.ts';
@@ -69,6 +70,7 @@ export const rules = (): Record<EffectType, EffectRule> =>
     ...healing,
     ...lifeSteal,
     ...magicCancel,
+    ...programming,
     ...purification,
     ...rage,
     ...random,

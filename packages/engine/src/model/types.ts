@@ -62,6 +62,7 @@ export const EFFECT_TYPES = [
   'bloque_attaque',
   'missiles',
   'atk_detonation',
+  'programmation',
 ] as const;
 export type EffectType = (typeof EFFECT_TYPES)[number];
 

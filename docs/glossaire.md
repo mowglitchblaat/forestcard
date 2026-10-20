@@ -94,6 +94,7 @@ Clés de `EFFECT_TYPES`, exécutées par `applyEffect` (`packages/engine/src/com
 | `execution` | l'attaque peut poser des marques d'exécution | `execution.ts` |
 | `execution_direct` | pose X marques d'exécution | `execution.ts` |
 | `transcendance` | trois niveaux, aux tours X, 2X, 3X : purifiée, ATQ et PV max en hausse, vol de vie | `transcendence.ts` |
+| `programmation` | donne le passif `programmation` à la carte qui la joue jusqu'à la fin du combat (`chance` 50 et `nbpassif` 2 par défaut, tirage parmi tous les passifs et ultimes du jeu) ; une magie qui part (annulée, détruite, volée) reprend le passif, ce qui est déjà programmé reste | `programming.ts` |
 | `atk_avalage` | l'attaque peut préparer un avalage | `swallow.ts` |
 | `marque_avalage` | pose la fourchette (et le couteau) d'avalage | `swallow.ts` |
 | `vol_ultime` | vole l'ultime adverse | `ultimates.ts` |

@@ -63,6 +63,7 @@ export const EDITOR_FIELDS = {
   u: ['Unité', ['pct', 'pts']],
   tours: ['Nb de tours', 'n'],
   chance: ['Chance (%)', 'n'],
+  nbpassif: ["Programmation : nombre de programmations passives d'abord (2 par défaut)", 'n'],
   frappes: ['Nb de frappes', 'n'],
   coups: ['Nb de coups', 'n'],
   seuildeg: ['Dégâts min en un coup', 'n'],
@@ -584,6 +585,11 @@ export const EDITOR_MAGICS: { readonly [K in EffectType]?: EditorEntry } = {
     "Solidification : X % de chances de se solidifier pendant X tours de l'adversaire (insensible à l'étourdissement, ne se purge pas, brisée par une fracture)",
     'chance',
     'tours',
+  ],
+  programmation: [
+    "⚙️ Programmation (collection mécanique) : donne le passif Programmation à son combattant jusqu'à la fin du combat (à chaque tour, X % de chances de se programmer, 50 par défaut ; les N premières fois en passif). Tirage parmi tous les passifs et ultimes du jeu",
+    'chance',
+    'nbpassif',
   ],
   transcendance: [
     "Transcendance : au début de ses X-ième, 2X-ième et 3X-ième tours (X = 4 par défaut), avant son attaque, monte d'un niveau (3 niveaux) jusqu'à la fin du combat. À chaque niveau : purifiée (étourdissement compris), ATQ +X % et PV max +X % (15 % par défaut). Dès le niveau I, chaque attaque qui touche purifie l'adversaire et vole de la vie (10 / 20 / 30 % des dégâts par défaut)",
