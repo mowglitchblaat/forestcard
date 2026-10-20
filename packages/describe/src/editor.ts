@@ -54,6 +54,11 @@ export const EDITOR_FIELDS = {
   ],
   seuilexec: ["Seuil d'exécution : % des PV max (10 par défaut)", 'n'],
   nbmarques: ['Nombre de marques posées (3 = exécutable tout de suite)', 'n'],
+  statmarque: [
+    'Statut marquant : les dégâts de ce statut sur la carte marquée peuvent poser une marque (aucun = désactivé)',
+    ['aucun', 'saignement', 'brulure', 'poison', 'tous'],
+  ],
+  chancemarque: ['Statut marquant : chance (%) de poser une marque à chaque dégât du statut', 'n'],
   ppv: ['% de PV max en plus (15 par défaut)', 'n'],
   u: ['Unité', ['pct', 'pts']],
   tours: ['Nb de tours', 'n'],
@@ -210,6 +215,8 @@ export const EDITOR_PASSIVES: Record<PassiveType, EditorEntry> = {
     "Exécution : à chaque coup, X % de chances de marquer la cible. À 3 marques, une attaque qui la laisse sous X % de ses PV max l'exécute (même si elle devait éviter la mort ; la réanimation reste possible)",
     'chance',
     'seuilexec',
+    'statmarque',
+    'chancemarque',
   ],
   avalage: [
     "Avalage : à chaque attaque réussie, X % de chances de poser \u{1F374} puis \u{1F52A} ; à la 3e attaque réussie, avale la cible si ses PV actuels \u{2265} X × l'ATQ de la cible (sinon les marques tombent). Avalée : mâchée à chaque tour (X % de ses PV), X fois, puis recrachée ; la carte digère ensuite X tours. Pendant l'avalage personne n'attaque et tout ce qui visait la carte avalée la touche. Statuts négatifs de la cible : transmis ×1,5, une seule mâche",
@@ -345,6 +352,8 @@ export const EDITOR_ULTIMATES: { readonly [K in EffectType]?: EditorEntry } = {
     "Exécution : à chaque coup, X % de chances de marquer la cible. À 3 marques, une attaque qui la laisse sous X % de ses PV max l'exécute (même si elle devait éviter la mort ; la réanimation reste possible)",
     'chance',
     'seuilexec',
+    'statmarque',
+    'chancemarque',
   ],
   missiles: [
     "Missiles : tire X missiles ; chacun EXPLOSE : X dégâts bruts + fait détoner la brûlure, le poison et le saignement de la cible (X % de leurs dégâts restants, + bonus %), puis peut poser un statut que le missile suivant fera exploser. Une carte tuée par l'explosion ne se réanime pas",
@@ -387,6 +396,8 @@ export const EDITOR_ULTIMATES: { readonly [K in EffectType]?: EditorEntry } = {
     "Exécution : pose directement X marques sur l'adversaire. À 3 marques, une attaque qui le laisse sous X % de ses PV max l'exécute (même s'il devait éviter la mort ; la réanimation reste possible)",
     'nbmarques',
     'seuilexec',
+    'statmarque',
+    'chancemarque',
   ],
 };
 
@@ -587,6 +598,8 @@ export const EDITOR_MAGICS: { readonly [K in EffectType]?: EditorEntry } = {
     "Exécution : à chaque coup, X % de chances de marquer la cible. À 3 marques, une attaque qui la laisse sous X % de ses PV max l'exécute (même si elle devait éviter la mort ; la réanimation reste possible)",
     'chance',
     'seuilexec',
+    'statmarque',
+    'chancemarque',
   ],
   missiles: [
     "Missiles : tire X missiles ; chacun EXPLOSE : X dégâts bruts + fait détoner la brûlure, le poison et le saignement de la cible (X % de leurs dégâts restants, + bonus %), puis peut poser un statut que le missile suivant fera exploser. Une carte tuée par l'explosion ne se réanime pas",

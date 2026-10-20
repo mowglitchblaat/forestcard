@@ -11,6 +11,7 @@ import type { EffectContext, EffectRules } from '../combat/effect-context.ts';
 import type { Flow } from '../combat/flow.ts';
 import type { Side } from '../combat/state.ts';
 import type { EffectData } from '../model/card.ts';
+import { statusDamageMarks } from './execution.ts';
 
 // kind is the legacy label, printed as is in the journal: 'poison' or 'brûlure'.
 export type DamageOverTime = { kind: string; amount: number; turns: number };
@@ -54,6 +55,7 @@ export function tickDot(c: Combat, s: Side, dot: DamageOverTime): void {
     amount: n,
     cause: dot.kind === 'poison' ? 'poison' : 'burn',
   });
+  statusDamageMarks(c, s, dot.kind === 'poison' ? 'poison' : 'brulure');
   if (!s.status.dots.includes(dot) || s.hp <= 0) return; // purified or dead during the tick: nothing more
   if (--dot.turns > 0) return;
   s.status.dots = s.status.dots.filter((z) => z !== dot);

@@ -70,8 +70,20 @@ const avTxt = (q: Fx) => {
 
 // The execution effect or passive itself (the page read an undefined `X` here until upstream
 // 078e524, the same fix as phase 4b).
+// Marking status (`statmarque`, `chancemarque`): the status damage that places more marks.
+const MARKING_NAMES: Record<string, string> = {
+  saignement: 'de saignement',
+  brulure: 'de brûlure',
+  poison: 'de poison',
+  tous: 'de brûlure, de poison ou de saignement',
+};
+const markingText = (e: Fx) =>
+  nz(e.chancemarque) > 0 && typeof e.statmarque === 'string' && MARKING_NAMES[e.statmarque]
+    ? `. Une fois marquée, chaque dégât ${MARKING_NAMES[e.statmarque]} qu'elle subit a ${nz(e.chancemarque)} % de chances de poser une marque, jusqu'à la fin du combat`
+    : '';
+
 const executionText = (e: Fx) =>
-  `${e.chance == null || e.chance === '' || +(e.chance as number) >= 100 ? 'Marque la cible à chaque coup' : `À chaque coup, ${nz(e.chance)} % de chances de marquer la cible`}. À 3 marques, une attaque qui la laisse sous ${nz(e.seuilexec) || 10} % de ses PV max l'exécute (ignore « évite la mort »)`;
+  `${e.chance == null || e.chance === '' || +(e.chance as number) >= 100 ? 'Marque la cible à chaque coup' : `À chaque coup, ${nz(e.chance)} % de chances de marquer la cible`}. À 3 marques, une attaque qui la laisse sous ${nz(e.seuilexec) || 10} % de ses PV max l'exécute (ignore « évite la mort »)${markingText(e)}`;
 
 const transcendenceText = (e: Fx) =>
   `Au début de ses tours ${nz(e.tours) || 4}, ${(nz(e.tours) || 4) * 2} et ${(nz(e.tours) || 4) * 3}, avant d'attaquer, monte d'un niveau (I, II, III) jusqu'à la fin du combat : à chaque niveau purifiée (étourdissement compris), ATQ +${isEmpty(e.patq) ? 15 : nz(e.patq)} %, PV max +${isEmpty(e.ppv) ? 15 : nz(e.ppv)} % ; ses attaques purifient l'adversaire et volent ${(['vv1', 'vv2', 'vv3'] as const).map((k, i) => (isEmpty(e[k]) ? [10, 20, 30][i] : nz(e[k]))).join(' / ')} % des dégâts selon le niveau`;
@@ -277,7 +289,7 @@ const EFFECT_TEXT: Record<EffectType, (e: Fx, x: EffectContext) => string[]> = {
   },
   execution: (e) => [executionText(e)],
   execution_direct: (e) => [
-    `Pose ${Math.max(1, nz(e.nbmarques))} marque${Math.max(1, nz(e.nbmarques)) > 1 ? 's' : ''} d'exécution sur l'adversaire. À 3 marques, une attaque qui le laisse sous ${nz(e.seuilexec) || 10} % de ses PV max l'exécute (ignore « évite la mort »)`,
+    `Pose ${Math.max(1, nz(e.nbmarques))} marque${Math.max(1, nz(e.nbmarques)) > 1 ? 's' : ''} d'exécution sur l'adversaire. À 3 marques, une attaque qui le laisse sous ${nz(e.seuilexec) || 10} % de ses PV max l'exécute (ignore « évite la mort »)${markingText(e)}`,
   ],
   atk_avalage: (e) => ['Attaque de base : ' + avTxt(e)],
   marque_avalage: (e) => {

@@ -10,6 +10,7 @@ import type { EffectContext, EffectRules } from '../combat/effect-context.ts';
 import type { Flow } from '../combat/flow.ts';
 import type { Side } from '../combat/state.ts';
 import type { EffectData } from '../model/card.ts';
+import { statusDamageMarks } from './execution.ts';
 
 export type Bleed = { pct: number; healReduction: number; turns: number };
 
@@ -49,6 +50,7 @@ export function bleed(
 export function tickBleed(c: Combat, s: Side, bleedStatus: Bleed): void {
   const n = damage(c, opponent(c, s), s, round((s.maxHp * bleedStatus.pct) / 100));
   emit(c, { type: 'damaged', side: id(c, s), amount: n, cause: 'bleed' });
+  statusDamageMarks(c, s, 'saignement');
   if (!s.status.bleeds.includes(bleedStatus) || s.hp <= 0) return;
   if (--bleedStatus.turns > 0) return;
   s.status.bleeds = s.status.bleeds.filter((z) => z !== bleedStatus);

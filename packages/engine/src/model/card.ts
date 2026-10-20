@@ -73,6 +73,8 @@ export type EffectData = {
   // Execution and swallowing.
   seuilexec?: Num;
   nbmarques?: Num;
+  statmarque?: string; // marking status: 'saignement', 'brulure', 'poison', 'tous' or 'aucun'
+  chancemarque?: Num;
   ratio?: Num;
   pctmache?: Num;
   machebase?: string;

@@ -220,6 +220,26 @@ test('exécution : 3 marques puis exécutée sous le seuil, même avec « évite
   assert.ok(iE > 0 && r2.journal.slice(iE).some(e => e.t === 'reanim'), 'réanimée après l\'exécution');
 });
 
+test('exécution, statut marquant : chaque dégât du statut choisi peut poser une marque, jusqu\'à 3', () => {
+  const saigne = { type: 'saignement', chance: 100, pctpv: 1, tours: 99 };
+  const ulti = (x) => MAG('Sentence', { type: 'execution_direct', nbmarques: 1, ...x });
+  const run = (x, passif = saigne) => combat([C('a', 1, SOLIDE, { passif }), ulti(x)], [C('b', 1, SOLIDE)], { regles: { maxTours: 12, maxProlong: 0 } });
+  const marques = (r) => r.journal.filter(e => e.k === 'marque' && e.c === 1).length;
+  // 100 % sur le saignement : la marque posée par la magie, puis chaque dégât de saignement en pose une, 3 au maximum
+  const r = run({ statmarque: 'saignement', chancemarque: 100 });
+  assert.equal(marques(r), 3);
+  const i2 = r.journal.findIndex(e => e.k === 'marque' && e.n === 2);
+  assert.equal(r.journal[i2 - 1].k, 'saignement', 'la marque vient juste après le dégât de saignement');
+  // désactivé (aucun, 0 %, ou un autre statut) : seule la marque de la magie
+  for (const x of [{}, { statmarque: 'aucun', chancemarque: 100 }, { statmarque: 'saignement', chancemarque: 0 }, { statmarque: 'brulure', chancemarque: 100 }])
+    assert.equal(marques(run(x)), 1, JSON.stringify(x));
+  // « tous » : le poison marque aussi
+  assert.equal(marques(run({ statmarque: 'tous', chancemarque: 100 }, { type: 'poison', chance: 100, degtour: 1, tours: 99 })), 3);
+  // sans statut marquant, le combat tire les mêmes nombres qu'avant (aucun tirage en plus)
+  const sans = run({}), avec0 = run({ statmarque: 'saignement', chancemarque: 0 });
+  assert.deepEqual(sans.journal.map(e => e.txt), avec0.journal.map(e => e.txt));
+});
+
 test('transcendance : au début de son 4e tour (avant d\'attaquer), purifiée (étourdissement compris), +15 % ATQ / PV max, et chaque coup purifie l\'adversaire', () => {
   const asc = MAG('Ascension', { type: 'transcendance' });
   // sans étourdissement : transcende au début de son 4e tour, avant l'attaque, bonus +15 %, puis ses coups purifient l'adversaire
