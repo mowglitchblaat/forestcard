@@ -521,13 +521,14 @@ async function vCollection(){
   main.innerHTML='<div id="dbar" class="dbar"></div><div id="prog"></div><div class="row" id="rbar"></div><div class="row seg" id="flt"></div><div class="row chips" id="fcol"></div><div class="cgrid" id="gr"></div>';
   drawColl();progression();
 }
-// Progression : cartes différentes possédées / cartes du jeu (au total, par collection, par rareté) — seuls des nombres sont montrés
+// Progression : versions différentes possédées / versions du jeu (au total, par collection, par rareté) — seuls des nombres sont montrés
+// Chaque version alternative compte comme une carte de la collection (une carte Standard + 1 alt = 2 cartes à collectionner).
 async function progression(){
   const box=$('#prog');if(!box)return;
-  const r=await sb.from('cartes').select('id,collections(nom),raretes(nom,couleur,poids)').eq('actif',true);
+  const r=await sb.from('variantes_carte').select('id,cartes!inner(id,actif,collections(nom),raretes(nom,couleur,poids))').eq('cartes.actif',true);
   if(r.error||!r.data||!r.data.length){box.innerHTML='';return}
-  const own=new Set();collData.forEach(x=>{if(x.quantite>0)own.add(x.variantes_carte.cartes.id)});
-  const T=r.data,tot=T.length,moi=T.filter(c=>own.has(c.id)).length,pc=n=>tot?Math.round(100*n/tot):0;
+  const own=new Set();collData.forEach(x=>{if(x.quantite>0)own.add(x.variantes_carte.id)});
+  const T=r.data.filter(v=>v.cartes).map(v=>({id:v.id,collections:v.cartes.collections,raretes:v.cartes.raretes})),tot=T.length,moi=T.filter(c=>own.has(c.id)).length,pc=n=>tot?Math.round(100*n/tot):0;
   const C={};T.forEach(c=>{const k=(c.collections&&c.collections.nom)||'Communes',o=C[k]=C[k]||{n:0,m:0,r:{}};o.n++;const ok=own.has(c.id);if(ok)o.m++;
     const rn=(c.raretes&&c.raretes.nom)||'?',rr=o.r[rn]=o.r[rn]||{n:0,m:0,col:(c.raretes&&c.raretes.couleur)||'#aaa',p:+((c.raretes&&c.raretes.poids)||0)};rr.n++;if(ok)rr.m++});
   const cols=Object.entries(C).sort((a,b)=>(a[0]=='Communes')-(b[0]=='Communes')||a[0].localeCompare(b[0],'fr'));
