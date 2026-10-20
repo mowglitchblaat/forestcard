@@ -37,9 +37,7 @@ function markingStatuses(d: Side, q: EffectData | undefined): void {
   const chance = parseInt(String(q?.chancemarque), 10);
   if (!q || !Number.isFinite(chance) || chance <= 0) return;
   const kinds: readonly MarkingStatus[] =
-    q.statmarque === 'tous'
-      ? MARKING_STATUSES
-      : MARKING_STATUSES.filter((k) => k === q.statmarque);
+    q.statmarque === 'tous' ? MARKING_STATUSES : MARKING_STATUSES.filter((k) => k === q.statmarque);
   for (const k of kinds)
     d.status.markingStatuses[k] = Math.max(d.status.markingStatuses[k] ?? 0, chance);
 }
