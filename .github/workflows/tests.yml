@@ -16,4 +16,8 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm run ready
+      - run: pnpm run ready 2>&1 | tee ready.txt; exit ${PIPESTATUS[0]}
+        shell: bash
+      # The errors as annotations, readable through the API when job logs are not (tools/node-only).
+      - if: failure()
+        run: grep -E "error|Error|FAIL|×|✗|failed|Formatting|\.(ts|tsx|js|md|json):" ready.txt | head -50 | sed 's/\x1b\[[0-9;]*m//g' | while IFS= read -r l; do echo "::warning title=ready::$l"; done
