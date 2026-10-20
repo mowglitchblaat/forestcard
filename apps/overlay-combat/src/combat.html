@@ -968,7 +968,7 @@ function aureole(c,o={}){const K=rc(c),W=K.w,cx=K.cx;
 
 function statut(c,k,on){if(k==='fracture')return;const key=c+k;st[key]=Math.max(0,(st[key]||0)+(on?1:-1));const card=$('#p'+c+' .card'),f=card.querySelector('canvas.fx.'+k);
  if(st[key]>0&&!f)fxStart(card,k);else if(!st[key]&&f){f._stop();f.remove()}}
-function maj(e){[0,1].forEach(i=>{const p=$('#p'+i);p.querySelector('i').style.width=Math.max(0,e.pv[i]/e.max[i]*100)+'%';
+function maj(e){[0,1].forEach(i=>{const p=$('#p'+i);p.querySelector('.bar i').style.width=Math.max(0,e.pv[i]/e.max[i]*100)+'%';
  p.querySelector('.pv').textContent=`${Math.max(0,e.pv[i])} / ${e.max[i]} PV · ATQ ${e.atq[i]}`;
  [['.sva',e.atq[i]],['.svp',Math.max(0,e.pv[i])]].forEach(([k,v])=>{const n=p.querySelector(k);if(!n)return;const t=String(v);if(n.dataset.v!==t){const nv=n.dataset.v!=='';n.dataset.v=t;if(nv){n.classList.remove('pls');void n.offsetWidth;n.classList.add('pls')}}})})}
 // BOUNTY : une bourse tombe au milieu de l'écran puis lance des pièces vers chaque joueur,
