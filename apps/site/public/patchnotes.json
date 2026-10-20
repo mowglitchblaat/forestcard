@@ -1,5 +1,23 @@
 [
   {
+    "date": "2026-10-20",
+    "intro": "L’exécution peut maintenant s’appuyer sur les statuts, et une nouvelle version du site arrive en test.",
+    "groupes": [
+      {
+        "titre": "Combat",
+        "points": [
+          "Exécution : une carte peut avoir un statut marquant (saignement, brûlure, poison ou les trois). Une fois la cible marquée, chaque dégât de ce statut a X % de chances de lui poser une marque de plus, jusqu’à la fin du combat."
+        ]
+      },
+      {
+        "titre": "Site",
+        "points": [
+          "Une nouvelle version du site est en test, à côté de la page actuelle, qui reste celle de tous les jours."
+        ]
+      }
+    ]
+  },
+  {
     "date": "2026-10-18",
     "intro": "Les souffles élémentaires deviennent imprévisibles.",
     "groupes": [
