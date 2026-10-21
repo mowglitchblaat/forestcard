@@ -13,9 +13,12 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Export
+        env:
+          K: ${{ secrets.SUPABASE_SERVICE_KEY }}
         run: |
-          K='sb_publishable_-3cPqDCyE-zhb3z5r6dPhg_DJFKGAI6'
-          curl -sSf "https://bjsvqikjnvaomyoifiml.supabase.co/rest/v1/cartes?select=id,nom,type,atq,pv,actif,passif,ultime,effet,description,raretes(nom,couleur,poids),collections(nom),variantes_carte(nom,image_path)&actif=eq.true&order=nom" -H "apikey: $K" -o export-cartes.json
+          H=(-H "apikey: $K"); case "$K" in sb_*) ;; *) H+=(-H "Authorization: Bearer $K");; esac
+          curl -sS "${H[@]}" "https://bjsvqikjnvaomyoifiml.supabase.co/rest/v1/cartes?select=id,nom,type,atq,pv,actif,passif,ultime,effet,description,raretes(nom,couleur,poids),collections(nom),variantes_carte(nom,image_path)&actif=eq.true&order=nom" -o export-cartes.json -w '%{http_code}\n' | tee code.txt
+          grep -q '^200' code.txt || { head -c 300 export-cartes.json; exit 1; }
           python3 -c "import json;print(len(json.load(open('export-cartes.json'))),'cartes')"
           git config user.name "export-cartes"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
