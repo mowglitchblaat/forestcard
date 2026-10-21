@@ -1521,7 +1521,7 @@ const CPO=(()=>{
    else if(pt){const C=pastille(l.c),pw=tw+s*1.1,ph=s*1.18;x.save();x.shadowColor='rgba(0,0,0,.55)';x.shadowBlur=s*.25;x.shadowOffsetY=s*.06;rr(x,W/2-pw/2,cy-ph/2,pw,ph,ph/2);
     x.fillStyle=l.c==='alea'?grad(pw):C.background;x.fill();x.restore();
     if(C.border){rr(x,W/2-pw/2,cy-ph/2,pw,ph,ph/2);x.lineWidth=s*.05;x.strokeStyle=C.border.split(' ').pop();x.stroke()}
-    x.lineWidth=s*.12;x.strokeStyle='rgba(0,0,0,.3)';x.strokeText(l.t,W/2,cy+s*.04);x.fillStyle=C.color;x.fillText(l.t,W/2,cy+s*.04)}
+    x.fillStyle=C.color;x.fillText(l.t,W/2,cy+s*.04)}   // texte net : pas de contour (le contour semi-transparent bavait sur les lettres)
    else{x.save();x.shadowColor='rgba(0,0,0,.6)';x.shadowBlur=s*.18;x.shadowOffsetY=s*.05;x.lineWidth=s*.2;x.strokeStyle='#0b0b0f';x.strokeText(l.t,W/2,cy);x.restore();
     x.fillStyle=l.c==='alea'?grad(tw):coul(l.c);x.fillText(l.t,W/2,cy)}
    y+=th;
