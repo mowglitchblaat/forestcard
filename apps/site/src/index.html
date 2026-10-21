@@ -1477,7 +1477,7 @@ function mkMulti(el,cat,lab,rem){
 const CPO=(()=>{
  const W=1488,H=2070,BANDE={ggez:[1294,1789],legendaire:[1349,1848],epique:[1200,1708],rare:[1094,1651],commun:[1430,1700]};
  const POLICES=['Lilita One','Russo One','Bangers','Cinzel Decorative','Pirata One','Metamorphous','Arial Black'];
- const DEF={police:'Lilita One',style:'pastille',taille:100,decal:0,marge:55,daUlt:true,lueur:false,z:1,x:0,y:0,textes:null};
+ const DEF={police:'Lilita One',style:'pastille',taille:100,decal:0,marge:55,daUlt:true,lueur:false,z:1,sx:1,sy:1,x:0,y:0,textes:null};
  let polices=null;const chargerPolices=()=>polices||(polices=new Promise(ok=>{const l=document.createElement('link');l.rel='stylesheet';
   l.href='https://fonts.googleapis.com/css2?family=Lilita+One&family=Russo+One&family=Bangers&family=Cinzel+Decorative:wght@900&family=Pirata+One&family=Metamorphous&display=swap';
   l.onload=()=>Promise.all(POLICES.slice(0,6).map(p=>document.fonts.load(`80px "${p}"`).catch(()=>{}))).then(ok,ok);l.onerror=ok;document.head.appendChild(l);setTimeout(ok,4000)}));
@@ -1514,7 +1514,7 @@ const CPO=(()=>{
     x.fillStyle=l.c==='alea'?grad(tw):coul(l.c);x.fillText(l.t,W/2,cy)}}}
  // la carte entière, à la taille des cadres (1488 × 2070)
  async function rendre(x,{dessin,carte,tier,o,chiffres}){await chargerPolices();x.clearRect(0,0,W,H);x.fillStyle='#14141c';x.fillRect(0,0,W,H);
-  if(dessin){const s=Math.max(W/dessin.naturalWidth,H/dessin.naturalHeight)*o.z,w=dessin.naturalWidth*s,h=dessin.naturalHeight*s;x.drawImage(dessin,(W-w)/2+o.x*W,(H-h)/2+o.y*H,w,h)}
+  if(dessin){const s=Math.max(W/dessin.naturalWidth,H/dessin.naturalHeight)*o.z,w=dessin.naturalWidth*s*(o.sx||1),h=dessin.naturalHeight*s*(o.sy||1);x.drawImage(dessin,(W-w)/2+o.x*W,(H-h)/2+o.y*H,w,h)}
   const comb=carte.type==='combattant';if(comb)await ecriteau(x,tier,lignes(carte,o),o);
   for(const src of [`cadres/${carte.type}-${tier}.png`,...['legendaire','epique','rare','commun'].map(r=>`cadres/${carte.type}-${r}.png`),`cadres/combattant-${tier}.png`]){const f=await charge(src);if(f){x.drawImage(f,0,0,W,H);break}}
   if(chiffres&&comb){const num=(v,cx,c)=>{if(v==null||v==='')return;const s=150;x.font=`900 ${s}px "Arial Black",sans-serif`;x.textAlign='center';x.textBaseline='middle';x.lineJoin='round';
@@ -1556,7 +1556,10 @@ async function aCartes(){
    <div class="cpo" id="cpo"><div class="cpo-h"><b>🎨 Image de la carte</b><small>Envoie le dessin seul : le site pose le cadre, l'écriteau et les chiffres, et crée l'image normale et l'image de combat. Si la carte change plus tard (stats, ultime, passifs, rareté), l'image se refait toute seule.</small></div>
     <div class="cpo-g"><div class="cpo-v"><canvas id="cpv" width="1488" height="2070"></canvas><small id="cpi"></small></div>
      <div class="cpo-r"><label><small>Dessin seul (sans cadre, ni écriteau, ni chiffres)</small><input name="dessin" type="file" accept="image/*"></label>
-      <label><small>Zoom du dessin · glisse-le dans l'aperçu pour le placer</small><input name="cz" type="range" min="100" max="300" value="100"></label>
+      <label><small>Zoom du dessin · glisse-le dans l'aperçu pour le placer</small><input name="cz" type="range" min="50" max="300" value="100"></label>
+      <div class="cpo-2"><label><small>Largeur (étirer / resserrer)</small><input name="csx" type="range" min="50" max="200" value="100"></label>
+       <label><small>Hauteur (étirer / aplatir)</small><input name="csy" type="range" min="50" max="200" value="100"></label></div>
+      <button type="button" class="sec" id="crz" style="align-self:flex-start">↺ Remettre le dessin d'origine</button>
       <div class="cpe"><div class="cpo-2"><label><small>Police de l'écriteau</small><select name="cpol">${CPO.POLICES.map(p=>`<option>${p}</option>`).join('')}</select></label>
        <label><small>Passifs</small><select name="csty"><option value="texte">Texte coloré</option><option value="pastille">Pastilles</option></select></label></div>
        <label><small>Taille du texte</small><input name="ctai" type="range" min="60" max="140" value="100"></label>
@@ -1608,8 +1611,8 @@ async function aCartes(){
   const CS={dessin:null,dessinFichier:null,dessinPath:null,image:null,o:{...CPO.DEF}};
   const lire=()=>{const t=fc.type.value;let ult=null,pas=null;try{if(t=='combattant'){ult=B.ult.get();pas=B.pas.get()}}catch(e){}
     return {carte:{type:t,ultime:ult,passif:pas,atq:fc.atq.value,pv:fc.pv.value},tier:CPO.tierDe(rar.find(x=>x.id==fc.rar.value))}};
-  const versUI=()=>{const o=CS.o;fc.cz.value=Math.round(o.z*100);fc.cpol.value=o.police;fc.csty.value=o.style;fc.ctai.value=o.taille;fc.cdec.value=o.decal;fc.cmar.value=o.marge;fc.cda.checked=o.daUlt;fc.clu.checked=o.lueur;if(o.textes)fc.ctxt.value=o.textes.join('\n')};
-  const depuisUI=()=>Object.assign(CS.o,{z:+fc.cz.value/100,police:fc.cpol.value,style:fc.csty.value,taille:+fc.ctai.value,decal:+fc.cdec.value,marge:+fc.cmar.value,daUlt:fc.cda.checked,lueur:fc.clu.checked});
+  const versUI=()=>{const o=CS.o;fc.cz.value=Math.round(o.z*100);fc.csx.value=Math.round((o.sx||1)*100);fc.csy.value=Math.round((o.sy||1)*100);fc.cpol.value=o.police;fc.csty.value=o.style;fc.ctai.value=o.taille;fc.cdec.value=o.decal;fc.cmar.value=o.marge;fc.cda.checked=o.daUlt;fc.clu.checked=o.lueur;if(o.textes)fc.ctxt.value=o.textes.join('\n')};
+  const depuisUI=()=>Object.assign(CS.o,{z:+fc.cz.value/100,sx:+fc.csx.value/100,sy:+fc.csy.value/100,police:fc.cpol.value,style:fc.csty.value,taille:+fc.ctai.value,decal:+fc.cdec.value,marge:+fc.cmar.value,daUlt:fc.cda.checked,lueur:fc.clu.checked});
   const cv=$('#cpv'),buf=document.createElement('canvas');buf.width=CPO.W;buf.height=CPO.H;let tic=0,att=null;
   const apercu=()=>{if(att)return;att=requestAnimationFrame(async()=>{att=null;const n=++tic,{carte,tier}=lire();
     $('#cpo .cpe').style.display=carte.type=='combattant'?'':'none';
@@ -1619,14 +1622,15 @@ async function aCartes(){
      $('#cpi').textContent=CS.image?'Image actuelle (déjà prête). Ajoute le dessin seul pour passer au nouveau système.':'Ajoute le dessin seul pour voir la carte se composer.';return}
     await CPO.rendre(buf.getContext('2d'),{dessin:CS.dessin,carte,tier,o:CS.o,chiffres:true});if(n!==tic)return;x.clearRect(0,0,CPO.W,CPO.H);x.drawImage(buf,0,0);
     $('#cpi').textContent='Aperçu de la carte avec chiffres ; l\'image de combat est la même, sans les chiffres.'})};
-  fc.addEventListener('input',e=>{if(e.target===fc.ctxt){const v=fc.ctxt.value.split('\n');CS.o.textes=v}else if(/^c(z|pol|sty|tai|dec|mar|da|lu)$/.test(e.target.name||''))depuisUI();apercu()});
+  fc.addEventListener('input',e=>{if(e.target===fc.ctxt){const v=fc.ctxt.value.split('\n');CS.o.textes=v}else if(/^c(z|sx|sy|pol|sty|tai|dec|mar|da|lu)$/.test(e.target.name||''))depuisUI();apercu()});
   fc.addEventListener('change',()=>{depuisUI();apercu()});fc.addEventListener('click',()=>setTimeout(apercu,0));
+  $('#crz').onclick=()=>{Object.assign(CS.o,{z:1,sx:1,sy:1,x:0,y:0});versUI();apercu()};
   $('#cauto').onclick=()=>{CS.o.textes=null;fc.ctxt.blur();apercu()};
-  fc.dessin.onchange=()=>{const fi=fc.dessin.files[0];if(!fi)return;const i=new Image();i.onload=()=>{CS.dessin=i;CS.dessinFichier=fi;CS.dessinPath=null;Object.assign(CS.o,{z:1,x:0,y:0});versUI();apercu()};i.src=URL.createObjectURL(fi)};
+  fc.dessin.onchange=()=>{const fi=fc.dessin.files[0];if(!fi)return;const i=new Image();i.onload=()=>{CS.dessin=i;CS.dessinFichier=fi;CS.dessinPath=null;Object.assign(CS.o,{z:1,sx:1,sy:1,x:0,y:0});versUI();apercu()};i.src=URL.createObjectURL(fi)};
   {let g=null;cv.addEventListener('pointerdown',e=>{if(!CS.dessin)return;g={x:e.clientX,y:e.clientY,ox:CS.o.x,oy:CS.o.y};cv.setPointerCapture(e.pointerId);cv.style.cursor='grabbing'});
    cv.addEventListener('pointermove',e=>{if(!g)return;const r=cv.getBoundingClientRect();CS.o.x=g.ox+(e.clientX-g.x)/r.width;CS.o.y=g.oy+(e.clientY-g.y)/r.height;apercu()});
    const fin=()=>{g=null;cv.style.cursor='grab'};cv.addEventListener('pointerup',fin);cv.addEventListener('pointercancel',fin);
-   cv.addEventListener('wheel',e=>{if(!CS.dessin)return;e.preventDefault();CS.o.z=Math.min(3,Math.max(1,CS.o.z*(e.deltaY<0?1.05:1/1.05)));versUI();apercu()},{passive:false})}
+   cv.addEventListener('wheel',e=>{if(!CS.dessin)return;e.preventDefault();CS.o.z=Math.min(3,Math.max(.5,CS.o.z*(e.deltaY<0?1.05:1/1.05)));versUI();apercu()},{passive:false})}
   $('#cdl').onclick=async()=>{if(!CS.dessin)return uiAlert('Ajoute d\'abord le dessin seul.');const {carte,tier}=lire(),im=await CPO.images({dessin:CS.dessin,carte,tier,o:CS.o}),nom=(fc.nom.value||'carte').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/gi,'-').toLowerCase();
    [[im.carte,nom+'.png'],[im.combat,nom+'-combat.png']].forEach(([f,n])=>{if(!f)return;const a=document.createElement('a');a.href=URL.createObjectURL(f);a.download=n;a.click()})};
   // enregistre les images composées sur la version Standard (et garde le dessin pour les refaire plus tard)
