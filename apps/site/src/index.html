@@ -25,6 +25,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
 .cpo-g{display:grid;grid-template-columns:minmax(200px,300px) 1fr;gap:16px;align-items:start}@media(max-width:700px){.cpo-g{grid-template-columns:1fr}}
 .cpo-v{display:flex;flex-direction:column;gap:6px;align-items:center;position:sticky;top:8px}.cpo-v canvas{width:100%;height:auto;border-radius:12px;background:repeating-conic-gradient(#1c1c26 0 25%,#16161e 0 50%) 50%/20px 20px;box-shadow:0 8px 28px #0008;touch-action:none;cursor:grab}
 .cpo-r{display:flex;flex-direction:column;gap:8px;min-width:0}.cpo-r label{display:flex;flex-direction:column;gap:3px}.cpo-r input[type=range]{padding:0;accent-color:#a78bfa}.cpo-r textarea{resize:vertical;min-height:70px}
+#pform>label,#pform>.row>label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:#aaa}#pform>label textarea{width:100%;min-height:80px}#pform>.row>label input,#pform>.row>label select{width:100%}
 .cpo-2{display:grid;grid-template-columns:1fr 1fr;gap:8px}.cpo-r label.cpo-c{flex-direction:row;align-items:center;gap:8px;font-size:13px}.cpo details{margin-top:10px}.cpo details label{display:block;margin-top:6px}
 .cimg.in{filter:drop-shadow(0 0 3px var(--g)) drop-shadow(0 0 12px var(--g)) drop-shadow(0 0 24px var(--g))}
 .cw button{font-size:13px}
@@ -1181,75 +1182,59 @@ async function vPropos(){
   if(mine.error){main.innerHTML='<p class="ko">Propositions indisponibles pour le moment (l\'admin doit d\'abord lancer 12-propositions.sql dans Supabase).</p>';return}
   const L=mine.data||[],att=L.filter(x=>x.statut=='attente').length;
   const rarN=id=>(R.rar.find(x=>x.id==id)||{}).nom||'?',colN=x=>x.collection_id?((R.col.find(c=>c.id==x.collection_id)||{}).nom||'?'):null;
-  main.innerHTML=`<h3>Propose ta carte</h3><p><small>Envoie ton splash art et ton idée de carte : choisis son type, sa rareté et sa collection. L'admin regarde chaque proposition ; les meilleures pourront entrer dans le jeu ! (3 propositions en attente maximum, image de 8 Mo maximum.)</small></p>
-   <div class="pn pf"><div class="ced"><canvas id="pcv" width="744" height="1035"></canvas>
-     <label style="width:100%">Zoom<input type="range" id="pzoom" min="100" max="400" value="100"></label>
-     <small id="paide">Ajoute ton dessin : tu pourras le déplacer à la souris (ou au doigt) et zoomer pour le placer dans le cadre.</small>
-     <button type="button" class="sec" id="pcentre" style="display:none">Recentrer</button></div>
-    <form id="pform">
-     <label>Ton splash art (PNG, JPG, WEBP)<input type="file" name="file" accept="image/png,image/jpeg,image/webp,image/gif" required></label>
-     <label>Nom de la carte<input name="nom" maxlength="60" required placeholder="Ex. : Le Wendigo des neiges"></label>
-     <div class="row" style="gap:10px"><label style="flex:1">Type<select name="type">${Object.entries(TYP).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select></label>
-      <label style="flex:1">Rareté<select name="rar">${R.rar.map(x=>`<option value="${x.id}">${esc(x.nom)}</option>`).join('')}</select></label></div>
-     <div class="row" id="pstats" style="gap:10px"><label style="flex:1">ATQ (facultatif)<input name="atq" type="number" min="0" max="999" placeholder="Laisse vide si tu veux"></label>
-      <label style="flex:1">PV (facultatif)<input name="pv" type="number" min="1" max="9999" placeholder="Laisse vide si tu veux"></label></div>
-     <label>Collection<select name="col">${R.col.map(x=>`<option value="${x.id}">${esc(x.nom)}</option>`).join('')}<option value="autre">✏️ Autre : je propose une idée de collection</option></select></label>
-     <label id="pcolid" style="display:none">Ton idée de collection<input name="colidee" maxlength="80" placeholder="Ex. : Légendes du folklore"></label>
-     <label>Ton idée (facultatif)<textarea name="idee" maxlength="600" placeholder="Ambiance, histoire, capacités que tu imagines…"></textarea></label>
-     <div class="row"><button id="pbtn" ${att>=3?'disabled':''}>${att>=3?'3 propositions déjà en attente':'Envoyer ma proposition'}</button></div>
-    </form></div>
+  // les listes d'effets du jeu, sans la programmation (réservée à l'admin)
+  const sansProg=o=>Object.fromEntries(Object.entries(o).filter(([k])=>k!=='programmation'));
+  const LP={pas:sansProg(PAS),ult:sansProg(ULT),mag:sansProg(MAG),con:CON};
+  main.innerHTML=`<h3>Crée ta carte</h3><p><small>Imagine ta carte de A à Z : ton dessin, son nom, sa rareté, ses stats et ses vrais effets, choisis dans les mêmes listes que celles du jeu. La carte se compose sous tes yeux, comme les cartes officielles. L'admin regarde chaque proposition ; les meilleures pourront entrer dans le jeu ! (3 propositions en attente maximum, dessin de 8 Mo maximum.)</small></p>
+   <form class="f" id="pform" style="max-width:none">
+    <div class="row" style="gap:10px"><label style="flex:2">Nom de la carte<input name="nom" maxlength="60" required placeholder="Ex. : Le Wendigo des neiges"></label>
+     <label style="flex:1">Type<select name="type">${Object.entries(TYP).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select></label>
+     <label style="flex:1">Rareté<select name="rar">${R.rar.map(x=>`<option value="${x.id}">${esc(x.nom)}</option>`).join('')}</select></label></div>
+    <div class="row" id="pstats" style="gap:10px"><label style="flex:1">ATQ<input name="atq" type="number" min="0" max="999" placeholder="Ex. : 25"></label>
+     <label style="flex:1">PV<input name="pv" type="number" min="1" max="9999" placeholder="Ex. : 110"></label></div>
+    <div id="p-comb"><b>Ultime</b> <small>(facultatif)</small><div id="pb-ult"></div>
+     <div class="row"><label><small>Se déclenche après N tours</small><br><input name="utours" type="number" min="0" style="width:110px"></label>
+      <label><small>Utilisations max (0 = illimité)</small><br><input name="uuses" type="number" min="0" value="1" style="width:110px"></label>
+      <label><small>Délai entre 2 utilisations (tours)</small><br><input name="ucd" type="number" min="0" value="0" style="width:110px"></label></div>
+     <b>Passifs</b> <small>(tu peux en cumuler plusieurs)</small><div id="pb-pas"></div></div>
+    <div id="p-mag" style="display:none"><b>Effet de la magie</b><div id="pb-mag"></div></div>
+    <div id="p-pie" style="display:none"><b>Condition du piège</b><div id="pb-con"></div><b>Effet du piège</b><div id="pb-pef"></div>
+     <label><small>Déclenchements max</small><br><input name="decl" type="number" min="1" value="1" style="width:110px"></label></div>
+    ${htmlCompo('🎨 Ta carte',"Ajoute ton dessin seul (sans cadre, ni texte) : le cadre de la rareté, l'écriteau avec tes effets et leurs explications, et les chiffres se posent tout seuls. Glisse le dessin pour le placer, zoome, étire si besoin.")}
+    <div class="row" style="gap:10px"><label style="flex:1">Collection<select name="col">${R.col.map(x=>`<option value="${x.id}">${esc(x.nom)}</option>`).join('')}<option value="autre">✏️ Autre : je propose une idée de collection</option></select></label>
+     <label id="pcolid" style="flex:1;display:none">Ton idée de collection<input name="colidee" maxlength="80" placeholder="Ex. : Légendes du folklore"></label></div>
+    <label>Ton idée, l'histoire de ta carte (facultatif)<textarea name="idee" maxlength="600" placeholder="Ambiance, histoire, comment tu imagines la jouer…"></textarea></label>
+    <div class="row"><button id="pbtn" ${att>=3?'disabled':''}>${att>=3?'3 propositions déjà en attente':'Envoyer ma proposition'}</button></div>
+   </form>
    <h3>Mes propositions</h3>${L.length?`<div class="ppl">${L.map(x=>`<div class="ppc"><img loading="lazy" src="${esc(pImg(x.image_carte||x.image_path))}" alt="" data-zoom="${esc(pImg(x.image_carte||x.image_path))}"><b>${esc(x.nom)}</b><span class="st ${x.statut}">${STP[x.statut]}</span>
      <small>${TYP[x.type]||''} · ${esc(rarN(x.rarete_id))} · ${x.collection_id?esc(colN(x)):`<span class="idc">Idée : ${esc(x.collection_idee||'')}</span>`}</small>${x.atq!=null||x.pv!=null?`<small>ATQ ${x.atq??'—'} · PV ${x.pv??'—'}</small>`:''}
      ${x.note_admin?`<small>💬 ${esc(x.note_admin)}</small>`:''}${x.statut=='attente'?`<button class="sec" data-pdel="${x.id}" data-path="${esc(x.image_path)}" data-path2="${esc(x.image_carte||'')}">Retirer</button>`:''}</div>`).join('')}</div>`:'<p><small>Tu n\'as encore rien proposé.</small></p>'}`;
-  const f=$('#pform'),cv=$('#pcv'),zm=$('#pzoom');
-  // Éditeur : le dessin se place sous le cadre de la rareté choisie ; on le déplace et on zoome pour l'ajuster
-  const ED={art:null,z:1,x:0,y:0,cadre:null};
-  const tierP=id=>{const r=R.rar.find(x=>x.id==id);const n=String((r&&r.nom)||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();return['ggez','legendaire','epique','rare','commun'].find(k=>n.includes(k))||'commun'};
-  // Cadre à utiliser : celui du type et de la rareté ; s'il n'existe pas encore, la rareté juste en dessous du même type, puis le cadre combattant
-  const RG=['ggez','legendaire','epique','rare','commun'];
-  const cadresAEssayer=()=>{const t=f.type.value,i=RG.indexOf(tierP(f.rar.value)),L=RG.slice(i).map(r=>vf(`cadres/${t}-${r}.png`));if(t!=='combattant')L.push(vf(`cadres/combattant-${RG[i]}.png`));return L};
-  let jeton=0;
-  const chargeCadre=()=>{const L=cadresAEssayer(),moi=++jeton;let k=0;const im=new Image();im.onload=()=>{if(moi!==jeton)return;ED.cadre=im;dessine()};im.onerror=()=>{if(moi!==jeton)return;if(++k<L.length)im.src=L[k];else{ED.cadre=null;dessine()}};im.src=L[0];
-    const r=R.rar.find(x=>x.id==f.rar.value);cv.style.setProperty('--g',(r&&r.couleur)||'#7c3aed');
-    ED.ecr=null;$('#pstats').style.display=f.type.value==='combattant'?'':'none';
-    if(f.type.value==='combattant'&&ECR[tierP(f.rar.value)]){const e=new Image();e.onload=()=>{if(moi!==jeton)return;ED.ecr=e;dessine()};e.src=vf(`cadres/ecriteau-${tierP(f.rar.value)}.png`)}};
-  // Écriteaux (combattants) : position du bandeau sur la carte de 2070 px de haut, et couleur du texte lisible dessus
-  const ECR={ggez:{y0:1294,y1:1789,tx:'#ffffff',ct:'#6b21a8'},legendaire:{y0:1350,y1:1847,tx:'#ffffff',ct:'#7a4504'},epique:{y0:1200,y1:1708,tx:'#ffffff',ct:'#3b0764'},rare:{y0:1094,y1:1650,tx:'#ffffff',ct:'#1e3a8a'}};   // police : sans serif en gras, remplissage + contour
-  function texte(x,t,cx,cy,maxW,taille,col,contour,font){let s=taille;x.font=`900 ${s}px ${font}`;while(x.measureText(t).width>maxW&&s>20){s-=4;x.font=`900 ${s}px ${font}`}
-    x.textAlign='center';x.textBaseline='middle';x.lineJoin='round';x.lineWidth=s*.16;x.strokeStyle=contour;x.strokeText(t,cx,cy);x.fillStyle=col;x.fillText(t,cx,cy)}
-  function rendre(c,W,H){const x=c.getContext('2d'),k=H/2070,comb=f.type.value==='combattant',tr=tierP(f.rar.value),E=comb?ECR[tr]:null;x.clearRect(0,0,W,H);x.fillStyle='#14141c';x.fillRect(0,0,W,H);
-    if(ED.art){const a=ED.art,s=Math.max(W/a.naturalWidth,H/a.naturalHeight)*ED.z,w=a.naturalWidth*s,h=a.naturalHeight*s;x.drawImage(a,(W-w)/2+ED.x*W,(H-h)/2+ED.y*H,w,h)}
-    if(E&&ED.ecr)x.drawImage(ED.ecr,0,0,W,H);
-    if(ED.cadre)x.drawImage(ED.cadre,0,0,W,H);
-    const nom=f.nom.value.trim(),FT='"Arial Black","Segoe UI",Arial,Helvetica,sans-serif';
-    if(comb&&nom){if(E)texte(x,nom,W/2,(E.y0+E.y1)/2*k,W*.8,120*k,E.tx,E.ct,FT);
-      else{const y=1560*k,g=x.createLinearGradient(0,y-110*k,0,y+110*k);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(.5,'rgba(0,0,0,.55)');g.addColorStop(1,'rgba(0,0,0,0)');x.fillStyle=g;x.fillRect(0,y-110*k,W,220*k);texte(x,nom,W/2,y,W*.8,110*k,'#fff','#27272a',FT)}}   // commun : pas d'écriteau, le nom sur une bande sombre légère
-    if(comb){const a=f.atq.value.trim(),p=f.pv.value.trim(),SF=FT;
-      if(a!=='')texte(x,a,W*.13,H*.925,W*.2,140*k,'#ff3b3b','#ffffff',SF);
-      if(p!=='')texte(x,p,W*.87,H*.925,W*.2,140*k,'#3ba4ff','#ffffff',SF)}}
-  function dessine(){rendre(cv,cv.width,cv.height)}
-  chargeCadre();
-  f.file.onchange=()=>{const fi=f.file.files[0];if(!fi)return;if(fi.size>8*1024*1024){uiAlert('Image trop lourde (8 Mo maximum).');f.file.value='';return}
-    const im=new Image();im.onload=()=>{ED.art=im;ED.z=1;ED.x=0;ED.y=0;zm.value=100;$('#paide').textContent='Glisse le dessin pour le placer, et règle le zoom.';$('#pcentre').style.display='';dessine()};im.src=URL.createObjectURL(fi)};
-  zm.oninput=()=>{ED.z=+zm.value/100;dessine()};
-  $('#pcentre').onclick=()=>{ED.x=0;ED.y=0;ED.z=1;zm.value=100;dessine()};
-  {let d=null;cv.onpointerdown=e=>{if(!ED.art)return;d={x:e.clientX,y:e.clientY,ox:ED.x,oy:ED.y};cv.setPointerCapture(e.pointerId)};
-   cv.onpointermove=e=>{if(!d)return;const r=cv.getBoundingClientRect();ED.x=d.ox+(e.clientX-d.x)/r.width;ED.y=d.oy+(e.clientY-d.y)/r.height;dessine()};
-   cv.onpointerup=cv.onpointercancel=()=>{d=null};
-   cv.onwheel=e=>{if(!ED.art)return;e.preventDefault();zm.value=Math.max(100,Math.min(400,+zm.value-Math.sign(e.deltaY)*10));zm.oninput()}}
-  f.rar.onchange=chargeCadre;f.type.onchange=chargeCadre;f.nom.oninput=f.atq.oninput=f.pv.oninput=dessine;f.col.onchange=()=>{$('#pcolid').style.display=f.col.value=='autre'?'':'none'};if(!R.col.length){f.col.value='autre';f.col.onchange()}
-  f.onsubmit=async e=>{e.preventDefault();const fi=f.file.files[0];if(!fi)return;const autre=f.col.value=='autre';
+  const f=$('#pform');
+  const PB={ult:mk($('#pb-ult'),LP.ult),pas:mkMulti($('#pb-pas'),LP.pas,'+ Ajouter un passif','✕ Retirer ce passif'),mag:mkMulti($('#pb-mag'),LP.mag),con:mk($('#pb-con'),LP.con),pef:mkMulti($('#pb-pef'),{...LP.ult,...LP.mag})};
+  const toggle=()=>{const t=f.type.value;$('#pstats').style.display=$('#p-comb').style.display=t=='combattant'?'':'none';$('#p-mag').style.display=t=='magie'?'':'none';$('#p-pie').style.display=t=='piege'?'':'none'};
+  // la carte telle que le joueur la remplit (mêmes champs que l'admin)
+  const effets=()=>{const t=f.type.value;let ult=null,pas=null,eff=null;
+    try{if(t=='combattant'){ult=PB.ult.get();if(ult){if(+f.utours.value)ult.apres_tours=+f.utours.value;ult.utilisations=+f.uuses.value||0;ult.delai_tours=+f.ucd.value||0}pas=PB.pas.get()}
+     else if(t=='magie')eff=PB.mag.get();else{const c=PB.con.get(),x=PB.pef.get();if(c||x)eff={condition:c,effet:x,declenchements:+f.decl.value||1}}}catch(e){}
+    return {ult,pas,eff}};
+  const lire=()=>{const t=f.type.value,{ult,pas,eff}=effets();return {carte:{type:t,ultime:ult,passif:pas,effet:eff,atq:f.atq.value,pv:f.pv.value},tier:CPO.tierDe(R.rar.find(x=>x.id==f.rar.value))}};
+  const {CS,apercu}=brancherCompo(f,lire);
+  f.type.addEventListener('change',()=>{toggle();apercu()});toggle();
+  f.col.onchange=()=>{$('#pcolid').style.display=f.col.value=='autre'?'':'none'};if(!R.col.length){f.col.value='autre';f.col.onchange()}
+  f.dessin.addEventListener('change',()=>{const fi=f.dessin.files[0];if(fi&&fi.size>8*1024*1024){uiAlert('Image trop lourde (8 Mo maximum).');f.dessin.value='';CS.dessin=null;apercu()}});
+  f.onsubmit=async e=>{e.preventDefault();if(!CS.dessin||!CS.dessinFichier){uiAlert('Ajoute ton dessin.');return}const autre=f.col.value=='autre';
     if(autre&&!f.colidee.value.trim()){uiAlert('Écris ton idée de collection.');return}
-    const btn=$('#pbtn');btn.disabled=true;btn.textContent='Envoi…';
-    const fiL=await alleger(fi,1600,.9),path=user.id+'/'+crypto.randomUUID()+'.'+(fiL.type==='image/webp'?'webp':((fi.name.split('.').pop()||'png').toLowerCase()));
-    const up=await sb.storage.from('propositions').upload(path,fiL,{contentType:fiL.type||fi.type,cacheControl:CACHE_1AN});
-    if(up.error){uiAlert(up.error.message);btn.disabled=false;btn.textContent='Envoyer ma proposition';return}
-    let pc=null;try{const big=document.createElement('canvas');big.width=1488;big.height=2070;rendre(big,1488,2070);
-      const bl=await new Promise(ok=>big.toBlob(ok,'image/webp',.9));if(bl){pc=user.id+'/'+crypto.randomUUID()+'-carte.webp';const u2=await sb.storage.from('propositions').upload(pc,bl,{contentType:'image/webp',cacheControl:CACHE_1AN});if(u2.error)pc=null}}catch(x){pc=null}
+    const btn=$('#pbtn'),fin=m=>{if(m)uiAlert(m);btn.disabled=false;btn.textContent='Envoyer ma proposition'};btn.disabled=true;btn.textContent='Envoi…';
+    const fi=CS.dessinFichier,fiL=await alleger(fi,2070,.92),path=user.id+'/'+crypto.randomUUID()+'.'+(fiL.type==='image/webp'?'webp':((fi.name.split('.').pop()||'png').toLowerCase()));
+    const up=await sb.storage.from('propositions').upload(path,fiL,{contentType:fiL.type||fi.type,cacheControl:CACHE_1AN});if(up.error)return fin(up.error.message);
+    let pc=null;try{const {carte,tier}=lire(),im=await CPO.images({dessin:CS.dessin,carte,tier,o:CS.o});pc=user.id+'/'+crypto.randomUUID()+'-carte.webp';
+      const u2=await sb.storage.from('propositions').upload(pc,im.carte,{contentType:'image/webp',cacheControl:CACHE_1AN});if(u2.error)pc=null}catch(x){pc=null}
+    const {ult,pas,eff}=effets();
     const args={p_image:path,p_nom:f.nom.value,p_type:f.type.value,p_rarete:+f.rar.value||null,p_collection:autre?null:+f.col.value,p_collection_idee:autre?f.colidee.value:null,p_idee:f.idee.value};if(pc)args.p_image_carte=pc;
     if(f.type.value==='combattant'){if(f.atq.value!=='')args.p_atq=+f.atq.value;if(f.pv.value!=='')args.p_pv=+f.pv.value}
-    const r=await sb.rpc('proposer_carte',args);
-    if(r.error){await sb.storage.from('propositions').remove([path,...(pc?[pc]:[])]);uiAlert(r.error.message);btn.disabled=false;btn.textContent='Envoyer ma proposition';return}
+    let r=await sb.rpc('proposer_carte',{...args,p_ultime:ult,p_passif:pas,p_effet:eff,p_compo:{...CS.o}});
+    if(r.error&&/p_ultime|p_compo|function/i.test(r.error.message||''))r=await sb.rpc('proposer_carte',args);   // base pas encore à jour (30-propositions-completes.sql) : la proposition part sans ses effets
+    if(r.error){await sb.storage.from('propositions').remove([path,...(pc?[pc]:[])]);return fin(r.error.message)}
     vPropos()};
   main.querySelectorAll('[data-pdel]').forEach(b=>b.onclick=async()=>{if(!(await uiConfirm('Retirer cette proposition ?')))return;const d=await sb.from('propositions').delete().eq('id',b.dataset.pdel);if(d.error){uiAlert(d.error.message);return}await sb.storage.from('propositions').remove([b.dataset.path,b.dataset.path2].filter(Boolean));vPropos()});
   main.querySelectorAll('[data-zoom]').forEach(i=>i.onclick=()=>window.open(i.dataset.zoom,'_blank'));
@@ -1269,10 +1254,27 @@ async function aPropos(){
     <small>${TYP[x.type]||''} · <span style="color:${esc(rr.couleur||'#ccc')}">${esc(rr.nom||'?')}</span> · ${x.collection_id?esc(colN(x.collection_id)):`<span class="idc">Nouvelle collection : ${esc(x.collection_idee||'')}</span>`}</small>
     ${x.atq!=null||x.pv!=null?`<small>Stats proposées : <b style="color:#ff6b6b">ATQ ${x.atq??'—'}</b> · <b style="color:#60a5fa">PV ${x.pv??'—'}</b></small>`:'<small>Pas de stats proposées</small>'}
     ${x.idee?`<div style="font-size:13px;white-space:pre-wrap">${esc(x.idee)}</div>`:''}
+    ${(x.ultime||x.passif||x.effet)?`<div style="font-size:12px;line-height:1.4">${lignesCarte({...x,raretes:rr}).map(sct=>`<div><b>${sct.ico} ${esc(sct.t)}</b>${sct.items.map(i=>`<div style="color:#cbd5e1">• ${esc(i)}</div>`).join('')}</div>`).join('')}</div>`:''}
+    ${x.carte_id?'<small class="ok">🃏 Carte créée dans le jeu (non publiée au départ)</small>':''}
     <input placeholder="Note pour le joueur (facultatif)" value="${esc(x.note_admin||'')}" data-note="${x.id}">
-    <div class="row">${x.statut!='acceptee'?`<button data-aps="acceptee" data-id="${x.id}">✅ Accepter</button>`:''}${x.statut!='refusee'?`<button class="sec" data-aps="refusee" data-id="${x.id}">❌ Refuser</button>`:''}${x.statut!='attente'?`<button class="sec" data-aps="attente" data-id="${x.id}">⏳ En attente</button>`:''}
+    <div class="row">${x.carte_id?'':`<button data-apc="${x.id}" title="Crée la carte dans le jeu (non publiée) avec ses stats, ses effets et ses images composées, et accepte la proposition">➕ Créer la carte</button>`}${x.statut!='acceptee'?`<button data-aps="acceptee" data-id="${x.id}">✅ Accepter</button>`:''}${x.statut!='refusee'?`<button class="sec" data-aps="refusee" data-id="${x.id}">❌ Refuser</button>`:''}${x.statut!='attente'?`<button class="sec" data-aps="attente" data-id="${x.id}">⏳ En attente</button>`:''}
      <a href="${esc(u)}" download target="_blank"><button class="sec" title="Télécharger le dessin seul">⬇️</button></a>${uc?`<a href="${esc(uc)}" download target="_blank"><button class="sec" title="Télécharger la carte assemblée">🃏</button></a>`:''}<button class="sec" data-apdel="${x.id}" data-path="${esc(x.image_path)}" data-path2="${esc(x.image_carte||'')}" title="Supprimer">🗑️</button></div></div>`}).join('')}</div>`:'<p><small>Aucune proposition ici.</small></p>'}`;
   box.querySelectorAll('[data-apf]').forEach(b=>b.onclick=()=>{apFiltre=b.dataset.apf;aPropos()});
+  // ➕ Créer la carte : la proposition devient une vraie carte (non publiée), images composées depuis le dessin du joueur
+  box.querySelectorAll('[data-apc]').forEach(b=>b.onclick=async()=>{const x=L.find(y=>String(y.id)===b.dataset.apc);if(!x)return;
+    if(!(await uiConfirm(`Créer la carte « ${x.nom} » dans le jeu ?\nElle sera non publiée : tu pourras la régler dans Admin → Cartes avant de la publier.`)))return;
+    b.disabled=true;b.textContent='Création…';
+    try{const comb=x.type==='combattant',row={nom:x.nom,type:x.type,collection_id:x.collection_id||null,rarete_id:x.rarete_id,atq:comb?x.atq:null,pv:comb?x.pv:null,description:null,actif:false,ultime:comb?x.ultime||null:null,passif:comb?x.passif||null:null,effet:comb?null:x.effet||null};
+     const c=await q(sb.from('cartes').insert(row).select('id').single());noteEquilibrage(null,{...row,id:c.id});
+     const url=pImg(x.image_path),rep=await fetch(url),bl=rep.ok?await rep.blob():null,d=bl?await CPO.dessinDe(url):null;
+     if(d&&bl){const o={...CPO.DEF,...(x.compo||{})},im=await CPO.images({dessin:d,carte:row,tier:CPO.tierDe(rar(x.rarete_id)),o});
+      const dp=await uploadDessin(new File([bl],'dessin.'+(bl.type.split('/')[1]||'png'),{type:bl.type||'image/png'}));
+      await majVariante(c.id,{image_path:await uploadPret(im.carte),image_combat:im.combat?await uploadPret(im.combat):null,dessin_path:dp,compo:o},true)}
+     else uiAlert('Carte créée, mais le dessin n\'a pas pu être chargé : ajoute-le dans Admin → Cartes (✏️).');
+     const u=await sb.from('propositions').update({statut:'acceptee',carte_id:c.id}).eq('id',x.id);
+     if(u.error&&/carte_id/.test(u.error.message||''))await sb.from('propositions').update({statut:'acceptee'}).eq('id',x.id);
+     uiAlert(`Carte « ${x.nom} » créée (non publiée).${x.collection_id?'':' Elle est sans collection pour l\'instant (le joueur proposait : « '+(x.collection_idee||'')+' »).'} Règle-la dans Admin → Cartes, puis publie-la.`);aPropos()}
+    catch(e){b.disabled=false;b.textContent='➕ Créer la carte'}});
   box.querySelectorAll('[data-zoom]').forEach(i=>i.onclick=()=>window.open(i.dataset.zoom,'_blank'));
   box.querySelectorAll('[data-aps]').forEach(b=>b.onclick=async()=>{const id=b.dataset.id,note=box.querySelector(`[data-note="${id}"]`).value.trim()||null;
     const u=await sb.from('propositions').update({statut:b.dataset.aps,note_admin:note}).eq('id',id);if(u.error){uiAlert(u.error.message);return}aPropos()});
@@ -1484,6 +1486,54 @@ async function majVariante(carteId,ch,insert){const essai=async c=>{const vs=awa
   if(r.error&&/dessin_path|compo/.test(r.error.message||'')){const {dessin_path,compo,...reste}=ch;r=await essai(reste);
    if(!r.error)uiAlert('Images enregistrées. Pour que le site garde le dessin et refasse l\'image quand la carte change, lance une fois 29-composition-cartes.sql dans Supabase.')}
   if(r.error){uiAlert(r.error.message);throw r.error}}
+// ---------- Panneau du composeur (admin → Cartes, et propositions des joueurs) ----------
+const htmlCompo=(titre,aide,extra='')=>`<div class="cpo" id="cpo"><div class="cpo-h"><b>${titre}</b><small>${aide}</small></div>
+    <div class="cpo-g"><div class="cpo-v"><canvas id="cpv" width="1488" height="2070"></canvas><small id="cpi"></small></div>
+     <div class="cpo-r"><label><small>Dessin seul (sans cadre, ni écriteau, ni chiffres)</small><input name="dessin" type="file" accept="image/*"></label>
+      <label><small>Zoom du dessin · glisse-le dans l'aperçu pour le placer</small><input name="cz" type="range" min="50" max="300" value="100"></label>
+      <div class="cpo-2"><label><small>Largeur (étirer / resserrer)</small><input name="csx" type="range" min="50" max="200" value="100"></label>
+       <label><small>Hauteur (étirer / aplatir)</small><input name="csy" type="range" min="50" max="200" value="100"></label></div>
+      <button type="button" class="sec" id="crz" style="align-self:flex-start">↺ Remettre le dessin d'origine</button>
+      <div class="cpe"><div class="cpo-2"><label><small>Police de l'écriteau</small><select name="cpol">${CPO.POLICES.map(p=>`<option>${p}</option>`).join('')}</select></label>
+       <label><small>Passifs</small><select name="csty"><option value="texte">Texte coloré</option><option value="pastille">Pastilles</option></select></label></div>
+       <label><small>Taille du texte</small><input name="ctai" type="range" min="60" max="140" value="100"></label>
+       <label><small>Position verticale de l'écriteau</small><input name="cdec" type="range" min="-300" max="300" value="0"></label>
+       <label><small>Marge de l'écriteau autour du texte</small><input name="cmar" type="range" min="10" max="160" value="55"></label>
+       <label class="cpo-c"><input type="checkbox" name="cda" checked> Ultime en italique rouge sombre (la DA des cartes)</label>
+       <label class="cpo-c"><input type="checkbox" name="clu"> Lueur rouge sur l'ultime</label>
+       <label><small>Texte de l'écriteau : une ligne par effet, l'ultime en premier (modifiable ; la couleur suit l'effet de la ligne)</small><textarea name="ctxt" rows="3"></textarea></label>
+       <label class="cpo-c"><input type="checkbox" name="cex" checked> Explications des compétences sous chaque titre</label>
+       <label class="cpe-x"><small>Taille des explications</small><input name="cdt" type="range" min="60" max="160" value="100"></label>
+       <label class="cpe-x"><small>Explications : une ligne par effet, dans le même ordre (modifiable ; ligne vide = pas d'explication)</small><textarea name="cdtx" rows="4"></textarea></label>
+       <div class="row" style="margin:0"><button type="button" class="sec" id="cauto">↺ Texte automatique</button><button type="button" class="sec" id="cdl">⬇️ Télécharger les images</button></div></div></div></div>
+${extra}</div>`;
+// branche le panneau sur un formulaire (champs dessin, cz, csx…) ; lire() rend {carte, tier} d'après le formulaire
+function brancherCompo(fc,lire){
+  const CS={dessin:null,dessinFichier:null,dessinPath:null,image:null,o:{...CPO.DEF}};
+  const versUI=()=>{const o=CS.o;fc.cz.value=Math.round(o.z*100);fc.csx.value=Math.round((o.sx||1)*100);fc.csy.value=Math.round((o.sy||1)*100);fc.cpol.value=o.police;fc.csty.value=o.style;fc.ctai.value=o.taille;fc.cdec.value=o.decal;fc.cmar.value=o.marge;fc.cda.checked=o.daUlt;fc.clu.checked=o.lueur;fc.cex.checked=o.details!==false;fc.cdt.value=o.dtaille||100;if(o.textes)fc.ctxt.value=o.textes.join('\n');if(o.dtextes)fc.cdtx.value=o.dtextes.join('\n')};
+  const depuisUI=()=>Object.assign(CS.o,{z:+fc.cz.value/100,sx:+fc.csx.value/100,sy:+fc.csy.value/100,police:fc.cpol.value,style:fc.csty.value,taille:+fc.ctai.value,decal:+fc.cdec.value,marge:+fc.cmar.value,daUlt:fc.cda.checked,lueur:fc.clu.checked,details:fc.cex.checked,dtaille:+fc.cdt.value});
+  const cv=$('#cpv'),buf=document.createElement('canvas');buf.width=CPO.W;buf.height=CPO.H;let tic=0,att=null;
+  const apercu=()=>{if(att)return;att=requestAnimationFrame(async()=>{att=null;const n=++tic,{carte,tier}=lire();
+    {const au=CPO.lignes(carte,{textes:null,dtextes:null});if(!CS.o.textes&&document.activeElement!==fc.ctxt)fc.ctxt.value=au.map(l=>l.t).join('\n');if(!CS.o.dtextes&&document.activeElement!==fc.cdtx)fc.cdtx.value=au.map(l=>l.d||'').join('\n')}
+    $('#cpo').querySelectorAll('.cpe-x').forEach(n=>n.style.display=fc.cex.checked?'':'none');
+    const x=cv.getContext('2d');
+    if(!CS.dessin){CPO.taille(cv);x.clearRect(0,0,cv.width,cv.height);if(CS.image){x.imageSmoothingQuality='high';x.drawImage(CS.image,0,0,cv.width,cv.height)}
+     $('#cpi').textContent=CS.image?'Image actuelle (déjà prête). Ajoute le dessin seul pour passer au nouveau système.':'Ajoute ton dessin seul pour voir la carte se composer.';return}
+    await CPO.rendre(buf.getContext('2d'),{dessin:CS.dessin,carte,tier,o:CS.o,chiffres:true});if(n!==tic)return;CPO.reduire(buf,cv);
+    $('#cpi').textContent='Aperçu de la carte avec chiffres ; l\'image de combat est la même, sans les chiffres.'})};
+  fc.addEventListener('input',e=>{if(e.target===fc.ctxt){const v=fc.ctxt.value.split('\n');CS.o.textes=v}else if(e.target===fc.cdtx){CS.o.dtextes=fc.cdtx.value.split('\n')}else if(/^c(z|sx|sy|pol|sty|tai|dec|mar|da|lu|ex|dt)$/.test(e.target.name||''))depuisUI();apercu()});
+  fc.addEventListener('change',()=>{depuisUI();apercu()});fc.addEventListener('click',()=>setTimeout(apercu,0));
+  $('#crz').onclick=()=>{Object.assign(CS.o,{z:1,sx:1,sy:1,x:0,y:0});versUI();apercu()};
+  $('#cauto').onclick=()=>{CS.o.textes=null;CS.o.dtextes=null;fc.ctxt.blur();fc.cdtx.blur();apercu()};
+  fc.dessin.onchange=()=>{const fi=fc.dessin.files[0];if(!fi)return;const i=new Image();i.onload=()=>{CS.dessin=i;CS.dessinFichier=fi;CS.dessinPath=null;Object.assign(CS.o,{z:1,sx:1,sy:1,x:0,y:0});versUI();apercu()};i.src=URL.createObjectURL(fi)};
+  {let g=null;cv.addEventListener('pointerdown',e=>{if(!CS.dessin)return;g={x:e.clientX,y:e.clientY,ox:CS.o.x,oy:CS.o.y};cv.setPointerCapture(e.pointerId);cv.style.cursor='grabbing'});
+   cv.addEventListener('pointermove',e=>{if(!g)return;const r=cv.getBoundingClientRect();CS.o.x=g.ox+(e.clientX-g.x)/r.width;CS.o.y=g.oy+(e.clientY-g.y)/r.height;apercu()});
+   const fin=()=>{g=null;cv.style.cursor='grab'};cv.addEventListener('pointerup',fin);cv.addEventListener('pointercancel',fin);
+   cv.addEventListener('wheel',e=>{if(!CS.dessin)return;e.preventDefault();CS.o.z=Math.min(3,Math.max(.5,CS.o.z*(e.deltaY<0?1.05:1/1.05)));versUI();apercu()},{passive:false})}
+  $('#cdl').onclick=async()=>{if(!CS.dessin)return uiAlert('Ajoute d\'abord le dessin seul.');const {carte,tier}=lire(),im=await CPO.images({dessin:CS.dessin,carte,tier,o:CS.o}),nom=(fc.nom.value||'carte').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/gi,'-').toLowerCase();
+   [[im.carte,nom+'.webp'],[im.combat,nom+'-combat.webp']].forEach(([f,n])=>{if(!f)return;const a=document.createElement('a');a.href=URL.createObjectURL(f);a.download=n;a.click()})};
+  versUI();apercu();
+  return {CS,apercu,versUI}}
 async function aCartes(){
   editId=null;editOld=null;
   const [col,rar,cartes]=await Promise.all([q(sb.from('collections').select('*')),q(sb.from('raretes').select('*').order('ordre')),
@@ -1499,28 +1549,9 @@ async function aCartes(){
    <select name="rar">${opts(rar)}</select>
    <div class="row" id="r-stats"><input name="atq" type="number" placeholder="ATQ" style="width:90px"><input name="pv" type="number" placeholder="PV" style="width:90px"></div>
    <input name="desc" placeholder="Description (optionnel)">
-   <div class="cpo" id="cpo"><div class="cpo-h"><b>🎨 Image de la carte</b><small>Envoie le dessin seul : le site pose le cadre, l'écriteau et les chiffres, et crée l'image normale et l'image de combat. Si la carte change plus tard (stats, ultime, passifs, rareté), l'image se refait toute seule.</small></div>
-    <div class="cpo-g"><div class="cpo-v"><canvas id="cpv" width="1488" height="2070"></canvas><small id="cpi"></small></div>
-     <div class="cpo-r"><label><small>Dessin seul (sans cadre, ni écriteau, ni chiffres)</small><input name="dessin" type="file" accept="image/*"></label>
-      <label><small>Zoom du dessin · glisse-le dans l'aperçu pour le placer</small><input name="cz" type="range" min="50" max="300" value="100"></label>
-      <div class="cpo-2"><label><small>Largeur (étirer / resserrer)</small><input name="csx" type="range" min="50" max="200" value="100"></label>
-       <label><small>Hauteur (étirer / aplatir)</small><input name="csy" type="range" min="50" max="200" value="100"></label></div>
-      <button type="button" class="sec" id="crz" style="align-self:flex-start">↺ Remettre le dessin d'origine</button>
-      <div class="cpe"><div class="cpo-2"><label><small>Police de l'écriteau</small><select name="cpol">${CPO.POLICES.map(p=>`<option>${p}</option>`).join('')}</select></label>
-       <label><small>Passifs</small><select name="csty"><option value="texte">Texte coloré</option><option value="pastille">Pastilles</option></select></label></div>
-       <label><small>Taille du texte</small><input name="ctai" type="range" min="60" max="140" value="100"></label>
-       <label><small>Position verticale de l'écriteau</small><input name="cdec" type="range" min="-300" max="300" value="0"></label>
-       <label><small>Marge de l'écriteau autour du texte</small><input name="cmar" type="range" min="10" max="160" value="55"></label>
-       <label class="cpo-c"><input type="checkbox" name="cda" checked> Ultime en italique rouge sombre (ta DA)</label>
-       <label class="cpo-c"><input type="checkbox" name="clu"> Lueur rouge sur l'ultime</label>
-       <label><small>Texte de l'écriteau : une ligne par effet, l'ultime en premier (modifiable ; la couleur suit l'effet de la ligne)</small><textarea name="ctxt" rows="3"></textarea></label>
-       <label class="cpo-c"><input type="checkbox" name="cex" checked> Explications des compétences sous chaque titre</label>
-       <label class="cpe-x"><small>Taille des explications</small><input name="cdt" type="range" min="60" max="160" value="100"></label>
-       <label class="cpe-x"><small>Explications : une ligne par effet, dans le même ordre (modifiable ; ligne vide = pas d'explication)</small><textarea name="cdtx" rows="4"></textarea></label>
-       <div class="row" style="margin:0"><button type="button" class="sec" id="cauto">↺ Texte automatique</button><button type="button" class="sec" id="cdl">⬇️ Télécharger les images</button></div></div></div></div>
-    <details><summary><small>Ou envoyer des images déjà prêtes (ancien système)</small></summary>
+   ${htmlCompo('🎨 Image de la carte',"Envoie le dessin seul : le site pose le cadre, l'écriteau et les chiffres, et crée l'image normale et l'image de combat. Si la carte change plus tard (stats, ultime, passifs, rareté), l'image se refait toute seule.",`    <details><summary><small>Ou envoyer des images déjà prêtes (ancien système)</small></summary>
      <label>Image complète de la carte<br><input name="file" type="file" accept="image/*"></label>
-     <label>Image pour le combat — sans les chiffres ATQ/PV (facultatif, combattants)<br><input name="filec" type="file" accept="image/*"></label></details></div>
+     <label>Image pour le combat — sans les chiffres ATQ/PV (facultatif, combattants)<br><input name="filec" type="file" accept="image/*"></label></details>`)}
    <div id="s-comb"><b>Ultime</b><div id="b-ult"></div>
     <div class="row"><label><small>Après N tours</small><br><input name="utours" type="number" min="0" style="width:90px"></label>
     <label><input type="checkbox" name="ucarte"> ou quand un piège se déclenche (ou qu'une magie revient)</label></div>
@@ -1563,36 +1594,13 @@ async function aCartes(){
     $('#s-mag').style.display=t=='magie'?'':'none';$('#s-pie').style.display=t=='piege'?'':'none'};
   fc.type.onchange=toggle;toggle();
   // composeur : état, aperçu en direct, placement du dessin
-  const CS={dessin:null,dessinFichier:null,dessinPath:null,image:null,o:{...CPO.DEF}};
   const lire=()=>{const t=fc.type.value;let ult=null,pas=null,eff=null;try{if(t=='combattant'){ult=B.ult.get();pas=B.pas.get()}else if(t=='magie')eff=B.mag.get();else eff={condition:B.con.get(),effet:B.pef.get()}}catch(e){}
     return {carte:{type:t,ultime:ult,passif:pas,effet:eff,atq:fc.atq.value,pv:fc.pv.value},tier:CPO.tierDe(rar.find(x=>x.id==fc.rar.value))}};
-  const versUI=()=>{const o=CS.o;fc.cz.value=Math.round(o.z*100);fc.csx.value=Math.round((o.sx||1)*100);fc.csy.value=Math.round((o.sy||1)*100);fc.cpol.value=o.police;fc.csty.value=o.style;fc.ctai.value=o.taille;fc.cdec.value=o.decal;fc.cmar.value=o.marge;fc.cda.checked=o.daUlt;fc.clu.checked=o.lueur;fc.cex.checked=o.details!==false;fc.cdt.value=o.dtaille||100;if(o.textes)fc.ctxt.value=o.textes.join('\n');if(o.dtextes)fc.cdtx.value=o.dtextes.join('\n')};
-  const depuisUI=()=>Object.assign(CS.o,{z:+fc.cz.value/100,sx:+fc.csx.value/100,sy:+fc.csy.value/100,police:fc.cpol.value,style:fc.csty.value,taille:+fc.ctai.value,decal:+fc.cdec.value,marge:+fc.cmar.value,daUlt:fc.cda.checked,lueur:fc.clu.checked,details:fc.cex.checked,dtaille:+fc.cdt.value});
-  const cv=$('#cpv'),buf=document.createElement('canvas');buf.width=CPO.W;buf.height=CPO.H;let tic=0,att=null;
-  const apercu=()=>{if(att)return;att=requestAnimationFrame(async()=>{att=null;const n=++tic,{carte,tier}=lire();
-    {const au=CPO.lignes(carte,{textes:null,dtextes:null});if(!CS.o.textes&&document.activeElement!==fc.ctxt)fc.ctxt.value=au.map(l=>l.t).join('\n');if(!CS.o.dtextes&&document.activeElement!==fc.cdtx)fc.cdtx.value=au.map(l=>l.d||'').join('\n')}
-    $('#cpo').querySelectorAll('.cpe-x').forEach(n=>n.style.display=fc.cex.checked?'':'none');
-    const x=cv.getContext('2d');
-    if(!CS.dessin){CPO.taille(cv);x.clearRect(0,0,cv.width,cv.height);if(CS.image){x.imageSmoothingQuality='high';x.drawImage(CS.image,0,0,cv.width,cv.height)}
-     $('#cpi').textContent=CS.image?'Image actuelle (déjà prête). Ajoute le dessin seul pour passer au nouveau système.':'Ajoute le dessin seul pour voir la carte se composer.';return}
-    await CPO.rendre(buf.getContext('2d'),{dessin:CS.dessin,carte,tier,o:CS.o,chiffres:true});if(n!==tic)return;CPO.reduire(buf,cv);
-    $('#cpi').textContent='Aperçu de la carte avec chiffres ; l\'image de combat est la même, sans les chiffres.'})};
-  fc.addEventListener('input',e=>{if(e.target===fc.ctxt){const v=fc.ctxt.value.split('\n');CS.o.textes=v}else if(e.target===fc.cdtx){CS.o.dtextes=fc.cdtx.value.split('\n')}else if(/^c(z|sx|sy|pol|sty|tai|dec|mar|da|lu|ex|dt)$/.test(e.target.name||''))depuisUI();apercu()});
-  fc.addEventListener('change',()=>{depuisUI();apercu()});fc.addEventListener('click',()=>setTimeout(apercu,0));
-  $('#crz').onclick=()=>{Object.assign(CS.o,{z:1,sx:1,sy:1,x:0,y:0});versUI();apercu()};
-  $('#cauto').onclick=()=>{CS.o.textes=null;CS.o.dtextes=null;fc.ctxt.blur();fc.cdtx.blur();apercu()};
-  fc.dessin.onchange=()=>{const fi=fc.dessin.files[0];if(!fi)return;const i=new Image();i.onload=()=>{CS.dessin=i;CS.dessinFichier=fi;CS.dessinPath=null;Object.assign(CS.o,{z:1,sx:1,sy:1,x:0,y:0});versUI();apercu()};i.src=URL.createObjectURL(fi)};
-  {let g=null;cv.addEventListener('pointerdown',e=>{if(!CS.dessin)return;g={x:e.clientX,y:e.clientY,ox:CS.o.x,oy:CS.o.y};cv.setPointerCapture(e.pointerId);cv.style.cursor='grabbing'});
-   cv.addEventListener('pointermove',e=>{if(!g)return;const r=cv.getBoundingClientRect();CS.o.x=g.ox+(e.clientX-g.x)/r.width;CS.o.y=g.oy+(e.clientY-g.y)/r.height;apercu()});
-   const fin=()=>{g=null;cv.style.cursor='grab'};cv.addEventListener('pointerup',fin);cv.addEventListener('pointercancel',fin);
-   cv.addEventListener('wheel',e=>{if(!CS.dessin)return;e.preventDefault();CS.o.z=Math.min(3,Math.max(.5,CS.o.z*(e.deltaY<0?1.05:1/1.05)));versUI();apercu()},{passive:false})}
-  $('#cdl').onclick=async()=>{if(!CS.dessin)return uiAlert('Ajoute d\'abord le dessin seul.');const {carte,tier}=lire(),im=await CPO.images({dessin:CS.dessin,carte,tier,o:CS.o}),nom=(fc.nom.value||'carte').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/gi,'-').toLowerCase();
-   [[im.carte,nom+'.webp'],[im.combat,nom+'-combat.webp']].forEach(([f,n])=>{if(!f)return;const a=document.createElement('a');a.href=URL.createObjectURL(f);a.download=n;a.click()})};
+  const {CS,apercu,versUI}=brancherCompo(fc,lire);
   // enregistre les images composées sur la version Standard (et garde le dessin pour les refaire plus tard)
   const composer=async(carteId,carte,insert)=>{const {tier}=lire(),im=await CPO.images({dessin:CS.dessin,carte,tier,o:CS.o});
    const path=await uploadPret(im.carte),pc=im.combat?await uploadPret(im.combat):null,dp=CS.dessinPath||await uploadDessin(CS.dessinFichier);CS.dessinPath=dp;
    await majVariante(carteId,{image_path:path,image_combat:pc,dessin_path:dp,compo:{...CS.o}},insert)};
-  versUI();apercu();
   // refait les images de toutes les cartes composées (dessin seul gardé), avec le rendu actuel
   const refaireTout=async(chg)=>{const info=$('#cregenI'),btn=$('#cregen');
    const r=await sb.from('variantes_carte').select('*,cartes(*,raretes(nom,poids))').not('dessin_path','is',null);
