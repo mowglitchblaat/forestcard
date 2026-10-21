@@ -1,0 +1,22 @@
+# Temporary (Claude, balance test): exports the published cards with the public key, commits them
+# to this branch, then the branch is deleted. Never merged.
+name: Export cartes (temporaire)
+on:
+  push:
+    branches: ['tmp/export-cartes']
+permissions:
+  contents: write
+jobs:
+  export:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Export
+        run: |
+          K='sb_publishable_-3cPqDCyE-zhb3z5r6dPhg_DJFKGAI6'
+          curl -sSf "https://bjsvqikjnvaomyoifiml.supabase.co/rest/v1/cartes?select=id,nom,type,atq,pv,actif,passif,ultime,effet,description,raretes(nom,couleur,poids),collections(nom),variantes_carte(nom,image_path)&actif=eq.true&order=nom" -H "apikey: $K" -o export-cartes.json
+          python3 -c "import json;print(len(json.load(open('export-cartes.json'))),'cartes')"
+          git config user.name "export-cartes"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add export-cartes.json && git commit -q -m "Export des cartes" && git push -q
