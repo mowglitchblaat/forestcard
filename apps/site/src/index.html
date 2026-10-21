@@ -1535,18 +1535,24 @@ const CPO=(()=>{
   if(!comb)await ecriteau(x,carte.type==='piege'?'piege':'magie',lignes(carte,o),o);   // magie, piège : pas d'écriteau (charte), le texte va dans la zone libre du cadre, sous le dessin
   if(chiffres&&comb){const num=(v,cx,c)=>{if(v==null||v==='')return;const s=150;x.font=`900 ${s}px "Arial Black",sans-serif`;x.textAlign='center';x.textBaseline='middle';x.lineJoin='round';
    x.lineWidth=s*.16;x.strokeStyle='#fff';x.strokeText(String(v),cx,H*.925);x.fillStyle=c;x.fillText(String(v),cx,H*.925)};num(carte.atq,W*.13,'#e0303c');num(carte.pv,W*.87,'#4747d6')}}
- const blob=c=>new Promise(ok=>c.toBlob(ok,'image/png'));
+ // image finale : réduite en haute qualité à 1440 px de haut, WebP 94 % (texte net ; la compression standard du site bavait sur les lettres)
+ const FH=1440,FW=Math.round(W*FH/H);
+ const blob=c=>{const r=document.createElement('canvas');r.width=FW;r.height=FH;const g=r.getContext('2d');g.imageSmoothingEnabled=true;g.imageSmoothingQuality='high';
+  const m=document.createElement('canvas');m.width=Math.round(W*.7);m.height=Math.round(H*.7);const gm=m.getContext('2d');gm.imageSmoothingQuality='high';gm.drawImage(c,0,0,m.width,m.height);   // deux étapes : moins de crénelage
+  g.drawImage(m,0,0,FW,FH);return new Promise(ok=>r.toBlob(ok,'image/webp',.94))};
  // les deux images de la carte (avec / sans chiffres ; sans chiffres seulement pour un combattant)
  async function images(args){const c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');
   await rendre(x,{...args,chiffres:true});const a=await blob(c);let b=null;
   if(args.carte.type==='combattant'){await rendre(x,{...args,chiffres:false});b=await blob(c)}
-  const f=(bl,n)=>bl?new File([bl],n,{type:'image/png'}):null;return {carte:f(a,'carte.png'),combat:f(b,'combat.png')}}
+  const f=(bl,n)=>bl?new File([bl],n,{type:'image/webp'}):null;return {carte:f(a,'carte.webp'),combat:f(b,'combat.webp')}}
  const dessinDe=async src=>{try{const r=await fetch(src,{mode:'cors'});if(!r.ok)return null;const u=URL.createObjectURL(await r.blob());return await new Promise(ok=>{const i=new Image();i.onload=()=>ok(i);i.onerror=()=>ok(null);i.src=u})}catch(e){return null}};
  return {W,H,DEF,POLICES,rendre,images,tierDe,lignes,dessinDe,chargerPolices};
 })();
 // le dessin seul : gardé en grand (jusqu'à la hauteur des cadres) pour pouvoir refaire l'image plus tard
 async function uploadDessin(file){const f=await alleger(file,2070,.92),ext=f.type==='image/webp'?'webp':(file.name.split('.').pop()||'png'),path='dessins/'+crypto.randomUUID()+'.'+ext;
   await q(sb.storage.from('cartes').upload(path,f,{contentType:f.type||file.type,cacheControl:CACHE_1AN}));return path}
+// image déjà prête (composée) : envoyée telle quelle, sans la compression standard
+async function uploadPret(f){const path=crypto.randomUUID()+'.webp';await q(sb.storage.from('cartes').upload(path,f,{contentType:'image/webp',cacheControl:CACHE_1AN}));return path}
 // met à jour la version Standard ; sans 29-composition-cartes.sql, enregistre quand même les images (le dessin ne sera pas gardé)
 async function majVariante(carteId,ch,insert){const essai=async c=>{const vs=await sb.from('variantes_carte').select('id').eq('carte_id',carteId).eq('nom','Standard').limit(1);
    if(vs.error)return vs;return vs.data&&vs.data.length&&!insert?sb.from('variantes_carte').update(c).eq('id',vs.data[0].id):sb.from('variantes_carte').insert({carte_id:carteId,nom:'Standard',poids:100,...c})};
@@ -1650,10 +1656,10 @@ async function aCartes(){
    const fin=()=>{g=null;cv.style.cursor='grab'};cv.addEventListener('pointerup',fin);cv.addEventListener('pointercancel',fin);
    cv.addEventListener('wheel',e=>{if(!CS.dessin)return;e.preventDefault();CS.o.z=Math.min(3,Math.max(.5,CS.o.z*(e.deltaY<0?1.05:1/1.05)));versUI();apercu()},{passive:false})}
   $('#cdl').onclick=async()=>{if(!CS.dessin)return uiAlert('Ajoute d\'abord le dessin seul.');const {carte,tier}=lire(),im=await CPO.images({dessin:CS.dessin,carte,tier,o:CS.o}),nom=(fc.nom.value||'carte').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/gi,'-').toLowerCase();
-   [[im.carte,nom+'.png'],[im.combat,nom+'-combat.png']].forEach(([f,n])=>{if(!f)return;const a=document.createElement('a');a.href=URL.createObjectURL(f);a.download=n;a.click()})};
+   [[im.carte,nom+'.webp'],[im.combat,nom+'-combat.webp']].forEach(([f,n])=>{if(!f)return;const a=document.createElement('a');a.href=URL.createObjectURL(f);a.download=n;a.click()})};
   // enregistre les images composées sur la version Standard (et garde le dessin pour les refaire plus tard)
   const composer=async(carteId,carte,insert)=>{const {tier}=lire(),im=await CPO.images({dessin:CS.dessin,carte,tier,o:CS.o});
-   const path=await upload(im.carte),pc=im.combat?await upload(im.combat):null,dp=CS.dessinPath||await uploadDessin(CS.dessinFichier);CS.dessinPath=dp;
+   const path=await uploadPret(im.carte),pc=im.combat?await uploadPret(im.combat):null,dp=CS.dessinPath||await uploadDessin(CS.dessinFichier);CS.dessinPath=dp;
    await majVariante(carteId,{image_path:path,image_combat:pc,dessin_path:dp,compo:{...CS.o}},insert)};
   versUI();apercu();
   $('#fcolad').onchange=e=>{const v=e.target.value;$('#sub').querySelectorAll('tr[data-col]').forEach(tr=>tr.style.display=!v||tr.dataset.col==v?'':'none')};
