@@ -527,7 +527,7 @@ function detoFx(c,parts,o={}){const K=rc(c),S=o.s||1,W=K.w*S,COL={brulure:'255,1
  });
  setTimeout(()=>{try{const f=[];for(let i=0;i<=12;i++){const a=14*S*(1-i/12);f.push({transform:i===12?'translate(0,0)':`translate(${(RN()-.5)*2*a}px,${(RN()-.5)*2*a}px)`})}document.body.animate(f,{duration:650})}catch(e){}},T0*1000)}
 // Missile : part de la carte qui tire, vole en arc (flamme + fumée) et frappe la cible
-function missileFx(from,to,k){const A=rc(from),B=rc(to),dir=Math.sign(B.cx-A.cx)||1,RN=Math.random,sc=A.w/320,D=.6;
+function missileFx(from,to,k){const A=rc(from),B=rc(to),dir=Math.sign(B.cx-A.cx)||1,RN=Math.random,sc=A.w/320,D=.42;   // vol plus court (salve plus rythmée)
  const sx=A.cx+dir*A.w*.35,sy=A.cy-A.h*.15+((k||1)%3-1)*A.h*.12,ex=B.cx+(RN()-.5)*B.w*.3,ey=B.cy+(RN()-.5)*B.h*.3,mx=(sx+ex)/2,my=Math.min(sy,ey)-A.h*(.35+RN()*.3);
  const P=t=>{const u=1-t;return[u*u*sx+2*u*t*mx+t*t*ex,u*u*sy+2*u*t*my+t*t*ey]},fum=[];
  addFx(D+.7,(x,t)=>{const q=Math.min(1,t/D),f=q*q*(3-2*q),[px,py]=P(f),[qx,qy]=P(Math.max(0,f-.02)),ang=Math.atan2(py-qy,px-qx);
@@ -1092,7 +1092,7 @@ function flot(i,txt,col,cls){const d=document.createElement('div');d.className='
   if(w>maxW){d.style.fontSize=(parseFloat(getComputedStyle(d).fontSize)*maxW/w)+'px'}
   const place=()=>{const pr=P.getBoundingClientRect(),w2=d.scrollWidth*K,c=pr.left+pr.width/2,cc=Math.min(W-m-w2/2,Math.max(m+w2/2,c));d.style.left=(cc-pr.left)+'px'};place();setTimeout(place,120)}catch(e){}   // replacé une 2e fois si la carte bouge (avalage…)
  setTimeout(()=>d.remove(),1300)}
-let enCours=false;const file=[];
+let enCours=false,enSalve=false;const file=[];
 let journalRecap=null,wsLive=null;
 // Verrou partagé avec l'overlay des boosters (même navigateur OBS) : un seul des deux à l'écran à la fois
 const VERROU='fc_overlay_verrou';let battement=null;
@@ -1138,7 +1138,7 @@ async function jouer(res){
    else if(e.t==='statut'&&e.k==='exec_prep'){flot(e.c,'Exécution','#fca5a5');await wait(600)}
    else if(e.t==='statut'&&e.k==='execution'){await executionFx(e.c);await wait(300)}
    else if(e.t==='missile'){await missileFx(e.from,e.c,e.n)}
-   else if(e.t==='detonation'&&e.mis){detoFx(e.c,e.parts,{s:.6});await wait(e.parts&&e.parts.length?650:450)}
+   else if(e.t==='detonation'&&e.mis){detoFx(e.c,e.parts,{s:.6});await wait(e.parts&&e.parts.length?380:250)}
    else if(e.t==='detonation'){detoFx(e.c,e.parts);setTimeout(()=>flot(e.c,'DÉTONATION !','#fb923c','big'),260);await wait(1500)}
    else if(e.t==='statut'&&e.k==='prog'){if(e.quoi)progFx(e.c,e.quoi);flot(e.c,e.quoi==='u'?'Ultime programmé':e.quoi==='p'?'Passif programmé':'Rien à programmer',e.quoi==='u'?'#fdba74':'#7dd3fc');await wait(1500)}   // programmation passive : l'élément dort (emplacement éteint) jusqu'à l'activation
    else if(e.t==='statut'&&e.k==='prog_act'){activFx(e.c);flot(e.c,'ACTIVATION !','#38bdf8','big');await wait(1900)}
@@ -1176,7 +1176,10 @@ async function jouer(res){
    else if(e.t==='magie'){faceMagie(e.c);const m=$('#m'+e.c);await zoomCarte('m'+e.c,e,'magie');m.classList.add('act');setTimeout(()=>m.classList.remove('act'),1000);allumerMini(e.c,'m')}
    else if(e.t==='piege'){revele(e.c,e);await zoomCarte('g'+e.c,e,'piege');allumerMini(e.c,'t');$('#g'+e.c).classList.toggle('annule',e.k==='bloque')}
    let ms={magie:600,piege:600,ultime:2200,fin:5000,degats:900,soin:1300,esquive:1100,bloque:1500,statut:1100,stat:1500,vol:1500,protege:2900,finstatut:250,frappe:350}[e.t]||900;
-   if(e.t==='degats'&&R.journal.slice(ix+1,ix+4).some(z=>z.t==='protege'&&z.c===e.c))ms=200;   // coup fatal évité : les dégâts et l'effet « évite la mort » apparaissent presque ensemble
+   if(e.t==='degats'&&R.journal.slice(ix+1,ix+4).some(z=>z.t==='protege'&&z.c===e.c))ms=200;
+   // salve de missiles : rythme accéléré, du tir du premier missile jusqu'à la fin de la salve (prochain tour, attaque ou ultime)
+   if(e.t==='missile')enSalve=true;else if(['tour','attaque','ultime','fin','prolongation'].includes(e.t))enSalve=false;
+   if(enSalve)ms=Math.min(ms,{missile:0,detonation:200,degats:520,statut:560,finstatut:150,stat:600,esquive:600,bloque:700,soin:700}[e.t]??500);   // coup fatal évité : les dégâts et l'effet « évite la mort » apparaissent presque ensemble
    if(e.t==='fin'){[0,1].forEach(i=>{faceMagie(i);const p=$('#p'+i);if(p)p.classList.remove('actif','idle')});fxAll.forEach(s=>s());fxAll.clear();document.querySelectorAll('canvas.fx').forEach(k=>k.remove());{const rw=e.recompenses[e.gagnant??0];$('#ban').textContent=e.txt+(rw>0?` (+${rw})`:'')+(e.bounty?(e.bounty.tout?` · 💰 Bounty ${e.bounty.total} : le gagnant rafle tout !`:` · 💰 Bounty ${e.bounty.total} !`):'');if(e.bounty){bourseBounty(e.bounty.parts);[0,1].forEach(i=>{if(e.bounty.parts[i]>0)setTimeout(()=>flot(i,'💰 Bounty +'+e.bounty.parts[i],'#fcd34d'),2100)})}}const cendre=i=>{const k=$('#p'+i+' .cw .card');return k&&k.dataset.cendre==='1'};if(e.gagnant!=null){if(!cendre(1-e.gagnant)&&!coupee(1-e.gagnant))briser(1-e.gagnant);auraFx(e.gagnant,{gold:1,dur:5.2})}else[0,1].forEach(i=>{if(e.pv&&e.pv[i]<=0&&!cendre(i)&&!coupee(i))briser(i)})}   // double KO : les deux cartes se brisent
    await wait(ms);
   }
