@@ -1,5 +1,30 @@
 [
   {
+    "date": "2026-10-21",
+    "intro": "La Programmation arrive en magie, et la collection montre maintenant toutes les cartes qu’il te reste à trouver.",
+    "groupes": [
+      {
+        "titre": "Magies et pièges",
+        "points": [
+          "Nouvelle magie « Programmation » : la carte qui la joue gagne le passif Programmation jusqu’à la fin du combat. Si la magie est annulée, détruite ou volée, le passif repart, mais ce qui a déjà été programmé reste."
+        ]
+      },
+      {
+        "titre": "Animations",
+        "points": [
+          "La barre de PV ne reste plus bloquée en combat après une programmation."
+        ]
+      },
+      {
+        "titre": "Collection et deck",
+        "points": [
+          "Les cartes que tu n’as pas encore s’affichent en grisé dans ta collection, avec leur détail consultable ; un bouton permet de les masquer.",
+          "Chaque version alternative d’une carte compte désormais comme une carte à collectionner dans ta progression."
+        ]
+      }
+    ]
+  },
+  {
     "date": "2026-10-20",
     "intro": "L’exécution peut maintenant s’appuyer sur les statuts, et une nouvelle version du site arrive en test.",
     "groupes": [
