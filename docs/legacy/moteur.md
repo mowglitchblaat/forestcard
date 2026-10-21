@@ -15,6 +15,8 @@ Le calcul est synchrone. Sans seed, la fonction en tire une avec `Math.random()`
 
 Chaque événement vaut `{ t, txt, ...champs, tour, pv: [a, b], max: [a, b], atq: [a, b] }`. Les trois tableaux sont un instantané pris au moment de l'émission.
 
+Ajout du moteur TS (absent du legacy) : tant qu'une carte est en rage ou a ses dégâts doublés, chaque ligne porte aussi `boost: [[rage, x2], [rage, x2]]` (bonus de rage en cours, `1` si les dégâts sont doublés, sinon `0`). L'overlay affiche alors l'ATQ finale d'un coup (`atq × 2` si doublé, `+ rage`) avec un effet. Une rage cesse de compter dès sa ligne « La rage de … retombe ».
+
 - `t` : catégorie (`debut`, `tour`, `attaque`, `frappe`, `degats`, `soin`, `statut`, `finstatut`, `stat`, `magie`, `piege`, `ultime`, `vol`, `esquive`, `bloque`, `protege`, `reanim_mort`, `reanim`, `souffle`, `prolongation`, `fin`, `inconnu`).
 - `k` : sous-type, lu par l'overlay pour choisir l'animation.
 - `c` : index de la carte concernée (0 ou 1). On trouve aussi `n` (montant), `d` (delta de stat), `from`, `to`, `cs`, `el`, etc.

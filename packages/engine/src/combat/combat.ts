@@ -9,6 +9,7 @@
 import type { CombatView, DomainEvent, OnEvent, SideView } from '../events.ts';
 import type { Card, EffectData, Num, Player } from '../model/card.ts';
 import type { Rules } from '../model/rules.ts';
+import { damageFactor } from '../mechanics/double-damage.ts';
 import { flushRevives } from '../mechanics/revive.ts';
 import { noticeTrigger, type Triggers } from '../mechanics/triggers.ts';
 import { NO_MAGIC, NO_TRAP, newStatus, normalizePassives, type Side } from './state.ts';
@@ -120,6 +121,12 @@ export function disableEmptySlots(s: Side): void {
   if (s.trap.vide) s.trapActive = 0;
 }
 
+// Temporary boosts read by the view (the live ATQ of the overlay). A rage whose last turn just ran
+// (turns at 0, its end line being emitted) no longer counts, so the shown ATQ drops with that line.
+const rageOf = (s: Side): number =>
+  s.status.rages.reduce((q, g) => q + (g.turns > 0 ? g.bonus : 0), 0);
+const doubledOf = (s: Side): boolean => damageFactor(s) > 1;
+
 export function createCombat(rules: Rules, seed: number, onEvent: OnEvent): Combat {
   const sides: Side[] = [];
   let currentRound = 0;
@@ -151,6 +158,12 @@ export function createCombat(rules: Rules, seed: number, onEvent: OnEvent): Comb
         },
         get atq() {
           return s.atq;
+        },
+        get rage() {
+          return rageOf(s);
+        },
+        get doubled() {
+          return doubledOf(s);
         },
       };
       views.set(s, view);
@@ -202,6 +215,8 @@ const frozenView = (c: Combat): CombatView => ({
     hp: s.hp,
     maxHp: s.maxHp,
     atq: s.atq,
+    rage: rageOf(s),
+    doubled: doubledOf(s),
   })),
 });
 
@@ -244,6 +259,8 @@ export const releaseNow = (c: Combat, events: HeldEvent[]) =>
         hp: now[i]?.hp ?? s.hp,
         maxHp: now[i]?.maxHp ?? s.maxHp,
         atq: now[i]?.atq ?? s.atq,
+        rage: now[i]?.rage ?? s.rage,
+        doubled: now[i]?.doubled ?? s.doubled,
       })),
     };
     deliver(c, h.event, view);

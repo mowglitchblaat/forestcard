@@ -189,6 +189,11 @@ export function project(event: DomainEvent, view: CombatView): JournalLine | nul
     pv: sides.map((s) => s.hp),
     max: sides.map((s) => s.maxHp),
     atq: sides.map((s) => s.atq),
+    // Only while a card has a rage or double damage running: [rage bonus, 1 if doubled else 0]
+    // per card, for the live ATQ of the overlay (atq × 2 if doubled, + rage).
+    ...(sides.some((s) => s.rage || s.doubled)
+      ? { boost: sides.map((s) => [s.rage, s.doubled ? 1 : 0]) }
+      : {}),
   };
 }
 

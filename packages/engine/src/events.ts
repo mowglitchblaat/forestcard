@@ -22,6 +22,10 @@ export type SideView = {
   readonly hp: number;
   readonly maxHp: number;
   readonly atq: number;
+  // Temporary damage boosts of the card's strikes, for the live ATQ shown during a combat:
+  // rage bonus (sum of its rages, 0 without) and double damage (double_degats) still running.
+  readonly rage: number;
+  readonly doubled: boolean;
 };
 export type CombatView = { readonly round: number; readonly sides: readonly SideView[] };
 

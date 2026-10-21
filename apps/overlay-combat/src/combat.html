@@ -19,6 +19,15 @@ body.obs{background:transparent}
 .sv{--sl:5%;--sr:5%;--sb:1.5%;--ss:3.6vw;position:absolute;z-index:5;bottom:var(--sb);font-size:var(--ss);font-weight:900;line-height:1;pointer-events:none;text-shadow:0 0 .35vw #fff,0 0 .35vw #fff,0 0 .15vw #fff}
 .sv::before{content:attr(data-v)}.sva{left:var(--sl);color:#e0303c}.svp{right:var(--sr);color:#4747d6}
 .sv.pls{animation:svp .5s}@keyframes svp{40%{transform:scale(1.4)}}.sub{font-size:1.7vh;opacity:.8}
+/* ATQ boostée temporairement (valeur finale affichée) : rage = braise rouge qui pulse, ATQ ×2 = reflet doré, les deux = rage ; petite flèche ▲ */
+.sva.b-rage{color:#ff4a24}.sva.b-x2{color:#ffd23f}.sva.b-rage::after,.sva.b-x2::after{content:'▲';font-size:.42em;vertical-align:.9em;margin-left:.08em}
+.sva.b-rage{-webkit-text-stroke:.12vw #a3121c;text-shadow:0 0 .4vw #ff3b2f,0 0 1vw #e01e1e;animation:bRage 1.1s ease-in-out infinite}
+.sva.b-rage::after{color:#ff5a3c}
+@keyframes bRage{50%{text-shadow:0 0 .7vw #ff7a50,0 0 1.8vw #ff2a1a}}
+.sva.b-x2{-webkit-text-stroke:.12vw #8a5a00;text-shadow:0 0 .35vw #fbbf24,0 0 .9vw #d99a0b;animation:bX2 1.6s ease-in-out infinite}
+.sva.b-x2::after{color:#fcd34d}
+@keyframes bX2{50%{text-shadow:0 0 .7vw #fff3c4,0 0 1.6vw #f5b70a}}
+.sva.b-rage.pls,.sva.b-x2.pls{animation:svp .5s,bRage 1.1s ease-in-out .5s infinite}.sva.b-x2.pls{animation:svp .5s,bX2 1.6s ease-in-out .5s infinite}
 /* chiffres flottants : au-dessus des cartes et des effets */
 .fl{position:absolute;left:50%;top:34%;z-index:12;font-size:10vh;font-weight:900;white-space:nowrap;text-shadow:-.35vh -.35vh 0 #000,.35vh -.35vh 0 #000,-.35vh .35vh 0 #000,.35vh .35vh 0 #000,0 .6vh 1.6vh #000;animation:fl 1.5s ease-out forwards;pointer-events:none}
 @keyframes mg{to{box-shadow:inset 0 0 60px 18px rgba(190,110,255,.8)}}
@@ -969,8 +978,11 @@ function aureole(c,o={}){const K=rc(c),W=K.w,cx=K.cx;
 function statut(c,k,on){if(k==='fracture')return;const key=c+k;st[key]=Math.max(0,(st[key]||0)+(on?1:-1));const card=$('#p'+c+' .card'),f=card.querySelector('canvas.fx.'+k);
  if(st[key]>0&&!f)fxStart(card,k);else if(!st[key]&&f){f._stop();f.remove()}}
 function maj(e){[0,1].forEach(i=>{const p=$('#p'+i);p.querySelector('.bar i').style.width=Math.max(0,e.pv[i]/e.max[i]*100)+'%';
- p.querySelector('.pv').textContent=`${Math.max(0,e.pv[i])} / ${e.max[i]} PV · ATQ ${e.atq[i]}`;
- [['.sva',e.atq[i]],['.svp',Math.max(0,e.pv[i])]].forEach(([k,v])=>{const n=p.querySelector(k);if(!n)return;const t=String(v);if(n.dataset.v!==t){const nv=n.dataset.v!=='';n.dataset.v=t;if(nv){n.classList.remove('pls');void n.offsetWidth;n.classList.add('pls')}}})})}
+ // ATQ boostée (rage, ATQ ×2) : la valeur finale d'un coup est affichée tant que l'effet dure (champ `boost` du journal)
+ const b=e.boost&&e.boost[i],rg=b?+b[0]||0:0,x2=!!(b&&b[1]),atq=rg||x2?Math.max(0,e.atq[i]*(x2?2:1)+rg):e.atq[i];
+ p.querySelector('.pv').textContent=`${Math.max(0,e.pv[i])} / ${e.max[i]} PV · ATQ ${atq}`;
+ const sa=p.querySelector('.sva');if(sa){sa.classList.toggle('b-rage',rg>0);sa.classList.toggle('b-x2',x2&&!(rg>0))}
+ [['.sva',atq],['.svp',Math.max(0,e.pv[i])]].forEach(([k,v])=>{const n=p.querySelector(k);if(!n)return;const t=String(v);if(n.dataset.v!==t){const nv=n.dataset.v!=='';n.dataset.v=t;if(nv){n.classList.remove('pls');void n.offsetWidth;n.classList.add('pls')}}})})}
 // BOUNTY : une bourse tombe au milieu de l'écran puis lance des pièces vers chaque joueur,
 // plus de pièces du côté qui reçoit le plus ; aucune pièce pour celui qui ne touche rien (« le gagnant rafle tout »)
 function bourseBounty(parts){const tot=(parts[0]||0)+(parts[1]||0);if(!tot)return;
