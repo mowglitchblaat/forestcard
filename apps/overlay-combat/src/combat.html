@@ -88,6 +88,8 @@ canvas.fx.poison{box-shadow:inset 0 0 40px 12px rgba(34,197,94,.75);animation:pg
 canvas.fx.etourdi{box-shadow:inset 0 0 25px 6px rgba(250,204,21,.5)}
 canvas.fx.saignement{box-shadow:inset 0 0 38px 10px rgba(170,10,20,.75);animation:sg 1.4s infinite alternate}
 @keyframes sg{to{box-shadow:inset 0 0 55px 16px rgba(200,15,25,.85)}}
+/* ligne de l'écriteau qui s'allume quand son effet agit */
+.zl{position:absolute;z-index:4;pointer-events:none;border-radius:1.2vw;border:.18vw solid var(--zc);box-shadow:0 0 1vw .3vw var(--zc),inset 0 0 1.4vw .2vw var(--zc);background:color-mix(in srgb,var(--zc) 16%,transparent);mix-blend-mode:screen}
 canvas.fx.rage{box-shadow:inset 0 0 38px 10px rgba(230,20,30,.8);animation:rg .5s infinite alternate}
 @keyframes rg{to{box-shadow:inset 0 0 55px 16px rgba(255,60,20,.95)}}
 canvas.fx.fatigue{box-shadow:inset 0 0 40px 10px rgba(70,90,130,.7)}
@@ -216,6 +218,49 @@ const RANGS_RAR=['ggez','legendaire','epique','rare','commun'];
 function tierRar(r){const n=String((r&&r.nom)||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z]/g,''),k=RANGS_RAR.findIndex(x=>n.includes(x));return r?['ul','lg','ep','ra','co'][k]||'ra':'co'}
 let JOUEURS=[];
 const dosCSS=j=>j.dos?`background-image:url('${urlImg(j.dos)}')`:'';
+// ---------- Effets qui s'allument sur la carte ----------
+// Les cartes composées dans l'admin (version Standard) gardent la place de chaque ligne de leur écriteau (variantes_carte.compo.zones).
+// Quand l'ultime ou un passif agit, sa ligne s'allume sur la carte. Les versions alternatives (pas de zones) ne s'allument pas.
+let ZONES=[null,null];
+const SB_REST='https://bjsvqikjnvaomyoifiml.supabase.co/rest/v1/',SB_KEY='sb_publishable_-3cPqDCyE-zhb3z5r6dPhg_DJFKGAI6';
+function chargerZones(joueurs){ZONES=[null,null];const ids=[...new Set((joueurs||[]).flatMap(j=>(j.ids||[]).filter(x=>x!=null)))];if(!ids.length)return Promise.resolve();
+ return Promise.race([fetch(SB_REST+'variantes_carte?select=carte_id,image_path,image_combat,compo&nom=eq.Standard&carte_id=in.('+ids.join(',')+')',{headers:{apikey:SB_KEY}})
+  .then(r=>r.ok?r.json():[]).then(V=>{(joueurs||[]).forEach((j,i)=>{const [f,m,t]=j.ids||[],de=(id,ok)=>{const v=V.find(x=>x.carte_id==id);return v&&v.compo&&Array.isArray(v.compo.zones)&&v.compo.zones.length&&ok(v)?v.compo.zones:null};
+   ZONES[i]={f:de(f,v=>j.imageCombat?j.imageCombat===v.image_combat:j.image===v.image_path),m:de(m,v=>j.magieImg===v.image_path),t:de(t,v=>j.piegeImg===v.image_path)}})}).catch(()=>{}),
+  new Promise(r=>setTimeout(r,2500))])}
+// zone d'une ligne (fraction de l'image 1488 × 2070) → position dans l'élément (image en « cover »)
+function lueurZone(el,z){if(!el)return;const W=el.clientWidth,H=el.clientHeight;if(!W||!H)return;const A=1488/2070,iw=W/H>A?W:H*A,ih=W/H>A?W/A:H,ox=(W-iw)/2,oy=(H-ih)/2;
+ const d=document.createElement('div'),col=z.ult?'#ff2a2a':(z.col&&/^#/.test(z.col)?z.col:'#fde68a');d.className='zl';
+ Object.assign(d.style,{left:(ox+z.x*iw)+'px',top:(oy+z.y*ih)+'px',width:(z.w*iw)+'px',height:(z.h*ih)+'px'});d.style.setProperty('--zc',col);el.appendChild(d);
+ const t=1500*vit();d.animate([{opacity:0,transform:'scale(.96)'},{opacity:1,transform:'scale(1.03)',offset:.18},{opacity:.75,transform:'scale(1)',offset:.55},{opacity:1,offset:.75},{opacity:0,transform:'scale(1.01)'}],{duration:t,easing:'ease-out'}).onfinish=()=>d.remove()}
+function allumer(i,types,ult){const Z=ZONES[i]&&ZONES[i].f;if(!Z)return;const card=$('#p'+i+' .cw .card');
+ Z.filter(z=>ult?z.ult:!z.ult&&types.some(t=>(z.types||[]).includes(t))).forEach(z=>lueurZone(card,z))}
+function allumerMini(i,k){const Z=ZONES[i]&&ZONES[i][k];if(!Z)return;Z.forEach(z=>lueurZone($((k==='m'?'#m':'#g')+i),z))}
+const ST_PASSIF={brulure:'brulure',poison:'poison',saignement:'saignement',malediction:'malediction',gel:'gel',fracture:'fracture',fatigue:'fatigue',etourdi:'etourdir'};
+// quel effet de quelle carte vient d'agir, d'après la ligne du journal
+function allumerEffets(e){if(e.c==null&&e.from==null)return;const c=e.c,o=c!=null?1-c:null;
+ if(e.t==='ultime')return allumer(c,[],true);
+ if(e.t==='esquive')return allumer(c,['esquive']);
+ if(e.t==='bloque'&&/une partie/.test(e.txt||''))return allumer(c,['reduc_degats']);
+ if(e.t==='degats'&&e.k==='renvoi'&&e.from!=null)return allumer(e.from,['renvoi']);
+ if(e.t==='soin'&&e.k!=='revive')return allumer(c,['soin_tour','vol_pct_atq']);
+ if(e.t==='protege')return allumer(c,['evite_mort']);
+ if(e.t==='reanim')return allumer(c,['reanimation']);
+ if(e.t==='attaque'&&e.k==='enchaine')return allumer(c,['enchainement']);
+ if(e.t==='frappe')return allumer(c,['multi_frappe']);
+ if(e.k==='av_marque')return allumer(o,['avalage']);
+ if(e.k==='avale')return allumer(c,['avalage']);
+ if(e.t==='detonation'&&!e.mis)return allumer(o,['detonation']);
+ if(e.t==='vol'&&e.k==='vol_carte')return allumer(c,['voler']);
+ if(e.t==='stat'&&e.k==='mod'&&e.d>0&&!/\(/.test(e.txt||''))return allumer(c,[e.s==='ATQ'?'atq_tours':'pv_tours']);
+ if(e.t!=='statut')return;
+ if(ST_PASSIF[e.k])return allumer(o,[ST_PASSIF[e.k]]);   // statut posé par l'attaque adverse
+ if(e.k==='marque'||e.k==='execution')return allumer(o,['execution']);
+ if(e.k==='transc')return allumer(c,['transcendance']);
+ if(e.k==='solide')return allumer(c,['solidification']);
+ if(e.k==='prog'||e.k==='prog_act')return allumer(c,['programmation']);
+ if(e.k==='purif')return allumer(c,['purification']);
+ if(e.k==='bonus')return allumer(c,['bonus_frappe'])}
 function panneau(i,j){const im=j.imageCombat||j.image,t=tierRar(j.rar),col=(j.rar&&j.rar.couleur)||'#888',magV=/^Aucun/.test(j.magie);JOUEURS[i]=j;
  $('#p'+i).innerHTML=`<div class="pj">${String(j.pseudo).replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div><div class="cw${t!=='co'?' rr rr-'+t:''}" style="--g:${col}"><div class="card" ${im?`style="background-image:url('${urlImg(im)}')"`:''}>${im?'':j.carte}<div class="dosf" style="${dosCSS(j)}">${j.dos?'':'🌲'}</div>${t==='ep'||t==='lg'||t==='ul'?'<span class="shn"></span>':''}${j.imageCombat?'<span class="sv sva" data-v=""></span><span class="sv svp" data-v=""></span>':''}</div></div>
  <div class="nm">${j.carte}</div><div class="bar"><i></i></div><div class="pv"></div>
@@ -1058,6 +1103,8 @@ async function jouer(res){
  while(file.length){const R=file.shift();await verrouPrendre('combat');if(!TEST&&!DEMO)await chargerVitesse();journalRecap=R;$('#log').innerHTML='';
   for(let ix=0;ix<R.journal.length;ix++){const e=R.journal[ix];
    $('#ban').className=e.t;$('#ban').textContent=e.txt;$('#log').innerHTML+=e.txt+'<br>';$('#log').scrollTop=1e5;
+   if(e.t==='debut'||e.t==='prolongation')chargerZones(e.joueurs);
+   try{allumerEffets(e)}catch(_){}
    if(e.t==='debut'){st={};fxL.length=0;fxAll.forEach(s=>s());fxAll.clear();JOUEURS=[];[0,1].forEach(i=>$('#p'+i).classList.remove('actif','idle'));e.joueurs.forEach((j,i)=>panneau(i,j));$('#scene').classList.add('on');maj(e);await wait(2200);   // les 3 dos de chaque joueur, puis les combattants se retournent
     await Promise.all([0,1].map(i=>retourner($('#p'+i+' .card'),()=>{const d=$('#p'+i+' .dosf');if(d)d.remove()})));await wait(900);continue}
    if(e.t==='prolongation'){await prolongation(e);continue}
@@ -1120,8 +1167,8 @@ async function jouer(res){
    else if(e.t==='finstatut'&&e.k==='marque'){document.querySelectorAll('#p'+e.c+' .lame').forEach(l=>{const n=+(l.className.match(/l(\d)/)||[])[1];if(n>(e.n||0))l.animate([{opacity:1},{opacity:0}],{duration:400,fill:'forwards'}).onfinish=()=>l.remove()})}
    else if(e.t==='finstatut')statut(e.c,e.k,false);
    else if(e.t==='ultime'){card.classList.add('ult');ultFx(e.c);setTimeout(()=>card.classList.remove('ult'),2400)}
-   else if(e.t==='magie'){faceMagie(e.c);const m=$('#m'+e.c);await zoomCarte('m'+e.c,e,'magie');m.classList.add('act');setTimeout(()=>m.classList.remove('act'),1000)}
-   else if(e.t==='piege'){revele(e.c,e);await zoomCarte('g'+e.c,e,'piege');$('#g'+e.c).classList.toggle('annule',e.k==='bloque')}
+   else if(e.t==='magie'){faceMagie(e.c);const m=$('#m'+e.c);await zoomCarte('m'+e.c,e,'magie');m.classList.add('act');setTimeout(()=>m.classList.remove('act'),1000);allumerMini(e.c,'m')}
+   else if(e.t==='piege'){revele(e.c,e);await zoomCarte('g'+e.c,e,'piege');allumerMini(e.c,'t');$('#g'+e.c).classList.toggle('annule',e.k==='bloque')}
    let ms={magie:600,piege:600,ultime:2200,fin:5000,degats:900,soin:1300,esquive:1100,bloque:1500,statut:1100,stat:1500,vol:1500,protege:2900,finstatut:250,frappe:350}[e.t]||900;
    if(e.t==='degats'&&R.journal.slice(ix+1,ix+4).some(z=>z.t==='protege'&&z.c===e.c))ms=200;   // coup fatal évité : les dégâts et l'effet « évite la mort » apparaissent presque ensemble
    if(e.t==='fin'){[0,1].forEach(i=>{faceMagie(i);const p=$('#p'+i);if(p)p.classList.remove('actif','idle')});fxAll.forEach(s=>s());fxAll.clear();document.querySelectorAll('canvas.fx').forEach(k=>k.remove());{const rw=e.recompenses[e.gagnant??0];$('#ban').textContent=e.txt+(rw>0?` (+${rw})`:'')+(e.bounty?(e.bounty.tout?` · 💰 Bounty ${e.bounty.total} : le gagnant rafle tout !`:` · 💰 Bounty ${e.bounty.total} !`):'');if(e.bounty){bourseBounty(e.bounty.parts);[0,1].forEach(i=>{if(e.bounty.parts[i]>0)setTimeout(()=>flot(i,'💰 Bounty +'+e.bounty.parts[i],'#fcd34d'),2100)})}}const cendre=i=>{const k=$('#p'+i+' .cw .card');return k&&k.dataset.cendre==='1'};if(e.gagnant!=null){if(!cendre(1-e.gagnant)&&!coupee(1-e.gagnant))briser(1-e.gagnant);auraFx(e.gagnant,{gold:1,dur:5.2})}else[0,1].forEach(i=>{if(e.pv&&e.pv[i]<=0&&!cendre(i)&&!coupee(i))briser(i)})}   // double KO : les deux cartes se brisent

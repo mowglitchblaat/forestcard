@@ -1269,7 +1269,7 @@ async function aPropos(){
      const url=pImg(x.image_path),rep=await fetch(url),bl=rep.ok?await rep.blob():null,d=bl?await CPO.dessinDe(url):null;
      if(d&&bl){const o={...CPO.DEF,...(x.compo||{})},im=await CPO.images({dessin:d,carte:row,tier:CPO.tierDe(rar(x.rarete_id)),o});
       const dp=await uploadDessin(new File([bl],'dessin.'+(bl.type.split('/')[1]||'png'),{type:bl.type||'image/png'}));
-      await majVariante(c.id,{image_path:await uploadPret(im.carte),image_combat:im.combat?await uploadPret(im.combat):null,dessin_path:dp,compo:o},true)}
+      await majVariante(c.id,{image_path:await uploadPret(im.carte),image_combat:im.combat?await uploadPret(im.combat):null,dessin_path:dp,compo:{...o,zones:im.zones}},true)}
      else uiAlert('Carte créée, mais le dessin n\'a pas pu être chargé : ajoute-le dans Admin → Cartes (✏️).');
      const u=await sb.from('propositions').update({statut:'acceptee',carte_id:c.id}).eq('id',x.id);
      if(u.error&&/carte_id/.test(u.error.message||''))await sb.from('propositions').update({statut:'acceptee'}).eq('id',x.id);
@@ -1487,7 +1487,7 @@ async function majVariante(carteId,ch,insert){const essai=async c=>{const vs=awa
    if(!r.error)uiAlert('Images enregistrées. Pour que le site garde le dessin et refasse l\'image quand la carte change, lance une fois 29-composition-cartes.sql dans Supabase.')}
   if(r.error){uiAlert(r.error.message);throw r.error}}
 // ---------- Panneau du composeur (admin → Cartes, et propositions des joueurs) ----------
-const htmlCompo=(titre,aide,extra='')=>`<div class="cpo" id="cpo"><div class="cpo-h"><b>${titre}</b><small>${aide}</small></div>
+const htmlCompo=(titre,aide,extra='')=>`<div class="cpo" id="cpo"><div class="cpo-h"><b>${titre} <small style="opacity:.55;font-weight:400">composeur ${CPO.VERSION}</small></b><small>${aide}</small></div>
     <div class="cpo-g"><div class="cpo-v"><canvas id="cpv" width="1488" height="2070"></canvas><small id="cpi"></small></div>
      <div class="cpo-r"><label><small>Dessin seul (sans cadre, ni écriteau, ni chiffres)</small><input name="dessin" type="file" accept="image/*"></label>
       <label><small>Zoom du dessin · glisse-le dans l'aperçu pour le placer</small><input name="cz" type="range" min="50" max="300" value="100"></label>
@@ -1600,7 +1600,7 @@ async function aCartes(){
   // enregistre les images composées sur la version Standard (et garde le dessin pour les refaire plus tard)
   const composer=async(carteId,carte,insert)=>{const {tier}=lire(),im=await CPO.images({dessin:CS.dessin,carte,tier,o:CS.o});
    const path=await uploadPret(im.carte),pc=im.combat?await uploadPret(im.combat):null,dp=CS.dessinPath||await uploadDessin(CS.dessinFichier);CS.dessinPath=dp;
-   await majVariante(carteId,{image_path:path,image_combat:pc,dessin_path:dp,compo:{...CS.o}},insert)};
+   await majVariante(carteId,{image_path:path,image_combat:pc,dessin_path:dp,compo:{...CS.o,zones:im.zones}},insert)};
   // refait les images de toutes les cartes composées (dessin seul gardé), avec le rendu actuel
   const refaireTout=async(chg)=>{const info=$('#cregenI'),btn=$('#cregen');
    const r=await sb.from('variantes_carte').select('*,cartes(*,raretes(nom,poids))').not('dessin_path','is',null);
@@ -1611,10 +1611,12 @@ async function aCartes(){
    for(const [i,v] of L.entries()){const c=v.cartes;info.textContent=` ${i+1} / ${L.length} : ${c.nom}…`;
     try{const d=await CPO.dessinDe(sb.storage.from('cartes').getPublicUrl(v.dessin_path).data.publicUrl);if(!d)throw new Error('dessin introuvable');
      const o={...CPO.DEF,...(v.compo||{}),...(chg||{})};const im=await CPO.images({dessin:d,carte:c,tier:CPO.tierDe(c.raretes),o});
-     const ch={image_path:await uploadPret(im.carte)};if(chg)ch.compo={...(v.compo||{}),...chg};if(im.combat)ch.image_combat=await uploadPret(im.combat);
+     const ch={image_path:await uploadPret(im.carte),compo:{...(v.compo||{}),...(chg||{}),zones:im.zones}};if(im.combat)ch.image_combat=await uploadPret(im.combat);
      const u=await sb.from('variantes_carte').update(ch).eq('id',v.id);if(u.error)throw u.error;ok++}
     catch(e){ko.push(c.nom+' ('+(e.message||e)+')')}}
-   btn.disabled=false;info.textContent=` ${ok} carte${ok>1?'s':''} refaite${ok>1?'s':''}.`;if(ko.length)uiAlert('Pas refaites :\n'+ko.join('\n'))};
+   const sd=await sb.from('variantes_carte').select('cartes(nom)').eq('nom','Standard').is('dessin_path',null),sans=(sd.data||[]).map(v=>v.cartes&&v.cartes.nom).filter(Boolean);
+   btn.disabled=false;info.textContent=` ${ok} carte${ok>1?'s':''} refaite${ok>1?'s':''}.`;
+   if(ko.length||sans.length)uiAlert((ko.length?'Pas refaites :\n'+ko.join('\n')+'\n\n':'')+(sans.length?`Cartes sans dessin gardé (à rouvrir avec ✏️ pour leur remettre le dessin seul, une fois) :\n${sans.join(', ')}`:''))};
   $('#cregen').onclick=()=>refaireTout(null);
   $('#gapp').onclick=()=>{const chg={},v=id=>$('#'+id).value;if(v('gpol'))chg.police=v('gpol');if(v('gsty'))chg.style=v('gsty');if(v('gex'))chg.details=v('gex')==='1';if(v('gda'))chg.daUlt=v('gda')==='1';
    if(!Object.keys(chg).length)return uiAlert('Choisis au moins un réglage à changer.');refaireTout(chg)};

@@ -21,7 +21,7 @@ const CPO=(()=>{
  const tierDe=r=>{const n=String((r&&r.nom)||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z]/g,'');return RANGS.find(k=>n.includes(k))||'commun'};
  // les lignes de l'écriteau : automatiques (ultime puis passifs), ou le texte de l'admin ligne par ligne (la couleur suit l'effet de la même ligne)
  function lignes(carte,o){const auto=lignesEcriteau(carte);let L=auto;
-  if(o.textes)L=o.textes.map((t,i)=>({t,c:(auto[i]||{}).c||'autre',ult:!!(auto[i]||{}).ult,d:(auto[i]||{}).d||''}));
+  if(o.textes)L=o.textes.map((t,i)=>({t,c:(auto[i]||{}).c||'autre',ult:!!(auto[i]||{}).ult,d:(auto[i]||{}).d||'',types:(auto[i]||{}).types||[]}));
   if(o.dtextes)L=L.map((l,i)=>({...l,d:o.dtextes[i]??l.d}));
   return L.filter(l=>l.t.trim())}
  async function ecriteau(x,tier,L,o){const [y0,y1]=BANDE[tier],k=o.taille/100,police=s=>`${o.police==='Arial Black'?'900 ':''}${s}px "${o.police}","Arial Black",sans-serif`;
@@ -43,8 +43,9 @@ const CPO=(()=>{
   if(zone){if(L.length){x.save();rr(x,W*.05,cy0-tot/2-m*.4,W*.9,tot+m*.8,40);x.fillStyle='rgba(6,6,10,.55)';x.fill();x.restore()}}
   else if(tier==='commun'){const g=x.createLinearGradient(0,e0,0,e1);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(.18,'rgba(8,10,9,.76)');g.addColorStop(.82,'rgba(8,10,9,.76)');g.addColorStop(1,'rgba(0,0,0,0)');x.fillStyle=g;x.fillRect(0,e0,W,e1-e0)}
   else{const p=await charge(`cadres/ecriteau-${tier}.png`);if(p)x.drawImage(p,0,y0,W,y1-y0,0,e0,W,e1-e0)}
-  let y=cy0-tot/2;x.textAlign='center';x.textBaseline='middle';x.lineJoin='round';
+  let y=cy0-tot/2;x.textAlign='center';x.textBaseline='middle';x.lineJoin='round';const Z=[];   // zones de chaque ligne (en fraction de la carte) : l'overlay de combat les allume
   for(const {l,da,pt,fn,s,th,dl,dh} of P){const cy=y+th/2;x.font=fn(s);const tw=x.measureText(l.t).width;
+   {const lw=Math.min(maxW,Math.max(tw+s*1.2,dl.length?maxW*.96:0)),y0z=y-gap*.35,h=th+dh+gap*.7;Z.push({types:l.types||[],ult:!!l.ult,c:l.c,col:pastille(l.c).background,x:+((W/2-lw/2)/W).toFixed(4),y:+(y0z/H).toFixed(4),w:+(lw/W).toFixed(4),h:+(h/H).toFixed(4)})}
    const grad=w=>{const g=x.createLinearGradient(W/2-w/2,0,W/2+w/2,0);ALEA.forEach((c,i)=>g.addColorStop(i/(ALEA.length-1),c));return g};
    if(da){if(o.lueur){x.save();x.shadowColor='rgba(255,40,30,.9)';x.shadowBlur=s*.4;x.fillStyle='#7a001c';x.fillText(l.t,W/2,cy);x.restore()}
     x.lineWidth=s*.07;x.strokeStyle='#d0132f';x.strokeText(l.t,W/2,cy);x.fillStyle='#7a001c';x.fillText(l.t,W/2,cy)}
@@ -56,15 +57,17 @@ const CPO=(()=>{
     x.fillStyle=l.c==='alea'?grad(tw):coul(l.c);x.fillText(l.t,W/2,cy)}
    y+=th;
    if(dl.length){x.font=dfont(ds);let yy=y+ds*.3+ds*.59;for(const t of dl){x.lineWidth=ds*.2;x.strokeStyle='rgba(8,8,12,.95)';x.strokeText(t,W/2,yy);x.fillStyle='#ffffff';x.fillText(t,W/2,yy);yy+=ds*1.18}y+=dh}
-   y+=gap}}
+   y+=gap}
+  return Z}
  // la carte entière, à la taille des cadres (1488 × 2070)
  async function rendre(x,args){const {dessin,carte,tier,o,chiffres}=args;await chargerPolices();x.clearRect(0,0,W,H);x.fillStyle='#14141c';x.fillRect(0,0,W,H);
   if(dessin){const s=Math.max(W/dessin.naturalWidth,H/dessin.naturalHeight)*o.z,w=dessin.naturalWidth*s*(o.sx||1),h=dessin.naturalHeight*s*(o.sy||1);x.drawImage(dessin,(W-w)/2+o.x*W,(H-h)/2+o.y*H,w,h)}
-  const comb=carte.type==='combattant',LL=(args.lignes||lignes(carte,o)).filter(l=>l.t&&l.t.trim());if(comb&&LL.length)await ecriteau(x,tier,LL,o);   // sans effet : pas d'écriteau
+  let Z=[];const comb=carte.type==='combattant',LL=(args.lignes||lignes(carte,o)).filter(l=>l.t&&l.t.trim());if(comb&&LL.length)Z=await ecriteau(x,tier,LL,o);   // sans effet : pas d'écriteau
   for(const src of [`cadres/${carte.type}-${tier}.png`,...['legendaire','epique','rare','commun'].map(r=>`cadres/${carte.type}-${r}.png`),`cadres/combattant-${tier}.png`]){const f=await charge(src);if(f){x.drawImage(f,0,0,W,H);break}}
-  if(!comb&&LL.length)await ecriteau(x,carte.type==='piege'?'piege':'magie',LL,o);   // magie, piège : pas d'écriteau (charte), le texte va dans la zone libre du cadre, sous le dessin
+  if(!comb&&LL.length)Z=await ecriteau(x,carte.type==='piege'?'piege':'magie',LL,o);   // magie, piège : pas d'écriteau (charte), le texte va dans la zone libre du cadre, sous le dessin
   if(chiffres&&comb){const num=(v,cx,c)=>{if(v==null||v==='')return;const s=150;x.font=`900 ${s}px "Arial Black",sans-serif`;x.textAlign='center';x.textBaseline='middle';x.lineJoin='round';
-   x.lineWidth=s*.16;x.strokeStyle='#fff';x.strokeText(String(v),cx,H*.925);x.fillStyle=c;x.fillText(String(v),cx,H*.925)};num(carte.atq,W*.13,'#e0303c');num(carte.pv,W*.87,'#4747d6')}}
+   x.lineWidth=s*.16;x.strokeStyle='#fff';x.strokeText(String(v),cx,H*.925);x.fillStyle=c;x.fillText(String(v),cx,H*.925)};num(carte.atq,W*.13,'#e0303c');num(carte.pv,W*.87,'#4747d6')}
+  return Z}
  // image finale : réduite en haute qualité à 1440 px de haut, WebP 94 % (texte net ; la compression standard du site bavait sur les lettres)
  const FH=1440,FW=Math.round(W*FH/H);
  const blob=c=>{const r=document.createElement('canvas');r.width=FW;r.height=FH;const g=r.getContext('2d');g.imageSmoothingEnabled=true;g.imageSmoothingQuality='high';
@@ -72,13 +75,14 @@ const CPO=(()=>{
   return new Promise(ok=>r.toBlob(ok,'image/webp',.94))};
  // les deux images de la carte (avec / sans chiffres ; sans chiffres seulement pour un combattant)
  async function images(args){const c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');
-  await rendre(x,{...args,chiffres:true});const a=await blob(c);let b=null;
+  const zones=await rendre(x,{...args,chiffres:true});const a=await blob(c);let b=null;
   if(args.carte.type==='combattant'){await rendre(x,{...args,chiffres:false});b=await blob(c)}
-  const f=(bl,n)=>bl?new File([bl],n,{type:'image/webp'}):null;return {carte:f(a,'carte.webp'),combat:f(b,'combat.webp')}}
+  const f=(bl,n)=>bl?new File([bl],n,{type:'image/webp'}):null;return {carte:f(a,'carte.webp'),combat:f(b,'combat.webp'),zones}}
  const dessinDe=async src=>{try{const r=await fetch(src,{mode:'cors'});if(!r.ok)return null;const u=URL.createObjectURL(await r.blob());return await new Promise(ok=>{const i=new Image();i.onload=()=>ok(i);i.onerror=()=>ok(null);i.src=u})}catch(e){return null}};
  // l'aperçu : le canvas prend la taille affichée (× densité de l'écran), l'image y est réduite en haute qualité
  const taille=cv=>{const r=cv.getBoundingClientRect(),d=Math.min(2,window.devicePixelRatio||1),w=Math.max(200,Math.round((r.width||300)*d)),h=Math.round(w*H/W);if(cv.width!==w||cv.height!==h){cv.width=w;cv.height=h}};
  const reduire=(src,cv)=>{taille(cv);let c=src;while(c.width>cv.width*2){const n=document.createElement('canvas');n.width=Math.round(c.width/2);n.height=Math.round(c.height/2);const g=n.getContext('2d');g.imageSmoothingQuality='high';g.drawImage(c,0,0,n.width,n.height);c=n}
   const x=cv.getContext('2d');x.clearRect(0,0,cv.width,cv.height);x.imageSmoothingEnabled=true;x.imageSmoothingQuality='high';x.drawImage(c,0,0,cv.width,cv.height)};
- return {W,H,DEF,POLICES,rendre,images,tierDe,lignes,dessinDe,chargerPolices,taille,reduire};
+ const VERSION='21/10 · v4';   // affichée dans le panneau : pour vérifier qu'on a la dernière version
+ return {VERSION,W,H,DEF,POLICES,rendre,images,tierDe,lignes,dessinDe,chargerPolices,taille,reduire};
 })();

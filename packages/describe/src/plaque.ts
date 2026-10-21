@@ -114,7 +114,8 @@ const PASSIVE_LABELS: Record<PassiveType, (p: Fx) => string> = {
 };
 
 // t: the short label; d: the explanation of the effect (empty without a describer).
-export type PlaqueLine = { t: string; c: string; ult: boolean; d: string };
+// types: the effect or passive types the line stands for (the combat overlay lights the line when one acts).
+export type PlaqueLine = { t: string; c: string; ult: boolean; d: string; types: string[] };
 // Explanation of an effect brick and of a passive brick (index.ts passes its own text).
 export type PlaqueDescriber = {
   effect: (b: Fx) => string;
@@ -152,6 +153,7 @@ export function plaqueLines(
     c: colourOf(b),
     ult: false,
     d: describe ? describe.effect(b) : '',
+    types: [String(b.type)],
   });
   if (card.type === 'magie') return bricks(card.effet).map(effectLine);
   if (card.type === 'piege') {
@@ -172,12 +174,14 @@ export function plaqueLines(
       c: colourOf(u[0] as Fx),
       ult: true,
       d: describe ? u.map(describe.effect).join(' + ') : '',
+      types: u.map((b) => String(b.type)),
     });
   const p = bricks(card.passif).map((b) => ({
     t: passiveLabel(b),
     c: colourOf(b),
     ult: false,
     d: describe ? describe.passive(b) : '',
+    types: [String(b.type)],
   }));
   if (p.length <= 3) lines.push(...p);
   else
@@ -185,7 +189,13 @@ export function plaqueLines(
       const [a, b] = [p[i] as PlaqueLine, p[i + 1]];
       lines.push(
         b
-          ? { t: `${a.t} · ${b.t}`, c: a.c, ult: false, d: [a.d, b.d].filter(Boolean).join(' · ') }
+          ? {
+              t: `${a.t} · ${b.t}`,
+              c: a.c,
+              ult: false,
+              d: [a.d, b.d].filter(Boolean).join(' · '),
+              types: [...a.types, ...b.types],
+            }
           : a,
       );
     }
