@@ -222,11 +222,17 @@ const dosCSS=j=>j.dos?`background-image:url('${urlImg(j.dos)}')`:'';
 // Les cartes composées dans l'admin (version Standard) gardent la place de chaque ligne de leur écriteau (variantes_carte.compo.zones).
 // Quand l'ultime ou un passif agit, sa ligne s'allume sur la carte. Les versions alternatives (pas de zones) ne s'allument pas.
 let ZONES=[null,null];
+const DIAG=t=>{console.log('[zones]',t);if(!/test|demo|debug/.test(location.search))return;let b=document.getElementById('diagbox');
+ if(!b){b=document.createElement('div');b.id='diagbox';b.style.cssText='position:fixed;left:8px;bottom:8px;z-index:99;max-width:40vw;background:#1c1917e6;color:#fde68a;font:12px/1.4 system-ui;padding:6px 10px;border-radius:8px;border:1px solid #a16207;white-space:pre-wrap';document.body.appendChild(b)}
+ b.textContent=(b.textContent?b.textContent+'\n':'')+t;clearTimeout(b._t);b._t=setTimeout(()=>{b.textContent=''},20000)};
 const SB_REST='https://bjsvqikjnvaomyoifiml.supabase.co/rest/v1/',SB_KEY='sb_publishable_-3cPqDCyE-zhb3z5r6dPhg_DJFKGAI6';
 function chargerZones(joueurs){ZONES=[null,null];const ids=[...new Set((joueurs||[]).flatMap(j=>(j.ids||[]).filter(x=>x!=null)))];if(!ids.length)return Promise.resolve();
  return Promise.race([fetch(SB_REST+'variantes_carte?select=carte_id,image_path,image_combat,compo&nom=eq.Standard&carte_id=in.('+ids.join(',')+')',{headers:{apikey:SB_KEY}})
-  .then(r=>r.ok?r.json():[]).then(V=>{(joueurs||[]).forEach((j,i)=>{const [f,m,t]=j.ids||[],de=(id,ok)=>{const v=V.find(x=>x.carte_id==id);return v&&v.compo&&Array.isArray(v.compo.zones)&&v.compo.zones.length&&ok(v)?v.compo.zones:null};
-   ZONES[i]={f:de(f,v=>j.imageCombat?j.imageCombat===v.image_combat:j.image===v.image_path),m:de(m,v=>j.magieImg===v.image_path),t:de(t,v=>j.piegeImg===v.image_path)}})}).catch(()=>{}),
+  .then(r=>{if(!r.ok)DIAG('lecture des cartes refusée ('+r.status+')');return r.ok?r.json():[]}).then(V=>{(joueurs||[]).forEach((j,i)=>{const [f,m,t]=j.ids||[],de=(id,ok)=>{const v=V.find(x=>x.carte_id==id);return v&&v.compo&&Array.isArray(v.compo.zones)&&v.compo.zones.length&&ok(v)?v.compo.zones:null};
+   ZONES[i]={f:de(f,v=>j.imageCombat?j.imageCombat===v.image_combat:j.image===v.image_path),m:de(m,v=>j.magieImg===v.image_path),t:de(t,v=>j.piegeImg===v.image_path)};
+   // diagnostic (pages ?test, ?debug) : pourquoi une carte ne s'allume pas
+   const v=V.find(x=>x.carte_id==f),pq=!f?'carte sans identifiant':!v?'version Standard introuvable':!v.compo?'pas de réglages (carte jamais composée, ou colonne compo illisible)':!(v.compo.zones||[]).length?'pas de zones : refais ses images (« Refaire toutes »)':!ZONES[i].f?'l\'image affichée n\'est pas celle de la version Standard (version alternative ?)':'';
+   DIAG(`Effets lumineux · ${j.carte} : ${ZONES[i].f?ZONES[i].f.length+' ligne(s) prêtes':'rien — '+pq}`)})}).catch(e=>DIAG('lecture des cartes impossible : '+e.message)),
   new Promise(r=>setTimeout(r,2500))])}
 // zone d'une ligne (fraction de l'image 1488 × 2070) → position dans l'élément (image en « cover »)
 function lueurZone(el,z){if(!el)return;const W=el.clientWidth,H=el.clientHeight;if(!W||!H)return;const A=1488/2070,iw=W/H>A?W:H*A,ih=W/H>A?W/A:H,ox=(W-iw)/2,oy=(H-ih)/2;
