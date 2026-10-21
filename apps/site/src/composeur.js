@@ -14,7 +14,7 @@ const CPO=(()=>{
  const ALEA=['#f43f5e','#f59e0b','#22c55e','#3b82f6','#a855f7'];
  // couleur de texte d'une catégorie sur l'écriteau : sa couleur du catalogue ; les fonds sombres passent à leur couleur claire, « autre » en blanc
  const eclaircir=h=>{const v=parseInt(h.slice(1),16),r=v>>16,g=v>>8&255,b=v&255,l=(.2126*r+.7152*g+.0722*b)/255;if(l>.45)return h;const t=.45-l+.15,m=x=>Math.round(x+(255-x)*t);return `rgb(${m(r)},${m(g)},${m(b)})`};   // texte lisible sur l'écriteau
- const coul=c=>{const s=COULEURS_CAT[c]||COULEURS_CAT.autre;return c==='autre'?'#f4f4f5':['ultime','fatigue','rage'].includes(c)?s.color:/^#[0-9a-f]{6}$/i.test(s.background)?eclaircir(s.background):s.background};
+ const coul=c=>{const s=COULEURS_CAT[c]||COULEURS_CAT.autre;return c==='autre'?'#f4f4f5':['ultime','fatigue','rage','exec'].includes(c)?s.color:/^#[0-9a-f]{6}$/i.test(s.background)?eclaircir(s.background):s.background};
  const pastille=c=>(COULEURS_CAT[c]||COULEURS_CAT.autre);
  const rr=(x,a,b,w,h,r)=>{x.beginPath();x.moveTo(a+r,b);x.arcTo(a+w,b,a+w,b+h,r);x.arcTo(a+w,b+h,a,b+h,r);x.arcTo(a,b+h,a,b,r);x.arcTo(a,b,a+w,b,r);x.closePath()};
  const RANGS=['ggez','legendaire','epique','rare','commun'];   // le même rang que le site (rangRar) : d'après le nom de la rareté
