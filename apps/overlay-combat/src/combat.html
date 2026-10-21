@@ -227,11 +227,11 @@ const DIAG=t=>{console.log('[zones]',t);if(!/test|demo|debug/.test(location.sear
  b.textContent=(b.textContent?b.textContent+'\n':'')+t;clearTimeout(b._t);b._t=setTimeout(()=>{b.textContent=''},20000)};
 const SB_REST='https://bjsvqikjnvaomyoifiml.supabase.co/rest/v1/',SB_KEY='sb_publishable_-3cPqDCyE-zhb3z5r6dPhg_DJFKGAI6';
 function chargerZones(joueurs){ZONES=[null,null];const ids=[...new Set((joueurs||[]).flatMap(j=>(j.ids||[]).filter(x=>x!=null)))];if(!ids.length)return Promise.resolve();
- return Promise.race([fetch(SB_REST+'variantes_carte?select=carte_id,image_path,image_combat,compo&nom=eq.Standard&carte_id=in.('+ids.join(',')+')',{headers:{apikey:SB_KEY}})
-  .then(r=>{if(!r.ok)DIAG('lecture des cartes refusée ('+r.status+')');return r.ok?r.json():[]}).then(V=>{(joueurs||[]).forEach((j,i)=>{const [f,m,t]=j.ids||[],de=(id,ok)=>{const v=V.find(x=>x.carte_id==id);return v&&v.compo&&Array.isArray(v.compo.zones)&&v.compo.zones.length&&ok(v)?v.compo.zones:null};
+ return Promise.race([fetch(SB_REST+'rpc/zones_cartes',{method:'POST',headers:{apikey:SB_KEY,'Content-Type':'application/json'},body:JSON.stringify({p_ids:ids})})   // 31-zones-combat.sql
+  .then(r=>{if(!r.ok)DIAG(r.status===404?'fonction zones_cartes absente : lance 31-zones-combat.sql dans Supabase':'lecture des cartes refusée ('+r.status+')');return r.ok?r.json():[]}).then(L=>(L||[]).map(x=>({...x,compo:{zones:x.zones}}))).then(V=>{(joueurs||[]).forEach((j,i)=>{const [f,m,t]=j.ids||[],de=(id,ok)=>{const v=V.find(x=>x.carte_id==id);return v&&v.compo&&Array.isArray(v.compo.zones)&&v.compo.zones.length&&ok(v)?v.compo.zones:null};
    ZONES[i]={f:de(f,v=>j.imageCombat?j.imageCombat===v.image_combat:j.image===v.image_path),m:de(m,v=>j.magieImg===v.image_path),t:de(t,v=>j.piegeImg===v.image_path)};
    // diagnostic (pages ?test, ?debug) : pourquoi une carte ne s'allume pas
-   const v=V.find(x=>x.carte_id==f),pq=!f?'carte sans identifiant':!v?'version Standard introuvable':!v.compo?'pas de réglages (carte jamais composée, ou colonne compo illisible)':!(v.compo.zones||[]).length?'pas de zones : refais ses images (« Refaire toutes »)':!ZONES[i].f?'l\'image affichée n\'est pas celle de la version Standard (version alternative ?)':'';
+   const v=V.find(x=>x.carte_id==f),pq=!f?'carte sans identifiant':!v?'version Standard introuvable':!v.compo||!v.compo.zones?'pas de zones : refais ses images (« Refaire toutes »)':!(v.compo.zones||[]).length?'pas de zones : refais ses images (« Refaire toutes »)':!ZONES[i].f?'l\'image affichée n\'est pas celle de la version Standard (version alternative ?)':'';
    DIAG(`Effets lumineux · ${j.carte} : ${ZONES[i].f?ZONES[i].f.length+' ligne(s) prêtes':'rien — '+pq}`)})}).catch(e=>DIAG('lecture des cartes impossible : '+e.message)),
   new Promise(r=>setTimeout(r,2500))])}
 // zone d'une ligne (fraction de l'image 1488 × 2070) → position dans l'élément (image en « cover »)
