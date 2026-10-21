@@ -1624,7 +1624,13 @@ async function aCartes(){
   <h3>Ajouter une version alternative</h3>
   <form class="f" id="fv"><select name="carte">${opts(cartes)}</select><input name="nom" placeholder="Nom (ex : Alt 1)" required>
    <input name="poids" type="number" step="any" min="0" value="10" title="Taux d'apparition (Standard = 100)"><input name="file" type="file" accept="image/*" required><label><small>Image combat sans chiffres (facultatif)</small><br><input name="filec" type="file" accept="image/*"></label><button>Ajouter la version</button></form>
-  <h3>Cartes (${cartes.length})</h3><div class="row"><button type="button" class="sec" id="cregen" title="Régénère les images de toutes les cartes qui ont un dessin seul, avec le rendu actuel du composeur">♻️ Refaire toutes les images composées</button><small id="cregenI"></small></div><div class="row"><select id="fcolad"><option value="">Toutes les collections</option>${col.map(c=>`<option>${esc(c.nom)}</option>`).join('')}<option>Commune</option></select></div><table><tr><th>Nom</th><th>Type</th><th>Rareté</th><th>Collection</th><th>Versions</th><th>Publiée</th><th></th></tr>
+  <h3>Cartes (${cartes.length})</h3><div class="row"><button type="button" class="sec" id="cregen" title="Régénère les images de toutes les cartes qui ont un dessin seul, avec le rendu actuel du composeur">♻️ Refaire toutes les images composées</button><small id="cregenI"></small></div>
+  <details class="pn" id="cglob"><summary><b>🎨 Style de toutes les cartes composées</b> <small>(change un réglage partout, puis refait les images)</small></summary>
+   <div class="row"><label><small>Police</small><br><select id="gpol"><option value="">— ne pas changer —</option>${CPO.POLICES.map(p=>`<option>${p}</option>`).join('')}</select></label>
+    <label><small>Passifs</small><br><select id="gsty"><option value="">— ne pas changer —</option><option value="pastille">Pastilles</option><option value="texte">Texte coloré</option></select></label>
+    <label><small>Explications</small><br><select id="gex"><option value="">— ne pas changer —</option><option value="1">Avec</option><option value="0">Sans</option></select></label>
+    <label><small>Ultime</small><br><select id="gda"><option value="">— ne pas changer —</option><option value="1">À ta DA (italique rouge)</option><option value="0">Couleur de sa catégorie</option></select></label></div>
+   <button type="button" id="gapp">Appliquer à toutes les cartes composées</button></details><div class="row"><select id="fcolad"><option value="">Toutes les collections</option>${col.map(c=>`<option>${esc(c.nom)}</option>`).join('')}<option>Commune</option></select></div><table><tr><th>Nom</th><th>Type</th><th>Rareté</th><th>Collection</th><th>Versions</th><th>Publiée</th><th></th></tr>
   ${cartes.map(c=>`<tr data-col="${esc(c.collections?.nom||'Commune')}"><td>${esc(c.nom)}</td><td>${c.type}</td><td>${esc(c.raretes.nom)}</td><td>${esc(c.collections?.nom||'Commune')}</td><td>${c.variantes_carte.length}</td>
   <td><button class="sec" data-a="${c.id}" data-v="${c.actif}">${c.actif?'<span class="ok">Oui</span>':'<span class="ko">Non</span>'}</button></td>
   <td><button class="sec" data-edit="${c.id}" title="Modifier cette carte">✏️</button> <button class="sec" data-del="${c.id}" data-nom="${esc(c.nom)}" title="Supprimer cette carte">🗑️</button></td></tr>`).join('')}</table>`;
@@ -1668,19 +1674,22 @@ async function aCartes(){
    await majVariante(carteId,{image_path:path,image_combat:pc,dessin_path:dp,compo:{...CS.o}},insert)};
   versUI();apercu();
   // refait les images de toutes les cartes composées (dessin seul gardé), avec le rendu actuel
-  $('#cregen').onclick=async()=>{const info=$('#cregenI'),btn=$('#cregen');
+  const refaireTout=async(chg)=>{const info=$('#cregenI'),btn=$('#cregen');
    const r=await sb.from('variantes_carte').select('*,cartes(*,raretes(nom,poids))').not('dessin_path','is',null);
    if(r.error)return uiAlert(/dessin_path/.test(r.error.message||'')?'Lance d\'abord 29-composition-cartes.sql dans Supabase.':r.error.message);
    const L=(r.data||[]).filter(v=>v.cartes);if(!L.length)return uiAlert('Aucune carte composée pour l\'instant : ajoute le dessin seul d\'une carte (✏️) pour qu\'elle passe au nouveau système.');
-   if(!(await uiConfirm(`Refaire les images de ${L.length} carte${L.length>1?'s':''} composée${L.length>1?'s':''} avec le rendu actuel ?`)))return;
+   if(!(await uiConfirm(`${chg?'Appliquer ce style et refaire':'Refaire'} les images de ${L.length} carte${L.length>1?'s':''} composée${L.length>1?'s':''} ?`)))return;
    btn.disabled=true;let ok=0,ko=[];
    for(const [i,v] of L.entries()){const c=v.cartes;info.textContent=` ${i+1} / ${L.length} : ${c.nom}…`;
     try{const d=await CPO.dessinDe(sb.storage.from('cartes').getPublicUrl(v.dessin_path).data.publicUrl);if(!d)throw new Error('dessin introuvable');
-     const im=await CPO.images({dessin:d,carte:c,tier:CPO.tierDe(c.raretes),o:{...CPO.DEF,...(v.compo||{})}});
-     const ch={image_path:await uploadPret(im.carte)};if(im.combat)ch.image_combat=await uploadPret(im.combat);
+     const o={...CPO.DEF,...(v.compo||{}),...(chg||{})};const im=await CPO.images({dessin:d,carte:c,tier:CPO.tierDe(c.raretes),o});
+     const ch={image_path:await uploadPret(im.carte)};if(chg)ch.compo={...(v.compo||{}),...chg};if(im.combat)ch.image_combat=await uploadPret(im.combat);
      const u=await sb.from('variantes_carte').update(ch).eq('id',v.id);if(u.error)throw u.error;ok++}
     catch(e){ko.push(c.nom+' ('+(e.message||e)+')')}}
    btn.disabled=false;info.textContent=` ${ok} carte${ok>1?'s':''} refaite${ok>1?'s':''}.`;if(ko.length)uiAlert('Pas refaites :\n'+ko.join('\n'))};
+  $('#cregen').onclick=()=>refaireTout(null);
+  $('#gapp').onclick=()=>{const chg={},v=id=>$('#'+id).value;if(v('gpol'))chg.police=v('gpol');if(v('gsty'))chg.style=v('gsty');if(v('gex'))chg.details=v('gex')==='1';if(v('gda'))chg.daUlt=v('gda')==='1';
+   if(!Object.keys(chg).length)return uiAlert('Choisis au moins un réglage à changer.');refaireTout(chg)};
   $('#fcolad').onchange=e=>{const v=e.target.value;$('#sub').querySelectorAll('tr[data-col]').forEach(tr=>tr.style.display=!v||tr.dataset.col==v?'':'none')};
   fc.onsubmit=async e=>{e.preventDefault();const f=e.target,v=n=>f[n].value,t=v('type');
     try{let ult=null,pas=null,eff=null;
