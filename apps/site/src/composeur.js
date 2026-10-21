@@ -60,9 +60,9 @@ const CPO=(()=>{
  // la carte entière, à la taille des cadres (1488 × 2070)
  async function rendre(x,args){const {dessin,carte,tier,o,chiffres}=args;await chargerPolices();x.clearRect(0,0,W,H);x.fillStyle='#14141c';x.fillRect(0,0,W,H);
   if(dessin){const s=Math.max(W/dessin.naturalWidth,H/dessin.naturalHeight)*o.z,w=dessin.naturalWidth*s*(o.sx||1),h=dessin.naturalHeight*s*(o.sy||1);x.drawImage(dessin,(W-w)/2+o.x*W,(H-h)/2+o.y*H,w,h)}
-  const comb=carte.type==='combattant',LL=args.lignes||lignes(carte,o);if(comb)await ecriteau(x,tier,LL,o);
+  const comb=carte.type==='combattant',LL=(args.lignes||lignes(carte,o)).filter(l=>l.t&&l.t.trim());if(comb&&LL.length)await ecriteau(x,tier,LL,o);   // sans effet : pas d'écriteau
   for(const src of [`cadres/${carte.type}-${tier}.png`,...['legendaire','epique','rare','commun'].map(r=>`cadres/${carte.type}-${r}.png`),`cadres/combattant-${tier}.png`]){const f=await charge(src);if(f){x.drawImage(f,0,0,W,H);break}}
-  if(!comb)await ecriteau(x,carte.type==='piege'?'piege':'magie',LL,o);   // magie, piège : pas d'écriteau (charte), le texte va dans la zone libre du cadre, sous le dessin
+  if(!comb&&LL.length)await ecriteau(x,carte.type==='piege'?'piege':'magie',LL,o);   // magie, piège : pas d'écriteau (charte), le texte va dans la zone libre du cadre, sous le dessin
   if(chiffres&&comb){const num=(v,cx,c)=>{if(v==null||v==='')return;const s=150;x.font=`900 ${s}px "Arial Black",sans-serif`;x.textAlign='center';x.textBaseline='middle';x.lineJoin='round';
    x.lineWidth=s*.16;x.strokeStyle='#fff';x.strokeText(String(v),cx,H*.925);x.fillStyle=c;x.fillText(String(v),cx,H*.925)};num(carte.atq,W*.13,'#e0303c');num(carte.pv,W*.87,'#4747d6')}}
  // image finale : réduite en haute qualité à 1440 px de haut, WebP 94 % (texte net ; la compression standard du site bavait sur les lettres)
