@@ -30,7 +30,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:transparent;font-famil
 const WS_URL='ws://127.0.0.1:8080/';
 const STORAGE='https://bjsvqikjnvaomyoifiml.supabase.co/storage/v1/object/public/cartes/';
 const MIROIR_URL='https://mowglitchblaat.github.io/forestcard/img/';let MIROIR=new Set();   // images des cartes recopiées chaque nuit sur GitHub (img/liste.json) : servies par GitHub au lieu de Supabase (quota)
-const chargerMiroir=()=>Promise.race([fetch(MIROIR_URL+'liste.json').then(r=>r.ok?r.json():[]).then(a=>{if(Array.isArray(a))MIROIR=new Set(a)}).catch(()=>{}),new Promise(r=>setTimeout(r,2500))]);
+const chargerMiroir=()=>Promise.race([fetch(MIROIR_URL+'liste.json',{cache:'no-cache'}).then(r=>r.ok?r.json():[]).then(a=>{if(Array.isArray(a))MIROIR=new Set(a)}).catch(()=>{}),new Promise(r=>setTimeout(r,2500))]);
 const urlImg=p=>p?(MIROIR.has(p)?MIROIR_URL+encodeURI(p):STORAGE+p):'';   // GitHub si l'image y est déjà, sinon Supabase
 chargerMiroir();
 const box=document.getElementById('box'),titre=document.getElementById('titre'),zone=document.getElementById('cartes');
@@ -118,6 +118,7 @@ async function run(){
   if(busy)return;busy=true;
   while(queue.length){
     const d=queue.shift();
+    await chargerMiroir();   // liste des images copiées sur GitHub, relue à chaque ouverture (OBS reste ouvert longtemps)
     titre.textContent=`${d.pseudo} ouvre un ${d.booster} !`;
     zone.innerHTML='';
     const els=d.cartes.map(c=>{

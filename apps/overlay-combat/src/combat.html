@@ -185,7 +185,7 @@ if(/demo|test|debug/.test(location.search))addEventListener('error',e=>{let b=do
 <script>
 const STORAGE='https://bjsvqikjnvaomyoifiml.supabase.co/storage/v1/object/public/cartes/';
 const MIROIR_URL='https://mowglitchblaat.github.io/forestcard/img/';let MIROIR=new Set();   // images des cartes recopiées chaque nuit sur GitHub (img/liste.json) : servies par GitHub au lieu de Supabase (quota)
-const chargerMiroir=()=>Promise.race([fetch(MIROIR_URL+'liste.json').then(r=>r.ok?r.json():[]).then(a=>{if(Array.isArray(a))MIROIR=new Set(a)}).catch(()=>{}),new Promise(r=>setTimeout(r,2500))]);
+const chargerMiroir=()=>Promise.race([fetch(MIROIR_URL+'liste.json',{cache:'no-cache'}).then(r=>r.ok?r.json():[]).then(a=>{if(Array.isArray(a))MIROIR=new Set(a)}).catch(()=>{}),new Promise(r=>setTimeout(r,2500))]);
 const urlImg=p=>p?(MIROIR.has(p)?MIROIR_URL+encodeURI(p):STORAGE+p):'';   // GitHub si l'image y est déjà, sinon Supabase
 chargerMiroir();
 const TEST=location.search.includes('test'),DEMO=location.search.includes('demo')||location.search.includes('test');
@@ -1106,7 +1106,7 @@ function verrouLacher(nom){clearInterval(battement);const v=lireVerrou();if(v&&v
 const ACTION_FIN=new URLSearchParams(location.search).get('action')||'Combat - Résultat';
 async function jouer(res){
  file.push(res);if(enCours)return;enCours=true;
- while(file.length){const R=file.shift();await verrouPrendre('combat');if(!TEST&&!DEMO)await chargerVitesse();journalRecap=R;$('#log').innerHTML='';
+ while(file.length){const R=file.shift();await verrouPrendre('combat');await chargerMiroir();   // liste des images copiées sur GitHub, relue à chaque combat : OBS ouvert longtemps ne repasse jamais par Supabase pour une image copiée depuisif(!TEST&&!DEMO)await chargerVitesse();journalRecap=R;$('#log').innerHTML='';
   for(let ix=0;ix<R.journal.length;ix++){const e=R.journal[ix];
    $('#ban').className=e.t;$('#ban').textContent=e.txt;$('#log').innerHTML+=e.txt+'<br>';$('#log').scrollTop=1e5;
    if(e.t==='debut'||e.t==='prolongation')chargerZones(e.joueurs);
