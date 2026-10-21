@@ -64,7 +64,9 @@ canvas#vue{width:min(100%,520px);height:auto;border-radius:14px;background:repea
   <div class="panel">
    <h2>Réglages</h2>
    <label>Taille du texte <span id="tv"></span></label><input type="range" id="taille" min="60" max="140" value="100">
-   <label>Position verticale du texte</label><input type="range" id="decal" min="-150" max="150" value="0">
+   <label>Position verticale (texte et écriteau ajusté)</label><input type="range" id="decal" min="-150" max="150" value="0">
+   <label><input type="checkbox" id="ajuste" checked> Écriteau ajusté à la hauteur du texte</label>
+   <label>Marge autour du texte (écriteau ajusté)</label><input type="range" id="marge" min="10" max="160" value="55">
    <label>Opacité de l'écriteau</label><input type="range" id="opa" min="0" max="100" value="100">
    <label><input type="checkbox" id="lueur" checked> Lueur rouge sur l'ultime</label>
   </div>
@@ -127,16 +129,20 @@ const police=(s)=>`${$('#font').value==='Arial Black'?'900 ':''}${s}px "${$('#fo
 
 // L'écriteau seul, sur un canvas transparent de la taille des cadres
 async function ecriteau(x){const r=$('#rar').value,[y0,y1]=BANDE[r],k=+$('#taille').value/100,dy=+$('#decal').value;
- x.save();x.globalAlpha=+$('#opa').value/100;
- if(r==='commun'){const g=x.createLinearGradient(0,y0,0,y1);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(.25,'rgba(8,10,9,.62)');g.addColorStop(.75,'rgba(8,10,9,.62)');g.addColorStop(1,'rgba(0,0,0,0)');x.fillStyle=g;x.fillRect(0,y0,W,y1-y0)}
- else{const p=await charge(`cadres/ecriteau-${r}.png`);if(p)x.drawImage(p,0,0,W,H)}
- x.restore();
- const L=S.lignes.filter(l=>l.t.trim());if(!L.length)return;
- // tailles : l'ultime plus grand ; tout réduit ensemble si ça ne tient pas dans la bande
+ const L=S.lignes.filter(l=>l.t.trim());
+ // tailles : l'ultime plus grand ; tout réduit ensemble si ça ne tient pas dans la bande d'origine
  let tU=150*k,tP=104*k;const gap=26*k,maxW=W*.86,hb=(y1-y0)*.86;
- const haut=()=>L.reduce((s,l)=>s+(l.ult?tU:tP)*(S.style==='pastille'?1.25:1.02),0)+gap*(L.length-1);
+ const haut=()=>L.reduce((s,l)=>s+(l.ult?tU:tP)*(S.style==='pastille'?1.25:1.02),0)+gap*Math.max(0,L.length-1);
  while(haut()>hb&&tP>40){tU*=.94;tP*=.94}
- let y=(y0+y1)/2-haut()/2+dy;
+ // l'écriteau : à sa taille d'origine, ou ajusté à la hauteur du texte (+ marge), centré sur le texte
+ const cy0=(y0+y1)/2+dy,aj=$('#ajuste').checked&&L.length,marge=+$('#marge').value*k;
+ const e0=aj?cy0-haut()/2-marge:y0,e1=aj?cy0+haut()/2+marge:y1;
+ x.save();x.globalAlpha=+$('#opa').value/100;
+ if(r==='commun'){const g=x.createLinearGradient(0,e0,0,e1);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(.25,'rgba(8,10,9,.62)');g.addColorStop(.75,'rgba(8,10,9,.62)');g.addColorStop(1,'rgba(0,0,0,0)');x.fillStyle=g;x.fillRect(0,e0,W,e1-e0)}
+ else{const p=await charge(`cadres/ecriteau-${r}.png`);if(p)x.drawImage(p,0,y0,W,y1-y0,0,e0,W,e1-e0)}   // la bande du PNG, étirée ou resserrée en hauteur
+ x.restore();
+ if(!L.length)return;
+ let y=cy0-haut()/2;
  for(const l of L){let s=l.ult?tU:tP;x.font=police(s);while(x.measureText(l.t).width>maxW*(S.style==='pastille'?.9:1)&&s>30){s-=4;x.font=police(s)}
   const hl=s*(S.style==='pastille'?1.25:1.02),cy=y+hl/2;y+=hl+gap;
   x.textAlign='center';x.textBaseline='middle';x.lineJoin='round';
@@ -181,7 +187,7 @@ $('#dessin').onchange=e=>{const f=e.target.files[0];if(!f)return;const i=new Ima
 {const v=$('#vue');let g=null;v.addEventListener('pointerdown',e=>{if(!S.dessin)return;g={x:e.clientX,y:e.clientY,px:S.px,py:S.py};v.setPointerCapture(e.pointerId)});
  v.addEventListener('pointermove',e=>{if(!g)return;const k=W/v.getBoundingClientRect().width;S.px=g.px+(e.clientX-g.x)*k;S.py=g.py+(e.clientY-g.y)*k;dessine()});
  v.addEventListener('pointerup',()=>g=null);v.style.touchAction='none'}
-['rar','font','taille','decal','opa','lueur','type','atq','pv','zoom'].forEach(id=>{const n=$('#'+id);n.addEventListener('input',dessine);n.addEventListener('change',dessine)});
+['rar','font','taille','decal','opa','lueur','ajuste','marge','type','atq','pv','zoom'].forEach(id=>{const n=$('#'+id);n.addEventListener('input',dessine);n.addEventListener('change',dessine)});
 lignesUI();dessine();document.fonts.ready.then(dessine);
 </script>
 </body>
