@@ -17,6 +17,7 @@ import {
   type UltimateTriggerType,
 } from '@forestcard/engine';
 import { EDITOR_CONDITIONS, EDITOR_MAGICS, EDITOR_PASSIVES, EDITOR_ULTIMATES } from './editor.ts';
+import { plaqueLines } from './plaque.ts';
 
 export * from './categories.ts';
 export * from './editor.ts';
@@ -511,3 +512,16 @@ export function describeCard(c: DescribedCard): Section[] {
   }
   return sections;
 }
+
+// The plaque's lines with the explanation of each effect, in the site's wording (the card composer).
+export const plaqueLinesExplained = (card: {
+  type?: unknown;
+  ultime?: unknown;
+  passif?: unknown;
+  effet?: unknown;
+}) =>
+  plaqueLines(card, {
+    effect: (b) => fxEffet(b as Fx).join(' '),
+    passive: (b) => fxPassif(b as Fx),
+    condition: (c) => fxCond(c as TrapCondition),
+  });

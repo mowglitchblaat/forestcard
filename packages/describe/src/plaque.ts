@@ -113,7 +113,14 @@ const PASSIVE_LABELS: Record<PassiveType, (p: Fx) => string> = {
   detonation: () => 'Détonation',
 };
 
-export type PlaqueLine = { t: string; c: string; ult: boolean };
+// t: the short label; d: the explanation of the effect (empty without a describer).
+export type PlaqueLine = { t: string; c: string; ult: boolean; d: string };
+// Explanation of an effect brick and of a passive brick (index.ts passes its own text).
+export type PlaqueDescriber = {
+  effect: (b: Fx) => string;
+  passive: (b: Fx) => string;
+  condition: (c: Fx) => string;
+};
 
 // The colour category of a brick on the plaque: a breath takes its element's.
 const colourOf = (b: Fx) => categoryOf(b.type === 'souffle' ? b.statut : b.type);
@@ -132,9 +139,31 @@ export function passiveLabel(b: Fx): string {
   return f ? f(b) : own(b);
 }
 
-// The lines of a fighter's plaque: its ultimate (each brick of a multi-effect ultimate joined with
-// " + "), then its passives. Three passives at most on their own line; more are paired.
-export function plaqueLines(card: { ultime?: unknown; passif?: unknown }): PlaqueLine[] {
+// The lines written on a card. A fighter: its ultimate (each brick of a multi-effect ultimate joined
+// with " + "), then its passives; three passives at most on their own line, more are paired. A magic:
+// one line per effect. A trap: one line per effect, the first one's explanation opened by its
+// condition. With a describer, each line also carries the explanation of its effects.
+export function plaqueLines(
+  card: { type?: unknown; ultime?: unknown; passif?: unknown; effet?: unknown },
+  describe?: PlaqueDescriber,
+): PlaqueLine[] {
+  const effectLine = (b: Fx): PlaqueLine => ({
+    t: effectLabel(b),
+    c: colourOf(b),
+    ult: false,
+    d: describe ? describe.effect(b) : '',
+  });
+  if (card.type === 'magie') return bricks(card.effet).map(effectLine);
+  if (card.type === 'piege') {
+    const trap = (card.effet || {}) as Fx;
+    const lines = bricks(trap.effet).map(effectLine);
+    const first = lines[0];
+    if (first && describe && trap.condition) {
+      const cond = describe.condition(trap.condition as Fx);
+      first.d = [cond && `Se déclenche : ${cond}.`, first.d].filter(Boolean).join(' ');
+    }
+    return lines;
+  }
   const lines: PlaqueLine[] = [];
   const u = bricks(card.ultime);
   if (u.length)
@@ -142,17 +171,23 @@ export function plaqueLines(card: { ultime?: unknown; passif?: unknown }): Plaqu
       t: u.map(effectLabel).join(' + '),
       c: colourOf(u[0] as Fx),
       ult: true,
+      d: describe ? u.map(describe.effect).join(' + ') : '',
     });
   const p = bricks(card.passif).map((b) => ({
     t: passiveLabel(b),
     c: colourOf(b),
     ult: false,
+    d: describe ? describe.passive(b) : '',
   }));
   if (p.length <= 3) lines.push(...p);
   else
     for (let i = 0; i < p.length; i += 2) {
       const [a, b] = [p[i] as PlaqueLine, p[i + 1]];
-      lines.push(b ? { t: `${a.t} · ${b.t}`, c: a.c, ult: false } : a);
+      lines.push(
+        b
+          ? { t: `${a.t} · ${b.t}`, c: a.c, ult: false, d: [a.d, b.d].filter(Boolean).join(' · ') }
+          : a,
+      );
     }
   return lines;
 }
