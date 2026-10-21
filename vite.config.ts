@@ -8,8 +8,9 @@ const UNTOUCHED = [
   'apps/site/src/index.html',
   'apps/catalogue/src/catalogue.html',
   'apps/overlay-boosters/src/overlay.html',
-  // A single hand-written tool page, served as it is (apps/atelier/README.md).
-  'apps/atelier/src/atelier.html',
+  // The card composer and the workshop page, hand-written like index.html (apps/site/README.md).
+  'apps/site/src/composeur.js',
+  'apps/site/src/atelier.html',
   'apps/site/public/patchnotes.json',
   // The author's rule tests, run by packages/engine/test/legacy-rules.test.ts.
   'packages/engine/test/moteur.regles.js',

@@ -19,8 +19,8 @@ const FILES: [url: string, source: string][] = [
   ['combat.html', 'apps/overlay-combat/dist/combat.html'],
   ['catalogue.html', 'apps/catalogue/dist/catalogue.html'],
   ['overlay.html', 'apps/overlay-boosters/src/overlay.html'],
-  // The author's tool for the plaques of his cards (ultimate and passives), served as it is.
-  ['atelier.html', 'apps/atelier/src/atelier.html'],
+  // The card workshop: the admin's card composer, for testing a card without the admin.
+  ['atelier.html', 'apps/site/dist/atelier.html'],
   ['patchnotes.json', 'apps/site/public/patchnotes.json'],
   ['cadres', 'assets/cadres'],
   // The edge function's single file, to paste in the Supabase dashboard (apps/edge/README.md): built

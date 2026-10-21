@@ -9,6 +9,8 @@ import { join } from 'node:path';
 const HERE = import.meta.dirname;
 const MARKER = '/*@@DESCRIBE@@*/';
 const EDITOR_MARKER = '/*@@EDITOR@@*/';
+// The card composer (src/composeur.js), shared by the admin and the workshop page (atelier.html).
+const COMPOSER_MARKER = '/*@@COMPOSEUR@@*/';
 // Names declared by the legacy FX block and used by the rest of the page.
 const EXPORTED = [
   'nz',
@@ -19,6 +21,7 @@ const EXPORTED = [
   'lignesCarte',
   'lignesEcriteau',
   'COULEURS_CAT',
+  'LIBELLES_CAT',
 ];
 // Names of the admin editor's lists in the legacy page.
 const EDITOR = ['P', 'PAS', 'ULT', 'MAG', 'CON'];
@@ -32,9 +35,12 @@ if (/<\/script/i.test(bundle))
   throw new Error('the bundle contains "</script": it cannot be inlined');
 
 const template = readFileSync(join(HERE, 'src', 'index.html'), 'utf8');
-for (const marker of [MARKER, EDITOR_MARKER])
+for (const marker of [MARKER, EDITOR_MARKER, COMPOSER_MARKER])
   if (template.split(marker).length !== 2)
     throw new Error(`src/index.html must contain ${marker} exactly once`);
+const composer = readFileSync(join(HERE, 'src', 'composeur.js'), 'utf8');
+if (/<\/script/i.test(composer))
+  throw new Error('composeur.js contains "</script": it cannot be inlined');
 
 const block = [
   '/* FX: descriptions des effets, générées par apps/site (ne pas modifier ici) */',
@@ -45,6 +51,18 @@ writeFileSync(
   join(HERE, 'dist', 'index.html'),
   template
     .replace(MARKER, () => block)
-    .replace(EDITOR_MARKER, () => `const { ${EDITOR.join(', ')} } = SiteDescribe;`),
+    .replace(EDITOR_MARKER, () => `const { ${EDITOR.join(', ')} } = SiteDescribe;`)
+    .replace(COMPOSER_MARKER, () => composer),
 );
 console.log('dist/index.html written');
+
+// The workshop page: the same composer, for testing a card without the admin.
+const workshop = readFileSync(join(HERE, 'src', 'atelier.html'), 'utf8');
+for (const marker of [MARKER, COMPOSER_MARKER])
+  if (workshop.split(marker).length !== 2)
+    throw new Error(`src/atelier.html must contain ${marker} exactly once`);
+writeFileSync(
+  join(HERE, 'dist', 'atelier.html'),
+  workshop.replace(MARKER, () => block).replace(COMPOSER_MARKER, () => composer),
+);
+console.log('dist/atelier.html written');

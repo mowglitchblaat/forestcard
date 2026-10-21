@@ -5,10 +5,12 @@
 import { describeCard, type DescribedCard, type Section } from '@forestcard/describe';
 
 export { nz, fxPassif, fxEffet, fxCond, fxTrigUlt } from '@forestcard/describe';
-// The card composer of the admin: the plaque's lines and the colours of the effect categories.
+// The card composer (admin and atelier.html): the plaque's lines, the colours and labels of the effect
+// categories.
 export {
   plaqueLinesExplained as lignesEcriteau,
   CATEGORY_STYLES as COULEURS_CAT,
+  CATEGORY_LABELS as LIBELLES_CAT,
 } from '@forestcard/describe';
 // The admin editor's lists, under the names the page uses.
 export {
