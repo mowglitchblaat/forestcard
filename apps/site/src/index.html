@@ -1930,7 +1930,10 @@ async function aReglages(){
    <h3>Tests</h3><div class="f"><button class="sec" id="rzc">Remettre à zéro les combats gratuits du jour (tous les joueurs)</button></div>`;
   $('#optorph').onclick=async()=>{const L=$('#optlog');L.textContent='Recherche des images inutilisées…\n';   // images du stockage qui ne servent plus à aucune carte (active ou non), booster, dos ni proposition (20-images-inutilisees.sql)
     const r=await sb.rpc('admin_images_inutilisees');if(r.error){L.textContent+='✗ '+r.error.message+'\n(lance d\'abord 20-images-inutilisees.sql dans Supabase)';return}
-    const P=(r.data||[]).map(x=>x.chemin).filter(Boolean),tot=(r.data||[]).reduce((a,x)=>a+(+x.octets||0),0);
+    // les dessins seuls des cartes composées (dessins/…) servent à refaire leurs images : ceux encore utilisés ne sont jamais supprimés
+    const dp=await sb.from('variantes_carte').select('dessin_path').not('dessin_path','is',null),garde=new Set((dp.data||[]).map(x=>x.dessin_path));
+    const R2=(r.data||[]).filter(x=>x.chemin&&!(String(x.chemin).startsWith('dessins/')&&(dp.error||garde.has(x.chemin))));
+    const P=R2.map(x=>x.chemin),tot=R2.reduce((a,x)=>a+(+x.octets||0),0);
     if(!P.length){L.textContent+='Aucune image inutilisée : rien à supprimer.';return}
     if(!(await uiConfirm(`Supprimer définitivement ${P.length} image(s) inutilisée(s) (${(tot/1048576).toFixed(1)} Mo) ?\nElles ne servent à aucune carte, active ou désactivée, ni booster, dos ou proposition.`)))return;
     let n=0;for(let i=0;i<P.length;i+=50){const d=await sb.storage.from('cartes').remove(P.slice(i,i+50));if(d.error)L.textContent+='✗ '+d.error.message+'\n';else n+=(d.data||[]).length}
