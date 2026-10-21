@@ -470,6 +470,12 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
       };
     case 'attackBlocked':
       return { t: 'bloque', txt: `L'attaque de ${name(e.side)} est bloquée`, o: { c: e.defender } };
+    case 'blockRiposte':
+      return {
+        t: 'statut',
+        txt: `${name(e.side)} riposte au blocage${e.kind === 'renvoi' ? ' et renvoie les dégâts' : ''} !`,
+        o: { c: e.side, k: 'riposte', cible: e.target, quoi: e.kind },
+      };
     case 'damageDoubled':
       return { t: 'statut', txt: `${name(e.side)} double ses dégâts`, o: { c: e.side } };
     case 'counterPrepared':

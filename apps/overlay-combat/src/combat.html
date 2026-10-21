@@ -1077,6 +1077,7 @@ async function jouer(res){
    else if(e.t==='reanim'){reforme(e.c);flot(e.c,'+'+e.n,'#4ade80');await wait(2100)}
    else if(e.t==='statut'&&e.k==='rage'){statut(e.c,'rage',true);colere(e.c);flot(e.c,'RAGE !','#ef4444','big');await wait(1000)}
    else if(e.t==='statut'&&e.k==='fatigue'){statut(e.c,'fatigue',true);flot(e.c,'Fatigue…','#94a3b8');await wait(700)}
+   else if(e.t==='statut'&&e.k==='riposte'){bouclier(e.c,{partiel:1});flot(e.c,'RIPOSTE !','#fcd34d','big');await wait(800)}   // blocage avec riposte : le renvoi (miroir) ou le statut suit
    else if(e.t==='statut'&&e.k==='alea'){flot(e.c,'🎲 '+(e.txt.split(' : ')[1]||'').replace(' !',''),'#c4b5fd');await wait(800)}
    else if(e.t==='statut'&&e.k==='purif'){purif(e.c);flot(e.c,'Purifié !','#fde047');await wait(1300)}
    else if(e.t==='souffle'){souffle(e.from,e.c,e.el);await wait(950)}

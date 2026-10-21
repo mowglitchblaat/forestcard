@@ -8,7 +8,7 @@ import { emit, id, over, raw, roll } from '../combat/combat.ts';
 import type { EffectContext, EffectRules } from '../combat/effect-context.ts';
 import { applyEffect } from '../combat/effects.ts';
 import type { EffectData } from '../model/card.ts';
-import { reduce } from './block.ts';
+import { blockedShot, reduce, riposte } from './block.ts';
 import { dodges } from './dodge.ts';
 import { reflect } from './reflect.ts';
 
@@ -51,10 +51,12 @@ export function breathEffect({ c, e, o, x, fromMagic, returning }: EffectContext
       return;
     }
     // Blocked: no damage, the status still applies.
-    const blocked = o.status.nextAttackBlocked > 0;
-    if (blocked) {
-      o.status.nextAttackBlocked = 0;
+    const shot = blockedShot(o);
+    const blocked = !!shot;
+    if (shot) {
       emit(c, { type: 'breathBlocked', side: id(c, x), by: id(c, o) });
+      riposte(c, x, o, +raw(e.val) || 0, shot.riposte);
+      if (o.hp <= 0) return;
     }
     if (+raw(e.val) > 0 && !blocked) {
       const n = damage(c, o, x, reduce(c, x, +raw(e.val)));

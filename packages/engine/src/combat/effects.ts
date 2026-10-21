@@ -158,6 +158,7 @@ function undoStatusesLater(
     stunTurns: M.status.stunTurns,
     nextAttackCancelled: M.status.nextAttackCancelled,
     nextAttackBlocked: M.status.nextAttackBlocked,
+    blockRiposte: M.status.blockRiposte,
   };
   onUndo(() => {
     const curseNow = M.status.curses[0];
@@ -197,5 +198,6 @@ function undoStatusesLater(
       before.nextAttackCancelled,
     );
     M.status.nextAttackBlocked = Math.min(M.status.nextAttackBlocked, before.nextAttackBlocked);
+    M.status.blockRiposte = before.blockRiposte;
   });
 }

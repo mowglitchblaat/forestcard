@@ -104,6 +104,24 @@ const elementText = (el: string, v: number, e: Fx): string | undefined =>
     } as Record<string, string>
   )[el];
 
+// The riposte of a block (bloque_attaque), once, on the first strike it blocks.
+function riposteText(e: Fx): string {
+  const ch = isEmpty(e.chance) ? 100 : nz(e.chance);
+  const p = ch < 100 ? `${ch} % de chances de ` : '';
+  if (e.riposte === 'renvoi')
+    return ` · riposte : ${p}renvoyer ${nz(e.pctriposte)} % des dégâts bloqués à l'attaquant`;
+  if (e.riposte !== 'statut') return '';
+  const T = nz(e.tours) || 2;
+  const el = (e.rstatut as string) || 'brulure';
+  const st =
+    el === 'aleatoire'
+      ? `un statut au hasard (valeur ${nz(e.sval)})`
+      : el === 'etourdi'
+        ? "l'étourdir"
+        : elementText(el, nz(e.sval), e) || el;
+  return ` · riposte : ${p}${el === 'etourdi' ? st : 'infliger ' + st} à l'attaquant pendant ${trs(T)}`;
+}
+
 // Programming text (the passive, and the effect that gives it).
 function programmingText(p: Fx): string {
   // Bricks as stored, nulls included: a null brick throws, as on the legacy page.
@@ -227,8 +245,8 @@ const EFFECT_TEXT: Record<EffectType, (e: Fx, x: EffectContext) => string[]> = {
   annule_attaque: () => [
     "Annule la prochaine attaque de l'adversaire (elle n'a pas lieu : ni dégâts, ni statuts, ni marques)",
   ],
-  bloque_attaque: () => [
-    "Bloque la prochaine attaque de l'adversaire : elle touche sans faire de dégâts, mais ses statuts et ses marques (exécution, avalage) s'appliquent",
+  bloque_attaque: (e) => [
+    `Bloque ${nz(e.nbbloque) > 0 ? `les ${nz(e.nbbloque) > 1 ? nz(e.nbbloque) + ' premiers coups' : 'le premier coup'} de ` : ''}la prochaine attaque de l'adversaire : ${nz(e.nbbloque) > 0 ? 'ils touchent' : 'elle touche'} sans faire de dégâts, mais ses statuts et ses marques (exécution, avalage) s'appliquent${riposteText(e)}`,
   ],
   detonation: (e) => {
     const b = isEmpty(e.bonus) ? 50 : nz(e.bonus);

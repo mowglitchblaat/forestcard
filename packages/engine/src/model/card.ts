@@ -50,6 +50,11 @@ export type EffectData = {
   // breathe again (`rechance` %, `remax` more breaths at most).
   statut?: string;
   sval?: Num;
+  // bloque_attaque: strikes blocked, riposte (renvoi: % of the blocked damage; statut: rstatut)
+  nbbloque?: Num;
+  riposte?: string;
+  pctriposte?: Num;
+  rstatut?: string;
   rechance?: Num;
   remax?: Num;
 

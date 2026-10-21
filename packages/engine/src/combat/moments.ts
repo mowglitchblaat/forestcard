@@ -165,6 +165,8 @@ export function attack(c: Combat, a: Side): Flow {
     ia: id(c, a),
     idd: id(c, d),
     blocked: false,
+    blockStrikes: Infinity,
+    riposte: null,
     strikes: 1,
     base: 1,
     swallowTried: 0,

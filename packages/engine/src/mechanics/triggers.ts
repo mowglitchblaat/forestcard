@@ -87,6 +87,7 @@ export const TRIGGER_FACT: { [K in EventType]: Classify<K> | null } = {
   nextAttackCancelled: null,
   nextAttackBlocked: null,
   attackBlocked: (e) => ({ kind: 'block', who: e.defender }),
+  blockRiposte: null,
   damageDoubled: null,
   counterPrepared: null,
   damaged: (e) =>

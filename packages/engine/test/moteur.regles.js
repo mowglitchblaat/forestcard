@@ -652,6 +652,35 @@ test('avalage : la carte avalée ne reçoit rien, ce qui la visait touche la car
   assert.ok(r.journal.slice(i, j).some(e => /Ogre subit 9 dégâts directs/.test(e.txt || '')));
 });
 
+// ================= Blocage avec riposte =================
+const MUR = (x = {}) => MAG('Mur', { type: 'bloque_attaque', ...x });
+test('blocage + riposte renvoi : X % des dégâts bloqués repartent sur l\'attaquant, une seule fois', () => {
+  const r = combat([C('Bloqueur', 10, SOLIDE), MUR({ riposte: 'renvoi', pctriposte: 50 })], [C('Frappeur', 30, SOLIDE)], { regles: { maxTours: 4, maxProlong: 0 } });
+  const rip = lignes(r, e => e.k === 'riposte');
+  assert.equal(rip.length, 1);
+  assert.ok(r.journal.some(e => /Frappeur subit 15 dégâts renvoyés/.test(e.txt || '')));
+});
+test('blocage + riposte statut : l\'attaquant reçoit le statut choisi au moment du blocage', () => {
+  const r = combat([C('Bloqueur', 10, SOLIDE), MUR({ riposte: 'statut', rstatut: 'poison', sval: 5, tours: 3 })], [C('Frappeur', 30, SOLIDE)], { regles: { maxTours: 4, maxProlong: 0 } });
+  const i = r.journal.findIndex(e => e.k === 'riposte');
+  assert.ok(i > 0 && r.journal[i - 1].t === 'bloque');
+  assert.ok(/Frappeur est empoisonné/.test(r.journal[i + 1].txt || ''));
+});
+test('blocage limité : seuls les X premiers coups sont bloqués, la riposte part au 1er', () => {
+  const r = combat([C('Bloqueur', 10, SOLIDE), MUR({ nbbloque: 1, riposte: 'statut', rstatut: 'etourdi', tours: 1 })], [C('Frappeur', 30, SOLIDE, { passif: { type: 'multi_frappe', chance: 100, frappes: 3 } })], { regles: { maxTours: 4, maxProlong: 0 } });
+  const a = r.journal.findIndex(e => e.t === 'attaque' && e.c === 1);
+  const fin = r.journal.findIndex((e, k) => k > a && e.t === 'tour');
+  const att = r.journal.slice(a, fin);
+  assert.equal(att.filter(e => e.t === 'bloque').length, 1);
+  assert.equal(att.filter(e => e.t === 'degats' && e.c === 0).length, 2);
+  assert.equal(att.filter(e => e.k === 'riposte').length, 1);
+});
+test('blocage sans option : toute l\'attaque est bloquée, aucune riposte', () => {
+  const r = combat([C('Bloqueur', 10, SOLIDE), MUR()], [C('Frappeur', 30, SOLIDE, { passif: { type: 'multi_frappe', chance: 100, frappes: 3 } })], { regles: { maxTours: 4, maxProlong: 0 } });
+  assert.equal(lignes(r, e => e.t === 'bloque').length, 3);
+  assert.ok(!r.journal.some(e => e.k === 'riposte'));
+});
+
 test('les 3 copies du moteur sont identiques (moteur-combat.js, combat.html, swift-responder.ts)', () => {
   const E = "})(typeof window!=='undefined'?window:globalThis);";
   const extrait = f => { const s = fs.readFileSync(path.join(__dirname, '..', f), 'utf8').replace(/\r\n/g, '\n'); const a = s.indexOf('(function(g){\nconst '); return s.slice(a, s.indexOf(E, a) + E.length); };

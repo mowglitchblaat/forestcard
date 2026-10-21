@@ -13,6 +13,7 @@ import { fractureOnHit } from '../mechanics/fracture.ts';
 import { frostOnHit } from '../mechanics/frost.ts';
 import { rageBonus } from '../mechanics/rage.ts';
 import type { EffectData } from '../model/card.ts';
+import type { BlockRiposte } from '../mechanics/block.ts';
 import { emit, type Combat } from './combat.ts';
 import { damage } from './damage.ts';
 import type { Flow, StrikeFlow } from './flow.ts';
@@ -24,7 +25,9 @@ export type Attack = {
   d: Side; // its target
   ia: number;
   idd: number;
-  blocked: boolean; // blocked attack: every strike lands at 0 damage
+  blocked: boolean; // blocked attack: its first blockStrikes strikes land at 0 damage
+  blockStrikes: number; // how many strikes the block takes (Infinity: the whole attack)
+  riposte: BlockRiposte | null; // the blocker's riposte, on the first strike it blocks (then null)
   strikes: number;
   base: number; // strikes before the chain's extra ones
   swallowTried: number; // swallowing: one mark (or attempt) per attack, even with several strikes
@@ -49,9 +52,9 @@ export type StrikeStep = (c: Combat, at: Attack, st: Strike) => StrikeFlow;
 // ── Each strike ──
 
 // double damage, counter bonus, rage; fatigue: less damage (already taken off the attack)
-export function strikePower(_c: Combat, { a, blocked }: Attack, st: Strike): StrikeFlow {
+export function strikePower(_c: Combat, { a, blocked, blockStrikes }: Attack, st: Strike): StrikeFlow {
   st.n = Math.max(0, a.atq * damageFactor(a) + useCounterBonus(a) + rageBonus(a));
-  st.blocked = blocked;
+  st.blocked = blocked && st.k < blockStrikes;
   return undefined;
 }
 

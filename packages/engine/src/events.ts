@@ -233,6 +233,7 @@ export type DomainEvent =
   | { type: 'nextAttackCancelled'; side: SideIndex }
   | { type: 'nextAttackBlocked'; side: SideIndex }
   | { type: 'attackBlocked'; side: SideIndex; defender: SideIndex } // the attack lands at 0 damage
+  | { type: 'blockRiposte'; side: SideIndex; target: SideIndex; kind: 'renvoi' | 'statut' } // side: the blocker, once per block
   | { type: 'damageDoubled'; side: SideIndex }
   | { type: 'counterPrepared'; side: SideIndex }
   // Damage, healing, death

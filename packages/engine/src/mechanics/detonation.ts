@@ -18,6 +18,7 @@ import type { Side } from '../combat/state.ts';
 import type { EffectData } from '../model/card.ts';
 import { ELEMENTS, elementStatus } from './breath.ts';
 import { dodges } from './dodge.ts';
+import { blockedShot, riposte } from './block.ts';
 import { reflectTotal } from './reflect.ts';
 
 // Damage taken from a detonation or a missile: a card it kills cannot be revived. The flag is set
@@ -162,11 +163,11 @@ function missiles(
       if (over(c)) break;
       continue;
     }
-    const blocked = o.status.nextAttackBlocked > 0;
+    const shot = blockedShot(o);
     let n = 0;
-    if (blocked) {
-      o.status.nextAttackBlocked = 0;
+    if (shot) {
       emit(c, { type: 'missileBlocked', side: id(c, x), by: id(c, o) });
+      riposte(c, x, o, +raw(e.val) || 0, shot.riposte);
     } else n = detonate(c, o, x, e, true, true) || 0;
     if (n > 0 && o.hp > 0) {
       const back = reflectTotal(x, n);
