@@ -10,7 +10,16 @@ const HERE = import.meta.dirname;
 const MARKER = '/*@@DESCRIBE@@*/';
 const EDITOR_MARKER = '/*@@EDITOR@@*/';
 // Names declared by the legacy FX block and used by the rest of the page.
-const EXPORTED = ['nz', 'fxPassif', 'fxEffet', 'fxCond', 'fxTrigUlt', 'lignesCarte'];
+const EXPORTED = [
+  'nz',
+  'fxPassif',
+  'fxEffet',
+  'fxCond',
+  'fxTrigUlt',
+  'lignesCarte',
+  'lignesEcriteau',
+  'COULEURS_CAT',
+];
 // Names of the admin editor's lists in the legacy page.
 const EDITOR = ['P', 'PAS', 'ULT', 'MAG', 'CON'];
 

@@ -21,6 +21,11 @@ button{cursor:pointer;background:#7c3aed;border-color:#7c3aed}button.sec{backgro
 .dtop{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap}.dbt{display:flex;gap:8px;flex-wrap:wrap}
 .dmul{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:13px}.dmul select{max-width:100%;min-width:150px}
 button:disabled{opacity:.4;cursor:not-allowed}
+.cpo{border:1px solid #3b3350;border-radius:12px;padding:12px;background:linear-gradient(180deg,#221d31,#1b1924)}.cpo-h{display:flex;flex-direction:column;gap:2px;margin-bottom:10px}.cpo-h b{font-size:15px}
+.cpo-g{display:grid;grid-template-columns:minmax(200px,300px) 1fr;gap:16px;align-items:start}@media(max-width:700px){.cpo-g{grid-template-columns:1fr}}
+.cpo-v{display:flex;flex-direction:column;gap:6px;align-items:center;position:sticky;top:8px}.cpo-v canvas{width:100%;height:auto;border-radius:12px;background:repeating-conic-gradient(#1c1c26 0 25%,#16161e 0 50%) 50%/20px 20px;box-shadow:0 8px 28px #0008;touch-action:none;cursor:grab}
+.cpo-r{display:flex;flex-direction:column;gap:8px;min-width:0}.cpo-r label{display:flex;flex-direction:column;gap:3px}.cpo-r input[type=range]{padding:0;accent-color:#a78bfa}.cpo-r textarea{resize:vertical;min-height:70px}
+.cpo-2{display:grid;grid-template-columns:1fr 1fr;gap:8px}.cpo-r label.cpo-c{flex-direction:row;align-items:center;gap:8px;font-size:13px}.cpo details{margin-top:10px}.cpo details label{display:block;margin-top:6px}
 .cimg.in{filter:drop-shadow(0 0 3px var(--g)) drop-shadow(0 0 12px var(--g)) drop-shadow(0 0 24px var(--g))}
 .cw button{font-size:13px}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
@@ -1466,6 +1471,73 @@ function mkMulti(el,cat,lab,rem){
    set(o){if(!o)return;const arr=o.briques||[o];while(L.length>1){L.pop().w.remove()}arr.forEach((b,i)=>{(i==0?L[0].m:add()).set(b)})}};
 }
 
+// ---------- Composeur de carte (admin) : le dessin seul + cadre + écriteau + chiffres → les deux images de la carte ----------
+// Le dessin et ses réglages sont gardés sur la version Standard (variantes_carte.dessin_path, .compo : 29-composition-cartes.sql) :
+// l'image est refaite toute seule quand la carte change (stats, ultime, passifs, rareté).
+const CPO=(()=>{
+ const W=1488,H=2070,BANDE={ggez:[1294,1789],legendaire:[1349,1848],epique:[1200,1708],rare:[1094,1651],commun:[1430,1700]};
+ const POLICES=['Lilita One','Russo One','Bangers','Cinzel Decorative','Pirata One','Metamorphous','Arial Black'];
+ const DEF={police:'Lilita One',style:'pastille',taille:100,decal:0,marge:55,daUlt:true,lueur:false,z:1,x:0,y:0,textes:null};
+ let polices=null;const chargerPolices=()=>polices||(polices=new Promise(ok=>{const l=document.createElement('link');l.rel='stylesheet';
+  l.href='https://fonts.googleapis.com/css2?family=Lilita+One&family=Russo+One&family=Bangers&family=Cinzel+Decorative:wght@900&family=Pirata+One&family=Metamorphous&display=swap';
+  l.onload=()=>Promise.all(POLICES.slice(0,6).map(p=>document.fonts.load(`80px "${p}"`).catch(()=>{}))).then(ok,ok);l.onerror=ok;document.head.appendChild(l);setTimeout(ok,4000)}));
+ const imgs={};const charge=src=>imgs[src]||(imgs[src]=new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.onerror=()=>r(null);i.src=src}));
+ const ALEA=['#f43f5e','#f59e0b','#22c55e','#3b82f6','#a855f7'];
+ // couleur de texte d'une catégorie sur l'écriteau : sa couleur du catalogue ; les fonds sombres passent à leur couleur claire, « autre » en blanc
+ const eclaircir=h=>{const v=parseInt(h.slice(1),16),r=v>>16,g=v>>8&255,b=v&255,l=(.2126*r+.7152*g+.0722*b)/255;if(l>.45)return h;const t=.45-l+.15,m=x=>Math.round(x+(255-x)*t);return `rgb(${m(r)},${m(g)},${m(b)})`};   // texte lisible sur l'écriteau
+ const coul=c=>{const s=COULEURS_CAT[c]||COULEURS_CAT.autre;return c==='autre'?'#f4f4f5':['ultime','fatigue','rage'].includes(c)?s.color:/^#[0-9a-f]{6}$/i.test(s.background)?eclaircir(s.background):s.background};
+ const pastille=c=>(COULEURS_CAT[c]||COULEURS_CAT.autre);
+ const rr=(x,a,b,w,h,r)=>{x.beginPath();x.moveTo(a+r,b);x.arcTo(a+w,b,a+w,b+h,r);x.arcTo(a+w,b+h,a,b+h,r);x.arcTo(a,b+h,a,b,r);x.arcTo(a,b,a+w,b,r);x.closePath()};
+ const tierDe=r=>RANGS_RAR[rangRar(r)[0]]||'commun';
+ // les lignes de l'écriteau : automatiques (ultime puis passifs), ou le texte de l'admin ligne par ligne (la couleur suit l'effet de la même ligne)
+ function lignes(carte,o){const auto=lignesEcriteau(carte);if(!o.textes)return auto;
+  return o.textes.map((t,i)=>({t,c:(auto[i]||{}).c||'autre',ult:!!(auto[i]||{}).ult})).filter(l=>l.t.trim())}
+ async function ecriteau(x,tier,L,o){const [y0,y1]=BANDE[tier],k=o.taille/100,police=s=>`${o.police==='Arial Black'?'900 ':''}${s}px "${o.police}","Arial Black",sans-serif`;
+  let tU=150*k,tP=116*k;const gap=24*k,maxW=W*.86,hb=(y1-y0)*.86,pst=o.style==='pastille';
+  const lh=l=>(l.ult?tU:tP)*(pst&&!(l.ult&&o.daUlt)?1.25:1.02),haut=()=>L.reduce((s,l)=>s+lh(l),0)+gap*Math.max(0,L.length-1);
+  while(haut()>hb&&tP>40){tU*=.94;tP*=.94}
+  const cy0=(y0+y1)/2+o.decal,e0=L.length?cy0-haut()/2-o.marge*k:y0,e1=L.length?cy0+haut()/2+o.marge*k:y1;
+  if(tier==='commun'){const g=x.createLinearGradient(0,e0,0,e1);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(.22,'rgba(8,10,9,.74)');g.addColorStop(.78,'rgba(8,10,9,.74)');g.addColorStop(1,'rgba(0,0,0,0)');x.fillStyle=g;x.fillRect(0,e0,W,e1-e0)}
+  else{const p=await charge(`cadres/ecriteau-${tier}.png`);if(p)x.drawImage(p,0,y0,W,y1-y0,0,e0,W,e1-e0)}
+  let y=cy0-haut()/2;
+  for(const l of L){const da=l.ult&&o.daUlt,pt=pst&&!da,fnt=v=>(da?'italic ':'')+police(v);let s=l.ult?tU:tP;x.font=fnt(s);
+   while(x.measureText(l.t).width>maxW*(pt?.9:1)&&s>30){s-=4;x.font=fnt(s)}
+   const h=lh(l),cy=y+h/2;y+=h+gap;x.textAlign='center';x.textBaseline='middle';x.lineJoin='round';const tw=x.measureText(l.t).width;
+   const grad=w=>{const g=x.createLinearGradient(W/2-w/2,0,W/2+w/2,0);ALEA.forEach((c,i)=>g.addColorStop(i/(ALEA.length-1),c));return g};
+   if(da){if(o.lueur){x.save();x.shadowColor='rgba(255,40,30,.9)';x.shadowBlur=s*.4;x.fillStyle='#7a001c';x.fillText(l.t,W/2,cy);x.restore()}
+    x.lineWidth=s*.07;x.strokeStyle='#d0132f';x.strokeText(l.t,W/2,cy);x.fillStyle='#7a001c';x.fillText(l.t,W/2,cy)}
+   else if(pt){const P=pastille(l.c),pw=tw+s*1.1,ph=s*1.18;x.save();x.shadowColor='rgba(0,0,0,.55)';x.shadowBlur=s*.25;x.shadowOffsetY=s*.06;rr(x,W/2-pw/2,cy-ph/2,pw,ph,ph/2);
+    x.fillStyle=l.c==='alea'?grad(pw):P.background;x.fill();x.restore();
+    if(P.border){rr(x,W/2-pw/2,cy-ph/2,pw,ph,ph/2);x.lineWidth=s*.05;x.strokeStyle=P.border.split(' ').pop();x.stroke()}
+    x.lineWidth=s*.12;x.strokeStyle='rgba(0,0,0,.3)';x.strokeText(l.t,W/2,cy+s*.04);x.fillStyle=P.color;x.fillText(l.t,W/2,cy+s*.04)}
+   else{x.save();x.shadowColor='rgba(0,0,0,.6)';x.shadowBlur=s*.18;x.shadowOffsetY=s*.05;x.lineWidth=s*.2;x.strokeStyle='#0b0b0f';x.strokeText(l.t,W/2,cy);x.restore();
+    x.fillStyle=l.c==='alea'?grad(tw):coul(l.c);x.fillText(l.t,W/2,cy)}}}
+ // la carte entière, à la taille des cadres (1488 × 2070)
+ async function rendre(x,{dessin,carte,tier,o,chiffres}){await chargerPolices();x.clearRect(0,0,W,H);x.fillStyle='#14141c';x.fillRect(0,0,W,H);
+  if(dessin){const s=Math.max(W/dessin.naturalWidth,H/dessin.naturalHeight)*o.z,w=dessin.naturalWidth*s,h=dessin.naturalHeight*s;x.drawImage(dessin,(W-w)/2+o.x*W,(H-h)/2+o.y*H,w,h)}
+  const comb=carte.type==='combattant';if(comb)await ecriteau(x,tier,lignes(carte,o),o);
+  for(const src of [`cadres/${carte.type}-${tier}.png`,...['legendaire','epique','rare','commun'].map(r=>`cadres/${carte.type}-${r}.png`),`cadres/combattant-${tier}.png`]){const f=await charge(src);if(f){x.drawImage(f,0,0,W,H);break}}
+  if(chiffres&&comb){const num=(v,cx,c)=>{if(v==null||v==='')return;const s=150;x.font=`900 ${s}px "Arial Black",sans-serif`;x.textAlign='center';x.textBaseline='middle';x.lineJoin='round';
+   x.lineWidth=s*.16;x.strokeStyle='#fff';x.strokeText(String(v),cx,H*.925);x.fillStyle=c;x.fillText(String(v),cx,H*.925)};num(carte.atq,W*.13,'#e0303c');num(carte.pv,W*.87,'#4747d6')}}
+ const blob=c=>new Promise(ok=>c.toBlob(ok,'image/png'));
+ // les deux images de la carte (avec / sans chiffres ; sans chiffres seulement pour un combattant)
+ async function images(args){const c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');
+  await rendre(x,{...args,chiffres:true});const a=await blob(c);let b=null;
+  if(args.carte.type==='combattant'){await rendre(x,{...args,chiffres:false});b=await blob(c)}
+  const f=(bl,n)=>bl?new File([bl],n,{type:'image/png'}):null;return {carte:f(a,'carte.png'),combat:f(b,'combat.png')}}
+ const dessinDe=async src=>{try{const r=await fetch(src,{mode:'cors'});if(!r.ok)return null;const u=URL.createObjectURL(await r.blob());return await new Promise(ok=>{const i=new Image();i.onload=()=>ok(i);i.onerror=()=>ok(null);i.src=u})}catch(e){return null}};
+ return {W,H,DEF,POLICES,rendre,images,tierDe,lignes,dessinDe,chargerPolices};
+})();
+// le dessin seul : gardé en grand (jusqu'à la hauteur des cadres) pour pouvoir refaire l'image plus tard
+async function uploadDessin(file){const f=await alleger(file,2070,.92),ext=f.type==='image/webp'?'webp':(file.name.split('.').pop()||'png'),path='dessins/'+crypto.randomUUID()+'.'+ext;
+  await q(sb.storage.from('cartes').upload(path,f,{contentType:f.type||file.type,cacheControl:CACHE_1AN}));return path}
+// met à jour la version Standard ; sans 29-composition-cartes.sql, enregistre quand même les images (le dessin ne sera pas gardé)
+async function majVariante(carteId,ch,insert){const essai=async c=>{const vs=await sb.from('variantes_carte').select('id').eq('carte_id',carteId).eq('nom','Standard').limit(1);
+   if(vs.error)return vs;return vs.data&&vs.data.length&&!insert?sb.from('variantes_carte').update(c).eq('id',vs.data[0].id):sb.from('variantes_carte').insert({carte_id:carteId,nom:'Standard',poids:100,...c})};
+  let r=await essai(ch);
+  if(r.error&&/dessin_path|compo/.test(r.error.message||'')){const {dessin_path,compo,...reste}=ch;r=await essai(reste);
+   if(!r.error)uiAlert('Images enregistrées. Pour que le site garde le dessin et refasse l\'image quand la carte change, lance une fois 29-composition-cartes.sql dans Supabase.')}
+  if(r.error){uiAlert(r.error.message);throw r.error}}
 async function aCartes(){
   editId=null;editOld=null;
   const [col,rar,cartes]=await Promise.all([q(sb.from('collections').select('*')),q(sb.from('raretes').select('*').order('ordre')),
@@ -1481,8 +1553,22 @@ async function aCartes(){
    <select name="rar">${opts(rar)}</select>
    <div class="row" id="r-stats"><input name="atq" type="number" placeholder="ATQ" style="width:90px"><input name="pv" type="number" placeholder="PV" style="width:90px"></div>
    <input name="desc" placeholder="Description (optionnel)">
-   <label>Image complète de la carte<br><input name="file" type="file" accept="image/*" required></label>
-   <label>Image pour le combat — sans les chiffres ATQ/PV (facultatif, combattants)<br><input name="filec" type="file" accept="image/*"></label>
+   <div class="cpo" id="cpo"><div class="cpo-h"><b>🎨 Image de la carte</b><small>Envoie le dessin seul : le site pose le cadre, l'écriteau et les chiffres, et crée l'image normale et l'image de combat. Si la carte change plus tard (stats, ultime, passifs, rareté), l'image se refait toute seule.</small></div>
+    <div class="cpo-g"><div class="cpo-v"><canvas id="cpv" width="1488" height="2070"></canvas><small id="cpi"></small></div>
+     <div class="cpo-r"><label><small>Dessin seul (sans cadre, ni écriteau, ni chiffres)</small><input name="dessin" type="file" accept="image/*"></label>
+      <label><small>Zoom du dessin · glisse-le dans l'aperçu pour le placer</small><input name="cz" type="range" min="100" max="300" value="100"></label>
+      <div class="cpe"><div class="cpo-2"><label><small>Police de l'écriteau</small><select name="cpol">${CPO.POLICES.map(p=>`<option>${p}</option>`).join('')}</select></label>
+       <label><small>Passifs</small><select name="csty"><option value="texte">Texte coloré</option><option value="pastille">Pastilles</option></select></label></div>
+       <label><small>Taille du texte</small><input name="ctai" type="range" min="60" max="140" value="100"></label>
+       <label><small>Position verticale de l'écriteau</small><input name="cdec" type="range" min="-300" max="300" value="0"></label>
+       <label><small>Marge de l'écriteau autour du texte</small><input name="cmar" type="range" min="10" max="160" value="55"></label>
+       <label class="cpo-c"><input type="checkbox" name="cda" checked> Ultime en italique rouge sombre (ta DA)</label>
+       <label class="cpo-c"><input type="checkbox" name="clu"> Lueur rouge sur l'ultime</label>
+       <label><small>Texte de l'écriteau : une ligne par effet, l'ultime en premier (modifiable ; la couleur suit l'effet de la ligne)</small><textarea name="ctxt" rows="3"></textarea></label>
+       <div class="row" style="margin:0"><button type="button" class="sec" id="cauto">↺ Texte automatique</button><button type="button" class="sec" id="cdl">⬇️ Télécharger les images</button></div></div></div></div>
+    <details><summary><small>Ou envoyer des images déjà prêtes (ancien système)</small></summary>
+     <label>Image complète de la carte<br><input name="file" type="file" accept="image/*"></label>
+     <label>Image pour le combat — sans les chiffres ATQ/PV (facultatif, combattants)<br><input name="filec" type="file" accept="image/*"></label></details></div>
    <div id="s-comb"><b>Ultime</b><div id="b-ult"></div>
     <div class="row"><label><small>Après N tours</small><br><input name="utours" type="number" min="0" style="width:90px"></label>
     <label><input type="checkbox" name="ucarte"> ou quand un piège se déclenche (ou qu'une magie revient)</label></div>
@@ -1518,6 +1604,36 @@ async function aCartes(){
     $('#r-stats').style.display=$('#s-comb').style.display=t=='combattant'?'':'none';
     $('#s-mag').style.display=t=='magie'?'':'none';$('#s-pie').style.display=t=='piege'?'':'none'};
   fc.type.onchange=toggle;toggle();
+  // composeur : état, aperçu en direct, placement du dessin
+  const CS={dessin:null,dessinFichier:null,dessinPath:null,image:null,o:{...CPO.DEF}};
+  const lire=()=>{const t=fc.type.value;let ult=null,pas=null;try{if(t=='combattant'){ult=B.ult.get();pas=B.pas.get()}}catch(e){}
+    return {carte:{type:t,ultime:ult,passif:pas,atq:fc.atq.value,pv:fc.pv.value},tier:CPO.tierDe(rar.find(x=>x.id==fc.rar.value))}};
+  const versUI=()=>{const o=CS.o;fc.cz.value=Math.round(o.z*100);fc.cpol.value=o.police;fc.csty.value=o.style;fc.ctai.value=o.taille;fc.cdec.value=o.decal;fc.cmar.value=o.marge;fc.cda.checked=o.daUlt;fc.clu.checked=o.lueur;if(o.textes)fc.ctxt.value=o.textes.join('\n')};
+  const depuisUI=()=>Object.assign(CS.o,{z:+fc.cz.value/100,police:fc.cpol.value,style:fc.csty.value,taille:+fc.ctai.value,decal:+fc.cdec.value,marge:+fc.cmar.value,daUlt:fc.cda.checked,lueur:fc.clu.checked});
+  const cv=$('#cpv'),buf=document.createElement('canvas');buf.width=CPO.W;buf.height=CPO.H;let tic=0,att=null;
+  const apercu=()=>{if(att)return;att=requestAnimationFrame(async()=>{att=null;const n=++tic,{carte,tier}=lire();
+    $('#cpo .cpe').style.display=carte.type=='combattant'?'':'none';
+    if(!CS.o.textes&&document.activeElement!==fc.ctxt)fc.ctxt.value=CPO.lignes(carte,{textes:null}).map(l=>l.t).join('\n');
+    const x=cv.getContext('2d');
+    if(!CS.dessin){x.clearRect(0,0,CPO.W,CPO.H);if(CS.image)x.drawImage(CS.image,0,0,CPO.W,CPO.H);
+     $('#cpi').textContent=CS.image?'Image actuelle (déjà prête). Ajoute le dessin seul pour passer au nouveau système.':'Ajoute le dessin seul pour voir la carte se composer.';return}
+    await CPO.rendre(buf.getContext('2d'),{dessin:CS.dessin,carte,tier,o:CS.o,chiffres:true});if(n!==tic)return;x.clearRect(0,0,CPO.W,CPO.H);x.drawImage(buf,0,0);
+    $('#cpi').textContent='Aperçu de la carte avec chiffres ; l\'image de combat est la même, sans les chiffres.'})};
+  fc.addEventListener('input',e=>{if(e.target===fc.ctxt){const v=fc.ctxt.value.split('\n');CS.o.textes=v}else if(/^c(z|pol|sty|tai|dec|mar|da|lu)$/.test(e.target.name||''))depuisUI();apercu()});
+  fc.addEventListener('change',()=>{depuisUI();apercu()});fc.addEventListener('click',()=>setTimeout(apercu,0));
+  $('#cauto').onclick=()=>{CS.o.textes=null;fc.ctxt.blur();apercu()};
+  fc.dessin.onchange=()=>{const fi=fc.dessin.files[0];if(!fi)return;const i=new Image();i.onload=()=>{CS.dessin=i;CS.dessinFichier=fi;CS.dessinPath=null;Object.assign(CS.o,{z:1,x:0,y:0});versUI();apercu()};i.src=URL.createObjectURL(fi)};
+  {let g=null;cv.addEventListener('pointerdown',e=>{if(!CS.dessin)return;g={x:e.clientX,y:e.clientY,ox:CS.o.x,oy:CS.o.y};cv.setPointerCapture(e.pointerId);cv.style.cursor='grabbing'});
+   cv.addEventListener('pointermove',e=>{if(!g)return;const r=cv.getBoundingClientRect();CS.o.x=g.ox+(e.clientX-g.x)/r.width;CS.o.y=g.oy+(e.clientY-g.y)/r.height;apercu()});
+   const fin=()=>{g=null;cv.style.cursor='grab'};cv.addEventListener('pointerup',fin);cv.addEventListener('pointercancel',fin);
+   cv.addEventListener('wheel',e=>{if(!CS.dessin)return;e.preventDefault();CS.o.z=Math.min(3,Math.max(1,CS.o.z*(e.deltaY<0?1.05:1/1.05)));versUI();apercu()},{passive:false})}
+  $('#cdl').onclick=async()=>{if(!CS.dessin)return uiAlert('Ajoute d\'abord le dessin seul.');const {carte,tier}=lire(),im=await CPO.images({dessin:CS.dessin,carte,tier,o:CS.o}),nom=(fc.nom.value||'carte').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/gi,'-').toLowerCase();
+   [[im.carte,nom+'.png'],[im.combat,nom+'-combat.png']].forEach(([f,n])=>{if(!f)return;const a=document.createElement('a');a.href=URL.createObjectURL(f);a.download=n;a.click()})};
+  // enregistre les images composées sur la version Standard (et garde le dessin pour les refaire plus tard)
+  const composer=async(carteId,carte,insert)=>{const {tier}=lire(),im=await CPO.images({dessin:CS.dessin,carte,tier,o:CS.o});
+   const path=await upload(im.carte),pc=im.combat?await upload(im.combat):null,dp=CS.dessinPath||await uploadDessin(CS.dessinFichier);CS.dessinPath=dp;
+   await majVariante(carteId,{image_path:path,image_combat:pc,dessin_path:dp,compo:{...CS.o}},insert)};
+  versUI();apercu();
   $('#fcolad').onchange=e=>{const v=e.target.value;$('#sub').querySelectorAll('tr[data-col]').forEach(tr=>tr.style.display=!v||tr.dataset.col==v?'':'none')};
   fc.onsubmit=async e=>{e.preventDefault();const f=e.target,v=n=>f[n].value,t=v('type');
     try{let ult=null,pas=null,eff=null;
@@ -1535,8 +1651,11 @@ async function aCartes(){
        const vs=await q(sb.from('variantes_carte').select('id').eq('carte_id',editId).eq('nom','Standard').limit(1));
        if(vs.length)await q(sb.from('variantes_carte').update(ch).eq('id',vs[0].id));
        else await q(sb.from('variantes_carte').insert({carte_id:editId,nom:'Standard',poids:100,...ch}));}
+      else if(CS.dessin)await composer(editId,{...row,type:t},false);   // dessin gardé : l'image est refaite avec la carte telle qu'elle est maintenant
       editId=null;aCartes();return}
+     if(!f.file.files[0]&&!CS.dessin){uiAlert('Ajoute le dessin seul (ou une image complète déjà prête).');return}
      const c=await q(sb.from('cartes').insert(row).select('id').single());noteEquilibrage(null,{...row,id:c.id});
+     if(!f.file.files[0]){await composer(c.id,row,true);aCartes();return}
      const path=await upload(f.file.files[0]),pc=f.filec.files[0]?await upload(f.filec.files[0]):null;
      await q(sb.from('variantes_carte').insert({carte_id:c.id,nom:'Standard',image_path:path,poids:100,...(pc?{image_combat:pc}:{})}));
      aCartes();}catch(x){}};
@@ -1554,7 +1673,14 @@ async function aCartes(){
      if(pg){const a=!pz?[]:pz.briques||[pz];a.push({type:'programmation'});pz=a.length==1?a[0]:{briques:a}}B.pas.set(pz)}if(c.type=='magie')B.mag.set(c.effet);
     if(c.type=='piege'&&c.effet){B.con.set(c.effet.condition);B.pef.set(c.effet.effet);f.decl.value=c.effet.declenchements||1}
     $('#ftitle').textContent='Modifier : '+c.nom;$('#fbtn').textContent='Enregistrer les modifications';$('#fcancel').style.display='';
-    fc.scrollIntoView({behavior:'smooth'});});
+    fc.scrollIntoView({behavior:'smooth'});
+    // composeur : le dessin gardé et ses réglages, sinon l'image actuelle en aperçu
+    Object.assign(CS,{dessin:null,dessinFichier:null,dessinPath:null,image:null,o:{...CPO.DEF}});fc.dessin.value='';
+    const vs=await sb.from('variantes_carte').select('*').eq('carte_id',c.id).eq('nom','Standard').limit(1),v=vs.data&&vs.data[0];
+    if(v&&v.dessin_path){CS.dessinPath=v.dessin_path;CS.o={...CPO.DEF,...(v.compo||{})};CS.dessin=await CPO.dessinDe(sb.storage.from('cartes').getPublicUrl(v.dessin_path).data.publicUrl);
+     if(!CS.dessin)uiAlert('Le dessin de cette carte n\'a pas pu être chargé : ses images ne seront pas refaites.')}
+    else if(v&&v.image_path)CS.image=await CPO.dessinDe(img(v.image_path));
+    versUI();apercu();});
   $('#fcancel').onclick=()=>aCartes();
   $('#sub').querySelectorAll('button[data-a]').forEach(b=>b.onclick=async()=>{
     const on=b.dataset.v!=='true';await q(sb.from('cartes').update({actif:on}).eq('id',b.dataset.a));

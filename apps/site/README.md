@@ -17,6 +17,10 @@ Et, à l'emplacement des listes de l'éditeur (marqueur `/*@@EDITOR@@*/`), la li
 
 Le reste de la page utilise ces noms comme avant. On ne modifie jamais `dist/index.html`.
 
+## Composeur de carte (admin)
+
+Dans Admin → Cartes, l'admin envoie le **dessin seul** : la page pose le cadre (`cadres/<type>-<rareté>.png`), l'écriteau ajusté au texte (`cadres/ecriteau-<rareté>.png`, bande sombre pour une commune), l'ultime à sa DA (italique rouge sombre) et les passifs au code couleur des effets, puis l'ATQ et les PV. À l'enregistrement, elle crée l'image normale et l'image de combat (sans chiffres), et garde le dessin et ses réglages sur la version Standard (`dessin_path`, `compo` : `db/migrations/29-composition-cartes.sql`). Quand la carte est modifiée sans nouvelle image, ses images sont refaites avec la carte telle qu'elle est. Les noms courts de l'écriteau viennent de `packages/describe/src/plaque.ts` (le build les livre sous `lignesEcriteau`, avec les couleurs `COULEURS_CAT`) ; l'admin peut remplacer chaque ligne. L'ancien envoi d'images déjà prêtes reste possible.
+
 ## Ce qui est où
 
 - `src/describe.ts` : les icônes du site autour du texte commun (`packages/describe`, qui garde la formulation du site). Le texte est indexé sur les listes de types du moteur : un type ajouté au moteur sans texte **ne compile pas**.

@@ -28,6 +28,7 @@ combat
 | magie | `type: 'magie'` | `magic` | effet joué au début de la manche ; annulable, destructible, volable |
 | piège | `type: 'piege'` | `trap` | effet caché, déclenché par une condition (`condition`), au plus `declenchements` fois |
 | trio | — | — | le combattant, la magie et le piège tirés dans un deck pour une manche |
+| écriteau | `cadres/ecriteau-<rareté>.png` ; `variantes_carte.compo` | `plaqueLines` (`packages/describe/src/plaque.ts`) | la bande d'une carte combattant où sont écrits l'ultime (1re ligne) et les passifs, avec un nom court par effet |
 | deck | `sauver_deck`, `mes_decks` (`cartes`) | `SavedDeck` (`apps/web`) | 10 cartes différentes du joueur : au moins 3 combattants, 3 magies, 3 pièges, la dixième libre. Un joueur garde jusqu'à 10 decks nommés ; un deck enregistré peut être incomplet |
 | deck de combat | table `deck` (`carte_id`), écrite par `enregistrer_deck` | `combatDeckId`, `setCombatDeck` (`apps/web`) | le deck que les combats du joueur utilisent ; doit être complet. Sur le site, c'est une marque portée par l'un des decks nommés (pas « en combat », qui se lirait comme un combat en cours) |
 | passif | `passif` (objet ou `{ briques }`) | `passives` | règle permanente du combattant |

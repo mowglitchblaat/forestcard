@@ -20,6 +20,7 @@ import { EDITOR_CONDITIONS, EDITOR_MAGICS, EDITOR_PASSIVES, EDITOR_ULTIMATES } f
 
 export * from './categories.ts';
 export * from './editor.ts';
+export * from './plaque.ts';
 
 type Fx = EffectData & Record<string, unknown>;
 export type DescribedCard = {
