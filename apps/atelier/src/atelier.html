@@ -68,7 +68,8 @@ canvas#vue{width:min(100%,520px);height:auto;border-radius:14px;background:repea
    <label><input type="checkbox" id="ajuste" checked> Écriteau ajusté à la hauteur du texte</label>
    <label>Marge autour du texte (écriteau ajusté)</label><input type="range" id="marge" min="10" max="160" value="55">
    <label>Opacité de l'écriteau</label><input type="range" id="opa" min="0" max="100" value="100">
-   <label><input type="checkbox" id="lueur" checked> Lueur rouge sur l'ultime</label>
+   <label><input type="checkbox" id="daUlt" checked> Ultime à ta DA : italique, rouge sombre (sinon : couleur de sa catégorie)</label>
+   <label><input type="checkbox" id="lueur"> Lueur rouge sur l'ultime</label>
   </div>
 
   <div class="panel">
@@ -143,12 +144,15 @@ async function ecriteau(x){const r=$('#rar').value,[y0,y1]=BANDE[r],k=+$('#taill
  x.restore();
  if(!L.length)return;
  let y=cy0-haut()/2;
- for(const l of L){let s=l.ult?tU:tP;x.font=police(s);while(x.measureText(l.t).width>maxW*(S.style==='pastille'?.9:1)&&s>30){s-=4;x.font=police(s)}
+ for(const l of L){const da=l.ult&&$('#daUlt').checked,fnt=v=>(da?'italic ':'')+police(v);let s=l.ult?tU:tP;x.font=fnt(s);while(x.measureText(l.t).width>maxW*(S.style==='pastille'&&!da?.9:1)&&s>30){s-=4;x.font=fnt(s)}
   const hl=s*(S.style==='pastille'?1.25:1.02),cy=y+hl/2;y+=hl+gap;
   x.textAlign='center';x.textBaseline='middle';x.lineJoin='round';
   const tw=x.measureText(l.t).width,col=CAT[l.c]||CAT.autre;
   const fond=w=>{if(col[1]!=='alea')return col[1];const g=x.createLinearGradient(W/2-w/2,0,W/2+w/2,0);ALEA.forEach((c,i)=>g.addColorStop(i/(ALEA.length-1),c));return g};
-  if(S.style==='pastille'){const pw=tw+s*1.1,ph=s*1.18;
+  if(da){   // ultime à la DA de l'auteur : italique, rouge sombre, liseré rouge vif fin (ses cartes actuelles)
+   if($('#lueur').checked){x.save();x.shadowColor='rgba(255,40,30,.9)';x.shadowBlur=s*.4;x.fillStyle='#7a001c';x.fillText(l.t,W/2,cy);x.restore()}
+   x.lineWidth=s*.07;x.strokeStyle='#d0132f';x.strokeText(l.t,W/2,cy);x.fillStyle='#7a001c';x.fillText(l.t,W/2,cy)}
+  else if(S.style==='pastille'){const pw=tw+s*1.1,ph=s*1.18;
    x.save();x.shadowColor='rgba(0,0,0,.55)';x.shadowBlur=s*.25;x.shadowOffsetY=s*.06;rr(x,W/2-pw/2,cy-ph/2,pw,ph,ph/2);x.fillStyle=fond(pw);x.fill();x.restore();
    if(l.c==='ultime'||l.c==='rage'){rr(x,W/2-pw/2,cy-ph/2,pw,ph,ph/2);x.lineWidth=s*.06;x.strokeStyle=l.c==='ultime'?'#dc2626':'#ef4444';x.stroke()}
    x.lineWidth=s*.12;x.strokeStyle='rgba(0,0,0,.35)';x.strokeText(l.t,W/2,cy+s*.04);x.fillStyle=col[2];x.fillText(l.t,W/2,cy+s*.04)}
@@ -187,7 +191,7 @@ $('#dessin').onchange=e=>{const f=e.target.files[0];if(!f)return;const i=new Ima
 {const v=$('#vue');let g=null;v.addEventListener('pointerdown',e=>{if(!S.dessin)return;g={x:e.clientX,y:e.clientY,px:S.px,py:S.py};v.setPointerCapture(e.pointerId)});
  v.addEventListener('pointermove',e=>{if(!g)return;const k=W/v.getBoundingClientRect().width;S.px=g.px+(e.clientX-g.x)*k;S.py=g.py+(e.clientY-g.y)*k;dessine()});
  v.addEventListener('pointerup',()=>g=null);v.style.touchAction='none'}
-['rar','font','taille','decal','opa','lueur','ajuste','marge','type','atq','pv','zoom'].forEach(id=>{const n=$('#'+id);n.addEventListener('input',dessine);n.addEventListener('change',dessine)});
+['rar','font','taille','decal','opa','lueur','daUlt','ajuste','marge','type','atq','pv','zoom'].forEach(id=>{const n=$('#'+id);n.addEventListener('input',dessine);n.addEventListener('change',dessine)});
 lignesUI();dessine();document.fonts.ready.then(dessine);
 </script>
 </body>
