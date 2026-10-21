@@ -60,7 +60,7 @@ export const EDITOR_FIELDS = {
     'Blocage : riposte, une fois, au 1er coup bloqué (renvoi des dégâts ou statut)',
     ['aucune', 'renvoi', 'statut'],
   ],
-  pctriposte: ['Riposte renvoi : % des dégâts bloqués renvoyés à l\'attaquant', 'n'],
+  pctriposte: ["Riposte renvoi : % des dégâts bloqués renvoyés à l'attaquant", 'n'],
   rstatut: [
     "Riposte statut : statut infligé à l'attaquant (valeur, tours et soins réduits : champs du statut)",
     ['brulure', 'gel', 'malediction', 'poison', 'saignement', 'fatigue', 'etourdi', 'aleatoire'],

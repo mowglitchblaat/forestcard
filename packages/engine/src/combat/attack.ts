@@ -52,7 +52,11 @@ export type StrikeStep = (c: Combat, at: Attack, st: Strike) => StrikeFlow;
 // ── Each strike ──
 
 // double damage, counter bonus, rage; fatigue: less damage (already taken off the attack)
-export function strikePower(_c: Combat, { a, blocked, blockStrikes }: Attack, st: Strike): StrikeFlow {
+export function strikePower(
+  _c: Combat,
+  { a, blocked, blockStrikes }: Attack,
+  st: Strike,
+): StrikeFlow {
   st.n = Math.max(0, a.atq * damageFactor(a) + useCounterBonus(a) + rageBonus(a));
   st.blocked = blocked && st.k < blockStrikes;
   return undefined;

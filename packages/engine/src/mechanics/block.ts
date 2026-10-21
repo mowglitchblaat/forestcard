@@ -59,7 +59,8 @@ export function riposte(c: Combat, d: Side, a: Side, n: number, r: BlockRiposte 
   if (r.kind === 'renvoi') {
     if (n <= 0 || r.pct <= 0) return;
     const back = damage(c, d, a, (n * r.pct) / 100);
-    if (back > 0) emit(c, { type: 'damaged', side: id(c, a), amount: back, cause: 'reflect', from: id(c, d) });
+    if (back > 0)
+      emit(c, { type: 'damaged', side: id(c, a), amount: back, cause: 'reflect', from: id(c, d) });
     return;
   }
   const status =
