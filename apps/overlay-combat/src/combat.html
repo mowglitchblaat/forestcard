@@ -700,7 +700,7 @@ function ailes(c){const K=rc(c),W=K.w,H=K.h,DUR=2.8,S=Math.min(W,H*.72)*1.05,
    })}
  
 // RÉANIMATION : les morceaux de la carte reviennent se ressouder dans un halo vert doré, puis la carte réapparaît
-function reforme(c){const cw=$('#p'+c+' .cw'),card=cw.querySelector('.card'),K=rc(c),tw=Math.round(K.w),th=Math.round(K.h),tex=document.createElement('canvas');tex.width=tw;tex.height=th;
+function reforme(c){if(coupee(c))return reformeCoupe(c);const cw=$('#p'+c+' .cw'),card=cw.querySelector('.card'),K=rc(c),tw=Math.round(K.w),th=Math.round(K.h),tex=document.createElement('canvas');tex.width=tw;tex.height=th;
  const m=/url\(["']?(.*?)["']?\)/.exec(card.style.backgroundImage||''),img=m?new Image():null,txt=card.textContent.trim();
  const paint=()=>{const g=tex.getContext('2d');g.clearRect(0,0,tw,th);g.save();rr(g,0,0,tw,th,12);g.clip();g.fillStyle='#1b2a22';g.fillRect(0,0,tw,th);
   if(img&&img.naturalWidth){const q=Math.max(tw/img.naturalWidth,th/img.naturalHeight),w=img.naturalWidth*q,h=img.naturalHeight*q;g.drawImage(img,(tw-w)/2,(th-h)/2,w,h)}
@@ -785,8 +785,43 @@ async function executionFx(c){const K=rc(c),cw=$('#p'+c+' .cw');[1,2,3].forEach(
   const x0=K.x-K.w*.15,y0=K.y+K.h*.12,x1=K.x+K.w*1.15,y1=K.y+K.h*.88,xm=x0+(x1-x0)*e,ym=y0+(y1-y0)*e;
   x.save();x.lineCap='round';x.shadowColor='rgba(255,30,40,1)';x.shadowBlur=30;x.strokeStyle=`rgba(220,20,30,${al})`;x.lineWidth=K.w*.07*(1-u*.5);x.beginPath();x.moveTo(x0,y0);x.lineTo(xm,ym);x.stroke();
   x.shadowBlur=0;x.strokeStyle=`rgba(255,240,240,${al})`;x.lineWidth=K.w*.018;x.beginPath();x.moveTo(x0,y0);x.lineTo(xm,ym);x.stroke();x.restore()});
- const card=cw.querySelector('.card');card.animate([{transform:'translate(0,0)'},{transform:'translate(-12px,6px)'},{transform:'translate(10px,-5px)'},{transform:'translate(-6px,3px)'},{transform:'translate(0,0)'}],{duration:420});
- flot(c,'EXÉCUTÉ !','#ef4444','big');await wait(1100);lamesOff(c)}
+ const card=cw.querySelector('.card');card.animate([{transform:'translate(0,0)'},{transform:'translate(-10px,5px)'},{transform:'translate(8px,-4px)'},{transform:'translate(0,0)'}],{duration:240});
+ await wait(250);coupeFx(c,K);lamesOff(c);   // la lame est passée : la carte est coupée le long de l'entaille
+ await wait(450);flot(c,'EXÉCUTÉ !','#ef4444','big');await wait(1000)}
+// EXÉCUTION : la carte coupée en deux le long de l'entaille (moitié haute qui glisse sur la coupe, moitié basse qui tombe), sur un seul canvas.
+// La carte garde data-coupe : la défaite ne la brise pas une 2e fois, et la réanimation la reconstruit avec ses 2 moitiés.
+const COUPE={a:[-.15,.12],b:[1.15,.88]};   // l'entaille, en fractions de la carte (la même que le trait de l'exécution)
+function texCarte(card,K){const tw=Math.round(K.w),th=Math.round(K.h),tex=document.createElement('canvas');tex.width=tw;tex.height=th;
+ const m=/url\(["']?(.*?)["']?\)/.exec(card.style.backgroundImage||''),img=m?new Image():null,txt=card.textContent.trim();
+ const cwR=card.closest('.cw'),gcol=cwR&&cwR.classList.contains('rr')?(getComputedStyle(cwR).getPropertyValue('--g').trim()||'#fbbf24'):null,ulti=gcol&&cwR.classList.contains('rr-ul');
+ const paint=()=>{const g=tex.getContext('2d');g.clearRect(0,0,tw,th);g.save();rr(g,0,0,tw,th,12);g.clip();g.fillStyle='#1b2a22';g.fillRect(0,0,tw,th);
+  if(img&&img.naturalWidth){const q=Math.max(tw/img.naturalWidth,th/img.naturalHeight),w=img.naturalWidth*q,h=img.naturalHeight*q;g.drawImage(img,(tw-w)/2,(th-h)/2,w,h)}
+  else if(txt){g.fillStyle='#fff';g.font=`700 ${Math.round(tw*.07)}px system-ui,sans-serif`;g.textAlign='center';g.textBaseline='middle';g.fillText(txt,tw/2,th/2)}
+  if(gcol){let st=gcol;if(ulti){const lg=g.createLinearGradient(0,0,tw,th);['#ff3b6b','#ffb703','#5eead4','#60a5fa','#c084fc'].forEach((c,i)=>lg.addColorStop(i/4,c));st=lg}
+   g.lineWidth=Math.max(4,tw*.022);g.strokeStyle=st;rr(g,g.lineWidth/2,g.lineWidth/2,tw-g.lineWidth,th-g.lineWidth,12);g.stroke()}
+  g.restore()};
+ paint();if(img){img.onload=paint;img.src=m[1]}return tex}
+// Les 2 moitiés à l'avancement q (0 = carte entière, 1 = moitiés tombées) ; al = opacité, edge = couleur du bord de coupe (ou null)
+function moities(x,K,tex,q,al,edge){const P0=[K.x+COUPE.a[0]*K.w,K.y+COUPE.a[1]*K.h],P1=[K.x+COUPE.b[0]*K.w,K.y+COUPE.b[1]*K.h],L=Math.hypot(P1[0]-P0[0],P1[1]-P0[1]),d=[(P1[0]-P0[0])/L,(P1[1]-P0[1])/L],n=[-d[1],d[0]],F=K.w*3;
+ const mx=(P0[0]+P1[0])/2,my=(P0[1]+P1[1])/2,gap=K.w*.05*ez(cl(q/.2)),fall=q*q;
+ for(const sd of[-1,1]){const haut=sd<0,ox=sd*n[0]*gap+(haut?d[0]*K.w*.3*fall:-K.w*.06*q),oy=sd*n[1]*gap+(haut?d[1]*K.w*.3*fall:0)+K.h*.35*fall,rot=(haut?.38:-.22)*fall;
+  x.save();x.globalAlpha=al;x.translate(mx+ox,my+oy);x.rotate(rot);x.translate(-mx,-my);
+  x.beginPath();x.moveTo(P0[0]-d[0]*F,P0[1]-d[1]*F);x.lineTo(P1[0]+d[0]*F,P1[1]+d[1]*F);x.lineTo(P1[0]+d[0]*F+sd*n[0]*F,P1[1]+d[1]*F+sd*n[1]*F);x.lineTo(P0[0]-d[0]*F+sd*n[0]*F,P0[1]-d[1]*F+sd*n[1]*F);x.closePath();x.clip();rr(x,K.x,K.y,K.w,K.h,12);x.clip();   // le bord de coupe reste dans la carte
+  x.drawImage(tex,K.x,K.y,K.w,K.h);
+  if(edge){x.lineCap='round';x.shadowColor=edge;x.shadowBlur=18;x.strokeStyle=edge;x.lineWidth=Math.max(2,K.w*.014);x.beginPath();x.moveTo(P0[0],P0[1]);x.lineTo(P1[0],P1[1]);x.stroke()}
+  x.restore()}}
+function coupeFx(c,K){const cw=$('#p'+c+' .cw'),card=cw&&cw.querySelector('.card');if(!card)return;K=K||rc(c);const tex=texCarte(card,K);
+ card.dataset.coupe='1';card.style.visibility='hidden';cw.classList.add('brise');
+ addFx(1.9,(x,t)=>{const q=cl((t-.15)/1.4),al=1-cl((t-1.3)/.6);
+  moities(x,K,tex,q,al,`rgba(255,${60+Math.round(140*(1-cl(t/.9)))},60,${(1-cl(t/1.1))*al})`)})}
+// RÉANIMATION d'une carte exécutée : les 2 moitiés remontent, se ressoudent le long de la coupe dans le halo vert doré, puis la carte réapparaît
+function reformeCoupe(c){const cw=$('#p'+c+' .cw'),card=cw.querySelector('.card'),K=rc(c),tex=texCarte(card,K);
+ card.style.visibility='hidden';setTimeout(()=>{card.style.visibility='visible';cw.classList.remove('brise');delete card.dataset.coupe},1550);
+ addFx(2.1,(x,t)=>{x.globalCompositeOperation='lighter';orb(x,K.cx,K.cy,K.h*.7,`rgba(140,255,170,${.45*Math.sin(Math.PI*cl(t/2.1))})`,'rgba(60,200,120,0)');x.globalCompositeOperation='source-over';
+  if(t<1.55){const p=cl(t/1.3),q=1-ez(p);moities(x,K,tex,q,Math.min(1,p*2.5),p>.75?`rgba(190,255,200,${(1-cl((p-.75)/.25))*.9+.1})`:null)}
+  if(t>1.4){const u=cl((t-1.4)/.65);x.globalCompositeOperation='lighter';orb(x,K.cx,K.cy,K.w*(.35+.8*u),`rgba(255,255,215,${.8*(1-u)})`,'rgba(150,255,170,0)');x.strokeStyle=`rgba(190,255,200,${1-u})`;x.lineWidth=6;x.beginPath();x.arc(K.cx,K.cy,K.w*.7*u,0,7);x.stroke()}})}
+function demoRemet(c){const k=$('#p'+c+' .cw .card');if(k&&k.dataset.coupe){k.style.visibility='visible';delete k.dataset.coupe;$('#p'+c+' .cw').classList.remove('brise')}}
+const coupee=i=>{const k=$('#p'+i+' .cw .card');return!!(k&&k.dataset.coupe==='1')};
 
 // SOLIDIFICATION : l'étourdissement rebondit sur la pierre (contour de pierre qui claque)
 function solideCoup(c){const K=rc(c);addFx(.9,(x,t,u)=>{const e=ez(cl(t/.3)),al=1-u,k=1+.08*e;x.save();x.strokeStyle=`rgba(214,204,190,${al})`;x.shadowColor='rgba(120,110,100,1)';x.shadowBlur=14;x.lineWidth=Math.max(3,K.w*.03)*(1-u*.5);x.strokeRect(K.cx-K.w/2*k,K.cy-K.h/2*k,K.w*k,K.h*k);x.restore()})}
@@ -1038,7 +1073,7 @@ async function jouer(res){
    else if(e.t==='esquive'){flot(e.c,'Esquive !','#e5e7eb');vent(e.c)}
    else if(e.t==='bloque'){if(/une partie/.test(e.txt||'')){bouclier(e.c,{partiel:1});flot(e.c,'Dégâts réduits','#fcd34d')}else if(/est bloquée/.test(e.txt||'')){bouclier(e.c,{partiel:1});flot(e.c,'Attaque bloquée','#fcd34d')}else{annuleFx(1-e.c);flot(1-e.c,'Attaque annulée','#fca5a5')}}   // annulée = rien ne passe · bloquée / partiel = le coup touche (statuts et marques passent)   // annulée = rien ne passe · partiel = le coup touche quand même
    else if(e.t==='protege')ailes(e.c);
-   else if(e.t==='reanim_mort'){document.querySelectorAll('#p'+e.c+' .card canvas.fx').forEach(k=>k.remove());Object.keys(st).filter(k=>k.startsWith(String(e.c))).forEach(k=>st[k]=0);briser(e.c);await wait(3100)}
+   else if(e.t==='reanim_mort'){document.querySelectorAll('#p'+e.c+' .card canvas.fx').forEach(k=>k.remove());Object.keys(st).filter(k=>k.startsWith(String(e.c))).forEach(k=>st[k]=0);if(coupee(e.c))await wait(900);else{briser(e.c);await wait(3100)}}   // exécutée : déjà coupée en deux, pas de 2e destruction
    else if(e.t==='reanim'){reforme(e.c);flot(e.c,'+'+e.n,'#4ade80');await wait(2100)}
    else if(e.t==='statut'&&e.k==='rage'){statut(e.c,'rage',true);colere(e.c);flot(e.c,'RAGE !','#ef4444','big');await wait(1000)}
    else if(e.t==='statut'&&e.k==='fatigue'){statut(e.c,'fatigue',true);flot(e.c,'Fatigue…','#94a3b8');await wait(700)}
@@ -1088,7 +1123,7 @@ async function jouer(res){
    else if(e.t==='piege'){revele(e.c,e);await zoomCarte('g'+e.c,e,'piege');$('#g'+e.c).classList.toggle('annule',e.k==='bloque')}
    let ms={magie:600,piege:600,ultime:2200,fin:5000,degats:900,soin:1300,esquive:1100,bloque:1500,statut:1100,stat:1500,vol:1500,protege:2900,finstatut:250,frappe:350}[e.t]||900;
    if(e.t==='degats'&&R.journal.slice(ix+1,ix+4).some(z=>z.t==='protege'&&z.c===e.c))ms=200;   // coup fatal évité : les dégâts et l'effet « évite la mort » apparaissent presque ensemble
-   if(e.t==='fin'){[0,1].forEach(i=>{faceMagie(i);const p=$('#p'+i);if(p)p.classList.remove('actif','idle')});fxAll.forEach(s=>s());fxAll.clear();document.querySelectorAll('canvas.fx').forEach(k=>k.remove());{const rw=e.recompenses[e.gagnant??0];$('#ban').textContent=e.txt+(rw>0?` (+${rw})`:'')+(e.bounty?(e.bounty.tout?` · 💰 Bounty ${e.bounty.total} : le gagnant rafle tout !`:` · 💰 Bounty ${e.bounty.total} !`):'');if(e.bounty){bourseBounty(e.bounty.parts);[0,1].forEach(i=>{if(e.bounty.parts[i]>0)setTimeout(()=>flot(i,'💰 Bounty +'+e.bounty.parts[i],'#fcd34d'),2100)})}}const cendre=i=>{const k=$('#p'+i+' .cw .card');return k&&k.dataset.cendre==='1'};if(e.gagnant!=null){if(!cendre(1-e.gagnant))briser(1-e.gagnant);auraFx(e.gagnant,{gold:1,dur:5.2})}else[0,1].forEach(i=>{if(e.pv&&e.pv[i]<=0&&!cendre(i))briser(i)})}   // double KO : les deux cartes se brisent
+   if(e.t==='fin'){[0,1].forEach(i=>{faceMagie(i);const p=$('#p'+i);if(p)p.classList.remove('actif','idle')});fxAll.forEach(s=>s());fxAll.clear();document.querySelectorAll('canvas.fx').forEach(k=>k.remove());{const rw=e.recompenses[e.gagnant??0];$('#ban').textContent=e.txt+(rw>0?` (+${rw})`:'')+(e.bounty?(e.bounty.tout?` · 💰 Bounty ${e.bounty.total} : le gagnant rafle tout !`:` · 💰 Bounty ${e.bounty.total} !`):'');if(e.bounty){bourseBounty(e.bounty.parts);[0,1].forEach(i=>{if(e.bounty.parts[i]>0)setTimeout(()=>flot(i,'💰 Bounty +'+e.bounty.parts[i],'#fcd34d'),2100)})}}const cendre=i=>{const k=$('#p'+i+' .cw .card');return k&&k.dataset.cendre==='1'};if(e.gagnant!=null){if(!cendre(1-e.gagnant)&&!coupee(1-e.gagnant))briser(1-e.gagnant);auraFx(e.gagnant,{gold:1,dur:5.2})}else[0,1].forEach(i=>{if(e.pv&&e.pv[i]<=0&&!cendre(i)&&!coupee(i))briser(i)})}   // double KO : les deux cartes se brisent
    await wait(ms);
   }
   if(!TEST&&!DEMO&&R.seed!=null)fetch('https://bjsvqikjnvaomyoifiml.supabase.co/rest/v1/rpc/combat_affiche',{method:'POST',headers:{apikey:'sb_publishable_-3cPqDCyE-zhb3z5r6dPhg_DJFKGAI6','Content-Type':'application/json'},body:JSON.stringify({p_seed:String(R.seed)})}).catch(()=>{});   // le combat apparaît dans l'historique du site seulement maintenant (pas de spoil)
@@ -1179,7 +1214,8 @@ if(DEMO){
   ['Souffle','Souffle empoisonné (poison)',c=>souffle(1-c,c,'poison'),1900],
   ['Souffle','Souffle de sang (saignement)',c=>souffle(1-c,c,'saignement'),1900],
   ['Souffle',"Souffle d'épuisement (fatigue)",c=>souffle(1-c,c,'fatigue'),1900],
-  ['Statuts','Exécution (3 marques puis exécution)',c=>{lameIn(c,1);flot(c,'Marque 1/3','#fca5a5');setTimeout(()=>{lameIn(c,2);flot(c,'Marque 2/3','#fca5a5')},1100);setTimeout(()=>{lameIn(c,3);flot(c,'Marque 3/3','#fca5a5')},2200);setTimeout(()=>executionFx(c),3900)},6000,c=>lamesOff(c)],
+  ['Statuts','Exécution (3 marques puis exécution)',c=>{lameIn(c,1);flot(c,'Marque 1/3','#fca5a5');setTimeout(()=>{lameIn(c,2);flot(c,'Marque 2/3','#fca5a5')},1100);setTimeout(()=>{lameIn(c,3);flot(c,'Marque 3/3','#fca5a5')},2200);setTimeout(()=>executionFx(c),3900);setTimeout(()=>demoRemet(c),6600)},6800,c=>{lamesOff(c);demoRemet(c)}],
+  ['Statuts','Exécution puis réanimation (la carte se reconstruit avec ses 2 moitiés)',c=>{[1,2,3].forEach(n=>lameIn(c,n));setTimeout(()=>executionFx(c),900);setTimeout(()=>{reforme(c);aureole(c);flot(c,'+30','#4ade80')},4300)},6800,c=>{lamesOff(c);demoRemet(c)}],
   ['Avalage','Avalage complet (🍴, 🔪, langue, 3 mâches, recrache)',c=>{const a=1-c;avMarque(c,1);flot(c,'🍴 Fourchette','#e2e8f0');
    setTimeout(()=>{avMarque(c,2);flot(c,'🔪 Couteau','#e2e8f0')},1100);setTimeout(()=>avalerFx(a,c),2300);
    [0,1,2].forEach(i=>setTimeout(()=>{macherFx(a,c,i+1,3);flot(c,'-30','#ff6a6a')},5600+i*1300));setTimeout(()=>recracherFx(a,c),9700);setTimeout(()=>flot(a,'😴 Digestion…','#c4b5fd'),10900)},12000],
