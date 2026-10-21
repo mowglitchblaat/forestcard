@@ -1608,12 +1608,15 @@ async function aCartes(){
    const L=(r.data||[]).filter(v=>v.cartes);if(!L.length)return uiAlert('Aucune carte composée pour l\'instant : ajoute le dessin seul d\'une carte (✏️) pour qu\'elle passe au nouveau système.');
    if(!(await uiConfirm(`${chg?'Appliquer ce style et refaire':'Refaire'} les images de ${L.length} carte${L.length>1?'s':''} composée${L.length>1?'s':''} ?`)))return;
    btn.disabled=true;let ok=0,ko=[];
-   for(const [i,v] of L.entries()){const c=v.cartes;info.textContent=` ${i+1} / ${L.length} : ${c.nom}…`;
-    try{const d=await CPO.dessinDe(sb.storage.from('cartes').getPublicUrl(v.dessin_path).data.publicUrl);if(!d)throw new Error('dessin introuvable');
+   // Supabase sature si on enchaîne trop vite (« Too many connections ») : pause entre les cartes, et jusqu'à 4 essais par carte
+   const pause=ms=>new Promise(r=>setTimeout(r,ms)),sature=e=>/too many|connection|timeout|fetch|network|introuvable|50[234]|429/i.test(String(e&&(e.message||e)));
+   const envoi=async f=>{const path=crypto.randomUUID()+'.webp',u=await sb.storage.from('cartes').upload(path,f,{contentType:'image/webp',cacheControl:CACHE_1AN});if(u.error)throw u.error;return path};   // sans fenêtre d'erreur : l'échec est réessayé
+   for(const [i,v] of L.entries()){const c=v.cartes;info.textContent=` ${i+1} / ${L.length} : ${c.nom}…`;if(i)await pause(600);
+    for(let essai=1;;essai++)try{const d=await CPO.dessinDe(sb.storage.from('cartes').getPublicUrl(v.dessin_path).data.publicUrl);if(!d)throw new Error('dessin introuvable');
      const o={...CPO.DEF,...(v.compo||{}),...(chg||{})};const im=await CPO.images({dessin:d,carte:c,tier:CPO.tierDe(c.raretes),o});
-     const ch={image_path:await uploadPret(im.carte),compo:{...(v.compo||{}),...(chg||{}),zones:im.zones}};if(im.combat)ch.image_combat=await uploadPret(im.combat);
-     const u=await sb.from('variantes_carte').update(ch).eq('id',v.id);if(u.error)throw u.error;ok++}
-    catch(e){ko.push(c.nom+' ('+(e.message||e)+')')}}
+     const ch={image_path:await envoi(im.carte),compo:{...(v.compo||{}),...(chg||{}),zones:im.zones}};if(im.combat)ch.image_combat=await envoi(im.combat);
+     const u=await sb.from('variantes_carte').update(ch).eq('id',v.id);if(u.error)throw u.error;ok++;break}
+    catch(e){if(essai<4&&sature(e)){info.textContent=` ${i+1} / ${L.length} : ${c.nom} — Supabase occupé, nouvel essai…`;await pause(2500*essai);continue}ko.push(c.nom+' ('+(e.message||e)+')');break}}
    const sd=await sb.from('variantes_carte').select('cartes(nom)').eq('nom','Standard').is('dessin_path',null),sans=(sd.data||[]).map(v=>v.cartes&&v.cartes.nom).filter(Boolean);
    btn.disabled=false;info.textContent=` ${ok} carte${ok>1?'s':''} refaite${ok>1?'s':''}.`;
    if(ko.length||sans.length)uiAlert((ko.length?'Pas refaites :\n'+ko.join('\n')+'\n\n':'')+(sans.length?`Cartes sans dessin gardé (à rouvrir avec ✏️ pour leur remettre le dessin seul, une fois) :\n${sans.join(', ')}`:''))};
