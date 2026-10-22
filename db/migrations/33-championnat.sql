@@ -14,8 +14,9 @@
 --     titre_refus_max) ; après 7 jours sans combat pour le titre (réglage titre_inactivite_jours).
 --     Une ceinture perdue sans combat redevient vacante. Quand le jeu est en pause (let's play), les
 --     7 jours et les 24 h d'un défi sont arrêtés.
---   - Prime : à chaque fin de journée (minuit, Paris) de règne, le champion reçoit 90 gold par ceinture,
---     +10 % par journée consécutive (2e jour 99, 3e 108…), +15 % par ceinture détenue en plus
+--   - Prime : à chaque fin de journée (minuit, Paris) de règne où il a fait un combat pour le titre (sinon rien,
+--     et la série repart de zéro), le champion reçoit 90 gold par ceinture,
+--     +10 % par journée active consécutive (2e jour 99, 3e 108…), +15 % par ceinture détenue en plus
 --     (2 ceintures : +15 %, 3 : +30 %). Réglages titre_prime, titre_prime_jour, titre_prime_ceinture.
 --     Les journées sont payées dès que quelqu'un consulte les ceintures ou lance un défi (pas besoin de tâche planifiée). Le vainqueur d'un combat pour une ceinture
 --     vacante la prend. Match nul : le champion la garde, une ceinture vacante le reste.
@@ -131,24 +132,31 @@ revoke all on function public.titre_prime(int, int) from public, anon, authentic
 create or replace function public.titre_jour() returns date language sql stable as $$ select (now() at time zone 'Europe/Paris')::date $$;
 create or replace function public.titre_minuit(p_jour date) returns timestamptz language sql stable as $$ select p_jour::timestamp at time zone 'Europe/Paris' $$;
 
--- Paye les fins de journée de règne passées (une prime par ceinture et par minuit), tant que le champion n'est pas inactif
+-- Paye les journées de règne terminées (une prime par ceinture), tant que le champion n'est pas inactif. Une journée ne paie
+-- que si le champion y a fait un combat pour le titre ; sinon rien, et la série des +10 % repart de zéro.
 create or replace function public.titre_primes()
 returns void language plpgsql security definer set search_path = public as $$
 declare c public.ceintures; j date; nb int; p int; limite timestamptz;
 begin
   for c in select * from public.ceintures where champion is not null for update loop
     if c.prime_jusqu is null then
-      update public.ceintures set prime_jusqu = (coalesce(c.depuis, now()) at time zone 'Europe/Paris')::date where division = c.division;
+      update public.ceintures set prime_jusqu = (coalesce(c.depuis, now()) at time zone 'Europe/Paris')::date - 1 where division = c.division;
       continue;
     end if;
     limite := coalesce(c.dernier_titre, c.depuis) + make_interval(days => public.reglage_num('titre_inactivite_jours', 7)::int);
     j := c.prime_jusqu + 1;
-    while j <= public.titre_jour() and public.titre_minuit(j) <= limite loop
-      select count(*) into nb from public.ceintures where champion = c.champion;
-      c.jours := c.jours + 1;
-      p := public.titre_prime(c.jours, nb);
-      update public.joueurs set monnaie = coalesce(monnaie, 0) + p where id = c.champion;
-      update public.regnes set primes = primes + p where division = c.division and fin is null;
+    -- journée j payée à son minuit de fin (j + 1) ; seulement si le champion a fait un combat pour le titre ce jour-là
+    while j < public.titre_jour() and public.titre_minuit(j + 1) <= limite loop
+      if exists (select 1 from public.defis_titre d where d.statut = 'joue' and c.champion in (d.challenger, d.adversaire)
+                  and d.fini_le >= public.titre_minuit(j) and d.fini_le < public.titre_minuit(j + 1)) then
+        select count(*) into nb from public.ceintures where champion = c.champion;
+        c.jours := c.jours + 1;
+        p := public.titre_prime(c.jours, nb);
+        update public.joueurs set monnaie = coalesce(monnaie, 0) + p where id = c.champion;
+        update public.regnes set primes = primes + p where division = c.division and fin is null;
+      else
+        c.jours := 0;   -- journée sans combat pour le titre : pas de prime, la série repart à 90
+      end if;
       update public.ceintures set jours = c.jours, prime_jusqu = j where division = c.division;
       j := j + 1;
     end loop;
@@ -162,7 +170,7 @@ returns trigger language plpgsql as $$
 begin
   if new.champion is distinct from old.champion then
     new.jours := 0;
-    new.prime_jusqu := case when new.champion is null then null else public.titre_jour() end;
+    new.prime_jusqu := case when new.champion is null then null else public.titre_jour() - 1 end;   -- le jour de la conquête compte
   end if;
   return new;
 end $$;
@@ -265,6 +273,8 @@ begin
         'division', c.division, 'nom', public.titre_nom(c.division), 'champion', c.champion, 'pseudo', j.pseudo,
         'depuis', c.depuis, 'dernier_titre', c.dernier_titre, 'refus', c.refus, 'defenses', c.defenses,
         'refus_max', public.reglage_num('titre_refus_max', 3),
+        'defendu', exists (select 1 from public.defis_titre d where d.statut = 'joue' and c.champion in (d.challenger, d.adversaire)
+           and d.fini_le >= public.titre_minuit(public.titre_jour())),
         'jours', c.jours, 'prime', case when c.champion is not null then public.titre_prime(c.jours + 1,
            (select count(*)::int from public.ceintures k where k.champion = c.champion)) end,
         'vacante_le', case when c.champion is not null then coalesce(c.dernier_titre, c.depuis)
