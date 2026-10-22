@@ -12,7 +12,8 @@
 --     le défi expire au bout de 24 h (réglage titre_defi_heures), sans compter comme un refus.
 --   - Le champion perd sa ceinture : s'il perd un combat pour le titre ; à son 3e refus (réglage
 --     titre_refus_max) ; après 7 jours sans combat pour le titre (réglage titre_inactivite_jours).
---     Une ceinture perdue sans combat redevient vacante. Le vainqueur d'un combat pour une ceinture
+--     Une ceinture perdue sans combat redevient vacante. Quand le jeu est en pause (let's play), les
+--     7 jours et les 24 h d'un défi sont arrêtés. Le vainqueur d'un combat pour une ceinture
 --     vacante la prend. Match nul : le champion la garde, une ceinture vacante le reste.
 --
 -- Utilise les vues echange_coll / echange_var et les fonctions rang_rarete, reglage_num
@@ -111,12 +112,40 @@ create or replace function public.titre_maj()
 returns void language plpgsql security definer set search_path = public as $$
 declare c public.ceintures;
 begin
+  -- jeu en pause (let's play) : les compteurs sont arrêtés, rien n'expire
+  if coalesce((select valeur from public.reglages_jeu where cle = 'jeu_live'), '1') = '0' then return; end if;
   update public.defis_titre set statut = 'expire', fini_le = now() where statut = 'attente' and expire_le < now();
   for c in select * from public.ceintures where champion is not null
     and coalesce(dernier_titre, depuis) < now() - make_interval(days => public.reglage_num('titre_inactivite_jours', 7)::int) loop
     perform public.titre_vacante(c.division, 'inactivite');
   end loop;
 end $$;
+
+-- Pause du jeu (32-mode-site.sql, interrupteur jeu_live) : le temps de pause ne compte ni dans les 7 jours
+-- d'inactivité ni dans les 24 h d'un défi. À la mise en pause, on note l'heure ; à la reprise, les compteurs
+-- sont décalés d'autant.
+create or replace function public.titre_pause()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare debut timestamptz; duree interval;
+begin
+  if new.cle <> 'jeu_live' or (tg_op = 'UPDATE' and coalesce(old.valeur, '1') = coalesce(new.valeur, '1')) then return new; end if;
+  if new.valeur = '0' then
+    insert into public.reglages_jeu (cle, valeur) values ('titre_pause_debut', now()::text)
+      on conflict (cle) do update set valeur = excluded.valeur;
+  else
+    select nullif(valeur, '')::timestamptz into debut from public.reglages_jeu where cle = 'titre_pause_debut';
+    if debut is not null then
+      duree := now() - debut;
+      update public.ceintures set dernier_titre = dernier_titre + duree, depuis = depuis + duree where champion is not null;
+      update public.defis_titre set expire_le = expire_le + duree where statut = 'attente';
+      update public.reglages_jeu set valeur = '' where cle = 'titre_pause_debut';
+    end if;
+  end if;
+  return new;
+end $$;
+revoke all on function public.titre_pause() from public, anon, authenticated;
+drop trigger if exists titre_pause on public.reglages_jeu;
+create trigger titre_pause after insert or update on public.reglages_jeu for each row execute function public.titre_pause();
 
 -- Le champion perd sa ceinture sans combat : elle redevient vacante
 create or replace function public.titre_vacante(p_division text, p_raison text)
