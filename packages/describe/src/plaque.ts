@@ -123,8 +123,13 @@ export type PlaqueDescriber = {
   condition: (c: Fx) => string;
 };
 
+// An admin "perso_" effect whose key mentions a stun plays as a stun (engine, combat/state.ts):
+// its plaque line reads and is coloured like one, instead of showing its raw key.
+const adminStun = (b: Fx) =>
+  typeof b.type === 'string' && b.type.indexOf('perso_') === 0 && /etourd/.test(b.type);
 // The colour category of a brick on the plaque: a breath takes its element's.
-const colourOf = (b: Fx) => categoryOf(b.type === 'souffle' ? b.statut : b.type);
+const colourOf = (b: Fx) =>
+  categoryOf(b.type === 'souffle' ? b.statut : adminStun(b) ? 'etourdir_effet' : b.type);
 
 const bricks = (x: unknown): Fx[] =>
   !x ? [] : ((x as Fx).briques ? ((x as Fx).briques as Fx[]) : [x as Fx]).filter(Boolean);
@@ -132,6 +137,7 @@ const bricks = (x: unknown): Fx[] =>
 const own = (b: Fx) => String(b.lib || b.libelle || b.type || '').split(/ ?[:(]/)[0] || '?';
 
 export function effectLabel(b: Fx): string {
+  if (adminStun(b)) return EFFECT_LABELS.etourdir_effet(b);
   const f = (EFFECT_LABELS as Record<string, (e: Fx) => string>)[String(b.type)];
   return f ? f(b) : own(b);
 }
