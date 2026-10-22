@@ -587,6 +587,12 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
       const how = { magic: '(1 PV)', passive: '(passif)', trap: '(piège)' }[e.source];
       return { t: 'protege', txt: `${name(e.side)} évite la mort ${how} !`, o: { c: e.side } };
     }
+    case 'avoidDeathBroken':
+      return {
+        t: 'statut',
+        txt: `L'exécution brise la protection de ${name(e.side)} : il n'évitera plus la mort`,
+        o: { c: e.side, k: 'protection_brisee' },
+      };
     case 'avoidDeathGranted':
       return {
         t: 'statut',

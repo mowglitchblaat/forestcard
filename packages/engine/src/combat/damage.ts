@@ -7,7 +7,7 @@
 //   3. revive, if a source is left; never after detonation damage (c.noRevive), the card is "reduced
 //      to ashes" (mechanics/revive.ts).
 
-import { avoidDeath } from '../mechanics/avoid-death.ts';
+import { avoidDeath, breakAvoidDeath } from '../mechanics/avoid-death.ts';
 import { healReduction } from '../mechanics/bleed.ts';
 import { reviveOnLethal, reviveTrapOnLethal } from '../mechanics/revive.ts';
 import { emit, id, round, type Combat } from './combat.ts';
@@ -33,11 +33,11 @@ export function damage(c: Combat, src: Side, dst: Side, n: number): number {
   let after: (() => void) | null = null;
   let revealTrap: (() => void) | null = null;
   if (n >= dst.hp) {
-    // An execution ignores avoid-death.
+    // An execution ignores avoid-death, and breaks it.
     if (!c.executing) {
       after = avoidDeath(c, dst);
       if (after) n = dst.hp - 1;
-    }
+    } else breakAvoidDeath(c, dst);
     if (!after) revealTrap = reviveTrapOnLethal(c, dst);
   }
   const lethal = n >= dst.hp;

@@ -2,7 +2,7 @@
 // (revive included), from: its active magic (mort_evitee, with its condition), then its charges
 // (passive evite_mort, or granted by an ultimate or a trap), then its trap ("owner dies" trap
 // holding an avoid-death). The damage line shows first, the protection right after. An execution
-// ignores it.
+// ignores it and breaks it (breakAvoidDeath): a revived card is not saved by it afterwards.
 
 import { emit, hold, id, releaseAsTheyWere, releaseNow, type Combat } from '../combat/combat.ts';
 import type { EffectContext, EffectRules } from '../combat/effect-context.ts';
@@ -20,6 +20,21 @@ export const avoidDeathState = (passives: EffectData[]): AvoidDeathState => ({
   avoidDeathCharges: passives.some((p) => p.type === 'evite_mort') ? 1 : 0,
   magicAvoidDeathUsed: 0,
 });
+
+// An execution breaks avoid-death: the card's own protection (its charges, passive or granted, and
+// its active magic's) is spent without saving it, so it does not come back after a revive.
+export function breakAvoidDeath(c: Combat, dst: Side): void {
+  const magicEffect = dst.magicActive && dst.magic.effet ? dst.magic.effet : null;
+  const magic =
+    !!magicEffect &&
+    !dst.status.magicAvoidDeathUsed &&
+    (magicEffect.type === 'mort_evitee' ||
+      (magicEffect.briques || []).some((b) => (b as EffectData).type === 'mort_evitee'));
+  if (!magic && dst.status.avoidDeathCharges <= 0) return;
+  if (magic) dst.status.magicAvoidDeathUsed = 1;
+  dst.status.avoidDeathCharges = 0;
+  emit(c, { type: 'avoidDeathBroken', side: id(c, dst) });
+}
 
 // On a lethal hit: what to show after the damage line if the card is protected (it is then left at
 // 1 HP by damage()), or null.

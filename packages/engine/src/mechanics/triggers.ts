@@ -99,6 +99,7 @@ export const TRIGGER_FACT: { [K in EventType]: Classify<K> | null } = {
       : null,
   healed: fact('heal'),
   deathAvoided: null,
+  avoidDeathBroken: null,
   avoidDeathGranted: null,
   reviveGranted: null,
   shattered: null,

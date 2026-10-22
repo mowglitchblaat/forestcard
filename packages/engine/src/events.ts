@@ -253,6 +253,7 @@ export type DomainEvent =
     }
   | { type: 'healed'; side: SideIndex; amount: number; revive: boolean }
   | { type: 'deathAvoided'; side: SideIndex; source: 'magic' | 'passive' | 'trap' }
+  | { type: 'avoidDeathBroken'; side: SideIndex } // an execution spends it without saving the card
   | { type: 'avoidDeathGranted'; side: SideIndex }
   | { type: 'reviveGranted'; side: SideIndex; pct: Num }
   | { type: 'shattered'; side: SideIndex }

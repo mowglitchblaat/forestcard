@@ -235,6 +235,22 @@ test('exécution : 3 marques puis exécutée sous le seuil, même avec « évite
   assert.ok(iE > 0 && r2.journal.slice(iE).some(e => e.t === 'reanim'), 'réanimée après l\'exécution');
 });
 
+test('exécution : elle brise « évite la mort » ; après la réanimation, la carte n\'est plus protégée', () => {
+  const deckB = [C('b', 1, 1000, { passif: { briques: [{ type: 'evite_mort' }, { type: 'reanimation', pctrev: 50 }] } })];
+  const r = combat([C('a', 95, SOLIDE), MAG('Sentence', { type: 'execution_direct', nbmarques: 3 })], deckB, { regles: { maxTours: 30, maxProlong: 0 } });
+  const iE = r.journal.findIndex(e => e.t === 'statut' && e.k === 'execution');
+  assert.ok(iE > 0, 'exécutée');
+  assert.equal(r.journal[iE + 1].k, 'protection_brisee', '« évite la mort » brisé par l\'exécution');
+  assert.ok(r.journal.slice(iE).some(e => e.t === 'reanim'), 'réanimée');
+  assert.equal(r.journal.filter(e => e.t === 'protege').length, 0, '« évite la mort » ne sauve plus la carte réanimée');
+  assert.equal(r.gagnant, 0);
+  // magie « évite la mort » : brisée elle aussi
+  const ange = MAG('Ange', { type: 'mort_evitee', cond: 'aucune' });
+  const r2 = combat([C('a', 95, SOLIDE, { passif: { type: 'execution', chance: 100, seuilexec: 1 } })], [C('b', 1, 1000, { passif: { type: 'reanimation', pctrev: 50 } }), ange], { regles: { maxTours: 40, maxProlong: 0 } });
+  assert.ok(r2.journal.some(e => e.k === 'protection_brisee'));
+  assert.equal(r2.journal.filter(e => e.t === 'protege').length, 0);
+});
+
 test('exécution, statut marquant : chaque dégât du statut choisi peut poser une marque, jusqu\'à 3', () => {
   const saigne = { type: 'saignement', chance: 100, pctpv: 1, tours: 99 };
   const ulti = (x) => MAG('Sentence', { type: 'execution_direct', nbmarques: 1, ...x });
