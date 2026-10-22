@@ -280,8 +280,6 @@ async function traiter(req) {
     b.twitch_id = site.twitch_id;
   } else if (!live) return txt(PAUSE, 409);
   if (!b.twitch_id) return txt('Joueur manquant.', 400);
-  // championnat : Streamer.bot peut envoyer le texte de la commande dans le mode lui-même (« defi rare @bob »)
-  { const m = String(b.mode || '').trim().split(/\s+/); if (m.length > 1 && TITRE_MODES.includes(m[0])) { b.mode = m[0]; b.message = [b.message, ...m.slice(1)].filter(Boolean).join(' '); } }
 
   if (TITRE_MODES.includes(b.mode)) return championnat(b);
 
