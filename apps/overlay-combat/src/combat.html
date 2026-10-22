@@ -137,6 +137,7 @@ canvas.fx.solide{box-shadow:inset 0 0 30px 8px rgba(120,113,108,.75)}
 
 /* tour en cours : le pseudo du joueur s'allume au-dessus de sa carte */
 .pj{font-size:3.7vh;font-weight:900;letter-spacing:.02em;line-height:1.1;margin:0 0 1.2vh;color:#e5ece7;opacity:.55;text-shadow:0 0 8px #000,0 0 3px #000;transition:opacity .35s,transform .35s,color .35s;position:relative;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.eq{display:inline-flex;gap:.6vh;margin-left:1vh;vertical-align:middle}.eq b{width:1.5vh;height:1.5vh;border-radius:50%;background:#fcd34d;box-shadow:0 0 .8vh #f59e0b;display:inline-block}.eq b.off{background:#3f3f46;box-shadow:none}.eq b.go{animation:eqgo .9s ease-out}@keyframes eqgo{0%{transform:scale(2.2);background:#fff}100%{transform:none}}
 .p.actif .pj{opacity:1;color:#fff;transform:scale(1.1);animation:pjglow 1.6s ease-in-out infinite;text-shadow:0 0 .8vh #ffd34d,0 0 2vh #ffb300,0 0 3px #000}
 .p.actif .pj::before{content:'▶ ';color:#ffd34d}.p.actif .pj::after{content:' ◀';color:#ffd34d}
 @keyframes pjglow{0%,100%{filter:brightness(1)}50%{filter:brightness(1.35)}}
@@ -269,8 +270,10 @@ function allumerEffets(e){if(e.c==null&&e.from==null)return;const c=e.c,o=c!=nul
  if(e.k==='prog'||e.k==='prog_act')return allumer(c,['programmation']);
  if(e.k==='purif')return allumer(c,['purification']);
  if(e.k==='bonus')return allumer(c,['bonus_frappe'])}
+// COMBAT EN RELAIS (championnat) : combattants envoyés par joueur ({n, of}), null en combat normal ; les pastilles à côté du pseudo
+let EQUIPE=[null,null];
 function panneau(i,j){const im=j.imageCombat||j.image,t=tierRar(j.rar),col=(j.rar&&j.rar.couleur)||'#888',magV=/^Aucun/.test(j.magie);JOUEURS[i]=j;
- $('#p'+i).innerHTML=`<div class="pj">${String(j.pseudo).replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div><div class="cw${t!=='co'?' rr rr-'+t:''}" style="--g:${col}"><div class="card" ${im?`style="background-image:url('${urlImg(im)}')"`:''}>${im?'':j.carte}<div class="dosf" style="${dosCSS(j)}">${j.dos?'':'🌲'}</div>${t==='ep'||t==='lg'||t==='ul'?'<span class="shn"></span>':''}${j.imageCombat?'<span class="sv sva" data-v=""></span><span class="sv svp" data-v=""></span>':''}</div></div>
+ $('#p'+i).innerHTML=`<div class="pj">${String(j.pseudo).replace(/&/g,'&amp;').replace(/</g,'&lt;')}${EQUIPE[i]?`<span class="eq">${Array.from({length:EQUIPE[i].of},(_,k)=>`<b class="${k<EQUIPE[i].n-1?'off':''}"></b>`).join('')}</span>`:''}</div><div class="cw${t!=='co'?' rr rr-'+t:''}" style="--g:${col}"><div class="card" ${im?`style="background-image:url('${urlImg(im)}')"`:''}>${im?'':j.carte}<div class="dosf" style="${dosCSS(j)}">${j.dos?'':'🌲'}</div>${t==='ep'||t==='lg'||t==='ul'?'<span class="shn"></span>':''}${j.imageCombat?'<span class="sv sva" data-v=""></span><span class="sv svp" data-v=""></span>':''}</div></div>
  <div class="nm">${j.carte}</div><div class="bar"><i></i></div><div class="pv"></div>
  <div class="mp"><div class="mw"><div class="mini${magV?' vide':' back dos mag'}" id="m${i}" ${magV?mini(j.magieImg):`style="${dosCSS(j)}"`}>${magV?(j.magieImg?'':j.magie):(j.dos?'':'?')}</div><small>Magie</small></div>
  <div class="mw"><div class="mini back${/^Aucun/.test(j.piege)?' vide':''}${j.dos?' dos':''}" id="g${i}" ${j.dos?`style="background-image:url('${urlImg(j.dos)}')"`:''}>${j.dos?'':'?'}</div><small>Piège</small></div></div>`}
@@ -924,6 +927,25 @@ async function prolongation(e){
  await Promise.all(an);await wait(500);
  await Promise.all([0,1].map(i=>retourner($('#p'+i+' .card'),()=>{const d=$('#p'+i+' .dosf');if(d)d.remove()})));await wait(900)}
 
+// RELAIS (championnat) : le combattant tombé se brise (sauf s'il est déjà coupé ou en cendres), ses cartes sont défaussées ;
+// le combattant suivant arrive avec sa magie et son piège, du centre de l'écran, et se retourne. L'autre côté ne bouge pas.
+async function relais(e){const i=e.c,p=$('#p'+i);if(!p)return;
+ p.classList.remove('actif','idle');
+ const k=$('#p'+i+' .cw .card'),cendre=k&&k.dataset.cendre==='1';
+ if(!cendre&&!coupee(i)){briser(i);await wait(2600)}else await wait(600);
+ document.querySelectorAll('#p'+i+' canvas.fx').forEach(x=>x.remove());Object.keys(st).filter(x=>x.startsWith(String(i))).forEach(x=>st[x]=0);
+ const vieux=[...document.querySelectorAll('#p'+i+' .cw, #p'+i+' .mini')];
+ vieux.forEach((el,n)=>el.animate([{transform:'none',opacity:1},{transform:`translateY(${30+n%3*8}px) rotate(${n%2?6:-6}deg) scale(.8)`,opacity:0}],{duration:650,delay:(n%3)*90,easing:'ease-in',fill:'forwards'}));
+ await wait(800);
+ if(EQUIPE[i])EQUIPE[i]={n:e.n,of:e.of};
+ panneau(i,e.joueurs[i]);maj(e);
+ const b=p.querySelectorAll('.eq b')[e.n-2];if(b)b.classList.add('go');
+ const sc=$('#scene').getBoundingClientRect(),cx=sc.left+sc.width/2,cy=sc.top+sc.height*.45;
+ await Promise.all([$('#p'+i+' .cw'),$('#m'+i),$('#g'+i)].map((el,n)=>{if(!el)return null;const r=el.getBoundingClientRect(),dx=cx-(r.left+r.width/2),dy=cy-(r.top+r.height/2);
+  return el.animate([{transform:`translate(${dx}px,${dy}px) scale(.25) rotate(${i?18:-18}deg)`,opacity:0},{offset:.25,opacity:1},{transform:'none',opacity:1}],{duration:700,delay:n*320,easing:'cubic-bezier(.2,.8,.3,1)',fill:'backwards'}).finished.catch(()=>{})}));
+ await wait(400);
+ await retourner($('#p'+i+' .card'),()=>{const d=$('#p'+i+' .dosf');if(d)d.remove()});flot(i,'Combattant '+e.n+'/'+e.of,'#fcd34d','big');await wait(900)}
+
 // VOL DE MAGIE / PIÈGE : la carte volée se révèle chez l'adversaire, s'envole en arc et vient se poser à la place de la carte du voleur
 async function volCarte(e){const src=$((e.de==='magie'?'#m':'#g')+e.from),dst=$((e.sur==='magie'?'#m':'#g')+e.to);if(!src||!dst)return;
  if(e.de==='piege')revele(e.from,e);else faceMagie(e.from);
@@ -1111,11 +1133,12 @@ async function jouer(res){
  while(file.length){const R=file.shift();await verrouPrendre('combat');await chargerMiroir();   // liste des images copiées sur GitHub, relue à chaque combat : OBS ouvert longtemps ne repasse jamais par Supabase pour une image copiée depuisif(!TEST&&!DEMO)await chargerVitesse();journalRecap=R;$('#log').innerHTML='';
   for(let ix=0;ix<R.journal.length;ix++){const e=R.journal[ix];
    $('#ban').className=e.t;$('#ban').textContent=e.txt;$('#log').innerHTML+=e.txt+'<br>';$('#log').scrollTop=1e5;
-   if(e.t==='debut'||e.t==='prolongation')chargerZones(e.joueurs);
+   if(e.t==='debut'||e.t==='prolongation'||e.t==='relais')chargerZones(e.joueurs);
    try{allumerEffets(e)}catch(_){}
-   if(e.t==='debut'){st={};fxL.length=0;fxAll.forEach(s=>s());fxAll.clear();JOUEURS=[];[0,1].forEach(i=>$('#p'+i).classList.remove('actif','idle'));e.joueurs.forEach((j,i)=>panneau(i,j));$('#scene').classList.add('on');maj(e);await wait(2200);   // les 3 dos de chaque joueur, puis les combattants se retournent
+   if(e.t==='debut'){EQUIPE=e.equipe?[{n:1,of:e.equipe},{n:1,of:e.equipe}]:[null,null];st={};fxL.length=0;fxAll.forEach(s=>s());fxAll.clear();JOUEURS=[];[0,1].forEach(i=>$('#p'+i).classList.remove('actif','idle'));e.joueurs.forEach((j,i)=>panneau(i,j));$('#scene').classList.add('on');maj(e);await wait(2200);   // les 3 dos de chaque joueur, puis les combattants se retournent
     await Promise.all([0,1].map(i=>retourner($('#p'+i+' .card'),()=>{const d=$('#p'+i+' .dosf');if(d)d.remove()})));await wait(900);continue}
    if(e.t==='prolongation'){await prolongation(e);continue}
+   if(e.t==='relais'){await relais(e);continue}
    if(e.t==='tour'){const jp=e.c!=null&&JOUEURS[e.c];$('#tour').textContent=e.txt+(jp?' · Au tour de '+jp.pseudo:'');[0,1].forEach(i=>{const p=$('#p'+i);if(p){p.classList.toggle('actif',i===e.c);p.classList.toggle('idle',e.c!=null&&i!==e.c)}});await wait(700);continue}
    const card=e.c!=null?$('#p'+e.c+' .card'):null;
    if(e.t==='attaque'){card.classList.add('atk');await wait(450);card.classList.remove('atk');continue}
@@ -1132,6 +1155,7 @@ async function jouer(res){
    else if(e.t==='reanim'){reforme(e.c);flot(e.c,'+'+e.n,'#4ade80');await wait(2100)}
    else if(e.t==='statut'&&e.k==='rage'){statut(e.c,'rage',true);colere(e.c);flot(e.c,'RAGE !','#ef4444','big');await wait(1000)}
    else if(e.t==='statut'&&e.k==='fatigue'){statut(e.c,'fatigue',true);flot(e.c,'Fatigue…','#94a3b8');await wait(700)}
+   else if(e.t==='statut'&&e.k==='epuise'){flot(e.c,'ÉPUISÉ !','#94a3b8','big');await wait(900)}   // relais : 60 rounds sans KO, le plus entamé tombe
    else if(e.t==='statut'&&e.k==='riposte'){bouclier(e.c,{partiel:1});flot(e.c,'RIPOSTE !','#fcd34d','big');await wait(800)}   // blocage avec riposte : le renvoi (miroir) ou le statut suit
    else if(e.t==='statut'&&e.k==='alea'){flot(e.c,'🎲 '+(e.txt.split(' : ')[1]||'').replace(' !',''),'#c4b5fd');await wait(800)}
    else if(e.t==='statut'&&e.k==='purif'){purif(e.c);flot(e.c,'Purifié !','#fde047');await wait(1300)}
@@ -1180,7 +1204,7 @@ async function jouer(res){
    let ms={magie:600,piege:600,ultime:2200,fin:5000,degats:900,soin:1300,esquive:1100,bloque:1500,statut:1100,stat:1500,vol:1500,protege:2900,finstatut:250,frappe:350}[e.t]||900;
    if(e.t==='degats'&&R.journal.slice(ix+1,ix+4).some(z=>z.t==='protege'&&z.c===e.c))ms=200;
    // salve de missiles : rythme accéléré, du tir du premier missile jusqu'à la fin de la salve (prochain tour, attaque ou ultime)
-   if(e.t==='missile')enSalve=true;else if(['tour','attaque','ultime','fin','prolongation'].includes(e.t))enSalve=false;
+   if(e.t==='missile')enSalve=true;else if(['tour','attaque','ultime','fin','prolongation','relais'].includes(e.t))enSalve=false;
    if(enSalve)ms=Math.min(ms,{missile:0,detonation:200,degats:520,statut:560,finstatut:150,stat:600,esquive:600,bloque:700,soin:700}[e.t]??500);   // coup fatal évité : les dégâts et l'effet « évite la mort » apparaissent presque ensemble
    if(e.t==='fin'){[0,1].forEach(i=>{faceMagie(i);const p=$('#p'+i);if(p)p.classList.remove('actif','idle')});fxAll.forEach(s=>s());fxAll.clear();document.querySelectorAll('canvas.fx').forEach(k=>k.remove());{const rw=e.recompenses[e.gagnant??0];$('#ban').textContent=e.txt+(rw>0?` (+${rw})`:'')+(e.bounty?(e.bounty.tout?` · 💰 Bounty ${e.bounty.total} : le gagnant rafle tout !`:` · 💰 Bounty ${e.bounty.total} !`):'');if(e.bounty){bourseBounty(e.bounty.parts);[0,1].forEach(i=>{if(e.bounty.parts[i]>0)setTimeout(()=>flot(i,'💰 Bounty +'+e.bounty.parts[i],'#fcd34d'),2100)})}}const cendre=i=>{const k=$('#p'+i+' .cw .card');return k&&k.dataset.cendre==='1'};if(e.gagnant!=null){if(!cendre(1-e.gagnant)&&!coupee(1-e.gagnant))briser(1-e.gagnant);auraFx(e.gagnant,{gold:1,dur:5.2})}else[0,1].forEach(i=>{if(e.pv&&e.pv[i]<=0&&!cendre(i)&&!coupee(i))briser(i)})}   // double KO : les deux cartes se brisent
    await wait(ms);
@@ -1320,7 +1344,7 @@ if(DEMO){
    <label style="font-size:12px;display:block;margin:3px 0"><input type="checkbox" id="rmp" checked> Démo et classement : avec magies et pièges au hasard</label>
    <div class="g"><button class="big" id="rgo" style="margin:0">⚔️ Combattre avec ces cartes</button><button id="rre">↺ Rejouer le même combat</button></div>
    <div class="g" style="margin-top:4px"><button id="rdm" class="big" style="margin:0;background:#1d4ed8">🎬 Démo : enchaîner des combats</button><select id="rn"><option value="3">3 combats</option><option value="5" selected>5 combats</option><option value="10">10 combats</option></select></div>
-   <button id="rtt" style="width:100%;margin-top:4px">📊 Tous contre tous (sans animation)</button><div id="rtab" style="font-size:11px;margin-top:4px"></div>`;
+   <button id="rtt" style="width:100%;margin-top:4px">📊 Tous contre tous (sans animation)</button><button id="rrl" style="width:100%;margin-top:4px;background:#92400e">🏆 Combat de championnat : relais 3 contre 3 (cartes au hasard)</button><div id="rtab" style="font-size:11px;margin-top:4px"></div>`;
   $('#dl').after(sec);
   const LB={evite_mort:'évite la mort une fois',soin_tour:'se soigne chaque tour',renvoi:'renvoie des dégâts',atq_tours:"augmente l'ATQ tous les X tours",pv_tours:'augmente les PV tous les X tours',multi_frappe:'frappe plusieurs fois',reduc_degats:'réduit les dégâts reçus',bonus_frappe:'bonus de dégâts si frappé',etourdir:'étourdit',vol_pct_atq:'vole de la vie',brulure:'brûlure',poison:'poison',esquive:'esquive',degats:'dégâts directs',voler:'vole une carte',detruire:'détruit une carte',equiper:'équipe une carte',soin:'se soigne',vol_vie:'vole de la vie',echange_atq:"échange l'ATQ",annule_attaque:"annule l'attaque",double_degats:'double ses dégâts',echange_atq_def:"échange ATQ et PV de l'adversaire"};
   Object.assign(LB,{souffle:'souffle élémentaire (dégâts + statut au choix)',execution:'exécution (marques puis exécution sous X % de PV)',execution_direct:'exécution (pose X marques)',avalage:'avalage (🍴, 🔪, puis avale la cible)',atk_avalage:'attaque de base : avalage',marque_avalage:'avalage (pose X marques)',transcendance:'transcendance (après X tours : purifiée, ATQ et PV en hausse)',solidification:'solidification (insensible à l\'étourdissement)',rage:'rage puis fatigue',fatigue:'fatigue (réduit les dégâts)',aleatoire:'effet aléatoire',atk_fatigue:'attaque de base : fatigue',purification:'purification (retire les statuts négatifs)',reanimation:'réanimation (meurt puis revient)',soin_tours:'régénération (soigne chaque tour)',purification:'purification (retire les statuts négatifs)',atk_enchainement:'attaque de base : enchaînement',atk_saignement:'attaque de base : saignement',atk_malediction:'attaque de base : malédiction',atk_fracture:'attaque de base : fracture',atk_gel:'attaque de base : gel',saignement:'saignement (dégâts sur la durée, soins réduits)',gel:'gel (attaque annulée ou étourdi)',fracture:'fracture (se blesse en attaquant)',vol_ultime:"vole l'ultime",malediction:'malédiction (ATQ en baisse par tour)',enchainement:'enchaîne les frappes tant que ça réussit',poison_effet:'poison',brulure_effet:'brûlure',etourdir_effet:'étourdit',atk_brulure:"attaque de base : brûlure",atk_poison:"attaque de base : poison",atk_etourdir:"attaque de base : étourdissement",esquive_mod:"modifie l'esquive (%)",reset_ultime:"réinitialise l'ultime",atq_mod:"modifie l'ATQ",pv_mod:'modifie les PV max',insensible_piege:'insensible aux pièges',annule_magies:'annule les magies',mort_evitee:'évite la mort (1 PV)',degats_tours:'dégâts différés'});
@@ -1361,6 +1385,9 @@ if(DEMO){
    }catch(e){vide('Cartes non chargées');$('#rst').innerHTML='Impossible de lire les cartes : '+(e.message||e)+IOS+RB}};
   document.head.appendChild(sc);
   ['ra','rb','rma','rmb','rpa','rpb'].forEach(i=>$('#'+i).onchange=refresh);
+  // relais du championnat : 5 combattants, 5 magies, 5 pièges au hasard par joueur (rareté du filtre)
+  $('#rrl').onclick=()=>{if(enCours||!REEL.cartes.length)return;const tire=(l,n)=>[...l].sort(()=>Math.random()-.5).slice(0,n),deck=()=>[...tire(poolC(),5),...tire(REEL.magies,5),...tire(REEL.pieges,5)];
+   dernierDecks=null;dernier=Moteur.simulerRelais({pseudo:'Toi',deck:deck()},{pseudo:'Bot',deck:deck()});jouer(dernier)};
   $('#rgo').onclick=()=>{if(enCours||!REEL.cartes.length)return;lancer(undefined,[{pseudo:'Toi',deck:deckOf('#ra','#rma','#rpa')},{pseudo:'Bot',deck:deckOf('#rb','#rmb','#rpb')}])};
   $('#rre').onclick=()=>{if(!enCours&&dernier)lancer(dernier.seed,dernierDecks)};
   // Démo : plusieurs vrais combats d'affilée entre des cartes tirées au hasard
