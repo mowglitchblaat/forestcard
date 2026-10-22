@@ -21,6 +21,7 @@ button{cursor:pointer;background:#7c3aed;border-color:#7c3aed}button.sec{backgro
 .dtop{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap}.dbt{display:flex;gap:8px;flex-wrap:wrap}
 .dmul{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:13px}.dmul select{max-width:100%;min-width:150px}
 button:disabled{opacity:.4;cursor:not-allowed}
+.recsel{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center}.recsel label{display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer}
 .cpo{border:1px solid #3b3350;border-radius:12px;padding:12px;background:linear-gradient(180deg,#221d31,#1b1924)}.cpo-h{display:flex;flex-direction:column;gap:2px;margin-bottom:10px}.cpo-h b{font-size:15px}
 .cpo-g{display:grid;grid-template-columns:minmax(200px,300px) 1fr;gap:16px;align-items:start}@media(max-width:700px){.cpo-g{grid-template-columns:1fr}}
 .cpo-v{display:flex;flex-direction:column;gap:6px;align-items:center;position:sticky;top:8px}.cpo-v canvas{width:100%;height:auto;border-radius:12px;background:repeating-conic-gradient(#1c1c26 0 25%,#16161e 0 50%) 50%/20px 20px;box-shadow:0 8px 28px #0008;touch-action:none;cursor:grab}
@@ -451,18 +452,29 @@ const FRAG_DEF={commun:2,rare:4,epique:12,legendaire:25,ggez:40};let FRAG=null; 
 async function chargerFrag(){if(FRAG)return FRAG;FRAG={...FRAG_DEF};try{const r=await sb.rpc('prix_fragments_recyclage');if(!r.error&&r.data){FRAG={...FRAG_DEF,...r.data};FRAG.ok=1}}catch(e){}return FRAG}
 const gainDe=x=>{const p=(PRIX||PRIX_DEF)[rangDe(x)]||PRIX_DEF.commun,n=surplus(x),f=+((FRAG||FRAG_DEF)[rangDe(x)])||0;return{n,gold:n*p.gold,fragments:n*p.fragments,frag:n*f}};
 const gainTxt=g=>`+${g.gold} gold`+(FRAG&&FRAG.ok?` ou +${g.frag} 🧩`:'');
-function gainTotal(){return collData.reduce((a,x)=>{const g=gainDe(x);a.n+=g.n;a.gold+=g.gold;a.fragments+=g.fragments;a.frag+=g.frag;return a},{n:0,gold:0,fragments:0,frag:0})}
-async function recycler(varianteId,msg,g){
+// raretés cochées pour « Recycler la sélection » (retenues dans ce navigateur) : communes et rares par défaut
+const RANG_L={ggez:'GGEZ',legendaire:'Légendaire',epique:'Épique',rare:'Rare',commun:'Commune'};
+let recRangs=(()=>{try{const v=JSON.parse(localStorage.getItem('fc_rec_rangs')||'null');if(Array.isArray(v))return new Set(v)}catch(e){}return new Set(['commun','rare'])})();
+function gainTotal(rangs){return collData.filter(x=>!rangs||rangs.has(rangDe(x))).reduce((a,x)=>{const g=gainDe(x);a.n+=g.n;a.gold+=g.gold;a.fragments+=g.fragments;a.frag+=g.frag;return a},{n:0,gold:0,fragments:0,frag:0})}
+async function recycler(varianteId,msg,g,ids){
   let mode='gold';
   if(FRAG&&FRAG.ok){mode=await uiChoix(msg+'\nTu choisis : du gold OU des fragments 🧩 (pour les échanges).',[['gold',`💰 +${g.gold} gold`],['frag',`🧩 +${g.frag} fragments`]]);if(!mode)return}
   else if(!(await uiConfirm(msg+`\nTu reçois ${g.gold} gold.`)))return;
-  const r=await sb.rpc(mode==='frag'?'recycler_doublons_fragments':'recycler_doublons',varianteId?{p_variante:varianteId}:{});
+  const fn=mode==='frag'?'recycler_doublons_fragments':'recycler_doublons';let r;
+  if(ids){   // sélection par rareté : une carte après l'autre (le serveur recycle carte par carte), puis un seul bilan
+   const tot={cartes:0,gold:0,fragments:0};let err=null;
+   for(const id of ids){const x=await sb.rpc(fn,{p_variante:id});if(x.error){if(!String(x.error.message).includes('RIEN_A_RECYCLER'))err=x.error;continue}const d=x.data||{};tot.cartes+=+d.cartes||0;tot.gold+=+d.gold||0;tot.fragments+=+d.fragments||0}
+   r={data:tot,error:tot.cartes?null:err||{message:'RIEN_A_RECYCLER'}}}
+  else r=await sb.rpc(fn,varianteId?{p_variante:varianteId}:{});
   if(r.error){uiAlert(String(r.error.message).includes('RIEN_A_RECYCLER')?'Aucun doublon à recycler.':r.error.message);return}
   await Promise.all([loadColl(),refreshJoueur()]);mdClose();if(curView)curView();
   const d=r.data||{};uiAlert(`♻ ${d.cartes} carte${d.cartes>1?'s':''} recyclée${d.cartes>1?'s':''} : `+[d.gold?`+${d.gold} gold`:'',d.fragments?`+${d.fragments} fragment${d.fragments>1?'s':''} 🧩`:''].filter(Boolean).join(' et ')+'.')}
 function bindRecycle(){main.querySelectorAll('button[data-rec]').forEach(b=>b.onclick=()=>{const v=+b.dataset.rec,x=collData.find(y=>y.variantes_carte.id===v);if(!x)return;const g=gainDe(x);
   recycler(v,`Recycler ${g.n} exemplaire${g.n>1?'s':''} en trop de « ${x.variantes_carte.cartes.nom} » ?\nTu en gardes 1.`,g)});
-  const all=$('#recall');if(all)all.onclick=()=>{const t=gainTotal();recycler(null,`Recycler tous tes doublons (${t.n} carte${t.n>1?'s':''}) ?\nTu gardes 1 exemplaire de chaque carte.`,t)}}
+  const all=$('#recall');if(all)all.onclick=()=>{const t=gainTotal(recRangs);if(!t.n)return uiAlert('Coche au moins une rareté qui a des doublons.');
+   const ids=collData.filter(x=>surplus(x)>0&&recRangs.has(rangDe(x))).map(x=>x.variantes_carte.id),noms=[...recRangs].map(k=>RANG_L[k]).join(', ');
+   recycler(null,`Recycler tes doublons ${noms} (${t.n} carte${t.n>1?'s':''}) ?\nTu gardes 1 exemplaire de chaque carte.`,t,ids)};
+  main.querySelectorAll('input[data-rrang]').forEach(c=>c.onchange=()=>{if(c.checked)recRangs.add(c.dataset.rrang);else recRangs.delete(c.dataset.rrang);try{localStorage.setItem('fc_rec_rangs',JSON.stringify([...recRangs]))}catch(e){}drawColl()})}
 const TYPE_L={combattant:['⚔️','Combattant'],magie:['✨','Magie'],piege:['🪤','Piège']};
 function cardHTML(x,i){
   const v=x.variantes_carte,c=v.cartes,on=deck.has(c.id),col=c.raretes.couleur||'#888',L=lignesCarte(c);
@@ -562,7 +574,9 @@ function drawColl(){
   $('#gr').innerHTML=L.map((x,i)=>{try{return cardHTML(x,i)}catch(e){console.warn('Carte illisible',x,e);return `<div class="card"><small class="ko">Carte illisible : ${esc(((x.variantes_carte||{}).cartes||{}).nom||'?')} (${esc(e.message)})</small></div>`}}).join('');
   const AP=isAdmin?`<button id="apv" class="${apercu?'on':'sec'}" title="Réservé à l'admin : montre toutes les cartes du jeu pour voir à quoi ressemble la collection. Rien n'est donné.">👁 ${apercu?'Aperçu actif : toutes les cartes du jeu':'Aperçu : voir toutes les cartes du jeu'}</button>`:'';
   const MQ=!(apercu&&isAdmin)&&fantomes.length?`<button id="vmq" class="sec" title="Les cartes du jeu que tu n'as pas encore, en grisé : clique dessus pour voir leurs détails">${voirManq?'🙈 Masquer':'👁 Afficher'} les cartes manquantes (${fantomes.length})</button>`:'';
-  const T=gainTotal();$('#rbar').innerHTML=AP+MQ+(T.n?`<button id="recall" class="sec">♻ Recycler tous mes doublons (${T.n}) · ${gainTxt(T)}</button><small style="color:#9a9aa8">Tu gardes toujours 1 exemplaire de chaque carte.</small>`:'<small style="color:#9a9aa8">♻ Aucun doublon à recycler pour le moment.</small>');
+  const T0=gainTotal(),T=gainTotal(recRangs),PR=Object.keys(RANG_L).map(k=>[k,gainTotal(new Set([k])).n]).filter(([,n])=>n>0);
+  $('#rbar').innerHTML=AP+MQ+(T0.n?`<div class="recsel"><small>♻ Raretés à recycler :</small>${PR.map(([k,n])=>`<label><input type="checkbox" data-rrang="${k}" ${recRangs.has(k)?'checked':''}> ${RANG_L[k]} <small>(${n})</small></label>`).join('')}</div>
+   <button id="recall" class="sec" ${T.n?'':'disabled'}>♻ Recycler la sélection (${T.n}) · ${gainTxt(T)}</button><small style="color:#9a9aa8">Tu gardes toujours 1 exemplaire de chaque carte.</small>`:'<small style="color:#9a9aa8">♻ Aucun doublon à recycler pour le moment.</small>');
   const vmq=$('#vmq');if(vmq)vmq.onclick=()=>{voirManq=!voirManq;try{localStorage.setItem('fc_manquantes',voirManq?'1':'0')}catch(e){}drawColl()};
   const apb=$('#apv');if(apb)apb.onclick=async()=>{if(apEnCours)return;apEnCours=true;apb.disabled=true;apb.textContent='⏳ Chargement…';const av=apercu;   // un seul chargement à la fois (sinon des clics rapprochés s'annulent)
     try{apercu=!av;await loadColl();drawColl();progression()}catch(e){apercu=av;uiAlert('Aperçu impossible : '+((e&&e.message)||e));try{await loadColl();drawColl()}catch(x){}}finally{apEnCours=false;const b=$('#apv');if(b)b.disabled=false}};
