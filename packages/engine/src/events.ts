@@ -165,9 +165,12 @@ export type ProgrammedDraw =
 
 export type DomainEvent =
   // Combat flow
-  | { type: 'combatStarted'; first: number }
+  | { type: 'combatStarted'; first: number; team?: number } // team: relay combat, fighters per player
   | { type: 'turnStarted'; side: SideIndex; turn: number }
   | { type: 'overtimeStarted'; period: number; first: number }
+  // Relay combat (relay.ts): the next fighter of a player enters (index: its rank, of: team size)
+  | { type: 'fighterEntered'; side: SideIndex; index: number; of: number }
+  | { type: 'fighterExhausted'; side: SideIndex } // relay safety cap: falls, worn out
   | { type: 'combatEnded'; winner: number | null; rewards: number[] }
   // Cards
   | { type: 'magicRevealed'; side: SideIndex }

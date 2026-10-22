@@ -689,3 +689,42 @@ test('les 3 copies du moteur sont identiques (moteur-combat.js, combat.html, swi
   assert.equal(extrait('combat.html'), ref, 'combat.html diffère de moteur-combat.js');
   assert.equal(extrait('swift-responder.ts'), ref, 'swift-responder.ts diffère de moteur-combat.js');
 });
+
+// ================= Combat en relais (championnat, ceintures) =================
+// 3 combattants chacun ; à chaque entrée un nouveau trio (combattant + magie + piège) ; une carte déjà jouée n'est pas retirée ;
+// le survivant garde PV et statuts ; le nouveau combattant joue en premier ; pas de limite de tours.
+const relais = (deckA, deckB, opt = {}) => M.simulerRelais({ pseudo: 'A', deck: deckA }, { pseudo: 'B', deck: deckB }, { seed: 1, ...opt });
+const entrees = r => r.journal.filter(e => e.t === 'relais');
+
+test('relais : 3 combattants chacun, celui qui a encore un combattant debout gagne', () => {
+  const r = relais([C('A1', 100, 100), C('A2', 100, 100), C('A3', 100, 100)], [C('B1', 1, 100), C('B2', 1, 100), C('B3', 1, 100)]);
+  assert.equal(r.gagnant, 0);
+  assert.equal(r.journal[0].equipe, 3);
+  const e = entrees(r).filter(x => x.c === 1);
+  assert.deepEqual(e.map(x => x.n), [2, 3]);
+  assert.equal(new Set([r.journal[0].joueurs[1].carte, ...e.map(x => x.joueurs[1].carte)]).size, 3, 'un combattant déjà joué ne revient pas');
+});
+
+test('relais : pas de limite de tours, le combat va jusqu\'au KO', () => {
+  const r = relais([C('A1', 1, 300)], [C('B1', 1, 300)], { regles: { maxTours: 2, maxProlong: 0, equipe: 1 } });
+  assert.notEqual(r.gagnant, null);
+  assert.ok(r.journal.filter(e => e.t === 'tour').length > 10);
+});
+
+test('relais : le survivant garde ses PV, le nouveau combattant joue en premier', () => {
+  const r = relais([C('A1', 60, 1000), C('A2', 60, 1000), C('A3', 60, 1000)], [C('B1', 10, 100), C('B2', 10, 100), C('B3', 10, 100)]);
+  const i = r.journal.findIndex(e => e.t === 'relais');
+  assert.ok(i > 0);
+  assert.equal(r.journal[i].c, 1);
+  const avant = r.journal[i].pv[0];
+  assert.ok(avant < 1000, 'A a pris des coups pendant le premier duel');
+  const t = r.journal.slice(i).find(e => e.t === 'tour');
+  assert.equal(t.c, 1, 'le nouveau combattant ouvre le duel');
+});
+
+test('relais : une magie déjà jouée n\'est pas retirée au combattant suivant', () => {
+  const m = n => MAG(n, { type: 'atq_mod', val: 1, cible: 'soi' });
+  const r = relais([C('A1', 100, 100), C('A2', 100, 100), C('A3', 100, 100), m('M1'), m('M2'), m('M3')], [C('B1', 1, 100), C('B2', 1, 100), C('B3', 1, 100)]);
+  const noms = r.journal.filter(e => e.t === 'magie' && e.c === 0).map(e => e.txt);
+  assert.equal(noms.length, 1, 'A garde son premier combattant : sa magie n\'est révélée qu\'une fois');
+});

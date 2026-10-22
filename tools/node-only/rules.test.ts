@@ -19,7 +19,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { compileFunction } from 'node:vm';
 import { DEFAULT_RULES } from '../../packages/engine/src/index.ts';
-import { simuler } from '../../packages/journal/src/index.ts';
+import { simuler, simulerRelais } from '../../packages/journal/src/index.ts';
 
 const ROOT = path.resolve(import.meta.dirname, '..', '..');
 const LEGACY_TESTS = path.join(ROOT, 'packages', 'engine', 'test', 'moteur.regles.js');
@@ -34,7 +34,7 @@ const modules: Record<string, unknown> = {
   'node:assert/strict': assert,
   fs,
   path,
-  '../moteur-combat.js': { simuler, REG: DEFAULT_RULES },
+  '../moteur-combat.js': { simuler, simulerRelais, REG: DEFAULT_RULES },
 };
 
 const requireShim = (id: string): unknown => {

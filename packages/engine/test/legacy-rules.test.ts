@@ -11,7 +11,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { compileFunction } from 'node:vm';
 import { test } from 'vite-plus/test';
-import { simuler } from '../../journal/src/index.ts';
+import { simuler, simulerRelais } from '../../journal/src/index.ts';
 import { DEFAULT_RULES } from '../src/index.ts';
 
 const LEGACY_TESTS = path.resolve(import.meta.dirname, 'moteur.regles.js');
@@ -25,7 +25,7 @@ const modules: Record<string, unknown> = {
   'node:assert/strict': assert,
   fs,
   path,
-  '../moteur-combat.js': { simuler, REG: DEFAULT_RULES },
+  '../moteur-combat.js': { simuler, simulerRelais, REG: DEFAULT_RULES },
 };
 
 const requireShim = (id: string): unknown => {

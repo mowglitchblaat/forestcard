@@ -211,7 +211,19 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
       return {
         t: 'debut',
         txt: 'Le combat commence !',
-        o: { joueurs: players(), premier: e.first },
+        o: { joueurs: players(), premier: e.first, ...(e.team ? { equipe: e.team } : {}) },
+      };
+    case 'fighterEntered':
+      return {
+        t: 'relais',
+        txt: `${pseudo(e.side)} envoie son combattant ${e.index}/${e.of} : ${name(e.side)} !`,
+        o: { c: e.side, n: e.index, of: e.of, joueurs: players() },
+      };
+    case 'fighterExhausted':
+      return {
+        t: 'statut',
+        txt: `${name(e.side)} s'effondre, à bout de forces !`,
+        o: { c: e.side, k: 'epuise' },
       };
     case 'turnStarted':
       return { t: 'tour', txt: `Tour ${e.turn}`, o: { c: e.side } };

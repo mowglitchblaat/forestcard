@@ -8,6 +8,7 @@ export type Rules = {
   nul: number; // reward for a draw
   plafondEsquive: number; // dodge chance cap, in percent
   maxProlong: number; // overtimes after the first period
+  equipe?: number; // relay combat (relay.ts): fighters per player (3)
 };
 
 export const DEFAULT_RULES: Rules = {

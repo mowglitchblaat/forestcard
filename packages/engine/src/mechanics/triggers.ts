@@ -53,6 +53,8 @@ export const TRIGGER_FACT: { [K in EventType]: Classify<K> | null } = {
   combatStarted: null,
   turnStarted: (e) => ({ kind: 'turn', who: e.side, turn: e.turn }),
   overtimeStarted: null,
+  fighterEntered: null,
+  fighterExhausted: null,
   combatEnded: null,
   magicRevealed: null,
   magicCancelled: null,

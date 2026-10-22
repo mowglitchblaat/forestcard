@@ -1,5 +1,6 @@
 // Public entry point of the combat engine.
 export { simulate, canonEffect, canonPassive } from './simulate.ts';
+export { simulateRelay, RELAY_ROUND_CAP } from './relay.ts';
 export type { SimulateOptions, CombatResult } from './simulate.ts';
 export type * from './events.ts';
 export type { Card, CardType, EffectData, Num, Player, TrapCondition } from './model/card.ts';
