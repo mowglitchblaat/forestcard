@@ -1,5 +1,41 @@
 [
   {
+    "date": "2026-10-22",
+    "intro": "Le championnat arrive avec trois ceintures à conquérir en live, et tu peux désormais créer ta propre carte de A à Z.",
+    "groupes": [
+      {
+        "titre": "Combat",
+        "points": [
+          "Championnat : trois ceintures (Rare, Épique, Libre) à conquérir avec un deck dédié de 15 cartes. On défie en live dans le chat avec !defi, et le combat pour le titre se lance avec !accepter, jamais depuis le site.",
+          "Le combat pour le titre se joue en relais, 3 combattants contre 3 : le survivant garde ses PV et ses statuts, et le nouveau venu joue en premier. Le vainqueur gagne 500 gold, le perdant 150, et chaque journée de règne rapporte une prime au champion (plus grosse avec la série et le nombre de ceintures).",
+          "Blocage : il peut ne bloquer que les premiers coups d’une attaque, et riposter une fois, en renvoyant une partie des dégâts ou en posant un statut."
+        ]
+      },
+      {
+        "titre": "Animations",
+        "points": [
+          "Une carte exécutée est maintenant coupée en deux, et une réanimation recolle les deux moitiés.",
+          "Les effets s’allument sur la carte quand ils agissent, l’ATQ boostée (rage, ATQ ×2) s’affiche en direct, et la salve de missiles est plus rapide.",
+          "Les champions combattent avec leur ceinture autour de la carte, et la riposte a sa propre animation."
+        ]
+      },
+      {
+        "titre": "Collection et deck",
+        "points": [
+          "Recyclage des doublons par rareté : coche les raretés à recycler (communes et rares par défaut).",
+          "Dans « Mon deck », choisis le deck à préparer : celui des combats ou celui d’une ceinture."
+        ]
+      },
+      {
+        "titre": "Site",
+        "points": [
+          "Nouvel onglet « Ceintures » pour suivre les champions, et les propositions permettent de créer sa carte entièrement : effets, stats, ultime, passifs et image.",
+          "Pendant les let’s play, le jeu en live est en pause : on joue alors sur le site, dans l’onglet « Jouer » (boosters, booster du jour, combat du jour, duels en gold), avec les animations du live."
+        ]
+      }
+    ]
+  },
+  {
     "date": "2026-10-21",
     "intro": "La Programmation arrive en magie, et la collection montre maintenant toutes les cartes qu’il te reste à trouver.",
     "groupes": [
