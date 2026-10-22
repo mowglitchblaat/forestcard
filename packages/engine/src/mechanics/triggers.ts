@@ -14,7 +14,8 @@
 //   1. ultimates: the slots whose udecl the fact meets are flagged now (no draw, no event), with
 //      the attack counts of now;
 //   2. traps: the scan of the fact is deferred to the next flush, and evaluated with the state of
-//      then (legacy: pendEv.push(() => scan(ev))).
+//      then (legacy: pendEv.push(() => scan(ev))). Except a trap that fires: it is scanned at once,
+//      so that a trap answering it (adv_piege) acts first and can destroy or steal it.
 // The hook only runs when a deck uses it (legacy TRIG / TRP): combats that use none of this keep
 // their journal.
 
@@ -226,5 +227,9 @@ export function noticeTrigger(c: Combat, e: DomainEvent): void {
       if (meets(c, i, u.udecl, x, f)) slot.triggered = 1;
     }),
   );
-  if (c.triggers.traps) c.pendingEffects.push(() => scan(c, { kind: 'fact', fact: f }));
+  if (!c.triggers.traps) return;
+  // A trap that fired is answered at once, before its own effect (a counter-trap, adv_piege):
+  // traps.ts then drops the effect of a trap destroyed or stolen meanwhile.
+  if (f.kind === 'trap') scan(c, { kind: 'fact', fact: f });
+  else c.pendingEffects.push(() => scan(c, { kind: 'fact', fact: f }));
 }

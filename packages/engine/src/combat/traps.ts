@@ -75,17 +75,25 @@ export function scan(c: Combat, ev: ScanEvent): void {
       return;
     }
     o.trapTriggers++;
-    emit(c, { type: 'trapFired', side: i });
-    if (condition.type === 'proprio_meurt') c.reviving = 1;
-    const previousSource = c.source;
-    c.source = 'piege';
+    const card = o.trap;
+    // Still armed and still ours: a trap destroyed or stolen does nothing more (a counter-trap,
+    // adv_piege, answers at the trapFired event below; a trap broken between two bricks stops).
+    const holds = () => !!o.trapActive && o.trap === card;
     c.trapChainDepth++;
+    const previousSource = c.source;
     try {
-      applyEffect(c, e.effet, o, x);
+      emit(c, { type: 'trapFired', side: i });
+      if (condition.type === 'proprio_meurt') c.reviving = 1;
+      c.source = 'piege';
+      const bricks = e.effet && e.effet.briques ? e.effet.briques : [e.effet];
+      for (const b of bricks) {
+        if (!holds()) break;
+        applyEffect(c, b as EffectData, o, x);
+      }
     } finally {
       c.trapChainDepth--;
+      c.source = previousSource;
     }
-    c.source = previousSource;
     c.reviving = 0;
     c.sides.forEach((s) => (s.cardActivated = 1));
   });

@@ -124,6 +124,21 @@ test('piège détruit : il se brise (événement piege_detruit)', () => {
   assert.equal(lignes(r, e => e.t === 'piege').length, 0, 'le piège détruit ne se déclenche plus');
 });
 
+test('contre-piège : un piège « le piège adverse se déclenche » qui détruit le piège agit avant lui, le piège détruit ne fait rien', () => {
+  const kus = PIE('Kusanagi', { type: 'adv_attaque', coups: 1 }, { briques: [{ type: 'degats', val: 10, cible: 'adversaire' }, { type: 'brulure_effet', val: 5, tours: 2, cible: 'adversaire' }] });
+  const at = PIE('AT-001', { type: 'adv_piege' }, { type: 'detruire', carte: 'piege' });
+  for (const seed of [1, 2, 3, 4]) {
+    const r = combat([C('a', 5, SOLIDE), kus], [C('b', 5, SOLIDE), at], { seed, regles: { maxTours: 3, maxProlong: 0 } });
+    const iK = r.journal.findIndex(e => e.t === 'piege' && e.c === 0);
+    assert.ok(iK > 0, `seed ${seed} : le piège de A se déclenche`);
+    assert.equal(r.journal[iK + 1].t, 'piege', `seed ${seed} : le contre-piège de B répond aussitôt`);
+    assert.equal(r.journal[iK + 1].c, 1);
+    assert.equal(lignes(r, e => e.k === 'piege_detruit').length, 1, `seed ${seed} : le piège de A est détruit`);
+    assert.ok(!r.journal.some(e => /dégâts directs/.test(e.txt || '')), `seed ${seed} : pas de dégâts directs`);
+    assert.ok(!r.journal.some(e => /brûle/.test(e.txt || '')), `seed ${seed} : pas de brûlure`);
+  }
+});
+
 test('vol de magie au début du combat : la magie volée ne s\'active jamais chez la victime, quel que soit l\'ordre', () => {
   for (const seed of [1, 2, 3, 4, 5, 6]) {
     const r = combat([C('Marsupirage', 100, SOLIDE), MAG('Rage', { type: 'rage', ragev: 30, u: 'pct', ragetours: 3, fatval: 20, fattours: 2 })],

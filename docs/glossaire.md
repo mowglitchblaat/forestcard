@@ -155,12 +155,12 @@ Clés de `TRAP_CONDITION_TYPES`, évaluées par `scan` (`packages/engine/src/com
 | `adv_esquive` | l'adversaire esquive |
 | `proprio_attaque` | son propriétaire a attaqué N fois, puis toutes les N attaques (`coups`) |
 | `proprio_coup_fort` | son propriétaire subit au moins X dégâts en un coup (`seuildeg` ; poison, brûlure et saignement ne comptent pas) |
-| `adv_piege` | le piège de l'adversaire se déclenche |
+| `adv_piege` | le piège de l'adversaire se déclenche : il répond aussitôt, avant l'effet de ce piège (contre-piège) ; s'il le détruit ou le vole, le piège adverse ne fait rien |
 | `tour_n` | le tour N du combat commence (`ntour`, numéro affiché « Tour N », prolongations comprises) |
 | `proprio_bloque` | son propriétaire bloque (attaque annulée ou bloquée, dégâts réduits, souffle ou missile bloqué) |
 | `proprio_ultime` | son propriétaire lance un ultime (programmé compris) |
 
-Les dix dernières conditions lisent des **faits** (`mechanics/triggers.ts`) : le moteur les relève à l'émission de chaque événement, et le scan du piège attend le prochain `flush`.
+Les dix dernières conditions lisent des **faits** (`mechanics/triggers.ts`) : le moteur les relève à l'émission de chaque événement, et le scan du piège attend le prochain `flush`, sauf le déclenchement d'un piège (`adv_piege`), scanné aussitôt. Un piège détruit ou volé pendant qu'il agit s'arrête : il n'applique plus ses effets restants.
 
 ## Déclencheurs d'ultime
 
