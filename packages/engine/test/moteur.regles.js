@@ -249,6 +249,14 @@ test('exécution : elle brise « évite la mort » ; après la réanimation, la 
   const r2 = combat([C('a', 95, SOLIDE, { passif: { type: 'execution', chance: 100, seuilexec: 1 } })], [C('b', 1, 1000, { passif: { type: 'reanimation', pctrev: 50 } }), ange], { regles: { maxTours: 40, maxProlong: 0 } });
   assert.ok(r2.journal.some(e => e.k === 'protection_brisee'));
   assert.equal(r2.journal.filter(e => e.t === 'protege').length, 0);
+  // piège « évite la mort » : détruit par l'exécution, il ne sauve pas la carte réanimée
+  const gardien = PIE('Gardien', { type: 'proprio_meurt' }, { type: 'mort_evitee', cond: 'aucune' });
+  const r3 = combat([C('a', 95, SOLIDE, { passif: { type: 'execution', chance: 100, seuilexec: 1 } })], [C('b', 1, 1000, { passif: { type: 'reanimation', pctrev: 50 } }), gardien], { regles: { maxTours: 40, maxProlong: 0 } });
+  const i3 = r3.journal.findIndex(e => e.k === 'protection_brisee');
+  assert.ok(i3 > 0, 'protection brisée');
+  assert.equal(r3.journal[i3 + 1].k, 'piege_detruit', 'le piège « évite la mort » est détruit');
+  assert.equal(r3.journal.filter(e => e.t === 'protege').length, 0, 'il ne sauve plus la carte');
+  assert.ok(r3.journal.some(e => e.t === 'reanim'), 'la réanimation a lieu');
 });
 
 test('exécution, statut marquant : chaque dégât du statut choisi peut poser une marque, jusqu\'à 3', () => {

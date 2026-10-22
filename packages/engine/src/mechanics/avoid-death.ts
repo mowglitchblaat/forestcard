@@ -21,19 +21,30 @@ export const avoidDeathState = (passives: EffectData[]): AvoidDeathState => ({
   magicAvoidDeathUsed: 0,
 });
 
-// An execution breaks avoid-death: the card's own protection (its charges, passive or granted, and
-// its active magic's) is spent without saving it, so it does not come back after a revive.
+// An execution breaks avoid-death, whatever holds it: its charges (passive or granted), its active
+// magic's, and its "owner dies" trap holding an avoid-death (destroyed; a trap that also revives is
+// left to the revive). Spent without saving the card, it does not come back after a revive.
+const has = (e: EffectData | null | undefined, type: string): boolean =>
+  !!e && (e.type === type || (e.briques || []).some((b) => (b as EffectData).type === type));
 export function breakAvoidDeath(c: Combat, dst: Side): void {
-  const magicEffect = dst.magicActive && dst.magic.effet ? dst.magic.effet : null;
   const magic =
-    !!magicEffect &&
-    !dst.status.magicAvoidDeathUsed &&
-    (magicEffect.type === 'mort_evitee' ||
-      (magicEffect.briques || []).some((b) => (b as EffectData).type === 'mort_evitee'));
-  if (!magic && dst.status.avoidDeathCharges <= 0) return;
+    !!dst.magicActive && !dst.status.magicAvoidDeathUsed && has(dst.magic.effet, 'mort_evitee');
+  const t = dst.trap.effet;
+  const trap =
+    !!dst.trapActive &&
+    !!t &&
+    t.condition?.type === 'proprio_meurt' &&
+    dst.trapTriggers < (t.declenchements || 1) &&
+    has(t.effet, 'mort_evitee') &&
+    !has(t.effet, 'reanimation');
+  if (!magic && !trap && dst.status.avoidDeathCharges <= 0) return;
   if (magic) dst.status.magicAvoidDeathUsed = 1;
   dst.status.avoidDeathCharges = 0;
   emit(c, { type: 'avoidDeathBroken', side: id(c, dst) });
+  if (trap) {
+    dst.trapActive = 0;
+    emit(c, { type: 'trapDestroyed', side: id(c, dst) });
+  }
 }
 
 // On a lethal hit: what to show after the damage line if the card is protected (it is then left at
