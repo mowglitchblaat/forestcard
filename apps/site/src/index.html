@@ -635,7 +635,7 @@ async function vCeintures(){
   const date=d=>d?new Date(d).toLocaleDateString('fr-FR',{day:'numeric',month:'long'}):'',jours=d=>Math.max(0,Math.ceil((new Date(d)-Date.now())/864e5));
   const RAISON={defaite:'battu',refus:'3 refus',inactivite:'inactivité'};
   const carte=c=>{const D=DIVS[c.division],moi=c.champion===user.id,attente=E.defis.find(d=>d.division===c.division);
-    return `<div class="stat" style="text-align:center"><div style="font-size:44px;line-height:1">${D.e}</div><h4 style="margin:4px 0">${esc(c.nom)}</h4>
+    return `<div class="stat" style="text-align:center"><img src="${vf('cadres/ceinture-'+c.division+'.webp')}" alt="${esc(c.nom)}" style="width:100%;max-width:340px;filter:drop-shadow(0 0 10px rgba(255,215,120,.45))${c.pseudo?'':';opacity:.45;filter:grayscale(.6)'}"><h4 style="margin:4px 0">${esc(c.nom)}</h4>
      <small>${c.division==='rare'?'Cartes communes et rares':c.division==='epique'?'Jusqu\'aux cartes épiques':'Toutes les raretés'}</small>
      <div style="font-size:22px;font-weight:900;margin:8px 0">${c.pseudo?'👑 '+esc(c.pseudo):'<span style="opacity:.6">Vacante</span>'}</div>
      ${c.pseudo?`<small>Depuis le ${date(c.depuis)} · ${c.defenses} défense${c.defenses>1?'s':''} · refus ${c.refus}/${c.refus_max}<br>Sans combat pour le titre, la ceinture redevient vacante dans ${jours(c.vacante_le)} jour${jours(c.vacante_le)>1?'s':''}</small>`:'<small>Le premier qui gagne un combat pour cette ceinture la prend.</small>'}

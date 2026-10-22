@@ -66,6 +66,7 @@ async function championnat(b) {
     await ajouterRaretes([...(a.deck || []), ...(adv.deck || [])]);
     res = simulerRelais({ pseudo: a.pseudo, deck: a.deck, dos: dos[a.id] }, { pseudo: adv.pseudo, deck: adv.deck, dos: dos[adv.id] },
       { seed: Math.floor(Math.random() * 1e9), regles: { ...REGLES, gain, perte, nul: perte, equipe: 3 } });
+    res.ceintures = await ceinturesDe([a.id, adv.id]);   // avant le combat (titre_conclure n'a pas encore eu lieu)
   } catch (e) {
     console.error('titre :', String(e));
     return txt("Le combat pour le titre a rencontré une erreur, le défi reste en attente.", 500);
@@ -86,7 +87,8 @@ async function championnat(b) {
     if (!h.ok) console.error('historique_combats (titre) :', JSON.stringify(h.data));
   } catch (e) { console.error('historique_combats (titre) :', String(e)); }
   const nomW = w === null ? null : (w === 0 ? a.pseudo : adv.pseudo), nomL = w === 0 ? adv.pseudo : a.pseudo;
-  res.titre = { division: D.division, nom: D.nom, nouveau: T.nouveau, champion: T.champion };
+  // l'overlay affiche la ceinture sur la carte du champion (cote 1 : le défié), au milieu si elle est vacante
+  res.titre = { division: D.division, nom: D.nom, cote: D.pour_champion ? 1 : null, nouveau: T.nouveau, champion: T.champion };
   res.annonce = w === null ? `🤝 Match nul entre ${a.pseudo} et ${adv.pseudo} pour la ${D.nom}` + (T.champion ? ` : ${T.champion} garde sa ceinture !` : ' : la ceinture reste vacante !')
     : T.nouveau ? `${E}👑 ${nomW} bat ${nomL} et devient champion de la ${D.nom} !`
     : `${E}🛡️ ${nomW} bat ${nomL} et conserve la ${D.nom} (${T.defenses} défense${T.defenses > 1 ? 's' : ''}) !`;
@@ -197,6 +199,15 @@ async function ajouterRaretes(cartes) {
     const m = {}; r.data.forEach((x) => { m[x.id] = Array.isArray(x.raretes) ? x.raretes[0] : x.raretes; });
     cartes.forEach((c) => { if (c && m[c.id]) c.rar = m[c.id]; });
   } catch (_) { /* sans rareté : pas de brillance, rien d'autre */ }
+}
+
+// Ceintures détenues par chaque joueur (33-championnat.sql) : l'overlay les affiche autour de sa carte. Sans gravité en cas de souci.
+async function ceinturesDe(ids) {
+  try {
+    const r = await rest('ceintures?select=division,champion&champion=not.is.null');
+    const L = r.ok && Array.isArray(r.data) ? r.data : [];
+    return ids.map((id) => L.filter((c) => c.champion === id).map((c) => c.division));
+  } catch { return ids.map(() => []); }
 }
 
 // Dos de carte choisi par chaque joueur (dos de base si aucun choix) — ne bloque jamais un combat en cas de souci
@@ -383,6 +394,7 @@ async function traiter(req) {
     await ajouterRaretes([...(a.deck || []), ...(adv.deck || [])]);
     res = simuler({ pseudo: a.pseudo, deck: a.deck, dos: dos[a.id] }, { pseudo: adv.pseudo, deck: adv.deck, dos: dos[adv.id] },
       { seed: Math.floor(Math.random() * 1e9), regles: { ...REGLES, gain: G.gain, perte: G.perte, nul: G.nul } });
+    res.ceintures = await ceinturesDe([a.id, adv.id]);
   } catch (e) {
     if (mode === 'quotidien') await rpc('rendre_combat_quotidien', { p_joueur: a.id });
     return txt('Le combat a rencontré une erreur, il n\'est pas décompté.', 500);

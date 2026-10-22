@@ -138,6 +138,12 @@ canvas.fx.solide{box-shadow:inset 0 0 30px 8px rgba(120,113,108,.75)}
 /* tour en cours : le pseudo du joueur s'allume au-dessus de sa carte */
 .pj{font-size:3.7vh;font-weight:900;letter-spacing:.02em;line-height:1.1;margin:0 0 1.2vh;color:#e5ece7;opacity:.55;text-shadow:0 0 8px #000,0 0 3px #000;transition:opacity .35s,transform .35s,color .35s;position:relative;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .eq{display:inline-flex;gap:.6vh;margin-left:1vh;vertical-align:middle}.eq b{width:1.5vh;height:1.5vh;border-radius:50%;background:#fcd34d;box-shadow:0 0 .8vh #f59e0b;display:inline-block}.eq b.off{background:#3f3f46;box-shadow:none}.eq b.go{animation:eqgo .9s ease-out}@keyframes eqgo{0%{transform:scale(2.2);background:#fff}100%{transform:none}}
+.belt{position:absolute;left:50%;bottom:4%;width:128%;transform:translateX(-50%);z-index:6;--r:0deg;pointer-events:none;filter:drop-shadow(0 .4vh .6vh rgba(0,0,0,.85)) drop-shadow(0 0 1.2vh rgba(255,215,120,.55));animation:beltlueur 2.6s ease-in-out infinite}
+@keyframes beltlueur{50%{filter:drop-shadow(0 .4vh .6vh rgba(0,0,0,.85)) drop-shadow(0 0 2.4vh rgba(255,230,150,.9))}}
+#beltmid{display:block;width:26vw;margin:0 auto 1.5vh;filter:drop-shadow(0 0 1.5vh rgba(255,215,120,.6));animation:beltlueur 2.6s ease-in-out infinite}
+.belt.pop,#beltmid.pop{animation:beltpop .9s cubic-bezier(.2,1.4,.4,1),beltlueur 2.6s ease-in-out .9s infinite}
+.belt.b1,.belt.b2{width:62%;bottom:auto;top:7%}.belt.b1{left:13%;--r:-45deg;transform:translateX(-50%) rotate(var(--r))}.belt.b2{left:87%;--r:45deg;transform:translateX(-50%) rotate(var(--r))}
+@keyframes beltpop{0%{opacity:0;transform:translateX(-50%) rotate(var(--r)) scale(2.2)}100%{opacity:1;transform:translateX(-50%) rotate(var(--r)) scale(1)}}
 .p.actif .pj{opacity:1;color:#fff;transform:scale(1.1);animation:pjglow 1.6s ease-in-out infinite;text-shadow:0 0 .8vh #ffd34d,0 0 2vh #ffb300,0 0 3px #000}
 .p.actif .pj::before{content:'▶ ';color:#ffd34d}.p.actif .pj::after{content:' ◀';color:#ffd34d}
 @keyframes pjglow{0%,100%{filter:brightness(1)}50%{filter:brightness(1.35)}}
@@ -272,8 +278,21 @@ function allumerEffets(e){if(e.c==null&&e.from==null)return;const c=e.c,o=c!=nul
  if(e.k==='bonus')return allumer(c,['bonus_frappe'])}
 // COMBAT EN RELAIS (championnat) : combattants envoyés par joueur ({n, of}), null en combat normal ; les pastilles à côté du pseudo
 let EQUIPE=[null,null];
+// CEINTURES (championnat) : celles que détient chaque joueur, autour de sa carte, comme les champions UFC : la 1re à l'horizontale
+// en bas, la 2e en diagonale dans le coin en haut à gauche, la 3e dans le coin en haut à droite. Combat pour le titre (TITRE) :
+// la ceinture en jeu passe en premier chez le champion (cote), ou au milieu si elle est vacante ; à la fin, elle va au vainqueur.
+let TITRE=null,BELTS=[[],[]];const ORDRE_B=['libre','epique','rare'];
+function beltsHtml(i,pop){return (BELTS[i]||[]).slice(0,3).map((d,k)=>`<img class="belt b${k}${pop===d?' pop':''}" src="cadres/ceinture-${d}.webp" alt="">`).join('')}
+function beltsMaj(i,pop){const cw=$('#p'+i+' .cw');if(!cw)return;cw.querySelectorAll('.belt').forEach(b=>b.remove());cw.insertAdjacentHTML('beforeend',beltsHtml(i,pop))}
+function beltsDebut(R){TITRE=R.titre?{...R.titre}:null;const C=Array.isArray(R.ceintures)?R.ceintures:[[],[]];
+ BELTS=[0,1].map(i=>{let L=[...(C[i]||[])].sort((a,b)=>ORDRE_B.indexOf(a)-ORDRE_B.indexOf(b));if(TITRE){L=L.filter(d=>d!==TITRE.division);if(TITRE.cote===i)L.unshift(TITRE.division)}return L});
+ ceintureMilieu(!!TITRE&&TITRE.cote==null)}
+function ceintureMilieu(on){const m=$('#beltmid');if(m)m.remove();if(on&&TITRE)$('#mid').insertAdjacentHTML('afterbegin',`<img id="beltmid" src="cadres/ceinture-${TITRE.division}.webp" alt="">`)}
+function ceintureFin(g){if(!TITRE||g==null)return;const d=TITRE.division;
+ if(TITRE.cote===g){beltsMaj(g,d);return}
+ BELTS=BELTS.map(L=>L.filter(x=>x!==d));BELTS[g].unshift(d);TITRE.cote=g;ceintureMilieu(false);beltsMaj(0,null);beltsMaj(1,null);beltsMaj(g,d)}
 function panneau(i,j){const im=j.imageCombat||j.image,t=tierRar(j.rar),col=(j.rar&&j.rar.couleur)||'#888',magV=/^Aucun/.test(j.magie);JOUEURS[i]=j;
- $('#p'+i).innerHTML=`<div class="pj">${String(j.pseudo).replace(/&/g,'&amp;').replace(/</g,'&lt;')}${EQUIPE[i]?`<span class="eq">${Array.from({length:EQUIPE[i].of},(_,k)=>`<b class="${k<EQUIPE[i].n-1?'off':''}"></b>`).join('')}</span>`:''}</div><div class="cw${t!=='co'?' rr rr-'+t:''}" style="--g:${col}"><div class="card" ${im?`style="background-image:url('${urlImg(im)}')"`:''}>${im?'':j.carte}<div class="dosf" style="${dosCSS(j)}">${j.dos?'':'🌲'}</div>${t==='ep'||t==='lg'||t==='ul'?'<span class="shn"></span>':''}${j.imageCombat?'<span class="sv sva" data-v=""></span><span class="sv svp" data-v=""></span>':''}</div></div>
+ $('#p'+i).innerHTML=`<div class="pj">${String(j.pseudo).replace(/&/g,'&amp;').replace(/</g,'&lt;')}${EQUIPE[i]?`<span class="eq">${Array.from({length:EQUIPE[i].of},(_,k)=>`<b class="${k<EQUIPE[i].n-1?'off':''}"></b>`).join('')}</span>`:''}</div><div class="cw${t!=='co'?' rr rr-'+t:''}" style="--g:${col}"><div class="card" ${im?`style="background-image:url('${urlImg(im)}')"`:''}>${im?'':j.carte}<div class="dosf" style="${dosCSS(j)}">${j.dos?'':'🌲'}</div>${t==='ep'||t==='lg'||t==='ul'?'<span class="shn"></span>':''}${j.imageCombat?'<span class="sv sva" data-v=""></span><span class="sv svp" data-v=""></span>':''}</div>${beltsHtml(i)}</div>
  <div class="nm">${j.carte}</div><div class="bar"><i></i></div><div class="pv"></div>
  <div class="mp"><div class="mw"><div class="mini${magV?' vide':' back dos mag'}" id="m${i}" ${magV?mini(j.magieImg):`style="${dosCSS(j)}"`}>${magV?(j.magieImg?'':j.magie):(j.dos?'':'?')}</div><small>Magie</small></div>
  <div class="mw"><div class="mini back${/^Aucun/.test(j.piege)?' vide':''}${j.dos?' dos':''}" id="g${i}" ${j.dos?`style="background-image:url('${urlImg(j.dos)}')"`:''}>${j.dos?'':'?'}</div><small>Piège</small></div></div>`}
@@ -1135,7 +1154,7 @@ async function jouer(res){
    $('#ban').className=e.t;$('#ban').textContent=e.txt;$('#log').innerHTML+=e.txt+'<br>';$('#log').scrollTop=1e5;
    if(e.t==='debut'||e.t==='prolongation'||e.t==='relais')chargerZones(e.joueurs);
    try{allumerEffets(e)}catch(_){}
-   if(e.t==='debut'){EQUIPE=e.equipe?[{n:1,of:e.equipe},{n:1,of:e.equipe}]:[null,null];st={};fxL.length=0;fxAll.forEach(s=>s());fxAll.clear();JOUEURS=[];[0,1].forEach(i=>$('#p'+i).classList.remove('actif','idle'));e.joueurs.forEach((j,i)=>panneau(i,j));$('#scene').classList.add('on');maj(e);await wait(2200);   // les 3 dos de chaque joueur, puis les combattants se retournent
+   if(e.t==='debut'){beltsDebut(R);EQUIPE=e.equipe?[{n:1,of:e.equipe},{n:1,of:e.equipe}]:[null,null];st={};fxL.length=0;fxAll.forEach(s=>s());fxAll.clear();JOUEURS=[];[0,1].forEach(i=>$('#p'+i).classList.remove('actif','idle'));e.joueurs.forEach((j,i)=>panneau(i,j));$('#scene').classList.add('on');maj(e);await wait(2200);   // les 3 dos de chaque joueur, puis les combattants se retournent
     await Promise.all([0,1].map(i=>retourner($('#p'+i+' .card'),()=>{const d=$('#p'+i+' .dosf');if(d)d.remove()})));await wait(900);continue}
    if(e.t==='prolongation'){await prolongation(e);continue}
    if(e.t==='relais'){await relais(e);continue}
@@ -1206,12 +1225,13 @@ async function jouer(res){
    // salve de missiles : rythme accéléré, du tir du premier missile jusqu'à la fin de la salve (prochain tour, attaque ou ultime)
    if(e.t==='missile')enSalve=true;else if(['tour','attaque','ultime','fin','prolongation','relais'].includes(e.t))enSalve=false;
    if(enSalve)ms=Math.min(ms,{missile:0,detonation:200,degats:520,statut:560,finstatut:150,stat:600,esquive:600,bloque:700,soin:700}[e.t]??500);   // coup fatal évité : les dégâts et l'effet « évite la mort » apparaissent presque ensemble
-   if(e.t==='fin'){[0,1].forEach(i=>{faceMagie(i);const p=$('#p'+i);if(p)p.classList.remove('actif','idle')});fxAll.forEach(s=>s());fxAll.clear();document.querySelectorAll('canvas.fx').forEach(k=>k.remove());{const rw=e.recompenses[e.gagnant??0];$('#ban').textContent=e.txt+(rw>0?` (+${rw})`:'')+(e.bounty?(e.bounty.tout?` · 💰 Bounty ${e.bounty.total} : le gagnant rafle tout !`:` · 💰 Bounty ${e.bounty.total} !`):'');if(e.bounty){bourseBounty(e.bounty.parts);[0,1].forEach(i=>{if(e.bounty.parts[i]>0)setTimeout(()=>flot(i,'💰 Bounty +'+e.bounty.parts[i],'#fcd34d'),2100)})}}const cendre=i=>{const k=$('#p'+i+' .cw .card');return k&&k.dataset.cendre==='1'};if(e.gagnant!=null){if(!cendre(1-e.gagnant)&&!coupee(1-e.gagnant))briser(1-e.gagnant);auraFx(e.gagnant,{gold:1,dur:5.2})}else[0,1].forEach(i=>{if(e.pv&&e.pv[i]<=0&&!cendre(i)&&!coupee(i))briser(i)})}   // double KO : les deux cartes se brisent
+   if(e.t==='fin'){[0,1].forEach(i=>{faceMagie(i);const p=$('#p'+i);if(p)p.classList.remove('actif','idle')});fxAll.forEach(s=>s());fxAll.clear();document.querySelectorAll('canvas.fx').forEach(k=>k.remove());{const rw=e.recompenses[e.gagnant??0];$('#ban').textContent=e.txt+(rw>0?` (+${rw})`:'')+(e.bounty?(e.bounty.tout?` · 💰 Bounty ${e.bounty.total} : le gagnant rafle tout !`:` · 💰 Bounty ${e.bounty.total} !`):'');if(e.bounty){bourseBounty(e.bounty.parts);[0,1].forEach(i=>{if(e.bounty.parts[i]>0)setTimeout(()=>flot(i,'💰 Bounty +'+e.bounty.parts[i],'#fcd34d'),2100)})}}const cendre=i=>{const k=$('#p'+i+' .cw .card');return k&&k.dataset.cendre==='1'};if(e.gagnant!=null){if(!cendre(1-e.gagnant)&&!coupee(1-e.gagnant))briser(1-e.gagnant);auraFx(e.gagnant,{gold:1,dur:5.2});setTimeout(()=>ceintureFin(e.gagnant),900)}else[0,1].forEach(i=>{if(e.pv&&e.pv[i]<=0&&!cendre(i)&&!coupee(i))briser(i)})}   // double KO : les deux cartes se brisent
    await wait(ms);
   }
   if(!TEST&&!DEMO&&R.seed!=null)fetch('https://bjsvqikjnvaomyoifiml.supabase.co/rest/v1/rpc/combat_affiche',{method:'POST',headers:{apikey:'sb_publishable_-3cPqDCyE-zhb3z5r6dPhg_DJFKGAI6','Content-Type':'application/json'},body:JSON.stringify({p_seed:String(R.seed)})}).catch(()=>{});   // le combat apparaît dans l'historique du site seulement maintenant (pas de spoil)
   if(!TEST&&!DEMO&&R.annonce&&wsLive&&wsLive.readyState===1)wsLive.send(JSON.stringify({request:'DoAction',id:'fin-combat',action:{name:ACTION_FIN},args:{message:R.annonce}}));   // annonce du résultat dans le chat, une fois l'animation terminée
   if(!TEST){$('#scene').classList.remove('on');await wait(800)}
+  ceintureMilieu(false);TITRE=null;BELTS=[[],[]];
   verrouLacher('combat');
   if(SITE)try{parent.postMessage({fc:'combat-fini'},location.origin)}catch(e){}
  }
@@ -1387,7 +1407,7 @@ if(DEMO){
   ['ra','rb','rma','rmb','rpa','rpb'].forEach(i=>$('#'+i).onchange=refresh);
   // relais du championnat : 5 combattants, 5 magies, 5 pièges au hasard par joueur (rareté du filtre)
   $('#rrl').onclick=()=>{if(enCours||!REEL.cartes.length)return;const tire=(l,n)=>[...l].sort(()=>Math.random()-.5).slice(0,n),deck=()=>[...tire(poolC(),5),...tire(REEL.magies,5),...tire(REEL.pieges,5)];
-   dernierDecks=null;dernier=Moteur.simulerRelais({pseudo:'Toi',deck:deck()},{pseudo:'Bot',deck:deck()});jouer(dernier)};
+   dernierDecks=null;dernier=Moteur.simulerRelais({pseudo:'Toi',deck:deck()},{pseudo:'Bot',deck:deck()});dernier.titre={division:['rare','epique','libre'][Math.floor(Math.random()*3)],cote:Math.random()<.7?1:null};dernier.ceintures=[[],['rare','epique','libre'].slice(0,1+Math.floor(Math.random()*3))];jouer(dernier)};   // ceinture en jeu : sur la carte du champion (Bot), ou au milieu (vacante)
   $('#rgo').onclick=()=>{if(enCours||!REEL.cartes.length)return;lancer(undefined,[{pseudo:'Toi',deck:deckOf('#ra','#rma','#rpa')},{pseudo:'Bot',deck:deckOf('#rb','#rmb','#rpb')}])};
   $('#rre').onclick=()=>{if(!enCours&&dernier)lancer(dernier.seed,dernierDecks)};
   // Démo : plusieurs vrais combats d'affilée entre des cartes tirées au hasard
