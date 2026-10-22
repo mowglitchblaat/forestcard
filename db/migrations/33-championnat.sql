@@ -4,7 +4,9 @@
 --   - Decks de championnat (onglet Mon deck) : un par ceinture, 15 cartes différentes, 5 combattants,
 --     5 magies, 5 pièges. Ceinture Rare : cartes communes et rares seulement. Épique : jusqu'à épique.
 --     Libre : toutes les raretés.
---   - Combat pour le titre : en relais, 3 combattants par joueur (moteur : simulerRelais).
+--   - Combat pour le titre : en relais, 3 combattants par joueur (moteur : simulerRelais), uniquement en live
+--     (!accepter dans le chat). Le vainqueur gagne 500 gold, le perdant 150 (match nul : 150 chacun ;
+--     réglages titre_gain, titre_perte). Un seul combat pour le titre par jour et par joueur (jour de Paris).
 --   - Défi : un joueur défie le champion (ou, ceinture vacante, le joueur de son choix) ; le défié
 --     accepte (!accepter) ou refuse (!refuser). Un seul défi en attente par ceinture. Sans réponse,
 --     le défi expire au bout de 24 h (réglage titre_defi_heures), sans compter comme un refus.
@@ -20,7 +22,9 @@
 insert into public.reglages_jeu (cle, valeur) values
   ('titre_defi_heures', '24'),        -- un défi sans réponse expire au bout de N heures
   ('titre_refus_max', '3'),           -- au N-ième refus, le champion perd sa ceinture
-  ('titre_inactivite_jours', '7')     -- N jours sans combat pour le titre : la ceinture redevient vacante
+  ('titre_inactivite_jours', '7'),    -- N jours sans combat pour le titre : la ceinture redevient vacante
+  ('titre_gain', '500'),              -- gold du vainqueur d'un combat pour le titre
+  ('titre_perte', '150')              -- gold du perdant (et de chacun en cas de match nul)
 on conflict (cle) do nothing;
 
 -- ================= Tables =================
@@ -123,6 +127,13 @@ begin
   update public.defis_titre set statut = 'annule', fini_le = now() where division = p_division and statut = 'attente' and pour_champion;
 end $$;
 
+-- Le joueur a déjà fait son combat pour le titre aujourd'hui (jour de Paris)
+create or replace function public.titre_deja_joue(p_joueur uuid)
+returns boolean language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.defis_titre where statut = 'joue' and p_joueur in (challenger, adversaire)
+    and fini_le >= date_trunc('day', now() at time zone 'Europe/Paris') at time zone 'Europe/Paris');
+$$;
+
 create or replace function public.titre_joueur(p_twitch_id text)
 returns uuid language sql stable security definer set search_path = public as $$
   select id from public.joueurs where twitch_id::text = p_twitch_id limit 1;
@@ -132,6 +143,7 @@ revoke all on function public.titre_deck_probleme(uuid, text, bigint[]) from pub
 revoke all on function public.titre_maj() from public, anon, authenticated;
 revoke all on function public.titre_vacante(text, text) from public, anon, authenticated;
 revoke all on function public.titre_joueur(text) from public, anon, authenticated;
+revoke all on function public.titre_deja_joue(uuid) from public, anon, authenticated;
 
 -- ================= Site : decks de championnat =================
 create or replace function public.enregistrer_deck_championnat(p_division text, p_cartes bigint[])
@@ -203,6 +215,8 @@ begin
     if adv is null then raise exception 'Joueur introuvable : %', p_adversaire; end if;
     if adv = me then raise exception 'Tu ne peux pas te défier toi-même'; end if;
   end if;
+  if public.titre_deja_joue(me) then raise exception 'Tu as déjà fait ton combat pour le titre aujourd''hui, reviens demain !'; end if;
+  if public.titre_deja_joue(adv) then raise exception '% a déjà fait son combat pour le titre aujourd''hui, défie-le demain !', (select pseudo from public.joueurs where id = adv); end if;
   select cartes into dc from public.decks_championnat where joueur_id = me and division = p_division;
   pb := case when dc is null then 'tu n''as pas de deck pour cette ceinture' else public.titre_deck_probleme(me, p_division, dc) end;
   if pb is not null then raise exception 'Ton deck de championnat (%) n''est pas prêt : % (onglet Mon deck du site)', public.titre_nom(p_division), pb; end if;
@@ -249,6 +263,10 @@ begin
   select * into d from public.defis_titre where adversaire = me and statut = 'attente'
     and (coalesce(p_division, '') = '' or division = p_division) order by cree_le limit 1;
   if d.id is null then raise exception 'Aucun défi en attente contre toi'; end if;
+  if public.titre_deja_joue(me) then raise exception 'Tu as déjà fait ton combat pour le titre aujourd''hui : accepte ce défi demain (il expire le %)',
+    to_char(d.expire_le at time zone 'Europe/Paris', 'DD/MM à HH24:MI'); end if;
+  if public.titre_deja_joue(d.challenger) then raise exception '% a déjà fait son combat pour le titre aujourd''hui : accepte ce défi demain',
+    (select pseudo from public.joueurs where id = d.challenger); end if;
   select cartes into da from public.decks_championnat where joueur_id = d.challenger and division = d.division;
   pb := case when da is null then 'deck supprimé' else public.titre_deck_probleme(d.challenger, d.division, da) end;
   if pb is not null then
@@ -259,6 +277,7 @@ begin
   pb := case when db is null then 'tu n''as pas de deck pour cette ceinture' else public.titre_deck_probleme(me, d.division, db) end;
   if pb is not null then raise exception 'Ton deck de championnat (%) n''est pas prêt : % (onglet Mon deck du site)', public.titre_nom(d.division), pb; end if;
   return jsonb_build_object('id', d.id, 'division', d.division, 'nom', public.titre_nom(d.division), 'pour_champion', d.pour_champion,
+    'gain', public.reglage_num('titre_gain', 500), 'perte', public.reglage_num('titre_perte', 150),
     'a', public.titre_deck_json(d.challenger, da), 'b', public.titre_deck_json(me, db));
 end $$;
 

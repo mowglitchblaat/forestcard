@@ -59,13 +59,13 @@ async function championnat(b) {
   const r = await rpc('titre_preparer', { p_twitch_id: id, p_division: division || null });
   if (!r.ok) return txt(erreurSql(r, 'Combat impossible.'), 409);
   const D = r.data, a = D.a, adv = D.b;
-  let res, G;
+  let res;
+  const gain = Number.isFinite(+D.gain) ? +D.gain : 500, perte = Number.isFinite(+D.perte) ? +D.perte : 150;   // 500 au vainqueur, 150 au perdant (et à chacun en cas de nul)
   try {
     const dos = await dosDe([a.id, adv.id]);
-    G = await reglesGains();
     await ajouterRaretes([...(a.deck || []), ...(adv.deck || [])]);
     res = simulerRelais({ pseudo: a.pseudo, deck: a.deck, dos: dos[a.id] }, { pseudo: adv.pseudo, deck: adv.deck, dos: dos[adv.id] },
-      { seed: Math.floor(Math.random() * 1e9), regles: { ...REGLES, gain: G.gain, perte: G.perte, nul: G.nul, equipe: 3 } });
+      { seed: Math.floor(Math.random() * 1e9), regles: { ...REGLES, gain, perte, nul: perte, equipe: 3 } });
   } catch (e) {
     console.error('titre :', String(e));
     return txt("Le combat pour le titre a rencontré une erreur, le défi reste en attente.", 500);
