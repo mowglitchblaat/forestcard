@@ -13,7 +13,11 @@
 --   - Le champion perd sa ceinture : s'il perd un combat pour le titre ; à son 3e refus (réglage
 --     titre_refus_max) ; après 7 jours sans combat pour le titre (réglage titre_inactivite_jours).
 --     Une ceinture perdue sans combat redevient vacante. Quand le jeu est en pause (let's play), les
---     7 jours et les 24 h d'un défi sont arrêtés. Le vainqueur d'un combat pour une ceinture
+--     7 jours et les 24 h d'un défi sont arrêtés.
+--   - Prime : à chaque fin de journée (minuit, Paris) de règne, le champion reçoit 90 gold par ceinture,
+--     +10 % par journée consécutive (2e jour 99, 3e 108…), +15 % par ceinture détenue en plus
+--     (2 ceintures : +15 %, 3 : +30 %). Réglages titre_prime, titre_prime_jour, titre_prime_ceinture.
+--     Les journées sont payées dès que quelqu'un consulte les ceintures ou lance un défi (pas besoin de tâche planifiée). Le vainqueur d'un combat pour une ceinture
 --     vacante la prend. Match nul : le champion la garde, une ceinture vacante le reste.
 --
 -- Utilise les vues echange_coll / echange_var et les fonctions rang_rarete, reglage_num
@@ -24,6 +28,9 @@ insert into public.reglages_jeu (cle, valeur) values
   ('titre_defi_heures', '24'),        -- un défi sans réponse expire au bout de N heures
   ('titre_refus_max', '3'),           -- au N-ième refus, le champion perd sa ceinture
   ('titre_inactivite_jours', '7'),    -- N jours sans combat pour le titre : la ceinture redevient vacante
+  ('titre_prime', '90'),              -- prime du champion à chaque fin de journée de règne (par ceinture)
+  ('titre_prime_jour', '10'),         -- + N % par journée consécutive de règne (1er jour 90, 2e 99, 3e 108…)
+  ('titre_prime_ceinture', '15'),     -- + N % par ceinture détenue en plus (2 ceintures : +15 %, 3 : +30 %)
   ('titre_gain', '500'),              -- gold du vainqueur d'un combat pour le titre
   ('titre_perte', '150')              -- gold du perdant (et de chacun en cas de match nul)
 on conflict (cle) do nothing;
@@ -45,6 +52,9 @@ create table if not exists public.ceintures (
   defenses int not null default 0     -- combats pour le titre gagnés (ou nuls) pendant ce règne
 );
 insert into public.ceintures (division) values ('rare'), ('epique'), ('libre') on conflict do nothing;
+-- Primes (relance du script : colonnes ajoutées sans rien perdre)
+alter table public.ceintures add column if not exists jours int not null default 0;     -- journées de règne déjà payées
+alter table public.ceintures add column if not exists prime_jusqu date;                  -- dernier jour (Paris) payé
 create table if not exists public.regnes (
   id bigserial primary key,
   division text not null,
@@ -54,6 +64,7 @@ create table if not exists public.regnes (
   defenses int not null default 0,
   raison text                         -- 'defaite', 'refus', 'inactivite' (null : en cours)
 );
+alter table public.regnes add column if not exists primes int not null default 0;
 create index if not exists regnes_division_idx on public.regnes (division, debut desc);
 create table if not exists public.defis_titre (
   id bigserial primary key,
@@ -108,10 +119,61 @@ begin
 end $$;
 
 -- Les décisions sans combat : défis expirés, champions inactifs. Appelée avant chaque lecture ou action.
+-- Prime d'une journée de règne : base × (1 + 10 % par jour consécutif après le 1er) × (1 + 15 % par ceinture en plus)
+create or replace function public.titre_prime(p_jour int, p_nb int)
+returns int language sql stable security definer set search_path = public as $$
+  select round(public.reglage_num('titre_prime', 90) * (1 + public.reglage_num('titre_prime_jour', 10) / 100 * greatest(0, p_jour - 1))
+               * (1 + public.reglage_num('titre_prime_ceinture', 15) / 100 * greatest(0, p_nb - 1)))::int;
+$$;
+revoke all on function public.titre_prime(int, int) from public, anon, authenticated;
+
+-- Le jour de Paris, et le minuit (Paris) qui le commence
+create or replace function public.titre_jour() returns date language sql stable as $$ select (now() at time zone 'Europe/Paris')::date $$;
+create or replace function public.titre_minuit(p_jour date) returns timestamptz language sql stable as $$ select p_jour::timestamp at time zone 'Europe/Paris' $$;
+
+-- Paye les fins de journée de règne passées (une prime par ceinture et par minuit), tant que le champion n'est pas inactif
+create or replace function public.titre_primes()
+returns void language plpgsql security definer set search_path = public as $$
+declare c public.ceintures; j date; nb int; p int; limite timestamptz;
+begin
+  for c in select * from public.ceintures where champion is not null for update loop
+    if c.prime_jusqu is null then
+      update public.ceintures set prime_jusqu = (coalesce(c.depuis, now()) at time zone 'Europe/Paris')::date where division = c.division;
+      continue;
+    end if;
+    limite := coalesce(c.dernier_titre, c.depuis) + make_interval(days => public.reglage_num('titre_inactivite_jours', 7)::int);
+    j := c.prime_jusqu + 1;
+    while j <= public.titre_jour() and public.titre_minuit(j) <= limite loop
+      select count(*) into nb from public.ceintures where champion = c.champion;
+      c.jours := c.jours + 1;
+      p := public.titre_prime(c.jours, nb);
+      update public.joueurs set monnaie = coalesce(monnaie, 0) + p where id = c.champion;
+      update public.regnes set primes = primes + p where division = c.division and fin is null;
+      update public.ceintures set jours = c.jours, prime_jusqu = j where division = c.division;
+      j := j + 1;
+    end loop;
+  end loop;
+end $$;
+revoke all on function public.titre_primes() from public, anon, authenticated;
+
+-- Nouveau champion (ou ceinture vacante) : le compteur de journées repart de zéro
+create or replace function public.titre_nouveau_regne()
+returns trigger language plpgsql as $$
+begin
+  if new.champion is distinct from old.champion then
+    new.jours := 0;
+    new.prime_jusqu := case when new.champion is null then null else public.titre_jour() end;
+  end if;
+  return new;
+end $$;
+drop trigger if exists titre_nouveau_regne on public.ceintures;
+create trigger titre_nouveau_regne before update on public.ceintures for each row execute function public.titre_nouveau_regne();
+
 create or replace function public.titre_maj()
 returns void language plpgsql security definer set search_path = public as $$
 declare c public.ceintures;
 begin
+  perform public.titre_primes();   -- les primes se paient même pendant la pause
   -- jeu en pause (let's play) : les compteurs sont arrêtés, rien n'expire
   if coalesce((select valeur from public.reglages_jeu where cle = 'jeu_live'), '1') = '0' then return; end if;
   update public.defis_titre set statut = 'expire', fini_le = now() where statut = 'attente' and expire_le < now();
@@ -203,6 +265,8 @@ begin
         'division', c.division, 'nom', public.titre_nom(c.division), 'champion', c.champion, 'pseudo', j.pseudo,
         'depuis', c.depuis, 'dernier_titre', c.dernier_titre, 'refus', c.refus, 'defenses', c.defenses,
         'refus_max', public.reglage_num('titre_refus_max', 3),
+        'jours', c.jours, 'prime', case when c.champion is not null then public.titre_prime(c.jours + 1,
+           (select count(*)::int from public.ceintures k where k.champion = c.champion)) end,
         'vacante_le', case when c.champion is not null then coalesce(c.dernier_titre, c.depuis)
                         + make_interval(days => public.reglage_num('titre_inactivite_jours', 7)::int) end)
         order by array_position(array['rare', 'epique', 'libre'], c.division)), '[]')
@@ -214,7 +278,7 @@ begin
       where d.statut = 'attente'),
     'regnes', (select coalesce(jsonb_agg(x order by x->>'debut' desc), '[]') from (
         select jsonb_build_object('division', r.division, 'joueur', r.joueur_id, 'pseudo', j.pseudo, 'debut', r.debut, 'fin', r.fin,
-               'defenses', r.defenses, 'raison', r.raison) x
+               'defenses', r.defenses, 'raison', r.raison, 'primes', r.primes) x
         from public.regnes r left join public.joueurs j on j.id = r.joueur_id order by r.debut desc limit 60) y));
 end $$;
 revoke all on function public.ceintures_etat() from public;
