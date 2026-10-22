@@ -25,6 +25,10 @@ Dans Admin → Cartes, l'admin envoie le **dessin seul** : la page pose le cadre
 
 Dans l'onglet Propositions, le joueur crée sa carte entièrement avec le même panneau que l'admin (`htmlCompo`, `brancherCompo` dans `index.html`) : nom, type, rareté, stats, ultime (avec son déclenchement), passifs, effet de magie, condition et effet de piège, choisis dans les listes de l'éditeur (sans la programmation), et le dessin composé en direct. La proposition garde le dessin, la carte composée, les effets et les réglages (`db/migrations/30-propositions-completes.sql`). Dans Admin → Propositions, l'admin voit les effets décrits, et « ➕ Créer la carte » en fait une vraie carte non publiée, avec ses images composées et son dessin gardé, puis accepte la proposition.
 
+## Jeu en pause : l'onglet « 🎮 Jouer »
+
+Quand l'admin met le jeu en pause (Admin > Réglages > « Jeu en live », `db/migrations/32-mode-site.sql`), l'onglet « 🎮 Jouer » apparaît pour tous (toujours visible pour l'admin, pour tester). On y ouvre ses boosters (`ouvrir_booster_site`, la même ouverture que `!booster`), on récupère son booster du jour et on fait ses combats (combat du jour, duel payé en gold), calculés par `swift-responder` avec le jeton de connexion du joueur. Les animations sont celles du live : `overlay.html?site` et `combat.html?site`, affichées en plein écran dans le site et nourries par `postMessage`.
+
 ## Atelier des cartes (atelier.html)
 
 Le même composeur que l'admin (`src/composeur.js`, inséré par le build dans `index.html` et dans `atelier.html` au marqueur `/*@@COMPOSEUR@@*/`), sur une page à part, pour que d'autres personnes testent une carte sans accès admin : dessin seul, cadre, écriteau, explications, chiffres, et téléchargement des deux images. On peut partir d'une carte publiée du jeu (lue avec la clé publique) ou écrire ses lignes à la main (titre, catégorie de couleur, explication). Rien n'est enregistré dans le jeu. Le build écrit `dist/atelier.html`, servi à `atelier.html`.

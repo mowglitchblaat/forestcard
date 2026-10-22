@@ -137,8 +137,12 @@ async function run(){
     await wait(800);packwrap.style.opacity=0;zone.style.opacity=1;
   }
   busy=false;
+  if(SITE)try{parent.postMessage({fc:'booster-fini'},location.origin)}catch(e){}
 }
-connect();
+// ?site : la page est affichée dans le site (onglet « Jouer », jeu en pause) : le booster arrive par postMessage, pas par Streamer.bot
+const SITE=/[?&]site\b/.test(location.search);
+if(SITE)addEventListener('message',e=>{if(e.origin!==location.origin)return;const r=extraire(e.data&&e.data.fc==='booster'?e.data.res:null);if(r){queue.push(r);run()}});
+else connect();
 // Test : ajoute ?test à l'adresse de la page pour voir une ouverture factice
 if(location.search.includes('test')){
   setTimeout(()=>{queue.push({pseudo:'Test',booster:new URLSearchParams(location.search).get('booster')||'Booster de test',cartes:

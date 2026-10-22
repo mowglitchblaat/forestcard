@@ -26,6 +26,11 @@ const ERREURS = {
   AUCUN_BOOSTER_QUOTIDIEN: "Aucun booster n'est distribué en ce moment.",
 };
 const txt = (m, status = 200) => new Response(m, { status, headers: { 'content-type': 'text/plain; charset=utf-8' } });
+// Le site (onglet « Jouer », jeu en pause pour les let's play) appelle aussi cette fonction, depuis le navigateur du joueur
+const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-secret',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Expose-Headers': 'x-message' };
+const PAUSE = "🎬 Le jeu est en pause pendant le let's play : ouvre tes boosters et fais tes combats sur le site !";
+const EN_LIVE = 'Le jeu se joue en live en ce moment : rejoins le stream pour jouer !';
 
 function entetes() {
   const K = Deno.env.get('SERVICE_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
@@ -128,9 +133,65 @@ async function dosDe(ids) {
   return out;
 }
 
+// Jeu en live (Admin > Réglages) : en pause, les commandes du live répondent PAUSE et le site prend le relais
+async function jeuEnLive() {
+  try {
+    const r = await rest('reglages_jeu?cle=eq.jeu_live&select=valeur');
+    if (r.ok && Array.isArray(r.data) && r.data[0]) return String(r.data[0].valeur) !== '0';
+  } catch { /* réglage illisible : en live, comme avant */ }
+  return true;
+}
+// Joueur connecté au site : son jeton de connexion (Authorization) donne son compte, son identifiant Twitch, son gold, et s'il est admin
+async function joueurDuSite(req) {
+  const tok = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
+  if (!tok) return null;
+  const U = Deno.env.get('SUPABASE_URL'), A = Deno.env.get('SUPABASE_ANON_KEY') || 'sb_publishable_-3cPqDCyE-zhb3z5r6dPhg_DJFKGAI6';
+  try {
+    const ru = await fetch(`${U}/auth/v1/user`, { headers: { apikey: A, Authorization: 'Bearer ' + tok } });
+    if (!ru.ok) return null;
+    const u = await ru.json();
+    if (!u || !u.id) return null;
+    const rj = await rest(`joueurs?id=eq.${u.id}&select=id,twitch_id,monnaie`);
+    const j = rj.ok && Array.isArray(rj.data) ? rj.data[0] : null;
+    if (!j || !j.twitch_id) return null;
+    let admin = false;
+    try {
+      const ra = await fetch(`${U}/rest/v1/rpc/is_admin`, { method: 'POST', headers: { apikey: A, Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json' }, body: '{}' });
+      admin = ra.ok && (await ra.json()) === true;
+    } catch { admin = false; }
+    return { ...j, admin };
+  } catch { return null; }
+}
+// Prix d'un duel lancé depuis le site (en live, le duel coûte des points de chaîne) : Admin > Réglages
+async function prixDuelSite() {
+  try {
+    const r = await rest('reglages_jeu?cle=eq.duel_site_prix&select=valeur');
+    if (r.ok && Array.isArray(r.data) && r.data[0]) { const n = parseInt(r.data[0].valeur, 10); if (Number.isFinite(n) && n >= 0) return n; }
+  } catch { /* valeur par défaut */ }
+  return 50;
+}
+
 Deno.serve(async (req) => {
-  if (req.headers.get('x-secret') !== Deno.env.get('COMBAT_SECRET')) return txt('Accès refusé.', 401);
+  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
+  const r = await traiter(req);
+  const h = new Headers(r.headers);
+  for (const [k, v] of Object.entries(CORS)) h.set(k, v);
+  return new Response(r.body, { status: r.status, headers: h });
+});
+
+async function traiter(req) {
+  // Streamer.bot (live) : secret partagé · le site : jeton de connexion du joueur
+  let site = null;
+  if (req.headers.get('x-secret') !== Deno.env.get('COMBAT_SECRET')) {
+    site = await joueurDuSite(req);
+    if (!site) return txt('Accès refusé.', 401);
+  }
   let b = {}; try { b = await req.json(); } catch { return txt('Requête illisible.', 400); }
+  const live = await jeuEnLive();
+  if (site) {
+    if (live && !site.admin) return txt(EN_LIVE, 409);
+    b.twitch_id = site.twitch_id;
+  } else if (!live) return txt(PAUSE, 409);
   if (!b.twitch_id) return txt('Joueur manquant.', 400);
 
   // ----- Booster quotidien : 1 à 3 boosters, une fois par jour -----
@@ -168,6 +229,13 @@ Deno.serve(async (req) => {
       return txt(limite === 0 ? "Les combats gratuits sont désactivés pour le moment."
         : `Tu as déjà fait ${limite > 1 ? 'tes ' + limite + ' combats gratuits' : 'ton combat gratuit'} aujourd'hui, reviens demain !`, 409);
     }
+  }
+
+  // duel depuis le site : payé en gold (vérifié ici, prélevé une fois le combat calculé)
+  let prixDuel = 0;
+  if (site && mode === 'payant') {
+    prixDuel = await prixDuelSite();
+    if ((+site.monnaie || 0) < prixDuel) return txt(`Il te faut ${prixDuel} ${NOM_MONNAIE} pour lancer un duel depuis le site.`, 409);
   }
 
   // 1) decks et quota quotidien
@@ -227,6 +295,15 @@ Deno.serve(async (req) => {
   } catch (e) {
     if (mode === 'quotidien') await rpc('rendre_combat_quotidien', { p_joueur: a.id });
     return txt('Le combat a rencontré une erreur, il n\'est pas décompté.', 500);
+  }
+
+  // duel depuis le site : le prix est prélevé maintenant que le combat a bien eu lieu
+  if (prixDuel > 0) {
+    try {
+      const rm = await rest(`joueurs?id=eq.${a.id}&select=monnaie`);
+      const m = rm.ok && Array.isArray(rm.data) && rm.data[0] ? +rm.data[0].monnaie || 0 : 0;
+      await rest(`joueurs?id=eq.${a.id}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ monnaie: Math.max(0, m - prixDuel) }) });
+    } catch { /* sans gravité */ }
   }
 
   // 3) récompenses et statistiques
@@ -294,4 +371,4 @@ Deno.serve(async (req) => {
     : ` 💰 Bounty de ${bounty.total} ${NOM_MONNAIE} : ${a.pseudo} +${bounty.parts[0]}${PAYER_ADVERSAIRE ? `, ${adv.pseudo} +${bounty.parts[1]}` : ''} !`;
   const intro = `⚔️ ${a.pseudo} affronte ${adv.pseudo} !`;
   return new Response(JSON.stringify(res), { status: 200, headers: { 'content-type': 'application/json; charset=utf-8', 'x-message': encodeURIComponent(intro) } });
-});
+}

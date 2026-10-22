@@ -21,6 +21,7 @@ button{cursor:pointer;background:#7c3aed;border-color:#7c3aed}button.sec{backgro
 .dtop{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap}.dbt{display:flex;gap:8px;flex-wrap:wrap}
 .dmul{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:13px}.dmul select{max-width:100%;min-width:150px}
 button:disabled{opacity:.4;cursor:not-allowed}
+#jscene{position:fixed;inset:0;z-index:200;background:radial-gradient(circle at 50% 40%,#1d2a22,#07090a);display:none}#jscene.on{display:block}#jscene iframe{width:100%;height:100%;border:0}#jfermer{position:absolute;top:12px;right:12px;z-index:2}
 .recsel{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center}.recsel label{display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer}
 .cpo{border:1px solid #3b3350;border-radius:12px;padding:12px;background:linear-gradient(180deg,#221d31,#1b1924)}.cpo-h{display:flex;flex-direction:column;gap:2px;margin-bottom:10px}.cpo-h b{font-size:15px}
 .cpo-g{display:grid;grid-template-columns:minmax(200px,300px) 1fr;gap:16px;align-items:start}@media(max-width:700px){.cpo-g{grid-template-columns:1fr}}
@@ -355,11 +356,12 @@ async function init(){
   try{localStorage.removeItem('fc_login_tente')}catch(e){}
   user=session.user;
   joueur=await q(sb.from('joueurs').select('*').eq('id',user.id).single());
-  isAdmin=await q(sb.rpc('is_admin'));
+  isAdmin=await q(sb.rpc('is_admin'));await chargerEtat();
   header();lireAncre();show(tab);
   // Gold à jour sans recharger la page : petite lecture toutes les 45 s, seulement quand l'onglet du navigateur est visible
   setInterval(async()=>{if(document.hidden||!user)return;const r=await sb.from('joueurs').select('monnaie,fragments').eq('id',user.id).single();
-    if(!r.error&&r.data&&(r.data.monnaie!==joueur.monnaie||r.data.fragments!==joueur.fragments)){joueur={...joueur,...r.data};header()}},45000);
+    if(!r.error&&r.data&&(r.data.monnaie!==joueur.monnaie||r.data.fragments!==joueur.fragments)){joueur={...joueur,...r.data};header()}
+    const av=JEU.live;await chargerEtat();if(av!==JEU.live&&!document.querySelector('#jscene.on'))show(tab)},45000);   // jeu mis en pause ou relancé : l'onglet « Jouer » apparaît ou disparaît
 }
 function header(){
   $('#me').innerHTML=`${isAdmin?'<small style="opacity:.5;margin-right:8px">site v11 (avalage)</small>':''}${esc(joueur.pseudo)} · 💰 ${joueur.monnaie}${joueur.fragments>0?` · 🧩 ${joueur.fragments}`:''} <button class="sec" id="out">Déconnexion</button>`;
@@ -367,16 +369,17 @@ function header(){
 }
 async function refreshJoueur(){joueur=await q(sb.from('joueurs').select('*').eq('id',user.id).single());header()}
 // L'onglet ouvert est gardé dans l'adresse (#classement, #admin/joueurs…) : un rafraîchissement reste sur la même page
-const VUES=['collection','boutique','jeux','deck','echanges','dos','historique','profil','classement','regles','propos','patch','admin'];
+const VUES=['jouer','collection','boutique','jeux','deck','echanges','dos','historique','profil','classement','regles','propos','patch','admin'];
 function lireAncre(){const [t,s]=decodeURIComponent(location.hash.slice(1)).split('/');if(VUES.includes(t)&&(t!=='admin'||isAdmin)){tab=t;if(t==='admin'&&s)sub=s}}
 function ecrireAncre(){const a='#'+tab+(tab==='admin'?'/'+sub:'');if(location.hash!==a)history.replaceState(null,'',a)}
 window.addEventListener('hashchange',()=>{if(!user)return;const av=tab+'/'+sub;lireAncre();if(tab+'/'+sub!==av)show(tab)});
 function show(t){
   if(!VUES.includes(t)||(t==='admin'&&!isAdmin))t='profil';
-  tab=t;ecrireAncre();const T={...TABS};if(isAdmin)T.admin='⚙️ Admin';
+  if(t==='jouer'&&JEU.live&&!isAdmin)t='profil';
+  tab=t;ecrireAncre();const T={...(!JEU.live||isAdmin?{jouer:'🎮 Jouer'}:{}),...TABS};if(isAdmin)T.admin='⚙️ Admin';
   $('#nav').innerHTML=Object.entries(T).map(([k,v])=>`<button class="${k==t?'on':'sec'}" data-t="${k}">${v}</button>`).join('');
   $('#nav').querySelectorAll('button').forEach(b=>b.onclick=()=>show(b.dataset.t));voirActif($('#nav'));
-  ({collection:vCollection,boutique:vBoutique,jeux:vJeux,deck:vDeck,echanges:vEchanges,dos:vDos,historique:vHistorique,profil:vProfil,classement:vClassement,regles:vRegles,propos:vPropos,patch:vPatch,admin:vAdmin})[t]();
+  ({jouer:vJouer,collection:vCollection,boutique:vBoutique,jeux:vJeux,deck:vDeck,echanges:vEchanges,dos:vDos,historique:vHistorique,profil:vProfil,classement:vClassement,regles:vRegles,propos:vPropos,patch:vPatch,admin:vAdmin})[t]();
 }
 
 /* ---------- Collection ---------- */
@@ -583,6 +586,43 @@ function drawColl(){
   bindToggle(drawColl);bindOpen(L,drawColl);bindRecycle();updBar();
 }
 
+/* ---------- Jeu en pause (let's play) : l'onglet « Jouer » ---------- */
+// Admin > Réglages > « Jeu en live » : en pause, les commandes du live sont coupées et on joue ici (32-mode-site.sql).
+let JEU={live:true,prix_duel:50};
+async function chargerEtat(){try{const r=await sb.rpc('etat_jeu');if(!r.error&&r.data)JEU={live:r.data.live!==false,prix_duel:Math.max(0,parseInt(r.data.prix_duel,10)||0)}}catch(e){}}
+const FN_JEU='https://bjsvqikjnvaomyoifiml.supabase.co/functions/v1/swift-responder';
+// la scène : overlay des boosters ou page de combat, en plein écran par-dessus le site (mêmes animations qu'en live)
+function scene(page,msg){return new Promise(ok=>{let sc=$('#jscene');if(!sc){sc=document.createElement('div');sc.id='jscene';document.body.appendChild(sc)}
+  sc.innerHTML=`<button class="sec" id="jfermer">✕ Fermer</button><iframe src="${page}" title="Animation"></iframe>`;sc.classList.add('on');document.body.style.overflow='hidden';
+  const fin=()=>{removeEventListener('message',ecoute);sc.classList.remove('on');sc.innerHTML='';document.body.style.overflow='';ok()};
+  const ecoute=e=>{if(e.origin===location.origin&&e.data&&/-fini$/.test(e.data.fc||''))setTimeout(fin,600)};addEventListener('message',ecoute);
+  $('#jfermer').onclick=fin;const fr=sc.querySelector('iframe');fr.onload=()=>setTimeout(()=>fr.contentWindow.postMessage(msg,location.origin),400)})}
+async function appelJeu(corps){const {data:{session}}=await sb.auth.getSession();if(!session){uiAlert('Reconnecte-toi.');return null}
+  try{const r=await fetch(FN_JEU,{method:'POST',headers:{Authorization:'Bearer '+session.access_token,apikey:'sb_publishable_-3cPqDCyE-zhb3z5r6dPhg_DJFKGAI6','Content-Type':'application/json'},body:JSON.stringify(corps)});
+   const t=await r.text();let j=null;try{j=JSON.parse(t)}catch(e){}return {ok:r.ok,json:j,txt:t}}catch(e){uiAlert('Le serveur du jeu ne répond pas. Réessaie dans un instant.');return null}}
+async function vJouer(){
+  await chargerEtat();
+  const s=await sb.from('stock_boosters').select('quantite,types_boosters(nom)').eq('joueur_id',user.id).gt('quantite',0),stock=s.data||[],nb=stock.reduce((a,x)=>a+(+x.quantite||0),0);
+  main.innerHTML=`${JEU.live?'<p class="ko">Le jeu est en live en ce moment : cet onglet n\'est visible que par toi (admin), pour tester.</p>':'<p>🎬 <b>Le jeu est en pause pendant le let\'s play</b> : ouvre tes boosters et fais tes combats ici, avec les mêmes animations qu\'en live !</p>'}
+   <div class="stats" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr))">
+    <div class="stat"><h4 style="margin:0 0 6px">🎁 Boosters</h4><span>${stock.length?stock.map(x=>`${esc(x.types_boosters.nom)} ×${x.quantite}`).join(' · '):'Aucun booster à ouvrir.'}</span>
+     <div class="row"><button id="job" ${nb?'':'disabled'}>Ouvrir un booster</button><button class="sec" id="jbq">🎁 Booster du jour</button></div></div>
+    <div class="stat"><h4 style="margin:0 0 6px">⚔️ Combats</h4><span>Les mêmes combats qu'en live : mêmes récompenses, même nombre de combats gratuits par jour.</span>
+     <div class="row"><button id="jcq">Combat du jour</button></div>
+     <div class="row"><input id="jadv" placeholder="Pseudo du joueur à défier" style="flex:1;min-width:150px"><button class="sec" id="jcd">⚔️ Duel · 💰 ${JEU.prix_duel}</button></div></div>
+   </div>`;
+  const occupe=(b,on)=>{main.querySelectorAll('#job,#jbq,#jcq,#jcd').forEach(x=>x.disabled=on);if(on&&b)b.textContent+=' …'};
+  $('#job').onclick=async()=>{occupe($('#job'),true);const r=await sb.rpc('ouvrir_booster_site');
+   if(r.error){uiAlert(/ouvrir_booster_site/.test(r.error.message||'')?'Ouverture indisponible : l\'admin doit lancer 32-mode-site.sql dans Supabase.':r.error.message);vJouer();return}
+   await scene('overlay.html?site',{fc:'booster',res:r.data});await Promise.all([refreshJoueur(),typeof loadColl==='function'?loadColl().catch(()=>{}):0]);vJouer()};
+  $('#jbq').onclick=async()=>{occupe($('#jbq'),true);const r=await appelJeu({mode:'booster_quotidien'});if(r)uiAlert(r.txt.replace(/ Ouvre-les avec !booster/,' Ouvre-les ici avec « Ouvrir un booster ».'));vJouer()};
+  const combat=async(corps,b)=>{occupe(b,true);const r=await appelJeu(corps);
+   if(r&&r.ok&&r.json&&Array.isArray(r.json.journal)){await scene('combat.html?site',{fc:'combat',res:r.json});if(r.json.annonce)uiAlert(r.json.annonce);await refreshJoueur()}
+   else if(r)uiAlert(r.txt||'Le combat n\'a pas pu être lancé.');vJouer()};
+  $('#jcq').onclick=()=>combat({mode:'quotidien'},$('#jcq'));
+  $('#jcd').onclick=()=>{const a=$('#jadv').value.trim().replace(/^@/,'');if(!a)return uiAlert('Écris le pseudo du joueur que tu veux défier.');combat({mode:'payant',adversaire:a},$('#jcd'))};
+}
+
 /* ---------- Boutique ---------- */
 async function vBoutique(){
   const [t,s]=await Promise.all([q(sb.from('types_boosters').select('*').eq('actif',true)),
@@ -595,7 +635,7 @@ async function vBoutique(){
     const V=ved[id]||[];
     return`<details class="bdet"><summary>Détails du contenu (${tot} carte${tot>1?'s':''} possibles)</summary>
      ${V.length?`<div class="bc">⭐ À l'affiche</div><div class="bved">${V.map(v=>`<span>${v.image_path?`<img loading="lazy" src="${img(v.image_path)}" style="box-shadow:0 0 8px ${esc(v.couleur||'#fff')}" alt="">`:''}<small>${esc(v.nom)}</small></span>`).join('')}</div>`:''}${L.map(c=>`<div class="bc">${esc(c.nom)}</div><div class="br">${c.r.sort((x,y)=>(+x.rarete_poids)-(+y.rarete_poids)).map(r=>`<span style="--g:${esc(r.rarete_couleur||'#aaa')}">${r.nb} ${esc(r.rarete_nom)}</span>`).join('')}</div>`).join('')}</details>`};
-  main.innerHTML=`<h3>Tes boosters non ouverts</h3><p>${s.length?s.map(x=>`${esc(x.types_boosters.nom)} ×${x.quantite}`).join(' · ')+'<br><small>Ouvre-les pendant le live avec !booster</small>':'Aucun'}</p>
+  main.innerHTML=`<h3>Tes boosters non ouverts</h3><p>${s.length?s.map(x=>`${esc(x.types_boosters.nom)} ×${x.quantite}`).join(' · ')+(JEU.live?'<br><small>Ouvre-les pendant le live avec !booster</small>':'<br><small>🎬 Jeu en pause : ouvre-les dans l\'onglet « 🎮 Jouer »</small>'):'Aucun'}</p>
   <h3>Acheter</h3><div class="grid">${t.map(b=>`<div class="card">${b.image_path?`<img loading="lazy" src="${img(b.image_path)}">`:''}<b>${esc(b.nom)}</b><small>${b.nb_cartes} cartes par booster</small>${contenu(b.id)}<button data-id="${b.id}" data-nom="${esc(b.nom)}" data-prix="${b.prix}">Acheter · 💰 ${b.prix}</button></div>`).join('')}</div>`;
   main.querySelectorAll('button[data-id]').forEach(b=>b.onclick=async()=>{
     const prix=+b.dataset.prix||0,solde=+joueur.monnaie||0;
@@ -1905,6 +1945,11 @@ async function aReglages(){
   $('#sub').innerHTML=`<div class="f" style="flex-direction:column;align-items:flex-start"><b>Images : réduire la consommation Supabase</b>
     <small>Convertit les images des cartes, boosters et dos déjà en ligne en WebP plus léger (jusqu'à 1200 px de haut) et les garde 1 an en cache. Les originaux sont conservés : « Revenir aux originaux » annule tout. Une fois que tout te plaît, « Supprimer les originaux » libère la place (définitif) ; « Supprimer les images inutilisées » fait le ménage complet, depuis n'importe quel navigateur (script 20-images-inutilisees.sql). Les nouvelles images sont déjà allégées à l'envoi. À lancer une fois, ça peut prendre quelques minutes : laisse la page ouverte.</small>
     <div class="row"><button id="optim">⚡ Optimiser les images existantes</button><button class="sec" id="optback">↩ Revenir aux originaux</button><button class="sec" id="optdel">🗑️ Supprimer les originaux</button><button class="sec" id="optorph">🧹 Supprimer les images inutilisées</button></div><pre id="optlog" style="max-height:220px;overflow:auto;white-space:pre-wrap;font-size:12px;margin:0"></pre></div>
+   <form class="f" id="fjeu" style="flex-direction:column;align-items:flex-start"><b>🎬 Jeu en live</b>
+    <small>En pause (pour tes let's play) : les commandes du live (!combat, duels, !quotidien) répondent « jeu en pause » et l'onglet « 🎮 Jouer » s'ouvre sur le site : chacun y ouvre ses boosters et fait ses combats, avec les mêmes animations et les mêmes limites du jour. Pour couper aussi !booster, ferme Streamer.bot. (32-mode-site.sql)</small>
+    <div class="row"><label><input type="radio" name="live" value="1" ${String(v.jeu_live??'1')!=='0'?'checked':''}> 🎥 Jeu en live</label><label><input type="radio" name="live" value="0" ${String(v.jeu_live??'1')==='0'?'checked':''}> 🎬 En pause : on joue sur le site</label></div>
+    <label><small>Prix d'un duel lancé depuis le site (en live, il coûte des points de chaîne)</small><br><input name="prix" type="number" min="0" max="100000" value="${esc(v.duel_site_prix??50)}" style="width:90px"> gold</label>
+    <button>Enregistrer</button></form>
    <form class="f" id="fvit"><label><b>⏱️ Vitesse des combats</b> (overlay OBS)<br>
     <small>Vitesse des animations et des pauses pendant les combats en live. Prise en compte dès le combat suivant, sans recharger OBS. (La page de test garde sa propre liste « Vitesse ».)</small><br>
     <select name="v"><option value="0.5"${String(+(v.vitesse_combat??1))==='0.5'?' selected':''}>⚡⚡ Très rapide (×2)</option><option value="0.75"${String(+(v.vitesse_combat??1))==='0.75'?' selected':''}>⚡ Rapide</option><option value="1"${String(+(v.vitesse_combat??1))==='1'?' selected':''}>Normal</option><option value="1.3"${String(+(v.vitesse_combat??1))==='1.3'?' selected':''}>🐢 Lent</option><option value="1.6"${String(+(v.vitesse_combat??1))==='1.6'?' selected':''}>🐢🐢 Très lent</option></select></label><button>Enregistrer</button></form>
@@ -1966,6 +2011,9 @@ async function aReglages(){
       const r=await sb.from(tab).update({[col]:p}).eq('id',id);if(r.error)L.textContent+='✗ '+k+' : '+r.error.message+'\n';else{n++;localStorage.removeItem(k)}}
     L.textContent+=n+' image(s) remise(s) à l\'original.'};
   $('#optim').onclick=async()=>{if(!(await uiConfirm('Optimiser toutes les images déjà en ligne ? Les anciens fichiers seront remplacés par des versions WebP plus légères.')))return;const b=$('#optim'),L=$('#optlog');b.disabled=true;L.textContent='';await optimiserImages(t=>{L.textContent+=t+'\n';L.scrollTop=1e9});b.disabled=false};
+  $('#fjeu').onsubmit=async e=>{e.preventDefault();const f=e.target,live=f.live.value,prix=Math.max(0,Math.min(100000,parseInt(f.prix.value,10)||0));
+    await q(sb.from('reglages_jeu').upsert([{cle:'jeu_live',valeur:live},{cle:'duel_site_prix',valeur:String(prix)}]));await chargerEtat();
+    uiAlert(live==='0'?'🎬 Jeu en pause : les joueurs jouent sur le site (onglet « 🎮 Jouer »). Pense à fermer Streamer.bot ou à mettre tes récompenses de points de chaîne en pause.':'🎥 Jeu de nouveau en live : l\'onglet « Jouer » est masqué pour les joueurs.');show(tab)};
   $('#fvit').onsubmit=async e=>{e.preventDefault();const v=e.target.v.value;
     await q(sb.from('reglages_jeu').upsert({cle:'vitesse_combat',valeur:v}));uiAlert('Vitesse des combats enregistrée : '+e.target.v.selectedOptions[0].textContent+'. (Si rien ne change en live, lance 27-vitesse-combat.sql dans Supabase.)');aReglages()};
   $('#fr').onsubmit=async e=>{e.preventDefault();const n=Math.max(0,Math.min(50,parseInt(e.target.n.value,10)||0));

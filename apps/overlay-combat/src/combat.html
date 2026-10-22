@@ -189,6 +189,8 @@ const chargerMiroir=()=>Promise.race([fetch(MIROIR_URL+'liste.json',{cache:'no-c
 const urlImg=p=>p?(MIROIR.has(p)?MIROIR_URL+encodeURI(p):STORAGE+p):'';   // GitHub si l'image y est déjà, sinon Supabase
 chargerMiroir();
 const TEST=location.search.includes('test'),DEMO=location.search.includes('demo')||location.search.includes('test');
+// ?site : la page est affichée dans le site (onglet « Jouer », jeu en pause) : pas de WebSocket ni de verrou OBS, le combat arrive par postMessage
+const SITE=/[?&]site\b/.test(location.search);
 // Vitesse : en live, réglée dans l'admin (Réglages → Vitesse des combats) ; sur la page de test, la liste « Vitesse »
 let VIT_LIVE=null;const vit=()=>{const v=VIT_LIVE!=null&&!TEST&&!DEMO?VIT_LIVE:+(document.getElementById('vit')||{value:1}).value;return v>0?v:1};
 const chargerVitesse=()=>Promise.race([fetch('https://bjsvqikjnvaomyoifiml.supabase.co/rest/v1/rpc/vitesse_combat',{method:'POST',headers:{apikey:'sb_publishable_-3cPqDCyE-zhb3z5r6dPhg_DJFKGAI6','Content-Type':'application/json'},body:'{}'})
@@ -1097,7 +1099,7 @@ let journalRecap=null,wsLive=null;
 // Verrou partagé avec l'overlay des boosters (même navigateur OBS) : un seul des deux à l'écran à la fois
 const VERROU='fc_overlay_verrou';let battement=null;
 const lireVerrou=()=>{try{return JSON.parse(localStorage.getItem(VERROU)||'null')}catch{return null}};
-async function verrouPrendre(nom){if(TEST||DEMO)return;const t0=Date.now(),ecrire=()=>{try{localStorage.setItem(VERROU,JSON.stringify({o:nom,t:Date.now()}))}catch{}};
+async function verrouPrendre(nom){if(TEST||DEMO||SITE)return;const t0=Date.now(),ecrire=()=>{try{localStorage.setItem(VERROU,JSON.stringify({o:nom,t:Date.now()}))}catch{}};
  for(;;){const v=lireVerrou();
   if(!v||v.o===nom||Date.now()-v.t>6000||Date.now()-t0>120000){ecrire();await sleep(200);const w=lireVerrou();if(!w||w.o===nom)break}
   await sleep(400)}
@@ -1187,6 +1189,7 @@ async function jouer(res){
   if(!TEST&&!DEMO&&R.annonce&&wsLive&&wsLive.readyState===1)wsLive.send(JSON.stringify({request:'DoAction',id:'fin-combat',action:{name:ACTION_FIN},args:{message:R.annonce}}));   // annonce du résultat dans le chat, une fois l'animation terminée
   if(!TEST){$('#scene').classList.remove('on');await wait(800)}
   verrouLacher('combat');
+  if(SITE)try{parent.postMessage({fc:'combat-fini'},location.origin)}catch(e){}
  }
  enCours=false;
 }
@@ -1520,6 +1523,7 @@ async function guetterEchanges(){if(TEST||DEMO)return;
  if(!enCours){try{const r=await fetch('https://bjsvqikjnvaomyoifiml.supabase.co/rest/v1/rpc/echange_a_annoncer',{method:'POST',headers:{apikey:'sb_publishable_-3cPqDCyE-zhb3z5r6dPhg_DJFKGAI6','Content-Type':'application/json'},body:'{}'});
   const d=r.ok?await r.json():null;if(d&&d.id){enCours=true;try{await verrouPrendre('combat');await annonceEchange(d)}finally{verrouLacher('combat');enCours=false;if(file.length)jouer(file.shift())}}}catch(e){}}
  setTimeout(guetterEchanges,20000)}
-if(!TEST&&!DEMO)connect();
-if(!TEST&&!DEMO)setTimeout(guetterEchanges,5000);
+if(!TEST&&!DEMO&&!SITE)connect();
+if(!TEST&&!DEMO&&!SITE)setTimeout(guetterEchanges,5000);
+if(SITE)addEventListener('message',e=>{if(e.origin!==location.origin)return;const d=e.data;if(d&&d.fc==='combat'&&d.res&&Array.isArray(d.res.journal))jouer(d.res)});
 </script></body></html>
