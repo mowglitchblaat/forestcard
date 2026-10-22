@@ -598,7 +598,8 @@ function scene(page,msg){return new Promise(ok=>{let sc=$('#jscene');if(!sc){sc=
   const ecoute=e=>{if(e.origin===location.origin&&e.data&&/-fini$/.test(e.data.fc||''))setTimeout(fin,600)};addEventListener('message',ecoute);
   $('#jfermer').onclick=fin;const fr=sc.querySelector('iframe');fr.onload=()=>setTimeout(()=>fr.contentWindow.postMessage(msg,location.origin),400)})}
 async function appelJeu(corps){const {data:{session}}=await sb.auth.getSession();if(!session){uiAlert('Reconnecte-toi.');return null}
-  try{const r=await fetch(FN_JEU,{method:'POST',headers:{Authorization:'Bearer '+session.access_token,apikey:'sb_publishable_-3cPqDCyE-zhb3z5r6dPhg_DJFKGAI6','Content-Type':'application/json'},body:JSON.stringify(corps)});
+  // requête « simple » (texte, sans en-tête perso) : le navigateur n'envoie pas de pré-vérification CORS ; le jeton de connexion part dans le corps
+  try{const r=await fetch(FN_JEU,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({...corps,jeton:session.access_token})});
    const t=await r.text();let j=null;try{j=JSON.parse(t)}catch(e){}return {ok:r.ok,json:j,txt:t}}catch(e){uiAlert('Le serveur du jeu ne répond pas. Réessaie dans un instant.');return null}}
 async function vJouer(){
   await chargerEtat();

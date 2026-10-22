@@ -142,8 +142,9 @@ async function jeuEnLive() {
   return true;
 }
 // Joueur connecté au site : son jeton de connexion (Authorization) donne son compte, son identifiant Twitch, son gold, et s'il est admin
-async function joueurDuSite(req) {
-  const tok = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
+async function joueurDuSite(req, corps) {
+  // le site envoie son jeton dans le corps (requête « simple », sans pré-vérification CORS du navigateur), ou dans l'en-tête Authorization
+  const tok = String((corps && corps.jeton) || (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, ''));
   if (!tok) return null;
   const U = Deno.env.get('SUPABASE_URL'), A = Deno.env.get('SUPABASE_ANON_KEY') || 'sb_publishable_-3cPqDCyE-zhb3z5r6dPhg_DJFKGAI6';
   try {
@@ -181,12 +182,13 @@ Deno.serve(async (req) => {
 
 async function traiter(req) {
   // Streamer.bot (live) : secret partagé · le site : jeton de connexion du joueur
+  let b = {}; try { b = await req.json(); } catch { return txt('Requête illisible.', 400); }
   let site = null;
   if (req.headers.get('x-secret') !== Deno.env.get('COMBAT_SECRET')) {
-    site = await joueurDuSite(req);
+    site = await joueurDuSite(req, b);
     if (!site) return txt('Accès refusé.', 401);
   }
-  let b = {}; try { b = await req.json(); } catch { return txt('Requête illisible.', 400); }
+  delete b.jeton;
   const live = await jeuEnLive();
   if (site) {
     if (live && !site.admin) return txt(EN_LIVE, 409);
