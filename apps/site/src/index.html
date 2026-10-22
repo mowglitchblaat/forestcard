@@ -1431,14 +1431,14 @@ function vRegles(){
   ${h('Le principe en 4 étapes','y','Tout se joue entre le site et le live.')}
   <div class="stats">
    ${c('1 · Obtiens des boosters','Achète-les sur le site avec tes gold, récupère le cadeau du jour ou gagne-les aux jeux du jour.')}
-   ${c('2 · Ouvre-les en live','Avec la commande <code class="cmd">!booster</code> : les cartes apparaissent à l\'écran.')}
+   ${c('2 · Ouvre-les en live','Avec la commande <code class="cmd">!booster</code> : les cartes apparaissent à l\'écran. Quand le jeu est en pause, ouvre-les sur le site.')}
    ${c('3 · Compose ton deck','10 cartes à choisir sur le site, dans l\'onglet « Mon deck ».')}
-   ${c('4 · Combats !','Duels et combats automatiques, avec animations en direct.')}
+   ${c('4 · Combats !','Duels et combats automatiques, avec animations en direct. Puis vise les ceintures du championnat !')}
   </div>
 
   ${h('Trois types de cartes','y','Chaque combat met en jeu un combattant, une magie et un piège.')}
   <div class="stats">
-   ${c('<span style="color:#fbbf24">Combattant</span>',ul(['Des stats : ATQ et PV','Des passifs : esquive, poison, renvoi…','Un ultime, qui se déclenche après quelques tours ou quand une carte s\'active']))}
+   ${c('<span style="color:#fbbf24">Combattant</span>',ul(['Des stats : ATQ et PV','Des passifs : esquive, poison, renvoi…','Un ultime, qui se déclenche après quelques tours ou sur un événement : sous X % de PV, toutes les X attaques, quand il esquive, bloque, reçoit un statut, est soigné, quand un piège se déclenche…']))}
    ${c('<span style="color:#c4b5fd">Magie</span>',ul(['Prend effet dès le début du combat','Reste active comme un bonus ou un malus : +ATQ, soins, protection…','Peut être détruite ou volée']))}
    ${c('<span style="color:#f87171">Piège</span>',ul(['Reste caché, face retournée','Se déclenche sous condition : l\'adversaire attaque, utilise son ultime, passe sous X % de PV…','Dévoilé en gros plan à l\'écran']))}
   </div>
@@ -1447,7 +1447,8 @@ function vRegles(){
   <p><span class="pill" style="background:#9ca3af">Commun</span><span class="pill" style="background:#60a5fa">Rare</span><span class="pill" style="background:#c084fc">Épique</span><span class="pill" style="background:#fbbf24">Légendaire</span><span class="pill" style="background:linear-gradient(90deg,#f87171,#fbbf24,#4ade80,#60a5fa,#c084fc)">GGEZ</span></p>
   <div class="stats">
    ${c('Les collections','Plusieurs collections (Horreurs, Chasseurs et d\'autres), chacune avec ses boosters. Les cartes communes peuvent sortir dans tous les boosters, quelle que soit leur collection.')}
-   ${c('Versions alternatives','Certaines cartes existent en version « full art » : le même effet, un visuel encore plus beau à exhiber.')}
+   ${c('Versions alternatives','Certaines cartes existent en version « full art » : le même effet, un visuel encore plus beau à exhiber. Chaque version compte comme une carte à part entière de ta collection.')}
+   ${c('Ta collection','Les cartes que tu n\'as pas encore s\'affichent en grisé, avec leur détail consultable : tu vois tout ce qui sort, et ce qu\'il te manque.')}
    ${c('GGEZ','La rareté ultime, au-dessus du légendaire, avec son aura arc-en-ciel.')}
   </div>
 
@@ -1480,11 +1481,28 @@ function vRegles(){
    ${c('<code class="cmd">!combat</code> · Combat du jour','Des combats gratuits chaque jour (leur nombre est fixé par le streamer), contre un adversaire pris au hasard parmi ceux qui ont un deck de 10 cartes.')}
    ${c('<code class="cmd">Duel + @pseudo</code> · Défi ciblé','Une récompense de points de chaîne : écris le @ du viewer que tu veux défier.')}
   </div>
-  <p><small>Même absent du live, l'adversaire peut être défié : il gagne lui aussi des gold et des statistiques.</small></p>
+  <p><small>Même absent du live, l'adversaire peut être défié : il gagne lui aussi des gold et des statistiques. Le nombre de combats par jour contre le même adversaire est limité.</small></p>
+
+  ${h('Jeu en pause','b','Pendant les let\'s play, le jeu n\'apparaît pas en live : il se joue sur le site.')}
+  <div class="stats">
+   ${c('🎮 L\'onglet « Jouer »','Il apparaît quand le jeu est en pause. Tu y ouvres tes boosters, récupères ton booster du jour et fais ton combat du jour, avec les mêmes animations qu\'en live.')}
+   ${c('Duel depuis le site','Défie un joueur précis en écrivant son pseudo : le duel se paie en gold (le prix est fixé par le streamer).')}
+   ${c('Le championnat','Il reste réservé au live : les défis et les combats pour le titre se font dans le chat.')}
+  </div>
+
+  ${h('Le championnat','y','Trois ceintures, un champion pour chacune. Tout se joue en live.')}
+  <div class="stats">
+   ${c('🥉 🥈 🥇 Les ceintures',ul(['<b>Rare</b> : cartes communes et rares','<b>Épique</b> : jusqu\'aux cartes épiques','<b>Libre</b> : toutes les raretés','Un joueur peut être double ou triple champion. En combat, ses ceintures s\'affichent autour de sa carte.']))}
+   ${c('Ton deck de championnat',ul(['Un par ceinture, dans l\'onglet « Mon deck »','<b>15 cartes</b> : 5 combattants, 5 magies, 5 pièges','Les raretés autorisées dépendent de la ceinture']))}
+   ${c('Défier',ul(['<code class="cmd">!defi rare</code> (ou épique, libre) défie le champion de cette ceinture','Ceinture vacante : ajoute le @ du joueur à affronter, par exemple <code class="cmd">!defi libre @pseudo</code>','Le défié répond avec <code class="cmd">!accepter</code> ou <code class="cmd">!refuser</code>, dans les 24 h','Un seul défi en attente par ceinture']))}
+   ${c('Le combat en relais',ul(['3 combattants chacun, envoyés l\'un après l\'autre','Chaque nouveau combattant arrive avec une nouvelle magie et un nouveau piège, et attaque en premier','Le combattant resté debout garde ses PV et ses statuts','Pas de limite de tours : on se bat jusqu\'au KO','Victoire : <b>500 gold</b> · défaite : <b>150 gold</b>']))}
+   ${c('Combien de combats ?',ul(['Un challenger a droit à 1 combat pour le titre par jour et par ceinture','Le champion, lui, défend sa ceinture autant de fois qu\'on le défie','Pour une ceinture vacante, les deux joueurs sont limités à 1 combat par jour']))}
+   ${c('La vie de champion',ul(['Chaque jour où il fait un combat pour le titre, le champion touche une prime à minuit : 90 gold par ceinture, +10 % par jour actif d\'affilée, +15 % par ceinture en plus','Il perd sa ceinture s\'il perd un combat pour le titre, à son 3e refus, ou après 7 jours sans combat pour le titre','L\'onglet 🥇 Ceintures montre les champions, les défis en attente et l\'histoire des règnes']))}
+  </div>
 
   ${h('Récompenses & économie','y','Tout le monde gagne quelque chose à chaque combat.')}
   <div class="stats">
-   ${c('Gains par combat','<table><tr><td>Victoire</td><td><b>50 gold</b></td></tr><tr><td>Match nul</td><td><b>20 gold</b></td></tr><tr><td>Défaite</td><td><b>10 gold</b></td></tr></table><small>🔥 Lors des soirées spéciales, les gains peuvent être multipliés (×2…) : c\'est annoncé dans le chat après chaque combat.</small>')}
+   ${c('Gains par combat','<table><tr><td>Victoire</td><td><b>50 gold</b></td></tr><tr><td>Match nul</td><td><b>20 gold</b></td></tr><tr><td>Défaite</td><td><b>10 gold</b></td></tr></table><small>🔥 Lors des soirées spéciales, les gains peuvent être multipliés (×2…) : c\'est annoncé dans le chat après chaque combat. 💰 Parfois, un <b>bounty</b> tombe sur un combat : une prime de gold en plus, partagée entre les deux joueurs, ou raflée en entier par le vainqueur.</small>')}
    ${c('Et ensuite ?','Les gold servent à acheter des boosters sur le site, à partir de 250 gold : environ 5 victoires pour un nouveau booster. Plus on joue, plus la collection grandit.')}
    ${c('Recyclage des doublons','Dans « Ma collection », recycle tes cartes en double en gold : <table><tr><td>Commun</td><td><b>5</b></td></tr><tr><td>Rare</td><td><b>10</b></td></tr><tr><td>Épique</td><td><b>35</b></td></tr><tr><td>Légendaire</td><td><b>80</b></td></tr></table><small>Tu gardes toujours 1 exemplaire de chaque carte.</small>')}
   </div>
@@ -1500,8 +1518,8 @@ function vRegles(){
   ${h('Des effets partout','p','Chaque effet a sa propre animation à l\'écran.')}
   <div class="stats">
    ${c('Statuts','Poison, brûlure, saignement, gel, fracture, malédiction, étourdissement, rage, fatigue.')}
-   ${c('Défense','Esquive, blocage, renvoi de dégâts, soin, purification, évite la mort, réanimation.')}
-   ${c('Attaque','Enchaînement de frappes, vol de vie, vol d\'ultime, vol de magie ou de piège, échange d\'ATQ et de PV, exécution, avalage, effets aléatoires.')}
+   ${c('Défense','Esquive, blocage (parfois avec une riposte), solidification, renvoi de dégâts, soin, purification, évite la mort, réanimation.')}
+   ${c('Attaque','Enchaînement de frappes, vol de vie, vol d\'ultime, vol de magie ou de piège, échange d\'ATQ et de PV, exécution, avalage, souffles élémentaires, détonation, salves de missiles, programmation, effets aléatoires.')}
    ${c('Transcendance','Tous les X tours, au début de son tour et avant d\'attaquer, la carte monte d\'un niveau (jusqu\'à 3) : elle est purifiée, gagne de l\'ATQ et des PV max, et ses coups purifient l\'adversaire et volent de la vie (de plus en plus à chaque niveau).')}
   </div>
   ${ul(['Les effets suivent le tour de la carte concernée : la malédiction baisse l\'ATQ au début de son tour, juste avant son attaque ; poison, brûlure et saignement font effet à la fin de son tour, juste après son attaque. Jouer en premier ou en deuxième ne change jamais cet ordre.','Un statut garde la même intensité à chaque tour. Si un effet le réapplique par-dessus, l\'intensité s\'additionne et la durée repart de zéro.','La purification retire tous les statuts négatifs présents à ce moment-là, sauf l\'étourdissement : il fait toujours sauter la prochaine attaque de la carte touchée, quoi qu\'il arrive.','Rage, fatigue, gel et fracture comptent les tours de la carte touchée.','La fatigue fait vraiment baisser l\'ATQ de la carte touchée (rendue à la fin) ; réappliquée, elle dure plus longtemps mais ne s\'aggrave pas.']).replace('<ul>','<ul style="color:#aaa;font-size:14px">')}
@@ -1525,13 +1543,11 @@ function vRegles(){
    <tr><td><code class="cmd">!booster</code></td><td>Ouvre un booster de ton stock, en direct</td></tr>
    <tr><td><code class="cmd">!quotidien</code></td><td>Récupère 1 à 3 boosters gratuits, une fois par jour</td></tr>
    <tr><td><code class="cmd">!combat</code></td><td>Combat gratuit du jour contre un adversaire au hasard</td></tr>
-   <tr><td><code class="cmd">Duel + @pseudo</code></td><td>Récompense de points de chaîne : défie un viewer précis</td></tr></table>
-
-  ${h('Et bientôt ?','b','Les idées qui arrivent ensuite.')}
-  <div class="stats">
-   ${c('Le combat pour le titre','Un champion de la chaîne, un deck de 20 cartes, trois combats d\'affilée : la première équipe entièrement éliminée perd. Le champion doit accepter le défi dans le chat.')}
-   ${c('Échanges','Échanger tes cartes avec les autres joueurs.')}
-  </div></div>`;
+   <tr><td><code class="cmd">Duel + @pseudo</code></td><td>Récompense de points de chaîne : défie un viewer précis</td></tr>
+   <tr><td><code class="cmd">!defi rare</code> <small>(épique, libre ; + @pseudo si la ceinture est vacante)</small></td><td>Défie le champion d\'une ceinture</td></tr>
+   <tr><td><code class="cmd">!accepter</code> · <code class="cmd">!refuser</code></td><td>Répond au défi qu\'on t\'a lancé : accepter lance le combat pour le titre</td></tr>
+   <tr><td><code class="cmd">!ceintures</code></td><td>Qui détient quelle ceinture</td></tr></table>
+  </div>`;
 }
 
 /* ---------- Admin ---------- */
