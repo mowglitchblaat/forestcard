@@ -626,6 +626,35 @@ async function vJouer(){
 }
 
 /* ---------- Ceintures : le championnat (33-championnat.sql) ---------- */
+/* L'histoire de chaque ceinture : un bloc par règne (du plus récent au plus ancien), qui raconte comment il a commencé,
+   ses défenses et comment il a fini ; les périodes de vacance entre deux règnes (38-ceintures-histoire.sql) */
+function histoireCeintures(E){
+  const T=x=>new Date(x).getTime(),quand=x=>{const d=new Date(x);return d.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})+' à '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})};
+  const duree=ms=>{const m=Math.max(1,Math.round(ms/6e4));if(m<60)return m+' min';const h=Math.floor(m/60);if(h<48)return h+' h '+String(m%60).padStart(2,'0');return Math.floor(h/24)+' jours'};
+  const b=p=>`<b>${esc(p||'?')}</b>`,ligne=(ic,txt,t)=>`<div style="display:flex;gap:6px;margin:3px 0"><span>${ic}</span><span style="flex:1">${txt}</span><small style="opacity:.6;white-space:nowrap">${t?quand(t):''}</small></div>`;
+  const autre=(c,id)=>c.challenger===id?c.pseudo_adversaire:c.pseudo_challenger;
+  const bloc=d=>{const D=DIVS[d],R=E.regnes.filter(r=>r.division===d).sort((x,y)=>T(x.debut)-T(y.debut)),C=(E.combats||[]).filter(c=>c.division===d);
+    const pres=(a,t)=>Math.abs(T(a)-T(t))<5000;
+    // le règne en place juste avant un combat (aucun : ceinture vacante)
+    const avant=c=>R.find(r=>T(r.debut)<T(c.fini_le)-5000&&(!r.fin||T(r.fin)>=T(c.fini_le)-5000));
+    const out=[];
+    R.forEach((r,k)=>{const L=[],deb=C.find(c=>pres(c.fini_le,r.debut)&&c.gagnant===r.joueur);
+      L.push(deb?ligne('👑',`Prend la ceinture${deb.pour_champion?'':' vacante'} en battant ${b(autre(deb,r.joueur))}`,r.debut):ligne('👑','Devient champion',r.debut));
+      C.filter(c=>avant(c)===r&&(c.gagnant===r.joueur||c.gagnant==null)).sort((x,y)=>T(x.fini_le)-T(y.fini_le))
+       .forEach(c=>L.push(c.gagnant==null?ligne('🤝',`Match nul contre ${b(autre(c,r.joueur))} : garde la ceinture`,c.fini_le):ligne('🛡️',`Défend contre ${b(autre(c,r.joueur))}`,c.fini_le)));
+      if(r.fin){const fin=C.find(c=>pres(c.fini_le,r.fin)&&c.gagnant&&c.gagnant!==r.joueur);
+        L.push(r.raison==='refus'?ligne('🏳️','3e refus de défi : la ceinture lui est retirée',r.fin):r.raison==='inactivite'?ligne('⏳','7 jours sans combat pour le titre : la ceinture lui est retirée',r.fin)
+          :ligne('⚔️',`Battu par ${b(fin?(fin.challenger===r.joueur?fin.pseudo_adversaire:fin.pseudo_challenger):'?')}`,r.fin))}
+      const nd=r.defenses||0,tete=`<div style="display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline"><span style="font-size:17px">👑 ${b(r.pseudo)}</span><small style="opacity:.75">${r.fin?'a régné '+duree(T(r.fin)-T(r.debut)):'en cours depuis '+duree(Date.now()-T(r.debut))} · ${nd} défense${nd>1?'s':''}${r.primes?` · 💰 ${r.primes} gold de primes`:''}</small></div>`;
+      out.push(`<div style="border-left:3px solid ${r.fin?'#555':'#fbbf24'};padding:4px 0 4px 10px;margin:8px 0">${tete}${L.join('')}</div>`);
+      // vacance entre ce règne et le suivant (ceinture retirée sans combat)
+      const n=R[k+1];if(r.fin&&r.raison!=='defaite'){const nuls=C.filter(c=>!avant(c)&&c.gagnant==null&&T(c.fini_le)>T(r.fin)&&(!n||T(c.fini_le)<T(n.debut)));
+        out.push(`<div style="opacity:.7;margin:4px 0 4px 13px">🏳️ Vacante${n?' pendant '+duree(T(n.debut)-T(r.fin)):' depuis '+duree(Date.now()-T(r.fin))}${nuls.map(c=>`<br><small>🤝 ${b(c.pseudo_challenger)} et ${b(c.pseudo_adversaire)} font match nul (${quand(c.fini_le)})</small>`).join('')}</div>`)}});
+    const nulsDebut=C.filter(c=>!avant(c)&&c.gagnant==null&&(!R[0]||T(c.fini_le)<T(R[0].debut)));
+    if(!R.length||nulsDebut.length)out.unshift(`<div style="opacity:.7;margin:4px 0 4px 13px">🏳️ Vacante depuis le lancement${nulsDebut.map(c=>`<br><small>🤝 ${b(c.pseudo_challenger)} et ${b(c.pseudo_adversaire)} font match nul (${quand(c.fini_le)})</small>`).join('')}</div>`);
+    return `<div class="stat"><h4 style="margin:0 0 4px;display:flex;align-items:center;gap:8px"><img src="${vf('cadres/ceinture-'+d+'.webp')}" alt="" style="width:90px">${D.e} ${esc(D.nom)}</h4>${out.reverse().join('')}</div>`};
+  return `<div class="stats" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr));align-items:start">${['rare','epique','libre'].map(bloc).join('')}</div>`;
+}
 async function vCeintures(){
   main.innerHTML='<p>Chargement…</p>';
   const [r,m]=await Promise.all([sb.rpc('ceintures_etat'),sb.from('decks_championnat').select('division,cartes').eq('joueur_id',user.id)]);
@@ -633,7 +662,6 @@ async function vCeintures(){
   await chargerEtat().catch(()=>{});
   const E=r.data,mes={};((m&&m.data)||[]).forEach(x=>mes[x.division]=(x.cartes||[]).length===15);
   const date=d=>d?new Date(d).toLocaleDateString('fr-FR',{day:'numeric',month:'long'}):'',jours=d=>Math.max(0,Math.ceil((new Date(d)-Date.now())/864e5));
-  const RAISON={defaite:'battu',refus:'3 refus',inactivite:'inactivité'};
   const carte=c=>{const D=DIVS[c.division],moi=c.champion===user.id,attente=E.defis.find(d=>d.division===c.division);
     return `<div class="stat" style="text-align:center"><img src="${vf('cadres/ceinture-'+c.division+'.webp')}" alt="${esc(c.nom)}" style="width:100%;max-width:340px;filter:drop-shadow(0 0 10px rgba(255,215,120,.45))${c.pseudo?'':';opacity:.45;filter:grayscale(.6)'}"><h4 style="margin:4px 0">${esc(c.nom)}</h4>
      <small>${c.division==='rare'?'Cartes communes et rares':c.division==='epique'?'Jusqu\'aux cartes épiques':'Toutes les raretés'}</small>
@@ -647,7 +675,7 @@ async function vCeintures(){
    <p><small>Trois ceintures, un champion chacune. Le championnat se joue uniquement en live : défie le champion dans le chat (!defi) avec ton deck de championnat (onglet Mon deck : 15 cartes, 5 combattants, 5 magies, 5 pièges) ; il accepte ou refuse dans le chat (!accepter, !refuser). Combat en relais : 3 combattants chacun, un nouveau trio à chaque entrée, jusqu'au KO. Le vainqueur gagne 💰 500, le perdant 💰 150. Chaque jour où il fait un combat pour le titre, le champion touche une prime à minuit : 90 gold par ceinture, +10 % par jour actif consécutif (un jour sans combat pour le titre : pas de prime, la série repart à 90), +15 % par ceinture en plus. Un challenger a droit à un combat pour le titre par jour et par ceinture ; le champion, lui, défend sa ceinture autant de fois qu'on le défie. Le champion perd sa ceinture s'il perd, à son 3e refus, ou après 7 jours sans combat pour le titre.</small></p>
    <div class="stats" style="grid-template-columns:repeat(auto-fit,minmax(230px,1fr))">${E.ceintures.map(carte).join('')}</div>
    <h3>Défis en attente</h3>${E.defis.length?`<ul>${E.defis.map(defi).join('')}</ul>`:'<p><small>Aucun défi en attente.</small></p>'}
-   <h3>Les règnes</h3>${E.regnes.length?`<ul>${E.regnes.map(x=>`<li>${DIVS[x.division].e} <b>${esc(x.pseudo||'?')}</b> · ${esc(DIVS[x.division].nom)} · du ${date(x.debut)}${x.fin?` au ${date(x.fin)} (${RAISON[x.raison]||x.raison})`:' · en cours'} · ${x.defenses} défense${x.defenses>1?'s':''}${x.primes?` · 💰 ${x.primes} gold de primes`:''}</li>`).join('')}</ul>`:'<p><small>Aucun champion pour l\'instant : les ceintures attendent leur premier vainqueur.</small></p>'}
+   <h3>L'histoire des ceintures</h3>${histoireCeintures(E)}
    <p><small>Dans le chat : <b>!defi rare</b> (ou épique, libre ; ajoute le @ du joueur si la ceinture est vacante), <b>!accepter</b>, <b>!refuser</b>, <b>!ceintures</b>.</small></p>`;
   main.querySelectorAll('[data-dk]').forEach(b=>b.onclick=()=>show('deck'));
   main.querySelectorAll('[data-ref]').forEach(b=>b.onclick=async()=>{if(!(await uiConfirm('Refuser ce défi ?'+(E.ceintures.some(c=>c.division===b.dataset.ref&&c.champion===user.id)?' Au 3e refus, tu perds ta ceinture.':''))))return;
