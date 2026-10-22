@@ -357,3 +357,9 @@ revoke all on function public.titre_refuser(text, text) from public, anon, authe
 revoke all on function public.titre_preparer(text, text) from public, anon, authenticated;
 revoke all on function public.titre_deck_json(uuid, bigint[]) from public, anon, authenticated;
 revoke all on function public.titre_conclure(bigint, int, text, int, int) from public, anon, authenticated;
+-- swift-responder appelle ces fonctions avec la clé de service (rôle service_role)
+grant execute on function public.ceintures_etat() to service_role;
+grant execute on function public.titre_defier(text, text, text) to service_role;
+grant execute on function public.titre_refuser(text, text) to service_role;
+grant execute on function public.titre_preparer(text, text) to service_role;
+grant execute on function public.titre_conclure(bigint, int, text, int, int) to service_role;
