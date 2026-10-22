@@ -14,7 +14,7 @@ import { simuler, simulerRelais } from '@forestcard/journal';
 
 
 // ---------------- Championnat : les 3 ceintures (33-championnat.sql) ----------------
-// Modes envoyés par Streamer.bot (ou le site) : defi (« !defi rare @pseudo »), refuser, accepter (le combat pour le titre,
+// Modes envoyés par Streamer.bot (le site : defi, refuser et ceintures seulement, jamais le combat) : defi (« !defi rare @pseudo »), refuser, accepter (le combat pour le titre,
 // en relais 3 contre 3), ceintures (qui détient quoi).
 const TITRE_MODES = ['defi', 'refuser', 'accepter', 'ceintures'];
 const TITRE_TEXTE = ['defi', 'refuser', 'ceintures'];
@@ -273,7 +273,9 @@ async function traiter(req) {
   delete b.jeton;
   const live = await jeuEnLive();
   if (site) {
-    // le championnat se joue en live : depuis le site, on peut défier, refuser et lire les ceintures ; accepter (le combat) seulement hors live
+    // le combat pour le titre se joue uniquement en live, dans le chat (!accepter) : jamais depuis le site
+    if (b.mode === 'accepter') return txt('Le combat pour le titre se joue en live : accepte le défi dans le chat avec !accepter.', 409);
+    // depuis le site, on peut défier, refuser et lire les ceintures, même en live
     if (live && !site.admin && !TITRE_TEXTE.includes(b.mode)) return txt(EN_LIVE, 409);
     b.twitch_id = site.twitch_id;
   } else if (!live) return txt(PAUSE, 409);

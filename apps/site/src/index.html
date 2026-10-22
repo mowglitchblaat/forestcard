@@ -642,7 +642,7 @@ async function vCeintures(){
      <div class="row" style="justify-content:center;margin-top:8px">${moi?'<b>C\'est toi !</b>':attente?'<small>Un défi est en attente.</small>':!mes[c.division]?`<button class="sec" data-dk="${c.division}">Prépare ton deck ${D.e}</button>`:c.pseudo?`<button data-defi="${c.division}">🥊 Défier ${esc(c.pseudo)}</button>`:`<input data-adv="${c.division}" placeholder="Pseudo à affronter" style="flex:1;min-width:120px"><button data-defi="${c.division}">🥊 Défier</button>`}</div></div>`};
   const defi=d=>{const pourMoi=d.adversaire===user.id,deMoi=d.challenger===user.id,D=DIVS[d.division];
     return `<li>${D.e} <b>${esc(d.pseudo_challenger)}</b> défie <b>${esc(d.pseudo_adversaire)}</b> pour la ${esc(D.nom)} <small>(expire le ${date(d.expire_le)} à ${new Date(d.expire_le).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})})</small>
-     ${pourMoi?(JEU.live&&!isAdmin?' — <small>accepte en live avec <b>!accepter</b>, ou</small>':` <button data-acc="${d.division}">✅ Accepter le combat</button>`)+` <button class="sec" data-ref="${d.division}">❌ Refuser</button>`:deMoi?' — <small>en attente de sa réponse</small>':''}</li>`};
+     ${pourMoi?' — <small>accepte en live dans le chat avec <b>!accepter</b>, ou</small>'+` <button class="sec" data-ref="${d.division}">❌ Refuser</button>`:deMoi?' — <small>en attente de sa réponse</small>':''}</li>`};
   main.innerHTML=`<h3>🥇 Championnat</h3>
    <p><small>Trois ceintures, un champion chacune. Défie le champion avec ton deck de championnat (onglet Mon deck : 15 cartes, 5 combattants, 5 magies, 5 pièges) ; il accepte ou refuse dans le chat (!accepter, !refuser). Combat en relais : 3 combattants chacun, un nouveau trio à chaque entrée, jusqu'au KO. Le champion perd sa ceinture s'il perd, à son 3e refus, ou après 7 jours sans combat pour le titre.</small></p>
    <div class="stats" style="grid-template-columns:repeat(auto-fit,minmax(230px,1fr))">${E.ceintures.map(carte).join('')}</div>
@@ -655,9 +655,6 @@ async function vCeintures(){
     b.disabled=true;const x=await appelJeu({mode:'defi',division:k,adversaire:adv});if(x)uiAlert(x.txt);vCeintures()});
   main.querySelectorAll('[data-ref]').forEach(b=>b.onclick=async()=>{if(!(await uiConfirm('Refuser ce défi ?'+(E.ceintures.some(c=>c.division===b.dataset.ref&&c.champion===user.id)?' Au 3e refus, tu perds ta ceinture.':''))))return;
     b.disabled=true;const x=await appelJeu({mode:'refuser',division:b.dataset.ref});if(x)uiAlert(x.txt);vCeintures()});
-  main.querySelectorAll('[data-acc]').forEach(b=>b.onclick=async()=>{b.disabled=true;b.textContent+=' …';const x=await appelJeu({mode:'accepter',division:b.dataset.acc});
-    if(x&&x.ok&&x.json&&Array.isArray(x.json.journal)){await scene('combat.html?site',{fc:'combat',res:x.json});if(x.json.annonce)uiAlert(x.json.annonce);await refreshJoueur()}
-    else if(x)uiAlert(x.txt||'Le combat n\'a pas pu être lancé.');vCeintures()});
 }
 
 /* ---------- Boutique ---------- */
