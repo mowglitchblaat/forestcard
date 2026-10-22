@@ -240,6 +240,7 @@ code.cmd{color:#fbbf24;font-weight:700}
 .sl.vide{flex-direction:column;gap:2px;border:2px dashed #3a3a48;background:#15151d;box-shadow:none;color:#666}.sl.vide span{font-size:20px;filter:grayscale(.6);opacity:.7}.sl.vide small{color:#777;font-size:10.5px}
 .sl.lib{outline:1px solid #a78bfa55;outline-offset:2px}.sl.vide.lib{border-color:#6d4fc2;color:#a78bfa}.sl.vide.lib small{color:#a78bfa}
 .dkx{font-size:12px;color:#fca5a5;background:#7f1d1d33;border:1px solid #7f1d1d;border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:6px}.dkxs{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
+.dkmode{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}.dkmode button{font-size:12px;padding:6px 2px}.dks.ch{grid-template-columns:repeat(5,1fr)}.dkch{font-size:12.5px;padding:6px 8px;border-radius:8px;background:#422006aa;color:#fde68a}
 .dkok{font-size:12.5px;text-align:center;padding:6px;border-radius:8px;background:#14532d55;color:#86efac}
 .dka{display:flex;flex-direction:column;gap:6px}.dka>button{min-height:40px}.dkb{display:flex;gap:6px;flex-wrap:wrap}.dkb button{flex:1;font-size:13px}
 .dkf{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}.dkf input{width:100%}.dkf .seg{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:3px;padding:3px;background:#1d1d27;border:1px solid #2c2c38;border-radius:12px;margin:0}
@@ -328,7 +329,7 @@ function voirActif(el){if(!el)return;const b=el.querySelector('button.on');if(!b
 async function q(p){const r=await p;if(r.error){uiAlert(r.error.message);throw r.error}return r.data}
 let user,joueur,isAdmin,tab='profil',sub='cartes',B={};   // ouverture sur le profil : pas d'images à charger (économise le quota Supabase)
 const opts=(a,l='nom')=>a.map(x=>`<option value="${x.id}">${esc(x[l])}</option>`).join('');
-const TABS={collection:'Ma collection',boutique:'Boutique',jeux:'🎲 Jeux du jour',deck:'Mon deck',echanges:'🔄 Échanges',dos:'Dos de cartes',historique:'Historique',profil:'Profils',classement:'🏆 Classement',regles:'Comment jouer',propos:'🎨 Propositions',patch:'📜 Patch notes'};
+const TABS={collection:'Ma collection',boutique:'Boutique',jeux:'🎲 Jeux du jour',deck:'Mon deck',echanges:'🔄 Échanges',dos:'Dos de cartes',historique:'Historique',profil:'Profils',classement:'🏆 Classement',ceintures:'🥇 Ceintures',regles:'Comment jouer',propos:'🎨 Propositions',patch:'📜 Patch notes'};
 
 // Erreur renvoyée par Twitch / Supabase après une connexion ratée (dans l'adresse) : on l'affiche au lieu de rien
 function erreurConnexion(){
@@ -369,7 +370,7 @@ function header(){
 }
 async function refreshJoueur(){joueur=await q(sb.from('joueurs').select('*').eq('id',user.id).single());header()}
 // L'onglet ouvert est gardé dans l'adresse (#classement, #admin/joueurs…) : un rafraîchissement reste sur la même page
-const VUES=['jouer','collection','boutique','jeux','deck','echanges','dos','historique','profil','classement','regles','propos','patch','admin'];
+const VUES=['jouer','collection','boutique','jeux','deck','echanges','dos','historique','profil','classement','ceintures','regles','propos','patch','admin'];
 function lireAncre(){const [t,s]=decodeURIComponent(location.hash.slice(1)).split('/');if(VUES.includes(t)&&(t!=='admin'||isAdmin)){tab=t;if(t==='admin'&&s)sub=s}}
 function ecrireAncre(){const a='#'+tab+(tab==='admin'?'/'+sub:'');if(location.hash!==a)history.replaceState(null,'',a)}
 window.addEventListener('hashchange',()=>{if(!user)return;const av=tab+'/'+sub;lireAncre();if(tab+'/'+sub!==av)show(tab)});
@@ -379,11 +380,11 @@ function show(t){
   tab=t;ecrireAncre();const T={...(!JEU.live||isAdmin?{jouer:'🎮 Jouer'}:{}),...TABS};if(isAdmin)T.admin='⚙️ Admin';
   $('#nav').innerHTML=Object.entries(T).map(([k,v])=>`<button class="${k==t?'on':'sec'}" data-t="${k}">${v}</button>`).join('');
   $('#nav').querySelectorAll('button').forEach(b=>b.onclick=()=>show(b.dataset.t));voirActif($('#nav'));
-  ({jouer:vJouer,collection:vCollection,boutique:vBoutique,jeux:vJeux,deck:vDeck,echanges:vEchanges,dos:vDos,historique:vHistorique,profil:vProfil,classement:vClassement,regles:vRegles,propos:vPropos,patch:vPatch,admin:vAdmin})[t]();
+  ({jouer:vJouer,collection:vCollection,boutique:vBoutique,jeux:vJeux,deck:vDeck,echanges:vEchanges,dos:vDos,historique:vHistorique,profil:vProfil,classement:vClassement,ceintures:vCeintures,regles:vRegles,propos:vPropos,patch:vPatch,admin:vAdmin})[t]();
 }
 
 /* ---------- Collection ---------- */
-let deck=null,typeOf={},flt='tout',fcol='tout',collData=[],savedDecks=[],decksOK=true,selDeck='',curView=null;
+let deck=null,typeOf={},rarOf={},flt='tout',fcol='tout',collData=[],savedDecks=[],decksOK=true,selDeck='',curView=null;
 async function loadDecks(){const r=await sb.rpc('mes_decks');if(r.error){decksOK=false;savedDecks=[];return}decksOK=true;savedDecks=r.data||[]}
 const cn=x=>x.variantes_carte.cartes.collections?.nom||'Communes';
 const TYPES={combattant:'Combattants',magie:'Magies',piege:'Pièges'};
@@ -401,14 +402,14 @@ async function chargerFantomes(){try{
   return r.data.filter(v=>v.cartes&&v.cartes.raretes&&v.cartes.actif!==false&&!(ownQ[v.id]>0)).map(v=>({quantite:0,apercu:true,fantome:true,variantes_carte:v}))}catch(e){return[]}}
 async function loadColl(){
   if(isAdmin){try{const r=await sb.from('cartes').select('collections(nom)').eq('actif',true);if(!r.error&&r.data)ALLCOLS=[...new Set(r.data.map(c=>(c.collections&&c.collections.nom)||'Communes'))]}catch(e){}}
-  if(apercu&&isAdmin){collData=await chargerApercu();collData.sort(cmpColl);typeOf={};collData.forEach(x=>{const c=x.variantes_carte.cartes;typeOf[c.id]=c.type});if(!deck){const dk=await q(sb.from('deck').select('carte_id').eq('joueur_id',user.id));deck=new Set(dk.map(x=>x.carte_id))}return}
+  if(apercu&&isAdmin){collData=await chargerApercu();collData.sort(cmpColl);typeOf={};rarOf={};collData.forEach(x=>{const c=x.variantes_carte.cartes;typeOf[c.id]=c.type;rarOf[c.id]=c.raretes});if(!deck){const dk=await q(sb.from('deck').select('carte_id').eq('joueur_id',user.id));deck=new Set(dk.map(x=>x.carte_id))}return}
   let r=await sb.from('collection_joueur').select('quantite,variantes_carte(id,nom,image_path,cartes(id,nom,type,atq,pv,description,passif,ultime,effet,collections(nom),raretes(nom,couleur,poids)))').eq('joueur_id',user.id);
   if(r.error)r=await sb.from('collection_joueur').select('quantite,variantes_carte(id,nom,image_path,cartes(id,nom,type,collections(nom),raretes(nom,couleur,poids)))').eq('joueur_id',user.id);
   if(r.error){uiAlert(r.error.message);throw r.error}
   collData=(r.data||[]).filter(x=>x&&x.variantes_carte&&x.variantes_carte.cartes);ownQ={};collData.forEach(x=>{ownQ[x.variantes_carte.id]=(ownQ[x.variantes_carte.id]||0)+(x.quantite||0)});   // une carte devenue invisible pour le joueur (désactivée, supprimée…) arrive vide : on l'ignore au lieu de bloquer la page
   if(collData.length<(r.data||[]).length)console.warn('Collection : '+((r.data||[]).length-collData.length)+' carte(s) illisible(s) ignorée(s)');
   collData.sort(cmpColl);   // légendaire en premier, puis épique, rare, commun
-  typeOf={};collData.forEach(x=>{const c=x.variantes_carte.cartes;typeOf[c.id]=c.type});
+  typeOf={};rarOf={};collData.forEach(x=>{const c=x.variantes_carte.cartes;typeOf[c.id]=c.type;rarOf[c.id]=c.raretes});
   if(!deck){const dk=await q(sb.from('deck').select('carte_id').eq('joueur_id',user.id));deck=new Set(dk.map(x=>x.carte_id))}
 }
 function updBar(){
@@ -624,6 +625,41 @@ async function vJouer(){
   $('#jcd').onclick=()=>{const a=$('#jadv').value.trim().replace(/^@/,'');if(!a)return uiAlert('Écris le pseudo du joueur que tu veux défier.');combat({mode:'payant',adversaire:a},$('#jcd'))};
 }
 
+/* ---------- Ceintures : le championnat (33-championnat.sql) ---------- */
+async function vCeintures(){
+  main.innerHTML='<p>Chargement…</p>';
+  const [r,m]=await Promise.all([sb.rpc('ceintures_etat'),sb.from('decks_championnat').select('division,cartes').eq('joueur_id',user.id)]);
+  if(r.error){main.innerHTML='<p class="ko">Championnat indisponible pour le moment (l\'admin doit lancer 33-championnat.sql dans Supabase).</p>';return}
+  await chargerEtat().catch(()=>{});
+  const E=r.data,mes={};((m&&m.data)||[]).forEach(x=>mes[x.division]=(x.cartes||[]).length===15);
+  const date=d=>d?new Date(d).toLocaleDateString('fr-FR',{day:'numeric',month:'long'}):'',jours=d=>Math.max(0,Math.ceil((new Date(d)-Date.now())/864e5));
+  const RAISON={defaite:'battu',refus:'3 refus',inactivite:'inactivité'};
+  const carte=c=>{const D=DIVS[c.division],moi=c.champion===user.id,attente=E.defis.find(d=>d.division===c.division);
+    return `<div class="stat" style="text-align:center"><div style="font-size:44px;line-height:1">${D.e}</div><h4 style="margin:4px 0">${esc(c.nom)}</h4>
+     <small>${c.division==='rare'?'Cartes communes et rares':c.division==='epique'?'Jusqu\'aux cartes épiques':'Toutes les raretés'}</small>
+     <div style="font-size:22px;font-weight:900;margin:8px 0">${c.pseudo?'👑 '+esc(c.pseudo):'<span style="opacity:.6">Vacante</span>'}</div>
+     ${c.pseudo?`<small>Depuis le ${date(c.depuis)} · ${c.defenses} défense${c.defenses>1?'s':''} · refus ${c.refus}/${c.refus_max}<br>Sans combat pour le titre, la ceinture redevient vacante dans ${jours(c.vacante_le)} jour${jours(c.vacante_le)>1?'s':''}</small>`:'<small>Le premier qui gagne un combat pour cette ceinture la prend.</small>'}
+     <div class="row" style="justify-content:center;margin-top:8px">${moi?'<b>C\'est toi !</b>':attente?'<small>Un défi est en attente.</small>':!mes[c.division]?`<button class="sec" data-dk="${c.division}">Prépare ton deck ${D.e}</button>`:c.pseudo?`<button data-defi="${c.division}">🥊 Défier ${esc(c.pseudo)}</button>`:`<input data-adv="${c.division}" placeholder="Pseudo à affronter" style="flex:1;min-width:120px"><button data-defi="${c.division}">🥊 Défier</button>`}</div></div>`};
+  const defi=d=>{const pourMoi=d.adversaire===user.id,deMoi=d.challenger===user.id,D=DIVS[d.division];
+    return `<li>${D.e} <b>${esc(d.pseudo_challenger)}</b> défie <b>${esc(d.pseudo_adversaire)}</b> pour la ${esc(D.nom)} <small>(expire le ${date(d.expire_le)} à ${new Date(d.expire_le).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})})</small>
+     ${pourMoi?(JEU.live&&!isAdmin?' — <small>accepte en live avec <b>!accepter</b>, ou</small>':` <button data-acc="${d.division}">✅ Accepter le combat</button>`)+` <button class="sec" data-ref="${d.division}">❌ Refuser</button>`:deMoi?' — <small>en attente de sa réponse</small>':''}</li>`};
+  main.innerHTML=`<h3>🥇 Championnat</h3>
+   <p><small>Trois ceintures, un champion chacune. Défie le champion avec ton deck de championnat (onglet Mon deck : 15 cartes, 5 combattants, 5 magies, 5 pièges) ; il accepte ou refuse dans le chat (!accepter, !refuser). Combat en relais : 3 combattants chacun, un nouveau trio à chaque entrée, jusqu'au KO. Le champion perd sa ceinture s'il perd, à son 3e refus, ou après 7 jours sans combat pour le titre.</small></p>
+   <div class="stats" style="grid-template-columns:repeat(auto-fit,minmax(230px,1fr))">${E.ceintures.map(carte).join('')}</div>
+   <h3>Défis en attente</h3>${E.defis.length?`<ul>${E.defis.map(defi).join('')}</ul>`:'<p><small>Aucun défi en attente.</small></p>'}
+   <h3>Les règnes</h3>${E.regnes.length?`<ul>${E.regnes.map(x=>`<li>${DIVS[x.division].e} <b>${esc(x.pseudo||'?')}</b> · ${esc(DIVS[x.division].nom)} · du ${date(x.debut)}${x.fin?` au ${date(x.fin)} (${RAISON[x.raison]||x.raison})`:' · en cours'} · ${x.defenses} défense${x.defenses>1?'s':''}</li>`).join('')}</ul>`:'<p><small>Aucun champion pour l\'instant : les ceintures attendent leur premier vainqueur.</small></p>'}
+   <p><small>Dans le chat : <b>!defi rare</b> (ou épique, libre ; ajoute le @ du joueur si la ceinture est vacante), <b>!accepter</b>, <b>!refuser</b>, <b>!ceintures</b>.</small></p>`;
+  main.querySelectorAll('[data-dk]').forEach(b=>b.onclick=()=>show('deck'));
+  main.querySelectorAll('[data-defi]').forEach(b=>b.onclick=async()=>{const k=b.dataset.defi,i=main.querySelector(`[data-adv="${k}"]`),adv=i?i.value.trim().replace(/^@/,''):'';
+    if(i&&!adv)return uiAlert('Écris le pseudo du joueur à affronter pour cette ceinture vacante.');
+    b.disabled=true;const x=await appelJeu({mode:'defi',division:k,adversaire:adv});if(x)uiAlert(x.txt);vCeintures()});
+  main.querySelectorAll('[data-ref]').forEach(b=>b.onclick=async()=>{if(!(await uiConfirm('Refuser ce défi ?'+(E.ceintures.some(c=>c.division===b.dataset.ref&&c.champion===user.id)?' Au 3e refus, tu perds ta ceinture.':''))))return;
+    b.disabled=true;const x=await appelJeu({mode:'refuser',division:b.dataset.ref});if(x)uiAlert(x.txt);vCeintures()});
+  main.querySelectorAll('[data-acc]').forEach(b=>b.onclick=async()=>{b.disabled=true;b.textContent+=' …';const x=await appelJeu({mode:'accepter',division:b.dataset.acc});
+    if(x&&x.ok&&x.json&&Array.isArray(x.json.journal)){await scene('combat.html?site',{fc:'combat',res:x.json});if(x.json.annonce)uiAlert(x.json.annonce);await refreshJoueur()}
+    else if(x)uiAlert(x.txt||'Le combat n\'a pas pu être lancé.');vCeintures()});
+}
+
 /* ---------- Boutique ---------- */
 async function vBoutique(){
   const [t,s]=await Promise.all([q(sb.from('types_boosters').select('*').eq('actif',true)),
@@ -780,11 +816,18 @@ async function champignons(box,anim){
 
 /* ---------- Deck : à gauche le deck (3 combattants · 3 magies · 3 pièges + 1 libre), à droite toutes ses cartes ---------- */
 const DK_N=10,DK_T=['combattant','magie','piege'];
+// Decks de championnat (33-championnat.sql) : un par ceinture, 15 cartes, 5 de chaque type ; Rare : communes et rares, Épique : jusqu'à épique
+const DIVS={rare:{nom:'Ceinture Rare',e:'🥉',max:3},epique:{nom:'Ceinture Épique',e:'🥈',max:2},libre:{nom:'Ceinture Libre',e:'🥇',max:0}};
+let dkDiv='',dkChamp=null,dkNormal=null;   // dkDiv : '' = deck de combat, sinon la ceinture ; dkChamp : les decks enregistrés ; dkNormal : le deck de combat en cours, gardé pendant ce temps
+const dkTropRare=id=>{if(!dkDiv)return false;const i=rangRar(rarOf[id])[0];return i<9&&i<DIVS[dkDiv].max};
 const dkCompte=(set=deck)=>{const n={combattant:0,magie:0,piege:0};[...set].forEach(i=>{if(n[typeOf[i]]!=null)n[typeOf[i]]++});return n};
 const dkLibre=n=>DK_T.reduce((s,t)=>s+Math.max(0,n[t]-3),0);   // cartes posées sur la case libre
-const dkValide=(set=deck)=>{const n=dkCompte(set);return set.size===DK_N&&DK_T.every(t=>n[t]>=3)};
+const dkValide=(set=deck)=>{const n=dkCompte(set);return dkDiv?set.size===15&&DK_T.every(t=>n[t]===5):set.size===DK_N&&DK_T.every(t=>n[t]>=3)};
 // '' si la carte peut entrer dans le deck, sinon la raison
-function dkRefus(id){const t=typeOf[id];if(deck.has(id))return '';if(deck.size>=DK_N)return 'Deck complet : 10 cartes.';
+function dkRefus(id){const t=typeOf[id];if(deck.has(id))return '';
+  if(dkDiv){if(dkTropRare(id))return `Trop rare pour la ${DIVS[dkDiv].nom} : ${dkDiv==='rare'?'cartes communes et rares seulement':'jusqu\'aux cartes épiques seulement'}.`;
+   return dkCompte()[t]>=5?`Déjà 5 ${t==='magie'?'magies':t==='piege'?'pièges':'combattants'} : un deck de championnat se compose de 5 combattants, 5 magies et 5 pièges.`:''}
+  if(deck.size>=DK_N)return 'Deck complet : 10 cartes.';
   const n=dkCompte();if(n[t]<3)return '';if(dkLibre(n)<1)return '';
   return `Plus de place pour ${t==='magie'?'une magie':t==='piege'?'un piège':'un combattant'} : le deck se compose de 3 combattants, 3 magies, 3 pièges et 1 carte libre (déjà prise).`}
 function dkBascule(id){if(deck.has(id)){deck.delete(id);return true}const r=dkRefus(id);if(r){uiAlert(r);return false}deck.add(id);return true}
@@ -792,6 +835,7 @@ let dkCombat=new Set(),dkNom='',dkSrc='',dkF={t:'tout',r:'tout',c:'tout',q:'',tr
 const dkCle=s=>[...s].sort((a,b)=>a-b).join(',');
 const dkSale=()=>dkCle(deck)!==dkSrc;
 async function vDeck(){
+  if(dkDiv&&dkNormal){({deck,selDeck,dkNom,dkSrc}=dkNormal);dkNormal=null}dkDiv='';dkChamp=null;   // on revient toujours sur le deck de combat
   apercu=false;await loadColl();await loadDecks();await chargerPrix();
   const dk=await sb.from('deck').select('carte_id').eq('joueur_id',user.id);dkCombat=new Set(((dk&&dk.data)||[]).map(x=>x.carte_id));
   if(!selDeck&&!dkNom){const k=dkCle(dkCombat),d=savedDecks.find(x=>dkCle(new Set(x.cartes||[]))===k&&k);
@@ -805,6 +849,7 @@ function dkCartes(){   // une tuile par carte (même si plusieurs versions), qua
 function drawDeck(){
   curView=drawDeck;if(!$('#dkl'))return;
   const tous=dkCartes(),parId=new Map(tous.map(x=>[x.variantes_carte.cartes.id,x])),n=dkCompte(),ok=dkValide(),enCombat=deck.size&&dkCle(deck)===dkCle(dkCombat);
+  if(dkDiv)drawDeckChamp(parId);else{
   // ---- colonne de gauche : le deck ----
   const pos={combattant:[],magie:[],piege:[]},libre=[];   // une carte en trop (ancien deck) reste visible pour pouvoir la retirer
   [...deck].map(i=>parId.get(i)).filter(Boolean).sort(cmpColl).forEach(x=>{const t=x.variantes_carte.cartes.type;if(pos[t].length<3)pos[t].push(x);else libre.push(x)});
@@ -824,6 +869,8 @@ function drawDeck(){
    </div>${decksOK?'':'<small>Decks multiples indisponibles pour le moment (l\'admin doit lancer 09-decks-multiples.sql dans Supabase).</small>'}`;
   // ---- barre fixe en bas (téléphone) ----
   $('#dkm').innerHTML=`<span><b class="${ok?'ok':''}">${deck.size}/10</b> · ⚔️${n.combattant} ✨${n.magie} 🪤${n.piege}</span><button id="dplay2" ${ok&&!enCombat?'':'disabled'}>${enCombat?'✓ En combat':'⚔️ Utiliser'}</button>`;
+  $('#dkl').insertAdjacentHTML('afterbegin',dkModes());}
+  dkModesBrancher();
   // ---- colonne de droite : filtres + cartes ----
   const rars=[...new Map(tous.map(x=>{const r=x.variantes_carte.cartes.raretes;return [r.nom,r]})).values()].sort((a,b)=>rangRar(a)[0]-rangRar(b)[0]||rangRar(a)[1]-rangRar(b)[1]);
   const cols=[...new Set(tous.map(cn))].sort((a,b)=>(a=='Communes')-(b=='Communes')||a.localeCompare(b,'fr'));
@@ -847,6 +894,7 @@ function drawDeck(){
   $('#dcg').querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>{if(dkBascule(+b.dataset.add))redessine()});
   $('#dcg').querySelectorAll('[data-zi]').forEach(b=>b.onclick=()=>mdOpen(L,+b.dataset.zi,redessine));
   $('#dkl').querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{deck.delete(+b.dataset.rm);redessine()});
+  if(dkDiv)return;   // deck de championnat : ses boutons sont branchés par drawDeckChamp
   $('#clr').onclick=()=>{deck.clear();redessine()};
   const jouer=async()=>{if(!dkValide()){uiAlert('Il faut exactement 10 cartes : 3 combattants, 3 magies, 3 pièges et 1 carte libre.');return}
     if(decksOK&&(dkSale()||!selDeck)&&!(await dkSauver()))return;
@@ -873,6 +921,42 @@ function drawDeck(){
     const {error}=await sb.rpc('supprimer_deck',{p_id:+selDeck});if(error){uiAlert(error.message);return}
     selDeck='';dkNom='Nouveau deck';await loadDecks();dkSrc='';redessine()};
 }
+// ---- Decks de championnat : le choix du deck (combat ou ceinture), en haut de la colonne de gauche ----
+function dkModes(){return `<div class="dkmode">${[['','⚔️ Combat'],...Object.entries(DIVS).map(([k,d])=>[k,d.e+' '+d.nom.replace('Ceinture ','')])].map(([k,l])=>`<button class="${k===dkDiv?'on':'sec'}" data-dkm="${k}" title="${k?'Deck de championnat : '+DIVS[k].nom:'Deck des combats du jour et des duels'}">${l}</button>`).join('')}</div>`}
+function dkModesBrancher(){document.querySelectorAll('[data-dkm]').forEach(b=>b.onclick=async()=>{const k=b.dataset.dkm;if(k===dkDiv)return;
+  if(dkSale()&&deck.size&&!(await uiConfirm('Tes changements sur ce deck ne sont pas enregistrés. Changer de deck quand même ?',{ok:'Changer de deck'})))return;
+  if(!dkChamp&&k){const r=await sb.from('decks_championnat').select('division,cartes').eq('joueur_id',user.id);
+   if(r.error){uiAlert(/decks_championnat/.test(r.error.message||'')?'Championnat indisponible : l\'admin doit lancer 33-championnat.sql dans Supabase.':r.error.message);return}
+   dkChamp={};(r.data||[]).forEach(x=>dkChamp[x.division]=x.cartes||[])}
+  if(!dkDiv)dkNormal={deck,selDeck,dkNom,dkSrc};
+  dkDiv=k;
+  if(k){const own=new Set(collData.map(x=>x.variantes_carte.cartes.id)),L=(dkChamp[k]||[]).map(Number);deck=new Set(L.filter(i=>own.has(i)));dkSrc=dkCle(new Set(L))}
+  else if(dkNormal){({deck,selDeck,dkNom,dkSrc}=dkNormal);dkNormal=null}
+  drawDeck()})}
+function drawDeckChamp(parId){
+  const D=DIVS[dkDiv],n=dkCompte(),ok=dkValide(),enr=!!(dkChamp&&dkChamp[dkDiv]&&dkChamp[dkDiv].length),sale=dkSale();
+  const pos={combattant:[],magie:[],piege:[]};[...deck].map(i=>parId.get(i)).filter(Boolean).sort(cmpColl).forEach(x=>pos[x.variantes_carte.cartes.type].push(x));
+  const slot=(x,t)=>{if(!x){const L=TYPE_L[t];return `<div class="sl vide"><span>${L[0]}</span><small>${L[1]}</small></div>`}
+    const v=x.variantes_carte,c=v.cartes,trop=dkTropRare(c.id);return `<button class="sl" data-rm="${c.id}" style="--g:${esc(trop?'#ef4444':c.raretes.couleur||'#888')}" title="Retirer ${esc(c.nom)}${trop?' (trop rare pour cette ceinture)':''}">${v.image_path?`<img src="${img(v.image_path)}" alt="${esc(c.nom)}">`:`<b>${esc(c.nom)}</b>`}<i>✕</i></button>`};
+  const trop=[...deck].filter(dkTropRare).length;
+  $('#dkl').innerHTML=`${dkModes()}
+   <div class="dkch">${D.e} <b>Deck de championnat · ${D.nom}</b><br>15 cartes : 5 combattants, 5 magies, 5 pièges${D.max?` · ${dkDiv==='rare'?'cartes communes et rares seulement':'jusqu\'aux cartes épiques'}`:' · toutes les raretés'}. Combat pour le titre en relais : 3 combattants chacun, un nouveau trio à chaque entrée, jusqu'au KO.</div>
+   <div class="dkc"><span class="${n.combattant===5?'ok':''}">⚔️ ${n.combattant}/5</span><span class="${n.magie===5?'ok':''}">✨ ${n.magie}/5</span><span class="${n.piege===5?'ok':''}">🪤 ${n.piege}/5</span><b class="${ok?'ok':''}">${deck.size}/15</b></div>
+   <div class="dks ch">${DK_T.map(t=>[0,1,2,3,4].map(i=>slot(pos[t][i],t)).join('')).join('')}</div>
+   ${DK_T.some(t=>pos[t].length>5)?`<div class="dkx"><span>⚠️ Trop de cartes d'un type : retire-les.</span><div class="dkxs">${DK_T.flatMap(t=>pos[t].slice(5)).map(x=>slot(x)).join('')}</div></div>`:''}
+   ${trop?`<div class="dkx"><span>⚠️ ${trop} carte${trop>1?'s':''} trop rare${trop>1?'s':''} pour cette ceinture (bord rouge) : retire-${trop>1?'les':'la'}.</span></div>`:''}
+   ${enr&&!sale?`<div class="dkok">${D.e} Deck enregistré : tu peux défier pour la ${D.nom} (onglet 🥇 Ceintures, ou !defi ${dkDiv==='epique'?'épique':dkDiv} dans le chat)</div>`:''}
+   <div class="dka"><button id="dchs" ${ok&&!trop&&(sale||!enr)?'':'disabled'}>${ok?(enr&&!sale?'✓ Deck enregistré':'💾 Enregistrer ce deck'):`Encore ${Math.max(0,15-deck.size)} carte${15-deck.size>1?'s':''}`}</button>
+    <div class="dkb"><button id="dchc" class="sec" ${deck.size?'':'disabled'}>🧹 Vider</button>${enr?'<button id="dchd" class="sec">🗑 Supprimer</button>':''}</div></div>`;
+  $('#dkm').innerHTML=`<span><b class="${ok?'ok':''}">${deck.size}/15</b> · ⚔️${n.combattant} ✨${n.magie} 🪤${n.piege}</span><button id="dchs2" ${ok&&!trop&&(sale||!enr)?'':'disabled'}>💾 Enregistrer</button>`;
+  const sauver=async()=>{const r=await sb.rpc('enregistrer_deck_championnat',{p_division:dkDiv,p_cartes:[...deck]});
+    if(r.error){uiAlert(/enregistrer_deck_championnat/.test(r.error.message||'')?'Championnat indisponible : l\'admin doit lancer 33-championnat.sql dans Supabase.':r.error.message);return}
+    dkChamp[dkDiv]=[...deck];dkSrc=dkCle(deck);drawDeck();uiAlert(`${D.e} Deck de la ${D.nom} enregistré !`)};
+  $('#dchs').onclick=sauver;$('#dchs2').onclick=sauver;
+  $('#dchc').onclick=()=>{deck.clear();drawDeck()};
+  const del=$('#dchd');if(del)del.onclick=async()=>{if(!(await uiConfirm(`Supprimer ton deck de la ${D.nom} ?`)))return;
+    const r=await sb.rpc('enregistrer_deck_championnat',{p_division:dkDiv,p_cartes:[]});if(r.error){uiAlert(r.error.message);return}
+    delete dkChamp[dkDiv];deck=new Set();dkSrc='';drawDeck()}}
 // Enregistre le deck en cours sous son nom (demande un nom s'il n'en a pas). true si c'est fait.
 async function dkSauver(){
   if(!dkValide()){uiAlert('Il faut exactement 10 cartes : 3 combattants, 3 magies, 3 pièges et 1 carte libre.');return false}

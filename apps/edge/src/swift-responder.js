@@ -10,8 +10,90 @@ const NOM_MONNAIE = 'gold';
 const REGLES = { gain: 50, perte: 10, nul: 20, maxTours: 10 };   // récompenses du combat et nombre de tours maximum
 const PAYER_ADVERSAIRE = true;   // true : l'adversaire (même absent) reçoit aussi récompense et statistiques ; false : seul le joueur qui lance le combat
 
-import { simuler } from '@forestcard/journal';
+import { simuler, simulerRelais } from '@forestcard/journal';
 
+
+// ---------------- Championnat : les 3 ceintures (33-championnat.sql) ----------------
+// Modes envoyés par Streamer.bot (ou le site) : defi (« !defi rare @pseudo »), refuser, accepter (le combat pour le titre,
+// en relais 3 contre 3), ceintures (qui détient quoi).
+const TITRE_MODES = ['defi', 'refuser', 'accepter', 'ceintures'];
+const TITRE_TEXTE = ['defi', 'refuser', 'ceintures'];
+const TITRE_EMOJI = { rare: '🥉', epique: '🥈', libre: '🥇' };
+// La ceinture et l'adversaire, où qu'ils soient écrits (champ division, adversaire ou message)
+function lireDefi(b) {
+  const mots = [b.division, b.adversaire, b.message, b.texte].filter(Boolean).join(' ').split(/\s+/).filter(Boolean);
+  let division = '', adversaire = '';
+  for (const m of mots) {
+    const n = m.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z]/g, '');
+    if (!division && ['rare', 'epique', 'libre'].includes(n)) division = n;
+    else if (!adversaire && n) adversaire = m.replace(/^@/, '');
+  }
+  return { division, adversaire };
+}
+const erreurSql = (r, def) => String((r.data && r.data.message) || def);
+async function championnat(b) {
+  const { division, adversaire } = lireDefi(b);
+  const id = String(b.twitch_id);
+  if (b.mode === 'ceintures') {
+    const r = await rpc('ceintures_etat', {});
+    if (!r.ok) return txt('Championnat indisponible (33-championnat.sql à lancer dans Supabase).', 409);
+    const L = (r.data.ceintures || []).map((c) => `${TITRE_EMOJI[c.division]} ${c.nom} : ${c.pseudo ? c.pseudo + (c.defenses ? ` (${c.defenses} défense${c.defenses > 1 ? 's' : ''})` : '') : 'vacante'}`);
+    return txt('🏆 ' + L.join(' · '));
+  }
+  if (b.mode === 'defi') {
+    const r = await rpc('titre_defier', { p_twitch_id: id, p_division: division, p_adversaire: adversaire || null });
+    if (!r.ok) return txt(erreurSql(r, 'Défi impossible.'), 409);
+    const d = r.data;
+    return txt(`${TITRE_EMOJI[d.division]} ${d.challenger} défie ${d.adversaire} pour la ${d.nom}${d.pour_champion ? '' : ' (vacante)'} ! ` +
+      `${d.adversaire}, tape !accepter pour le combat (relais 3 contre 3) ou !refuser. ${d.heures} h pour répondre.`);
+  }
+  if (b.mode === 'refuser') {
+    const r = await rpc('titre_refuser', { p_twitch_id: id, p_division: division || null });
+    if (!r.ok) return txt(erreurSql(r, 'Refus impossible.'), 409);
+    const d = r.data;
+    if (d.perdue) return txt(`❌ ${d.adversaire} refuse un ${d.refus_max}e combat pour la ${d.nom} : la ceinture lui est retirée, elle est vacante !`);
+    return txt(`❌ ${d.adversaire} refuse le défi de ${d.challenger} pour la ${d.nom}` +
+      (d.pour_champion ? ` (refus ${d.refus}/${d.refus_max} : au ${d.refus_max}e, la ceinture est retirée).` : '.'));
+  }
+  // accepter : le combat pour le titre
+  const r = await rpc('titre_preparer', { p_twitch_id: id, p_division: division || null });
+  if (!r.ok) return txt(erreurSql(r, 'Combat impossible.'), 409);
+  const D = r.data, a = D.a, adv = D.b;
+  let res, G;
+  try {
+    const dos = await dosDe([a.id, adv.id]);
+    G = await reglesGains();
+    await ajouterRaretes([...(a.deck || []), ...(adv.deck || [])]);
+    res = simulerRelais({ pseudo: a.pseudo, deck: a.deck, dos: dos[a.id] }, { pseudo: adv.pseudo, deck: adv.deck, dos: dos[adv.id] },
+      { seed: Math.floor(Math.random() * 1e9), regles: { ...REGLES, gain: G.gain, perte: G.perte, nul: G.nul, equipe: 3 } });
+  } catch (e) {
+    console.error('titre :', String(e));
+    return txt("Le combat pour le titre a rencontré une erreur, le défi reste en attente.", 500);
+  }
+  const w = res.gagnant;
+  const c = await rpc('titre_conclure', { p_defi: D.id, p_gagnant: w, p_seed: String(res.seed), p_gain_a: res.recompenses[0], p_gain_b: res.recompenses[1] });
+  if (!c.ok) return txt(erreurSql(c, 'Combat pour le titre déjà joué.'), 409);
+  const T = c.data, E = TITRE_EMOJI[D.division];
+  try {
+    const J = (res.journal.find((e) => e.t === 'debut') || {}).joueurs || [];
+    let tours = 0; for (const e of res.journal) if (e.t === 'tour') tours++;
+    const deroule = res.journal.filter((e) => e.t !== 'debut').map((e) => { const o = { tour: e.tour, t: e.t, txt: e.txt }; if (e.c != null) o.c = e.c; return o; });
+    const h = await rest('historique_combats', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({
+      mode: 'titre', joueur_a: a.id, joueur_b: adv.id, pseudo_a: a.pseudo, pseudo_b: adv.pseudo,
+      carte_a: J[0] ? J[0].carte : null, carte_b: J[1] ? J[1].carte : null, magie_a: J[0] ? J[0].magie : null, magie_b: J[1] ? J[1].magie : null,
+      piege_a: J[0] ? J[0].piege : null, piege_b: J[1] ? J[1].piege : null,
+      gagnant: w, gain_a: res.recompenses[0], gain_b: res.recompenses[1], tours, seed: res.seed, deroule }) });
+    if (!h.ok) console.error('historique_combats (titre) :', JSON.stringify(h.data));
+  } catch (e) { console.error('historique_combats (titre) :', String(e)); }
+  const nomW = w === null ? null : (w === 0 ? a.pseudo : adv.pseudo), nomL = w === 0 ? adv.pseudo : a.pseudo;
+  res.titre = { division: D.division, nom: D.nom, nouveau: T.nouveau, champion: T.champion };
+  res.annonce = w === null ? `🤝 Match nul entre ${a.pseudo} et ${adv.pseudo} pour la ${D.nom}` + (T.champion ? ` : ${T.champion} garde sa ceinture !` : ' : la ceinture reste vacante !')
+    : T.nouveau ? `${E}👑 ${nomW} bat ${nomL} et devient champion de la ${D.nom} !`
+    : `${E}🛡️ ${nomW} bat ${nomL} et conserve la ${D.nom} (${T.defenses} défense${T.defenses > 1 ? 's' : ''}) !`;
+  res.annonce += ` (+${res.recompenses[0]} ${NOM_MONNAIE} pour ${a.pseudo}, +${res.recompenses[1]} pour ${adv.pseudo})`;
+  const intro = `${E} Combat pour la ${D.nom}${D.pour_champion ? '' : ' (vacante)'} : ${a.pseudo} contre ${adv.pseudo}, 3 combattants chacun, jusqu'au KO !`;
+  return new Response(JSON.stringify(res), { status: 200, headers: { 'content-type': 'application/json; charset=utf-8', 'x-message': encodeURIComponent(intro) } });
+}
 
 // ---------------- Serveur ----------------
 const ERREURS = {
@@ -191,10 +273,13 @@ async function traiter(req) {
   delete b.jeton;
   const live = await jeuEnLive();
   if (site) {
-    if (live && !site.admin) return txt(EN_LIVE, 409);
+    // le championnat se joue en live : depuis le site, on peut défier, refuser et lire les ceintures ; accepter (le combat) seulement hors live
+    if (live && !site.admin && !TITRE_TEXTE.includes(b.mode)) return txt(EN_LIVE, 409);
     b.twitch_id = site.twitch_id;
   } else if (!live) return txt(PAUSE, 409);
   if (!b.twitch_id) return txt('Joueur manquant.', 400);
+
+  if (TITRE_MODES.includes(b.mode)) return championnat(b);
 
   // ----- Booster quotidien : 1 à 3 boosters, une fois par jour -----
   if (b.mode === 'booster_quotidien') {
