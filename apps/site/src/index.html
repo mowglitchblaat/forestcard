@@ -1327,7 +1327,10 @@ async function vPropos(){
      <label style="flex:1">PV<input name="pv" type="number" min="1" max="9999" placeholder="Ex. : 110"></label></div>
     <div id="p-comb"><b>Ultime</b> <small>(facultatif)</small><div id="pb-ult"></div>
      <div class="row"><label><small>Se déclenche après N tours</small><br><input name="utours" type="number" min="0" style="width:110px"></label>
-      <label><small>Utilisations max (0 = illimité)</small><br><input name="uuses" type="number" min="0" value="1" style="width:110px"></label>
+      <label><input type="checkbox" name="ucarte"> ou quand un piège se déclenche (ou qu'une magie revient)</label></div>
+     <div class="row"><label><small>ou quand… (vérifié au début de son tour, avant son attaque)</small><br><select name="udecl"><option value="">— aucun autre —</option><option value="pv_sous">Quand il passe sous X % de ses PV (X = 50 par défaut)</option><option value="adv_pv_sous">Quand l'adversaire passe sous X % de PV (X = 50 par défaut)</option><option value="coups_recus">Toutes les X attaques de l'adversaire</option><option value="attaques">Toutes les X attaques qu'il fait</option><option value="coup_fort">Quand il subit au moins X dégâts en un coup</option><option value="statut">Quand il reçoit un statut (brûlure, poison, gel, malédiction…)</option><option value="esquive">Quand il esquive</option><option value="bloque">Quand il bloque une attaque</option><option value="soigne">Quand il est soigné</option><option value="son_piege">Quand son piège se déclenche</option><option value="piege_adv">Quand le piège adverse se déclenche</option><option value="adv_ultime">Quand l'adversaire lance son ultime</option></select></label>
+      <label><small>X</small><br><input name="udx" type="number" min="0" style="width:80px"></label></div>
+     <div class="row"><label><small>Utilisations max (0 = illimité)</small><br><input name="uuses" type="number" min="0" value="1" style="width:110px"></label>
       <label><small>Délai entre 2 utilisations (tours)</small><br><input name="ucd" type="number" min="0" value="0" style="width:110px"></label></div>
      <b>Passifs</b> <small>(tu peux en cumuler plusieurs)</small><div id="pb-pas"></div></div>
     <div id="p-mag" style="display:none"><b>Effet de la magie</b><div id="pb-mag"></div></div>
@@ -1347,7 +1350,7 @@ async function vPropos(){
   const toggle=()=>{const t=f.type.value;$('#pstats').style.display=$('#p-comb').style.display=t=='combattant'?'':'none';$('#p-mag').style.display=t=='magie'?'':'none';$('#p-pie').style.display=t=='piege'?'':'none'};
   // la carte telle que le joueur la remplit (mêmes champs que l'admin)
   const effets=()=>{const t=f.type.value;let ult=null,pas=null,eff=null;
-    try{if(t=='combattant'){ult=PB.ult.get();if(ult){if(+f.utours.value)ult.apres_tours=+f.utours.value;ult.utilisations=+f.uuses.value||0;ult.delai_tours=+f.ucd.value||0}pas=PB.pas.get()}
+    try{if(t=='combattant'){ult=PB.ult.get();if(ult){if(+f.utours.value)ult.apres_tours=+f.utours.value;if(f.ucarte.checked)ult.sur_carte=true;if(f.udecl.value){ult.udecl=f.udecl.value;if(f.udx.value!=='')ult.udx=+f.udx.value}ult.utilisations=+f.uuses.value||0;ult.delai_tours=+f.ucd.value||0}pas=PB.pas.get()}
      else if(t=='magie')eff=PB.mag.get();else{const c=PB.con.get(),x=PB.pef.get();if(c||x)eff={condition:c,effet:x,declenchements:+f.decl.value||1}}}catch(e){}
     return {ult,pas,eff}};
   const lire=()=>{const t=f.type.value,{ult,pas,eff}=effets();return {carte:{type:t,ultime:ult,passif:pas,effet:eff,atq:f.atq.value,pv:f.pv.value},tier:CPO.tierDe(R.rar.find(x=>x.id==f.rar.value))}};
