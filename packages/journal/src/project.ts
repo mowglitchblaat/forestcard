@@ -287,8 +287,17 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
       const trap = at(e.side).trap;
       return {
         t: 'vol',
-        txt: `Le piège de ${pseudo(e.side)} est détruit`,
-        o: { c: e.side, k: 'piege_detruit', carte: trap.nom, img: trap.image || null },
+        txt:
+          e.by === 'execution'
+            ? `Le piège de ${pseudo(e.side)} est tranché par l'exécution`
+            : `Le piège de ${pseudo(e.side)} est détruit`,
+        o: {
+          c: e.side,
+          k: 'piege_detruit',
+          carte: trap.nom,
+          img: trap.image || null,
+          ...(e.by === 'execution' ? { tranche: 1 } : {}),
+        },
       };
     }
     case 'trapRearmed':

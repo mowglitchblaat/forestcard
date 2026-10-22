@@ -257,6 +257,15 @@ test('exécution : elle brise « évite la mort » ; après la réanimation, la 
   assert.equal(r3.journal[i3 + 1].k, 'piege_detruit', 'le piège « évite la mort » est détruit');
   assert.equal(r3.journal.filter(e => e.t === 'protege').length, 0, 'il ne sauve plus la carte');
   assert.ok(r3.journal.some(e => e.t === 'reanim'), 'la réanimation a lieu');
+  assert.equal(r3.journal[i3 + 1].tranche, 1, 'tranché par l\'exécution');
+  // piège « évite la mort + réanimation » : tranché aussi, sa réanimation n'a pas lieu
+  const phenix = PIE('Phénix', { type: 'proprio_meurt' }, { briques: [{ type: 'mort_evitee', cond: 'aucune' }, { type: 'reanimation', pctrev: 50 }] });
+  const r4 = combat([C('a', 95, SOLIDE, { passif: { type: 'execution', chance: 100, seuilexec: 1 } })], [C('b', 1, 1000), phenix], { regles: { maxTours: 40, maxProlong: 0 } });
+  const i4 = r4.journal.findIndex(e => e.k === 'protection_brisee');
+  assert.ok(i4 > 0);
+  assert.equal(r4.journal[i4 + 1].k, 'piege_detruit');
+  assert.equal(r4.journal.filter(e => e.t === 'reanim' || e.t === 'protege').length, 0, 'ni évite la mort ni réanimation');
+  assert.equal(r4.gagnant, 0);
 });
 
 test('exécution, statut marquant : chaque dégât du statut choisi peut poser une marque, jusqu\'à 3', () => {

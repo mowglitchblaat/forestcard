@@ -22,8 +22,8 @@ export const avoidDeathState = (passives: EffectData[]): AvoidDeathState => ({
 });
 
 // An execution breaks avoid-death, whatever holds it: its charges (passive or granted), its active
-// magic's, and its "owner dies" trap holding an avoid-death (destroyed; a trap that also revives is
-// left to the revive). Spent without saving the card, it does not come back after a revive.
+// magic's, and its "owner dies" trap holding an avoid-death (sliced: destroyed, even if it would also
+// revive). Spent without saving the card, it does not come back after a revive.
 const has = (e: EffectData | null | undefined, type: string): boolean =>
   !!e && (e.type === type || (e.briques || []).some((b) => (b as EffectData).type === type));
 export function breakAvoidDeath(c: Combat, dst: Side): void {
@@ -35,15 +35,14 @@ export function breakAvoidDeath(c: Combat, dst: Side): void {
     !!t &&
     t.condition?.type === 'proprio_meurt' &&
     dst.trapTriggers < (t.declenchements || 1) &&
-    has(t.effet, 'mort_evitee') &&
-    !has(t.effet, 'reanimation');
+    has(t.effet, 'mort_evitee');
   if (!magic && !trap && dst.status.avoidDeathCharges <= 0) return;
   if (magic) dst.status.magicAvoidDeathUsed = 1;
   dst.status.avoidDeathCharges = 0;
   emit(c, { type: 'avoidDeathBroken', side: id(c, dst) });
   if (trap) {
     dst.trapActive = 0;
-    emit(c, { type: 'trapDestroyed', side: id(c, dst) });
+    emit(c, { type: 'trapDestroyed', side: id(c, dst), by: 'execution' });
   }
 }
 

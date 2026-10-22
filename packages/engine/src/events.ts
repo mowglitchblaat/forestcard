@@ -179,7 +179,7 @@ export type DomainEvent =
   | { type: 'magicDestroyed'; side: SideIndex }
   | { type: 'trapFired'; side: SideIndex }
   | { type: 'trapNullified'; side: SideIndex; target: SideIndex; exhausted: boolean }
-  | { type: 'trapDestroyed'; side: SideIndex }
+  | { type: 'trapDestroyed'; side: SideIndex; by?: 'execution' } // by: sliced by an execution
   | { type: 'trapRearmed'; side: SideIndex }
   | { type: 'ultimateTriggered'; side: SideIndex }
   | { type: 'ultimateCopied'; side: SideIndex; from: SideIndex }
