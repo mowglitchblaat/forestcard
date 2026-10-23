@@ -257,7 +257,7 @@ const EFFECT_TEXT: Record<EffectType, (e: Fx, x: EffectContext) => string[]> = {
     "Annule la prochaine attaque de l'adversaire (elle n'a pas lieu : ni dégâts, ni statuts, ni marques)",
   ],
   bloque_attaque: (e) => [
-    `Bloque ${nz(e.nbbloque) > 0 ? `les ${nz(e.nbbloque) > 1 ? nz(e.nbbloque) + ' premiers coups' : 'le premier coup'} de ` : ''}la prochaine attaque de l'adversaire : ${nz(e.nbbloque) > 0 ? 'ils touchent' : 'elle touche'} sans faire de dégâts, mais ses statuts et ses marques (exécution, avalage) s'appliquent${riposteText(e)}`,
+    `Bloque ${nz(e.nbbloque) > 1 ? `les ${nz(e.nbbloque)} premiers coups de ` : nz(e.nbbloque) > 0 ? 'le premier coup de ' : ''}la prochaine attaque de l'adversaire : ${nz(e.nbbloque) > 1 ? 'ils touchent' : nz(e.nbbloque) > 0 ? 'il touche' : 'elle touche'} sans faire de dégâts, mais ses statuts et ses marques (exécution, avalage) s'appliquent${riposteText(e)}`,
   ],
   detonation: (e) => {
     const b = isEmpty(e.bonus) ? 50 : nz(e.bonus);
