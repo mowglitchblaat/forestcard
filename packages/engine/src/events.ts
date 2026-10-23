@@ -55,6 +55,7 @@ export type DispelledStatus =
 // Why an attack, max HP or ATQ changed.
 export type StatCause =
   | 'effect' // atq_mod / pv_mod: signed amount
+  | 'calcination' // max HP burnt away by a burn tick
   | 'growth' // atq_tours / pv_tours passives
   | 'transcendence'
   | 'fatigue' // loss when a fatigue starts or grows
@@ -83,7 +84,8 @@ export type DamageCause =
   | 'missile' // a missile's explosion
   | 'blast' // a share of an explosion, on the cards around it
   | 'missileReturned' // a reflected missile exploding on its shooter
-  | 'shatter'; // the ice of a frost shattering (glaciation, or a fracture)
+  | 'shatter' // the ice of a frost shattering (glaciation, or a fracture)
+  | 'thermalShock'; // fire on ice: a burn laid on a frozen card
 
 export type CannotAttackReason =
   | 'mouthFull'
@@ -301,6 +303,8 @@ export type DomainEvent =
       held: boolean;
     }
   | { type: 'frostShattered'; side: SideIndex; cause: 'glaciation' | 'fracture' }
+  | { type: 'thawed'; side: SideIndex; level: number } // fire melts the ice: frost one level down
+  | { type: 'fireExtinguished'; side: SideIndex } // ice puts the fire out: burn gone, no frost laid
   | { type: 'fractured'; side: SideIndex; chance: number; damage: number; turns: number }
   | { type: 'solidified'; side: SideIndex; turns: number }
   | { type: 'solidBroken'; side: SideIndex }

@@ -83,8 +83,8 @@ Clés de `EFFECT_TYPES`, exécutées par `applyEffect` (`packages/engine/src/com
 | `malediction` | l'ATQ baisse à chaque début de tour, puis revient petit à petit | `curse.ts` |
 | `saignement` | X % des PV max perdus en fin de tour, soins réduits | `bleed.ts` |
 | `poison_effet` | dégâts fixes en fin de tour | `dot.ts` |
-| `brulure_effet` | X % des PV max en fin de tour | `dot.ts` |
-| `gel` | +1 niveau de gel (3 au plus) : 1 **givre** (`annul` % d'attaque annulée, et autant de points d'esquive en moins), 2 **gelée** (×2,5 pour les deux, 100 % au plus), 3 **glaciation** (n'attaque pas à son tour suivant, puis la glace éclate : `eclat` dégâts, 10 par défaut, et le gel est fini). Chaque gel garde les plus fortes valeurs et relance la durée (`tours`). Une carte solidifiée ne dépasse pas le niveau 2 ; une fracture sur une carte gelée fait éclater la glace ; la purification retire le gel | `frost.ts` |
+| `brulure_effet` | X % des PV max en fin de tour ; chaque dégât de brûlure **calcine** autant de PV max, pour de bon (la purification arrête la brûlure, pas la calcination) | `dot.ts` |
+| `gel` | +1 niveau de gel (3 au plus) : 1 **givre** (`annul` % d'attaque annulée, et autant de points d'esquive en moins), 2 **gelée** (×2,5 pour les deux, 100 % au plus), 3 **glaciation** (n'attaque pas à son tour suivant, puis la glace éclate : `eclat` dégâts, 10 par défaut, et le gel est fini). Chaque gel garde les plus fortes valeurs et relance la durée (`tours`). Une carte solidifiée ne dépasse pas le niveau 2 ; une fracture sur une carte gelée fait éclater la glace ; la purification retire le gel. **Feu contre glace** : geler une carte qui brûle éteint le feu (la brûlure part, aucun gel n'est posé) ; brûler une carte gelée fait fondre la glace d'un niveau et inflige un tick de brûlure tout de suite (choc thermique) | `frost.ts`, `dot.ts` |
 | `fracture` | chance de se blesser en attaquant ; brise la solidification | `fracture.ts` |
 | `fatigue` | ATQ baissée pendant X tours, rendue ensuite | `fatigue.ts` |
 | `rage` | dégâts en plus par coup pendant X tours, puis fatigue | `rage.ts` |

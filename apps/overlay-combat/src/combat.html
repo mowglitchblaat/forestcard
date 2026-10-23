@@ -813,6 +813,14 @@ async function gelNiveau(c,n){const card=$('#p'+c+' .card');if(!card)return;card
  const K=rc(c);addFx(.9,(x,t,u)=>{x.globalCompositeOperation='lighter';orb(x,K.cx,K.cy,K.w*(.4+.25*n)*ez(cl(t/.3)),`rgba(170,225,255,${(.25+.12*n)*(1-u)})`,'rgba(150,215,255,0)');x.globalCompositeOperation='source-over'});
  if(n>=3){givreCoup(c);card.animate([{filter:'brightness(1.6) saturate(.4)'},{filter:'none'}],{duration:700})}
  flot(c,['Givre','Gelée !','GLACIATION !'][Math.min(3,n)-1],'#bae6fd',n>=3?'big':'');await wait(n>=3?1300:800)}
+// FEU CONTRE GLACE : un nuage de vapeur blanche monte de la carte (la glace fond, ou le feu s'éteint), avec un sifflement de gouttelettes
+function vapeurFx(c){const K=rc(c),P=Array.from({length:22},()=>({x:R(.1,.9),d:R(0,.5),s:R(.18,.35),v:R(.5,1),w:R(-.15,.15)}));
+ addFx(1.8,(x,t)=>{for(const p of P){const q=cl((t-p.d)/1.2);if(q<=0||q>=1)continue;const px=K.x+K.w*(p.x+p.w*q),py=K.y+K.h*(.85-q*.95*p.v),r=K.w*p.s*(.5+q);
+  const g=x.createRadialGradient(px,py,0,px,py,r);g.addColorStop(0,`rgba(245,248,252,${.55*Math.sin(Math.PI*q)})`);g.addColorStop(1,'rgba(245,248,252,0)');x.fillStyle=g;x.beginPath();x.arc(px,py,r,0,7);x.fill()}})}
+// CALCINATION : la carte se noircit un instant par le bas, des braises et des cendres s'envolent (les PV max sont brûlés)
+function calcineFx(c){const K=rc(c),E=Array.from({length:26},()=>({x:R(.05,.95),v:R(.4,1),s:R(1.2,3),d:R(0,.3),o:Math.random()<.5}));
+ addFx(1.4,(x,t)=>{const a=Math.sin(Math.PI*cl(t/1.1));const g=x.createLinearGradient(0,K.y+K.h,0,K.y+K.h*.35);g.addColorStop(0,`rgba(20,8,0,${.55*a})`);g.addColorStop(1,'rgba(20,8,0,0)');x.fillStyle=g;x.fillRect(K.x,K.y,K.w,K.h);
+  for(const p of E){const q=cl((t-p.d)/1.1);if(q<=0||q>=1)continue;const px=K.x+K.w*p.x+Math.sin(q*9+p.x*20)*6,py=K.y+K.h*(1-q*p.v*.9);x.fillStyle=p.o?`rgba(255,${140+Math.round(80*(1-q))},40,${1-q})`:`rgba(70,60,55,${.8*(1-q)})`;x.beginPath();x.arc(px,py,p.s,0,7);x.fill()}})}
 // LA GLACE ÉCLATE : éclair blanc, la carte tremble, une gerbe d'éclats de glace part dans tous les sens et retombe
 async function eclatGlace(c){const K=rc(c),card=$('#p'+c+' .card'),Sh=Array.from({length:34},()=>({a:R(0,6.28),v:R(.6,1.5),s:R(.025,.07),r:R(0,6),vr:R(-8,8)}));
  if(card)card.animate([{transform:'translate(0,0)'},{transform:'translate(-9px,4px)'},{transform:'translate(8px,-4px)'},{transform:'translate(-5px,2px)'},{transform:'translate(0,0)'}],{duration:320});
@@ -1192,7 +1200,7 @@ async function jouer(res){
    if(e.k&&AVK[e.k]){maj(e);await AVK[e.k](e);continue}   // avalage : marques, langue, mâche, recrache
    if(e.t==='degats'&&e.k==='renvoi')await renvoiFx(e.from,e.c);
    maj(e);
-   if(e.t==='degats'){card.classList.add('hit');if(e.k==='fracture')os(e.c);const gros=e.n/e.max[e.c]>=.2&&e.k!=='poison'&&e.k!=='brûlure'&&e.k!=='saignement';flot(e.c,'-'+e.n,e.k==='poison'?'#22ff55':e.k==='brûlure'?'#ff8a00':e.k==='saignement'?'#c4121e':e.k==='fracture'?'#fde68a':e.k==='gel'?'#7dd3fc':gros?'#ff1111':'#ff6a6a',gros?'big':'');setTimeout(()=>card.classList.remove('hit'),450)}
+   if(e.t==='degats'){card.classList.add('hit');if(e.k==='fracture')os(e.c);const gros=e.n/e.max[e.c]>=.2&&e.k!=='poison'&&e.k!=='brûlure'&&e.k!=='saignement';flot(e.c,'-'+e.n,e.k==='poison'?'#22ff55':e.k==='brûlure'?'#ff8a00':e.k==='saignement'?'#c4121e':e.k==='fracture'?'#fde68a':e.k==='gel'?'#7dd3fc':e.k==='choc'?'#fdba74':gros?'#ff1111':'#ff6a6a',gros?'big':'');setTimeout(()=>card.classList.remove('hit'),450)}
    else if(e.t==='soin'){flot(e.c,'+'+e.n,'#4ade80');soin(e.c);if(e.k==='revive')aureole(e.c)}
    else if(e.t==='esquive'){flot(e.c,'Esquive !','#e5e7eb');vent(e.c)}
    else if(e.t==='bloque'){if(/une partie/.test(e.txt||'')){bouclier(e.c,{partiel:1});flot(e.c,'Dégâts réduits','#fcd34d')}else if(/est bloquée/.test(e.txt||'')){bouclier(e.c,{partiel:1});flot(e.c,'Attaque bloquée','#fcd34d')}else{annuleFx(1-e.c);flot(1-e.c,'Attaque annulée','#fca5a5')}}   // annulée = rien ne passe · bloquée / partiel = le coup touche (statuts et marques passent)   // annulée = rien ne passe · partiel = le coup touche quand même
@@ -1227,6 +1235,9 @@ async function jouer(res){
    else if(e.t==='statut'&&e.k==='gel'){await gelNiveau(e.c,e.n||1)}
    else if(e.t==='statut'&&e.k==='glaciation'){givreCoup(e.c);flot(e.c,'Prisonnier de la glace !','#bae6fd','big');await wait(1100)}
    else if(e.t==='statut'&&e.k==='eclat_glace'){await eclatGlace(e.c)}
+   else if(e.t==='statut'&&e.k==='degel'){vapeurFx(e.c);const cd=$('#p'+e.c+' .card');if(cd&&e.n>0)cd.dataset.gel=e.n;flot(e.c,'La glace fond !','#fdba74');await wait(900)}   // feu sur glace : -1 niveau de gel
+   else if(e.t==='statut'&&e.k==='feu_eteint'){vapeurFx(e.c);flot(e.c,'Feu éteint !','#bae6fd');await wait(900)}   // glace sur feu : la brûlure part
+   else if(e.t==='stat'&&e.k==='calcine'){calcineFx(e.c);flot(e.c,'🔥 PV max '+e.d,'#fb923c');await wait(700)}   // calcination : PV max brûlés pour de bon
    else if(e.t==='finstatut'&&e.k==='gel'){const cd=$('#p'+e.c+' .card');statut(e.c,'gel',false);if(cd)delete cd.dataset.gel}
    else if(e.t==='statut'&&e.k==='fracture'){statut(e.c,'fracture',true);os(e.c)}
    else if(e.t==='vol'&&e.k==='copie_ultime'){auraFx(e.from);flot(e.c,'⧉ Ultime copié','#fca5a5');await wait(1100);card.classList.add('ult');auraFx(e.c);setTimeout(()=>card.classList.remove('ult'),2200)}
@@ -1344,6 +1355,8 @@ if(DEMO){
   ['Statuts','Purification (aura jaune)',c=>{flot(c,'Purifié !','#fde047');purif(c)},2000],
   ['Statuts','Gel (givre)',c=>statut(c,'gel',true),3000,c=>statut(c,'gel',false),'gel'],
   ['Statuts','Gel : attaque bloquée',c=>{flot(c,'Gelé !','#bae6fd');givreCoup(c)},1500],
+  ['Statuts','Brûlure : calcination (PV max brûlés)',c=>{calcineFx(c);flot(c,'🔥 PV max -10','#fb923c')},1600],
+  ['Statuts','Feu contre glace : la glace fond / le feu s\'éteint',async c=>{vapeurFx(c);flot(c,'La glace fond !','#fdba74');await wait(1600);vapeurFx(c);flot(c,'Feu éteint !','#bae6fd')},3400],
   ['Statuts','Gel en 3 niveaux, puis la glace éclate',async c=>{for(const n of[1,2,3]){await gelNiveau(c,n);await wait(700)}flot(c,'Prisonnier de la glace !','#bae6fd','big');await wait(1000);await eclatGlace(c);statut(c,'gel',false);delete $('#p'+c+' .card').dataset.gel},8000],
   ['Souffle','Souffle de feu (brûlure)',c=>souffle(1-c,c,'brulure'),1900],
   ['Souffle','Souffle de glace (gel)',c=>souffle(1-c,c,'gel'),1900],

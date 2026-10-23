@@ -176,7 +176,7 @@ export const EDITOR_PASSIVES: Record<PassiveType, EditorEntry> = {
   ],
   vol_pct_atq: ["À X % de chances, vole X % de l'ATQ infligée (soin)", 'chance', 'pctatq'],
   brulure: [
-    'À X % de chances, applique une brûlure (% de PV par tour)',
+    'À X % de chances, applique une brûlure (% de PV par tour, qui calcine les PV max)',
     'chance',
     'pctpv',
     'tours',
@@ -356,7 +356,7 @@ export const EDITOR_ULTIMATES: { readonly [K in EffectType]?: EditorEntry } = {
     'tours',
   ],
   brulure_effet: [
-    'Brûlure : X % des PV max par tour pendant X tours (soi ou adversaire)',
+    'Brûlure : X % des PV max par tour pendant X tours, qui calcine les PV max (soi ou adversaire)',
     'ciblem',
     'pctpv',
     'tours',
@@ -487,7 +487,7 @@ export const EDITOR_MAGICS: { readonly [K in EffectType]?: EditorEntry } = {
     'tours',
   ],
   brulure_effet: [
-    'Brûlure : X % des PV max par tour pendant X tours (soi ou adversaire)',
+    'Brûlure : X % des PV max par tour pendant X tours, qui calcine les PV max (soi ou adversaire)',
     'ciblem',
     'pctpv',
     'tours',
@@ -508,7 +508,7 @@ export const EDITOR_MAGICS: { readonly [K in EffectType]?: EditorEntry } = {
     'recul',
   ],
   atk_brulure: [
-    'Attaque de base : X % de chances de brûler (X % des PV max par tour, X tours)',
+    'Attaque de base : X % de chances de brûler (X % des PV max par tour, X tours, calcine les PV max)',
     'chance',
     'pctpv',
     'tours',

@@ -1,6 +1,9 @@
 // Burn and poison (damage over time). Ticks at the end of the affected card's turn, right after its
 // attack: "t turns" = t ticks in total, counted on its turns. One of each kind per card, same
 // intensity on every tick; reapplied, intensities add up and the duration restarts.
+// Burn calcinates: each burn tick also takes as many max HP, for good (a purification stops the burn,
+// not the scars). Fire on ice: a burn laid on a frozen card melts the ice one level down
+// (mechanics/frost.ts) and deals one tick at once (thermal shock).
 //
 // Laid by: an effect (poison_effet, brulure_effet), an attack (passive or attack effect brulure,
 // poison).
@@ -12,6 +15,7 @@ import type { Flow } from '../combat/flow.ts';
 import type { Side } from '../combat/state.ts';
 import type { EffectData } from '../model/card.ts';
 import { statusDamageMarks } from './execution.ts';
+import { thaw } from './frost.ts';
 
 // kind is the legacy label, printed as is in the journal: 'poison' or 'brûlure'.
 export type DamageOverTime = { kind: string; amount: number; turns: number };
@@ -30,6 +34,12 @@ export function damageOverTime(
   amount: number,
   turns: number,
 ): void {
+  if (kind === 'brûlure' && M.status.frosts.length) {
+    thaw(c, M);
+    const n = damage(c, opponent(c, M), M, amount);
+    emit(c, { type: 'damaged', side: id(c, M), amount: n, cause: 'thermalShock' });
+    if (M.hp <= 0) return;
+  }
   let current = M.status.dots.find((z) => z.kind === kind);
   const stacked = !!current;
   if (current) {
@@ -55,6 +65,7 @@ export function tickDot(c: Combat, s: Side, dot: DamageOverTime): void {
     amount: n,
     cause: dot.kind === 'poison' ? 'poison' : 'burn',
   });
+  if (dot.kind !== 'poison' && n > 0 && s.hp > 0) calcinate(c, s, n);
   statusDamageMarks(c, s, dot.kind === 'poison' ? 'poison' : 'brulure');
   if (!s.status.dots.includes(dot) || s.hp <= 0) return; // purified or dead during the tick: nothing more
   if (--dot.turns > 0) return;
@@ -64,6 +75,15 @@ export function tickDot(c: Combat, s: Side, dot: DamageOverTime): void {
     side: id(c, s),
     status: dot.kind === 'poison' ? 'poison' : 'burn',
   });
+}
+
+// A burn tick takes as many max HP (1 at least left).
+function calcinate(c: Combat, s: Side, n: number): void {
+  const lost = Math.min(n, s.maxHp - 1);
+  if (lost <= 0) return;
+  s.maxHp -= lost;
+  s.hp = Math.min(s.hp, s.maxHp);
+  emit(c, { type: 'statChanged', side: id(c, s), stat: 'max', delta: -lost, cause: 'calcination' });
 }
 
 // End of its turn: burn and poison in application order.

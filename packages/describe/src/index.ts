@@ -97,7 +97,7 @@ const ELEMENTS = ['brulure', 'gel', 'malediction', 'poison', 'saignement', 'fati
 const elementText = (el: string, v: number, e: Fx): string | undefined =>
   (
     {
-      brulure: `brûlure ${v} % des PV max par tour`,
+      brulure: `brûlure ${v} % des PV max par tour, qui calcine les PV max`,
       gel: `gel ${v} % d'attaque annulée`,
       malediction: `malédiction ATQ −${v} par tour`,
       poison: `poison ${v} dégâts par tour`,
@@ -173,7 +173,7 @@ const PASSIVE_TEXT: Record<PassiveType, (p: Fx, x: PassiveContext) => string> = 
   vol_pct_atq: (p, { c }) =>
     `${c} % de chances de se soigner de ${nz(p.pctatq)} % des dégâts infligés`,
   brulure: (p, { c, T }) =>
-    `${c} % de chances de brûler la cible (${nz(p.pctpv)} % de ses PV max par tour, ${trs(T)})`,
+    `${c} % de chances de brûler la cible (${nz(p.pctpv)} % de ses PV max par tour, ${trs(T)} ; chaque dégât calcine autant de PV max ; fait fondre la glace d'un niveau)`,
   poison: (p, { c, T }) =>
     `${c} % de chances d'empoisonner la cible (${nz(p.degtour)} dégâts par tour, ${trs(T)})`,
   malediction: (_, { c, v, T }) =>
@@ -206,7 +206,7 @@ const frostLevels = (e: Fx, T: number): string => {
   const a = nz(e.annul);
   const s = isEmpty(e.eclat) ? 10 : nz(e.eclat);
   const a2 = Math.min(100, Math.round(a * 2.5));
-  return `+1 niveau de gel, ${trs(T)} (1 : ${a} % d'attaque annulée et esquive −${a} % · 2 : ${a2} % et esquive −${a2} % · 3 : glaciation, n'attaque pas à son tour suivant puis la glace éclate, ${s} dégâts)`;
+  return `+1 niveau de gel, ${trs(T)} (1 : ${a} % d'attaque annulée et esquive −${a} % · 2 : ${a2} % et esquive −${a2} % · 3 : glaciation, n'attaque pas à son tour suivant puis la glace éclate, ${s} dégâts ; sur une carte qui brûle, la glace éteint le feu au lieu de geler)`;
 };
 
 // ── Effects (magics, ultimates, trap payloads) ──
@@ -345,7 +345,7 @@ const EFFECT_TEXT: Record<EffectType, (e: Fx, x: EffectContext) => string[]> = {
     `Empoisonne ${ci} : ${nz(e.degtour)} dégâts par tour pendant ${trs(T)}`,
   ],
   brulure_effet: (e, { T, ci }) => [
-    `Brûle ${ci} : ${nz(e.pctpv)} % des PV max par tour pendant ${trs(T)}`,
+    `Brûle ${ci} : ${nz(e.pctpv)} % des PV max par tour pendant ${trs(T)} (chaque dégât calcine autant de PV max ; fait fondre la glace d'un niveau)`,
   ],
   etourdir_effet: (e, { T }) => {
     const ch = isEmpty(e.chance) ? 100 : nz(e.chance);

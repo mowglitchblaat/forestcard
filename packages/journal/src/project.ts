@@ -575,6 +575,12 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
             txt: `${name(c)} subit ${n} dégâts (missile renvoyé)`,
             o: { c, n, k: 'detonation' },
           };
+        case 'thermalShock':
+          return {
+            t: 'degats',
+            txt: `${name(c)} subit ${n} dégâts (choc thermique)`,
+            o: { c, n, k: 'choc' },
+          };
         case 'shatter':
           return {
             t: 'degats',
@@ -656,6 +662,12 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
           return { t: 'stat', txt: `${who} +${d} (fatigue dissipée)`, o: mod };
         case 'fatigueLifted':
           return { t: 'stat', txt: `${who} +${d} (fatigue levée)`, o: mod };
+        case 'calcination':
+          return {
+            t: 'stat',
+            txt: `${who} −${-d} (calcination)`,
+            o: { ...mod, k: 'calcine' },
+          };
         case 'curseTick':
           return {
             t: 'stat',
@@ -772,6 +784,21 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
               ? `${name(e.side)} est gelé (gel 2/3${e.held ? ', solidifié : la glace ne peut pas le prendre' : ''} : ${e.cancelChance} % d'attaque annulée, esquive −${e.cancelChance} %, ${turns(e.turns)}) !`
               : `${name(e.side)} se couvre de givre (gel 1/3 : ${e.cancelChance} % d'attaque annulée, esquive −${e.cancelChance} %, ${turns(e.turns)}) !`,
         o: { c: e.side, k: 'gel', n: e.level },
+      };
+    case 'thawed':
+      return {
+        t: 'statut',
+        txt:
+          e.level > 0
+            ? `Le feu fait fondre la glace de ${name(e.side)} (gel ${e.level}/3) !`
+            : `Le feu fait fondre la glace de ${name(e.side)} !`,
+        o: { c: e.side, k: 'degel', n: e.level },
+      };
+    case 'fireExtinguished':
+      return {
+        t: 'statut',
+        txt: `La glace éteint le feu de ${name(e.side)} !`,
+        o: { c: e.side, k: 'feu_eteint' },
       };
     case 'frostShattered':
       return {

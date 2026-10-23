@@ -7,6 +7,8 @@
 // The strongest values laid are kept; each frost resets the duration (`tours`, counted on the frozen
 // card's turns; at the end, the frost is gone, whatever its level). A solidified card cannot go past
 // level 2. A fracture laid on a frozen card shatters the ice at once. A purification removes it.
+// Fire and ice: a frost laid on a burning card puts the fire out (the burn is gone) and no frost is
+// laid; a burn laid on a frozen card melts the ice one level down (mechanics/dot.ts).
 //
 // Laid by: an effect (gel), an attack (passive or attack effect gel), a breath or a missile of ice.
 
@@ -54,6 +56,13 @@ export function freeze(
   turns: number,
   levels = 1,
 ): void {
+  // ice on fire: the burn is put out, the ice is spent doing it
+  if (d.status.dots.some((z) => z.kind === 'brûlure')) {
+    d.status.dots = d.status.dots.filter((z) => z.kind !== 'brûlure');
+    emit(c, { type: 'fireExtinguished', side: id(c, d) });
+    emit(c, { type: 'statusEnded', side: id(c, d), status: 'burn' });
+    return;
+  }
   const now = d.status.frosts[0];
   const f: Frost = now ?? { level: 0, cancelChance: 0, shatter: 0, turns: 0 };
   const wanted = Math.min(3, f.level + Math.max(1, levels));
@@ -71,6 +80,18 @@ export function freeze(
     turns: f.turns,
     held,
   });
+}
+
+// Fire on ice: the frost goes one level down (gone at 0).
+export function thaw(c: Combat, d: Side): void {
+  const f = d.status.frosts[0];
+  if (!f) return;
+  f.level--;
+  emit(c, { type: 'thawed', side: id(c, d), level: f.level });
+  if (f.level <= 0) {
+    d.status.frosts = [];
+    emit(c, { type: 'statusEnded', side: id(c, d), status: 'frost' });
+  }
 }
 
 // The ice shatters (glaciation, or a fracture on a frozen card): shatter damage, frost gone.

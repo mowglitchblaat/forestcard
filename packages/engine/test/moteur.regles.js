@@ -234,6 +234,33 @@ test('gel : la carte gelée perd autant de points d\'esquive que sa chance d\'at
   assert.ok(Math.abs(libre - 0.6) < 0.08 && Math.abs(gele - 0.3) < 0.08, `esquive ${Math.round(libre * 100)} % sans gel, ${Math.round(gele * 100)} % au niveau 1 (attendu 60 et 30)`);
 });
 
+test('brûlure : chaque dégât de brûlure calcine autant de PV max, pour de bon', () => {
+  const r = combat([C('Feu', 5, SOLIDE, { passif: { type: 'brulure', chance: 100, pctpv: 5, tours: 2 } })], [C('b', 5, 200)], { regles: { maxTours: 3, maxProlong: 0 } });
+  const iB = r.journal.findIndex(e => e.txt === 'b subit 10 (brûlure)');
+  assert.ok(iB > 0, 'tick de brûlure : 5 % de 200');
+  assert.equal(r.journal[iB + 1].txt, 'PV max de b −10 (calcination)');
+  assert.equal(r.journal[iB + 1].k, 'calcine');
+  const fin = r.journal.at(-1);
+  assert.ok(fin.max[1] < 200, 'les PV max restent brûlés');
+});
+
+test('feu contre glace : brûler une carte gelée fait fondre la glace d\'un niveau, avec un choc thermique', () => {
+  const r = combat([C('Feu', 5, SOLIDE, { passif: { type: 'brulure', chance: 100, pctpv: 5, tours: 2 } }), MAG('Givre', { type: 'gel', ciblem: 'adversaire', annul: 20, tours: 5 })], [C('b', 5, 200)], { regles: { maxTours: 2, maxProlong: 0 } });
+  const iD = r.journal.findIndex(e => e.k === 'degel');
+  assert.ok(iD > 0, 'la glace fond');
+  assert.equal(r.journal[iD].n, 0, 'gel 1 → 0');
+  assert.ok(r.journal.slice(iD, iD + 4).some(e => e.txt === 'b subit 10 dégâts (choc thermique)'), 'choc thermique');
+  assert.ok(r.journal.slice(iD).some(e => /b brûle/.test(e.txt || '')), 'la brûlure prend quand même');
+});
+
+test('feu contre glace : geler une carte qui brûle éteint le feu, sans poser de gel', () => {
+  const r = combat([C('Glace', 5, SOLIDE, { passif: GEL({ annul: 20, tours: 3 }) }), MAG('Torche', { type: 'brulure_effet', ciblem: 'adversaire', pctpv: 5, tours: 4 })], [C('b', 5, 200)], { regles: { maxTours: 2, maxProlong: 0 } });
+  const iF = r.journal.findIndex(e => e.k === 'feu_eteint');
+  assert.ok(iF > 0, 'le feu s\'éteint');
+  assert.ok(!r.journal.slice(iF, iF + 3).some(e => e.k === 'gel' && e.t === 'statut'), 'pas de gel posé ce coup-là');
+  assert.ok(r.journal.slice(iF).every(e => !/subit \d+ \(brûlure\)/.test(e.txt || '')) || r.journal.slice(iF).some(e => /brûle !/.test(e.txt || '')), 'plus de brûlure ensuite (sauf nouvelle brûlure)');
+});
+
 test('gel : une carte solidifiée ne dépasse pas le niveau 2', () => {
   const r = combat([C('Golem', 10, SOLIDE, { passif: GEL({ annul: 0, tours: 99 }) })], [C('b', 10, SOLIDE, { passif: { type: 'solidification', chance: 100, tours: 99 } })], { regles: { maxTours: 6, maxProlong: 0 } });
   assert.ok(r.journal.some(e => e.k === 'gel' && e.n === 2), 'niveau 2 atteint');

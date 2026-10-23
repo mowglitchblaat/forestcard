@@ -121,6 +121,8 @@ export const TRIGGER_FACT: { [K in EventType]: Classify<K> | null } = {
   fatigueApplied: fact('status'),
   frozen: fact('status'),
   frostShattered: null,
+  thawed: null,
+  fireExtinguished: null,
   fractured: fact('status'),
   solidified: null,
   solidBroken: null,
