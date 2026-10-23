@@ -91,7 +91,7 @@ Clés de `EFFECT_TYPES`, exécutées par `applyEffect` (`packages/engine/src/com
 | `etourdir_effet` | étourdit la cible pendant X tours ; `essais` jets de chance, le premier succès suffit ; sans effet sur une carte solidifiée | `stun.ts` |
 | `souffle` | dégâts, puis chance de poser un statut élémentaire (`statut` ; `aleatoire` : tiré à chaque souffle) ; `rechance` % de souffler encore, jusqu'au premier échec, `remax` souffles en plus au maximum (3 par défaut). Esquivable, blocable et réductible ; le renvoi ne renvoie que les dégâts | `breath.ts` |
 | `purification` | retire les statuts négatifs (sauf l'étourdissement), rend l'ATQ perdue ; éventuellement répétée | `purification.ts` |
-| `solidification` | X % de chances d'être insensible à l'étourdissement pendant X tours adverses | `solidification.ts` |
+| `solidification` | X % de chances d'être insensible à l'étourdissement pendant X tours adverses ; solidifiée, la carte ne prend que la moitié des dégâts de statuts d'une détonation ou d'un missile | `solidification.ts` |
 | `mort_evitee` | évite la mort une fois (reste à 1 PV). En magie, lue par `damage` sous condition (`cond` : `aucune`, `pv_max`, ou dégâts infligés ≥ `seuil`) ; en ultime ou en piège, donne une charge | `avoid-death.ts` |
 | `reanimation` | revient avec X % des PV max après la mort (une fois) | `revive.ts` |
 | `execution` | l'attaque peut poser des marques d'exécution | `execution.ts` |

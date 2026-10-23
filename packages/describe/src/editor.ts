@@ -212,7 +212,7 @@ export const EDITOR_PASSIVES: Record<PassiveType, EditorEntry> = {
     'tours',
   ],
   solidification: [
-    "À chacun de ses tours, X % de chances de se solidifier pendant X tours de l'adversaire (insensible à l'étourdissement, ne se purge pas, brisée par une fracture)",
+    "À chacun de ses tours, X % de chances de se solidifier pendant X tours de l'adversaire (insensible à l'étourdissement, ne se purge pas, brisée par une fracture ; détonations et missiles ne lui font que la moitié des dégâts de statuts)",
     'chance',
     'tours',
   ],
@@ -359,7 +359,7 @@ export const EDITOR_ULTIMATES: { readonly [K in EffectType]?: EditorEntry } = {
     'tours',
   ],
   solidification: [
-    "Solidification : X % de chances de se solidifier pendant X tours de l'adversaire (insensible à l'étourdissement, ne se purge pas, brisée par une fracture)",
+    "Solidification : X % de chances de se solidifier pendant X tours de l'adversaire (insensible à l'étourdissement, ne se purge pas, brisée par une fracture ; détonations et missiles ne lui font que la moitié des dégâts de statuts)",
     'chance',
     'tours',
   ],
@@ -613,7 +613,7 @@ export const EDITOR_MAGICS: { readonly [K in EffectType]?: EditorEntry } = {
   vol_ultime: ["Vole l'ultime de l'adversaire"],
   copie_ultime: ["Copie l'ultime de l'adversaire (il le garde aussi)"],
   solidification: [
-    "Solidification : X % de chances de se solidifier pendant X tours de l'adversaire (insensible à l'étourdissement, ne se purge pas, brisée par une fracture)",
+    "Solidification : X % de chances de se solidifier pendant X tours de l'adversaire (insensible à l'étourdissement, ne se purge pas, brisée par une fracture ; détonations et missiles ne lui font que la moitié des dégâts de statuts)",
     'chance',
     'tours',
   ],

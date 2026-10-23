@@ -188,7 +188,7 @@ const PASSIVE_TEXT: Record<PassiveType, (p: Fx, x: PassiveContext) => string> = 
   avalage: (p) => avTxt(p),
   transcendance: (p) => transcendenceText(p),
   solidification: (_, { c, T }) =>
-    `À chacun de ses tours, ${c < 100 ? c + ' % de chances de se solidifier' : 'se solidifie'} pendant ${trs(T)} de l'adversaire (insensible à l'étourdissement, ne se purge pas, brisée par une fracture)`,
+    `À chacun de ses tours, ${c < 100 ? c + ' % de chances de se solidifier' : 'se solidifie'} pendant ${trs(T)} de l'adversaire (insensible à l'étourdissement, ne se purge pas, brisée par une fracture ; détonations et missiles ne lui font que la moitié des dégâts de statuts)`,
   fracture: (p, { c, T }) =>
     `${c} % de chances de fracturer la cible (${nz(p.fchance)} % de se blesser de ${nz(p.degfrac)} PV en attaquant, ${trs(T)})`,
 };
@@ -326,7 +326,7 @@ const EFFECT_TEXT: Record<EffectType, (e: Fx, x: EffectContext) => string[]> = {
   solidification: (e, { T }) => {
     const ch = isEmpty(e.chance) ? 100 : nz(e.chance);
     return [
-      `${ch < 100 ? ch + ' % de chances de se solidifier' : 'Se solidifie'} pendant ${trs(T)} de l'adversaire (insensible à l'étourdissement, ne se purge pas, brisée par une fracture)`,
+      `${ch < 100 ? ch + ' % de chances de se solidifier' : 'Se solidifie'} pendant ${trs(T)} de l'adversaire (insensible à l'étourdissement, ne se purge pas, brisée par une fracture ; détonations et missiles ne lui font que la moitié des dégâts de statuts)`,
     ];
   },
   fracture: (e, { T, ci }) => [
