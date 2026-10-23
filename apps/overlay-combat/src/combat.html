@@ -8,6 +8,9 @@ body.obs{background:transparent}
 #tour{text-shadow:0 0 8px #000,0 0 3px #000}.nm{text-shadow:0 0 8px #000,0 0 3px #000}
 #scene.on{opacity:1}
 .p{position:relative;width:22vw;text-align:center}
+.card .char{position:absolute;inset:0;z-index:2;pointer-events:none;border-radius:inherit;transition:opacity .9s;background:radial-gradient(ellipse at 50% 42%,rgba(0,0,0,0) 38%,rgba(40,18,4,.55) 66%,rgba(12,5,0,.95) 100%),linear-gradient(0deg,rgba(15,6,0,.85),rgba(15,6,0,0) 45%);mix-blend-mode:multiply}
+.card .char::after{content:'';position:absolute;inset:0;border-radius:inherit;box-shadow:inset 0 0 1.6vh rgba(255,110,20,.55);animation:braises 2.2s ease-in-out infinite}
+@keyframes braises{50%{box-shadow:inset 0 0 .6vh rgba(255,90,10,.25)}}
 .card{position:relative;z-index:1;overflow:hidden;width:100%;aspect-ratio:5/7;border-radius:12px;background:#1b2a22 center/cover;display:flex;align-items:center;justify-content:center;font-size:3vh;font-weight:700;box-shadow:0 0 25px #000;transition:transform .15s}
 .card.hit{animation:hit .4s}.card.atk{transform:scale(1.07)}.card.ko{filter:grayscale(1) brightness(.5)}
 @keyframes hit{25%{transform:translateX(-12px)}75%{transform:translateX(12px)}}
@@ -817,6 +820,10 @@ async function gelNiveau(c,n){const card=$('#p'+c+' .card');if(!card)return;card
 function vapeurFx(c){const K=rc(c),P=Array.from({length:22},()=>({x:R(.1,.9),d:R(0,.5),s:R(.18,.35),v:R(.5,1),w:R(-.15,.15)}));
  addFx(1.8,(x,t)=>{for(const p of P){const q=cl((t-p.d)/1.2);if(q<=0||q>=1)continue;const px=K.x+K.w*(p.x+p.w*q),py=K.y+K.h*(.85-q*.95*p.v),r=K.w*p.s*(.5+q);
   const g=x.createRadialGradient(px,py,0,px,py,r);g.addColorStop(0,`rgba(245,248,252,${.55*Math.sin(Math.PI*q)})`);g.addColorStop(1,'rgba(245,248,252,0)');x.fillStyle=g;x.beginPath();x.arc(px,py,r,0,7);x.fill()}})}
+// CARBONISATION : plus la carte a perdu de PV max par la brûlure, plus ses bords sont noircis (braises qui rougeoient) ; ça ne part pas
+function carboniser(c,e){const card=$('#p'+c+' .card');if(!card||!e.max)return;const mx=+e.max[c]||1,m0=+card.dataset.max0||(mx-(+e.d||0));card.dataset.max0=m0;
+ let ch=card.querySelector('.char');if(!ch){ch=document.createElement('div');ch.className='char';ch.style.opacity='0';card.appendChild(ch)}
+ requestAnimationFrame(()=>{ch.style.opacity=String(Math.min(.95,.25+(1-mx/m0)*2.6))})}
 // CALCINATION : la carte se noircit un instant par le bas, des braises et des cendres s'envolent (les PV max sont brûlés)
 function calcineFx(c){const K=rc(c),E=Array.from({length:26},()=>({x:R(.05,.95),v:R(.4,1),s:R(1.2,3),d:R(0,.3),o:Math.random()<.5}));
  addFx(1.4,(x,t)=>{const a=Math.sin(Math.PI*cl(t/1.1));const g=x.createLinearGradient(0,K.y+K.h,0,K.y+K.h*.35);g.addColorStop(0,`rgba(20,8,0,${.55*a})`);g.addColorStop(1,'rgba(20,8,0,0)');x.fillStyle=g;x.fillRect(K.x,K.y,K.w,K.h);
@@ -1237,7 +1244,7 @@ async function jouer(res){
    else if(e.t==='statut'&&e.k==='eclat_glace'){await eclatGlace(e.c)}
    else if(e.t==='statut'&&e.k==='degel'){vapeurFx(e.c);const cd=$('#p'+e.c+' .card');if(cd&&e.n>0)cd.dataset.gel=e.n;flot(e.c,'La glace fond !','#fdba74');await wait(900)}   // feu sur glace : -1 niveau de gel
    else if(e.t==='statut'&&e.k==='feu_eteint'){vapeurFx(e.c);flot(e.c,'Feu éteint !','#bae6fd');await wait(900)}   // glace sur feu : la brûlure part
-   else if(e.t==='stat'&&e.k==='calcine'){calcineFx(e.c);flot(e.c,'🔥 PV max '+e.d,'#fb923c');await wait(700)}   // calcination : PV max brûlés pour de bon
+   else if(e.t==='stat'&&e.k==='calcine'){calcineFx(e.c);carboniser(e.c,e);flot(e.c,'🔥 PV max '+e.d,'#fb923c');await wait(700)}   // calcination : PV max brûlés pour de bon
    else if(e.t==='finstatut'&&e.k==='gel'){const cd=$('#p'+e.c+' .card');statut(e.c,'gel',false);if(cd)delete cd.dataset.gel}
    else if(e.t==='statut'&&e.k==='fracture'){statut(e.c,'fracture',true);os(e.c)}
    else if(e.t==='vol'&&e.k==='copie_ultime'){auraFx(e.from);flot(e.c,'⧉ Ultime copié','#fca5a5');await wait(1100);card.classList.add('ult');auraFx(e.c);setTimeout(()=>card.classList.remove('ult'),2200)}
@@ -1355,7 +1362,7 @@ if(DEMO){
   ['Statuts','Purification (aura jaune)',c=>{flot(c,'Purifié !','#fde047');purif(c)},2000],
   ['Statuts','Gel (givre)',c=>statut(c,'gel',true),3000,c=>statut(c,'gel',false),'gel'],
   ['Statuts','Gel : attaque bloquée',c=>{flot(c,'Gelé !','#bae6fd');givreCoup(c)},1500],
-  ['Statuts','Brûlure : calcination (PV max brûlés)',c=>{calcineFx(c);flot(c,'🔥 PV max -10','#fb923c')},1600],
+  ['Statuts','Brûlure : calcination (PV max brûlés, la carte se carbonise)',async c=>{const card=$('#p'+c+' .card'),m=100;for(const k of[1,2,3]){calcineFx(c);carboniser(c,{max:c?[0,m-10*k]:[m-10*k,0],d:-10});flot(c,'🔥 PV max -10','#fb923c');await wait(1300)}await wait(1500);const ch=card.querySelector('.char');if(ch)ch.remove();delete card.dataset.max0},6000],
   ['Statuts','Feu contre glace : la glace fond / le feu s\'éteint',async c=>{vapeurFx(c);flot(c,'La glace fond !','#fdba74');await wait(1600);vapeurFx(c);flot(c,'Feu éteint !','#bae6fd')},3400],
   ['Statuts','Gel en 3 niveaux, puis la glace éclate',async c=>{for(const n of[1,2,3]){await gelNiveau(c,n);await wait(700)}flot(c,'Prisonnier de la glace !','#bae6fd','big');await wait(1000);await eclatGlace(c);statut(c,'gel',false);delete $('#p'+c+' .card').dataset.gel},8000],
   ['Souffle','Souffle de feu (brûlure)',c=>souffle(1-c,c,'brulure'),1900],
