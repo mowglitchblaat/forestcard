@@ -299,9 +299,7 @@ const EFFECT_TEXT: Record<EffectType, (e: Fx, x: EffectContext) => string[]> = {
   saignement: (e, { T, ci }) => [
     `Fait saigner ${ci} : ${nz(e.pctpv)} % des PV max par tour, soins −${nz(e.reducsoin)} %, ${trs(T)}`,
   ],
-  gel: (e, { T, ci }) => [
-    `Gèle ${ci} : ${frostLevels(e, T)}`,
-  ],
+  gel: (e, { T, ci }) => [`Gèle ${ci} : ${frostLevels(e, T)}`],
   souffle: (e) => {
     const al = e.statut === 'aleatoire';
     const el = al ? '' : (e.statut as string) || 'brulure';
