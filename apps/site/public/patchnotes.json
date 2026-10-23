@@ -1,5 +1,38 @@
 [
   {
+    "date": "2026-10-23",
+    "intro": "Le Glas fait son entrée, et le gel comme la brûlure deviennent bien plus redoutables.",
+    "groupes": [
+      {
+        "titre": "Combat",
+        "points": [
+          "Nouveau statut « le Glas » : une ombre avance sur la barre de vie à chaque tour, et la carte meurt dès que ses PV passent dessous, sans évite la mort ni réanimation. Il faut 3 purifications pour l’effacer.",
+          "Le gel monte en 3 niveaux (givre, gelée, glaciation qui finit par faire éclater la glace), et chaque dégât de brûlure retire aussi des PV max pour de bon. Feu et glace s’annulent : brûler une carte gelée fait fondre la glace, geler une carte qui brûle éteint le feu.",
+          "L’exécution brise maintenant « évite la mort » dans tous les cas, même venant d’un piège."
+        ]
+      },
+      {
+        "titre": "Magies et pièges",
+        "points": [
+          "Un piège qui se déclenche quand le piège adverse se déclenche répond désormais avant lui, et un piège détruit ou volé en plein effet s’arrête net."
+        ]
+      },
+      {
+        "titre": "Animations",
+        "points": [
+          "Animations pour le Glas (cloche, faux, ombre sur la barre de vie), pour chaque niveau de gel, et la brûlure carbonise peu à peu la carte, avec des flammes plus légères pour le stream."
+        ]
+      },
+      {
+        "titre": "Site",
+        "points": [
+          "Chaque ceinture a son histoire (prises, défenses, règnes passés), et le résultat d’un combat pour le titre n’apparaît qu’à la fin de son animation, sans spoil.",
+          "Un seul combat pour le titre par jour et par ceinture pour le challenger, le champion peut défendre sans limite, et « Comment jouer » est à jour avec le championnat et les nouveautés."
+        ]
+      }
+    ]
+  },
+  {
     "date": "2026-10-22",
     "intro": "Le championnat arrive avec trois ceintures à conquérir en live, et tu peux désormais créer ta propre carte de A à Z.",
     "groupes": [
