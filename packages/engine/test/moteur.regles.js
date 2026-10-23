@@ -261,6 +261,39 @@ test('feu contre glace : geler une carte qui brûle éteint le feu, sans poser d
   assert.ok(r.journal.slice(iF).every(e => !/subit \d+ \(brûlure\)/.test(e.txt || '')) || r.journal.slice(iF).some(e => /brûle !/.test(e.txt || '')), 'plus de brûlure ensuite (sauf nouvelle brûlure)');
 });
 
+// ================= Le Glas =================
+const GLAS = (x = {}) => ({ type: 'glas', chance: 100, glasv: 8, ...x });
+test('Glas : l\'ombre avance au début de chaque tour de la carte ; ses PV sous l\'ombre, elle meurt sans évite la mort ni réanimation', () => {
+  const r = combat([C('Faucheur', 8, SOLIDE, { passif: GLAS() })], [C('b', 8, 200, { passif: { briques: [{ type: 'evite_mort' }, { type: 'reanimation', pctrev: 50 }] } })], { regles: { maxTours: 12, maxProlong: 0 } });
+  const iL = r.journal.findIndex(e => e.k === 'glas');
+  assert.ok(iL > 0, 'le Glas sonne');
+  const tB = r.journal.slice(iL).find(e => e.t === 'tour' && e.c === 1);
+  const iT = r.journal.indexOf(tB);
+  assert.equal(r.journal[iT + 1].k, 'glas_monte', 'l\'ombre avance au début de son tour, avant son attaque');
+  const iM = r.journal.findIndex(e => e.k === 'glas_mort');
+  assert.ok(iM > 0, 'le Glas a sonné');
+  assert.ok(!r.journal.some(e => e.t === 'protege'), 'pas d\'évite la mort');
+  assert.ok(!r.journal.some(e => e.t === 'reanim'), 'pas de réanimation');
+  assert.ok(r.journal.some(e => e.k === 'glas_rea'), 'la réanimation est refusée');
+  assert.equal(r.gagnant, 0);
+});
+
+test('Glas : relancé, il accélère de moins en moins (+1/2, +1/4…)', () => {
+  const r = combat([C('Faucheur', 8, SOLIDE, { passif: GLAS() })], [C('b', 8, SOLIDE)], { regles: { maxTours: 4, maxProlong: 0 } });
+  const v = r.journal.filter(e => e.k === 'glas').map(e => e.v);
+  assert.deepEqual(v.slice(0, 3), [8, 12, 14]);
+});
+
+test('Glas : il faut 3 purifications pour l\'effacer ; chacune fait reculer l\'ombre d\'un tiers', () => {
+  const r = combat([C('a', 1, SOLIDE), MAG('Sonnerie', { type: 'glas_effet', ciblem: 'adversaire', glasv: 9 })], [C('b', 1, SOLIDE, { passif: { type: 'purification', every: 2, fois: 9 } })], { regles: { maxTours: 10, maxProlong: 0 } });
+  const recul = r.journal.filter(e => e.k === 'glas_recul');
+  assert.deepEqual(recul.slice(0, 2).map(e => e.n), [2, 1], '2 crânes, puis 1');
+  const i3 = r.journal.findIndex(e => e.t === 'finstatut' && e.k === 'glas');
+  assert.ok(i3 > r.journal.indexOf(recul[1]), 'la 3e purification efface le Glas');
+  const avant = [...r.journal.slice(0, r.journal.indexOf(recul[0]))].reverse().find(e => e.k === 'glas_monte');
+  assert.equal(recul[0].s, Math.round(avant.s * 2 / 3 * 10) / 10, 'recul d\'un tiers');
+});
+
 test('gel : une carte solidifiée ne dépasse pas le niveau 2', () => {
   const r = combat([C('Golem', 10, SOLIDE, { passif: GEL({ annul: 0, tours: 99 }) })], [C('b', 10, SOLIDE, { passif: { type: 'solidification', chance: 100, tours: 99 } })], { regles: { maxTours: 6, maxProlong: 0 } });
   assert.ok(r.journal.some(e => e.k === 'gel' && e.n === 2), 'niveau 2 atteint');

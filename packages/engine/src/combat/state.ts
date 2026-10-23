@@ -17,6 +17,7 @@ import { type FatigueState, fatigueState } from '../mechanics/fatigue.ts';
 import { type FractureState, fractureState } from '../mechanics/fracture.ts';
 import { type FrostState, frostState } from '../mechanics/frost.ts';
 import { type HealingState, healingState } from '../mechanics/healing.ts';
+import { type KnellState, knellState } from '../mechanics/knell.ts';
 import { type ProgrammingState, programmingState } from '../mechanics/programming.ts';
 import { type PurificationState, purificationState } from '../mechanics/purification.ts';
 import { type RageState, rageState } from '../mechanics/rage.ts';
@@ -55,6 +56,7 @@ export type Status = { turnsPlayed: number } & RageState &
   CurseState &
   BleedState &
   FrostState &
+  KnellState &
   FractureState &
   StunState &
   BlockState &
@@ -138,6 +140,7 @@ export const newStatus = (passives: EffectData[]): Status => ({
   ...curseState(),
   ...bleedState(),
   ...frostState(),
+  ...knellState(),
   ...fractureState(),
   ...stunState(),
   ...blockState(),

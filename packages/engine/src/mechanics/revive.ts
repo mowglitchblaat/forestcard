@@ -88,7 +88,13 @@ export function reviveOnLethal(
   revealTrap: (() => void) | null,
 ): (() => void) | null {
   if (c.noRevive && reviveSource(dst))
-    c.pendingEffects.push(() => emit(c, { type: 'reviveDenied', side: id(c, dst) }));
+    c.pendingEffects.push(() =>
+      emit(c, {
+        type: 'reviveDenied',
+        side: id(c, dst),
+        ...(c.knelling ? { by: 'knell' as const } : {}),
+      }),
+    );
   if (!c.noRevive) {
     const reviveFrom = reviveSource(dst);
     if (reviveFrom) {

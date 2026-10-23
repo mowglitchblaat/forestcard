@@ -18,6 +18,7 @@ import { emit, type Combat } from './combat.ts';
 import { damage } from './damage.ts';
 import type { Flow, StrikeFlow } from './flow.ts';
 import type { Side } from './state.ts';
+import { knellOnHit } from '../mechanics/knell.ts';
 
 // What an attack carries from one step to the next (the legacy engine's local variables).
 export type Attack = {
@@ -85,6 +86,7 @@ export const LAID_ON_HIT: Record<string, (c: Combat, q: EffectData, d: Side) => 
   malediction: curseOnHit,
   fracture: fractureOnHit,
   gel: frostOnHit,
+  glas: knellOnHit,
   fatigue: fatigueOnHit,
 };
 

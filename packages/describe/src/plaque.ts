@@ -68,6 +68,8 @@ const EFFECT_LABELS: Record<EffectType, (e: Fx) => string> = {
   atk_malediction: () => 'Coup maudit',
   atk_fracture: () => 'Coup brise-os',
   atk_gel: () => 'Coup glacial',
+  glas_effet: () => 'Glas',
+  atk_glas: () => 'Coup funèbre',
   esquive_mod: (e) => (down(e) ? 'Baisse l’esquive' : 'Esquive accrue'),
   reset_ultime: () => 'Relance l’ultime',
   mort_evitee: () => 'Évite la mort',
@@ -111,6 +113,7 @@ const PASSIVE_LABELS: Record<PassiveType, (p: Fx) => string> = {
   purification: () => 'Purification',
   programmation: () => 'Programmation',
   detonation: () => 'Détonation',
+  glas: () => 'Glas',
 };
 
 // t: the short label; d: the explanation of the effect (empty without a describer).

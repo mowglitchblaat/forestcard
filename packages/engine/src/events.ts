@@ -35,6 +35,7 @@ export type StatusKind =
   | 'poison'
   | 'burn'
   | 'frost'
+  | 'knell'
   | 'fracture'
   | 'stun'
   | 'rage'
@@ -48,6 +49,7 @@ export type DispelledStatus =
   | 'malediction'
   | 'saignement'
   | 'gel'
+  | 'glas'
   | 'fatigue'
   | 'fracture'
   | 'annule';
@@ -85,7 +87,8 @@ export type DamageCause =
   | 'blast' // a share of an explosion, on the cards around it
   | 'missileReturned' // a reflected missile exploding on its shooter
   | 'shatter' // the ice of a frost shattering (glaciation, or a fracture)
-  | 'thermalShock'; // fire on ice: a burn laid on a frozen card
+  | 'thermalShock' // fire on ice: a burn laid on a frozen card
+  | 'knell'; // the knell takes the card
 
 export type CannotAttackReason =
   | 'mouthFull'
@@ -261,7 +264,7 @@ export type DomainEvent =
   | { type: 'reviveGranted'; side: SideIndex; pct: Num }
   | { type: 'shattered'; side: SideIndex }
   | { type: 'revived'; side: SideIndex; hp: number; pct: Num }
-  | { type: 'reviveDenied'; side: SideIndex } // killed by a detonation: no revive
+  | { type: 'reviveDenied'; side: SideIndex; by?: 'knell' } // killed by a detonation or the knell: no revive
   // Stats
   | { type: 'statChanged'; side: SideIndex; stat: 'atq' | 'max'; delta: number; cause: StatCause }
   | { type: 'dodgeChanged'; side: SideIndex; delta: number }
@@ -305,6 +308,11 @@ export type DomainEvent =
   | { type: 'frostShattered'; side: SideIndex; cause: 'glaciation' | 'fracture' }
   | { type: 'thawed'; side: SideIndex; level: number } // fire melts the ice: frost one level down
   | { type: 'fireExtinguished'; side: SideIndex } // ice puts the fire out: burn gone, no frost laid
+  // the knell: laid (speed, % of max HP per turn), its shadow rising, pushed back, and taking the card
+  | { type: 'knellLaid'; side: SideIndex; speed: number; stacked: boolean }
+  | { type: 'knellRose'; side: SideIndex; threshold: number }
+  | { type: 'knellReceded'; side: SideIndex; threshold: number; skulls: number }
+  | { type: 'knelled'; side: SideIndex }
   | { type: 'fractured'; side: SideIndex; chance: number; damage: number; turns: number }
   | { type: 'solidified'; side: SideIndex; turns: number }
   | { type: 'solidBroken'; side: SideIndex }

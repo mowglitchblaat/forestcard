@@ -9,6 +9,7 @@
 
 import { avoidDeath, breakAvoidDeath } from '../mechanics/avoid-death.ts';
 import { healReduction } from '../mechanics/bleed.ts';
+import { knellCheck } from '../mechanics/knell.ts';
 import { reviveOnLethal, reviveTrapOnLethal } from '../mechanics/revive.ts';
 import { emit, id, round, type Combat } from './combat.ts';
 import type { Side } from './state.ts';
@@ -33,11 +34,11 @@ export function damage(c: Combat, src: Side, dst: Side, n: number): number {
   let after: (() => void) | null = null;
   let revealTrap: (() => void) | null = null;
   if (n >= dst.hp) {
-    // An execution ignores avoid-death, and breaks it.
-    if (!c.executing) {
+    // An execution ignores avoid-death, and breaks it; the knell ignores it.
+    if (!c.executing && !c.knelling) {
       after = avoidDeath(c, dst);
       if (after) n = dst.hp - 1;
-    } else breakAvoidDeath(c, dst);
+    } else if (c.executing) breakAvoidDeath(c, dst);
     if (!after) revealTrap = reviveTrapOnLethal(c, dst);
   }
   const lethal = n >= dst.hp;
@@ -46,6 +47,9 @@ export function damage(c: Combat, src: Side, dst: Side, n: number): number {
   if (lethal) revealTrap = reviveOnLethal(c, dst, revealTrap);
   if (revealTrap) c.pendingEffects.push(revealTrap); // no revive after all: the trap shows right after the damage
   if (after) c.pendingEffects.push(after);
+  // the knell: HP now under its shadow takes the card, right after the damage line
+  if (dst.status.knell && !c.knelling && dst.hp > 0)
+    c.pendingEffects.push(() => knellCheck(c, dst));
   c.pendingEffects.push(() => scan(c, { kind: 'hp' })); // effects play right after the damage, not before
   return n;
 }

@@ -10,6 +10,7 @@ import type { EffectContext, EffectRules } from '../combat/effect-context.ts';
 import type { Flow } from '../combat/flow.ts';
 import type { Side, Status } from '../combat/state.ts';
 import type { DispelledStatus } from '../events.ts';
+import { knellPurified } from './knell.ts';
 
 export type ScheduledPurification = { target: Side; every: number; left: number; counter: number };
 
@@ -29,6 +30,7 @@ export const hasPurifiableStatus = (z: Status) =>
   z.curses.length ||
   z.bleeds.length ||
   z.frosts.length ||
+  !!z.knell ||
   z.fractures.length ||
   z.fatigues.length ||
   z.nextAttackCancelled > 0 ||
@@ -45,6 +47,7 @@ export function purify(c: Combat, t: Side, silent?: boolean): void {
   z.frosts.forEach(() => removed.push('gel'));
   z.fatigues.forEach(() => removed.push('fatigue'));
   z.fractures.forEach(() => removed.push('fracture'));
+  if (knellPurified(c, t)) removed.push('glas');
   const attackWasCancelled = z.nextAttackCancelled > 0 || z.nextAttackBlocked > 0;
   const curseBack = z.atqLostToCurses;
   const fatigueBack = z.fatigues.reduce((q, f) => q + (f.lost || 0), 0);

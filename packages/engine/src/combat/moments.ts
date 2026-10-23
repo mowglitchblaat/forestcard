@@ -60,6 +60,7 @@ import {
 } from '../mechanics/transcendence.ts';
 import { ultimate } from '../mechanics/ultimates.ts';
 import { aliveAtEnd, aliveAtStart, countTurn, everyTurnPassives } from './turn.ts';
+import { knellRises } from '../mechanics/knell.ts';
 
 type TurnStep = Step<Side>;
 
@@ -69,6 +70,7 @@ const START_OF_TURN: TurnStep[] = [
   solidificationAtStart,
   curseFading, // losses come back before the curse ticks again
   curseTicks, // the curse lowers ATQ before the attack
+  knellRises, // the knell's shadow rises, and may take the card
   counterAtStart, // reads the hits taken since its last turn, then resets them
   regensAtStart,
   theftsAtStart,

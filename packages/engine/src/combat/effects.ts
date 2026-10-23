@@ -37,6 +37,7 @@ import { effects as swallow } from '../mechanics/swallow.ts';
 import { effects as theft } from '../mechanics/theft.ts';
 import { effects as transcendence } from '../mechanics/transcendence.ts';
 import { effects as trapImmunity } from '../mechanics/trap-immunity.ts';
+import { effects as knell } from '../mechanics/knell.ts';
 import { effects as ultimates } from '../mechanics/ultimates.ts';
 import type { EffectData } from '../model/card.ts';
 import type { EffectType } from '../model/types.ts';
@@ -68,6 +69,7 @@ export const rules = (): Record<EffectType, EffectRule> =>
     ...fracture,
     ...frost,
     ...healing,
+    ...knell,
     ...lifeSteal,
     ...magicCancel,
     ...programming,
@@ -154,6 +156,7 @@ function undoStatusesLater(
     bleed: M.status.bleeds[0] && { ...M.status.bleeds[0] },
     dots: M.status.dots.map((z) => ({ ...z })),
     frost: M.status.frosts[0] && { ...M.status.frosts[0] },
+    knell: M.status.knell && { ...M.status.knell },
     fractures: M.status.fractures.length,
     stunTurns: M.status.stunTurns,
     nextAttackCancelled: M.status.nextAttackCancelled,
@@ -191,6 +194,11 @@ function undoStatusesLater(
       statusEnds(M, 'fracture');
     if (M.status.stunTurns > before.stunTurns && !before.stunTurns) statusEnds(M, 'stun');
     M.status.frosts = before.frost && M.status.frosts.length ? [{ ...before.frost }] : [];
+    if (M.status.knell && !before.knell) statusEnds(M, 'knell');
+    M.status.knell =
+      before.knell && M.status.knell
+        ? { ...before.knell, threshold: M.status.knell.threshold }
+        : null;
     M.status.fractures = M.status.fractures.slice(0, before.fractures);
     M.status.stunTurns = Math.min(M.status.stunTurns, before.stunTurns);
     M.status.nextAttackCancelled = Math.min(

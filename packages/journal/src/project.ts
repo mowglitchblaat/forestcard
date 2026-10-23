@@ -143,6 +143,7 @@ const STATUS_ENDED: Record<StatusKind, [string, (name: string) => string]> = {
   poison: ['poison', (n) => `poison de ${n} se termine`],
   burn: ['brulure', (n) => `brûlure de ${n} se termine`],
   frost: ['gel', (n) => `${n} n'est plus gelé`],
+  knell: ['glas', (n) => `Le Glas de ${n} s'est tu`],
   fracture: ['fracture', (n) => `La fracture de ${n} guérit`],
   stun: ['etourdi', (n) => `${n} n'est plus étourdi`],
   rage: ['rage', (n) => `La rage de ${n} retombe`],
@@ -154,7 +155,11 @@ const DISPELLED_LABELS: Record<string, string> = {
   annule: "annulation d'attaque",
   brulure: 'brûlure',
   malediction: 'malédiction',
+  glas: 'Glas',
 };
+
+// A number written the French way (decimal comma).
+const fr = (n: number): string => String(n).replace('.', ',');
 
 const leftCard = (c: Card | null | undefined) =>
   c && !c.vide ? { nom: c.nom, img: c.image || null } : null;
@@ -575,6 +580,12 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
             txt: `${name(c)} subit ${n} dégâts (missile renvoyé)`,
             o: { c, n, k: 'detonation' },
           };
+        case 'knell':
+          return {
+            t: 'degats',
+            txt: `${name(c)} subit ${n} dégâts (le Glas)`,
+            o: { c, n, k: 'glas' },
+          };
         case 'thermalShock':
           return {
             t: 'degats',
@@ -637,8 +648,11 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
     case 'reviveDenied':
       return {
         t: 'statut',
-        txt: `${name(e.side)} est réduit en cendres : pas de réanimation !`,
-        o: { c: e.side, k: 'anti_rea' },
+        txt:
+          e.by === 'knell'
+            ? `Le Glas a emporté ${name(e.side)} : pas de réanimation !`
+            : `${name(e.side)} est réduit en cendres : pas de réanimation !`,
+        o: { c: e.side, k: e.by === 'knell' ? 'glas_rea' : 'anti_rea' },
       };
 
     // ── Stats ──
@@ -784,6 +798,32 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
               ? `${name(e.side)} est gelé (gel 2/3${e.held ? ', solidifié : la glace ne peut pas le prendre' : ''} : ${e.cancelChance} % d'attaque annulée, esquive −${e.cancelChance} %, ${turns(e.turns)}) !`
               : `${name(e.side)} se couvre de givre (gel 1/3 : ${e.cancelChance} % d'attaque annulée, esquive −${e.cancelChance} %, ${turns(e.turns)}) !`,
         o: { c: e.side, k: 'gel', n: e.level },
+      };
+    case 'knellLaid':
+      return {
+        t: 'statut',
+        txt: e.stacked
+          ? `Le Glas de ${name(e.side)} sonne plus fort : son ombre avance de ${fr(e.speed)} % de ses PV max par tour !`
+          : `Le Glas sonne pour ${name(e.side)} : une ombre avance sur sa vie (${fr(e.speed)} % de ses PV max par tour) !`,
+        o: { c: e.side, k: 'glas', v: e.speed, n: 3 },
+      };
+    case 'knellRose':
+      return {
+        t: 'statut',
+        txt: `L'ombre du Glas avance sur ${name(e.side)} : ${fr(e.threshold)} % de ses PV max`,
+        o: { c: e.side, k: 'glas_monte', s: e.threshold },
+      };
+    case 'knellReceded':
+      return {
+        t: 'statut',
+        txt: `La purification fait reculer l'ombre du Glas de ${name(e.side)} (${fr(e.threshold)} %, encore ${e.skulls} crâne${e.skulls > 1 ? 's' : ''})`,
+        o: { c: e.side, k: 'glas_recul', s: e.threshold, n: e.skulls },
+      };
+    case 'knelled':
+      return {
+        t: 'statut',
+        txt: `LE GLAS A SONNÉ : ${name(e.side)} est emporté par la mort !`,
+        o: { c: e.side, k: 'glas_mort' },
       };
     case 'thawed':
       return {

@@ -44,6 +44,7 @@ export type EffectData = {
   annul?: Num;
   stunch?: Num; // old frost (a chance of stun), no longer read
   eclat?: Num; // frost: shatter damage at glaciation (level 3)
+  glasv?: Num; // knell: speed of its shadow (% of max HP per turn)
   fchance?: Num;
   degfrac?: Num;
 

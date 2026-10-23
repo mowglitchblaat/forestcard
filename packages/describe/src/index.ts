@@ -190,6 +190,8 @@ const PASSIVE_TEXT: Record<PassiveType, (p: Fx, x: PassiveContext) => string> = 
     `À chacun de ses tours, ${c < 100 ? c + ' % de chances de se solidifier' : 'se solidifie'} pendant ${trs(T)} de l'adversaire (insensible à l'étourdissement, ne se purge pas, brisée par une fracture ; détonations et missiles ne lui font que la moitié des dégâts de statuts)`,
   fracture: (p, { c, T }) =>
     `${c} % de chances de fracturer la cible (${nz(p.fchance)} % de se blesser de ${nz(p.degfrac)} PV en attaquant, ${trs(T)})`,
+  glas: (p, { c }) =>
+    `${c} % de chances de faire sonner le Glas : une ombre avance sur la vie de la cible de ${nz(p.glasv)} % de ses PV max par tour ; quand ses PV passent dessous, la mort l'emporte (pas d'évite la mort ni de réanimation ; 3 purifications pour l'effacer)`,
 };
 
 export function fxPassif(passive: Fx): string {
@@ -378,6 +380,10 @@ const EFFECT_TEXT: Record<EffectType, (e: Fx, x: EffectContext) => string[]> = {
   atk_malediction: attackEffect,
   atk_fracture: attackEffect,
   atk_gel: attackEffect,
+  atk_glas: attackEffect,
+  glas_effet: (e, { ci }) => [
+    `Fait sonner le Glas pour ${ci} : une ombre avance sur sa vie de ${nz(e.glasv)} % de ses PV max par tour ; quand ses PV passent dessous, la mort l'emporte (pas d'évite la mort ni de réanimation ; 3 purifications pour l'effacer)`,
+  ],
 };
 
 // One described item: its (normalized) type, for pages that colour by category, and its text.

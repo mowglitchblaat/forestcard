@@ -24,6 +24,7 @@ export const CATEGORY_LABELS: Record<string, string> = {
   stat: 'Modif. ATQ / PV',
   rage: 'Rage',
   fatigue: 'Fatigue',
+  glas: 'Glas',
   alea: 'Effet aléatoire',
   exec: 'Exécution',
   avale: 'Avalage',
@@ -36,6 +37,8 @@ export const CATEGORY_LABELS: Record<string, string> = {
 };
 // Category (legend colour) of each effect and passive type.
 const CATEGORY_OF: Record<string, string> = {
+  glas: 'glas',
+  glas_effet: 'glas',
   saignement: 'sang',
   gel: 'gel',
   poison: 'poison',
@@ -122,6 +125,7 @@ export const CATEGORY_STYLES: Record<
   ultime: { background: '#111827', color: '#fecaca', border: '1px solid #dc2626' },
   rage: { background: '#7f1d1d', color: '#fde047', border: '1px solid #ef4444' },
   fatigue: { background: '#334155', color: '#cbd5e1' },
+  glas: { background: '#1e1b2e', color: '#c4b5fd', border: '1px solid #7c3aed' },
   alea: {
     background: 'linear-gradient(90deg,#f43f5e,#f59e0b,#22c55e,#3b82f6,#a855f7)',
     color: '#fff',

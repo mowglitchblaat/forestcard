@@ -52,4 +52,5 @@ export const effects = {
   atk_malediction: { run: attackEffectGrant },
   atk_fracture: { run: attackEffectGrant },
   atk_gel: { run: attackEffectGrant },
+  atk_glas: { run: attackEffectGrant },
 } satisfies EffectRules;

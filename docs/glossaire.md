@@ -84,6 +84,7 @@ Clés de `EFFECT_TYPES`, exécutées par `applyEffect` (`packages/engine/src/com
 | `saignement` | X % des PV max perdus en fin de tour, soins réduits | `bleed.ts` |
 | `poison_effet` | dégâts fixes en fin de tour | `dot.ts` |
 | `brulure_effet` | X % des PV max en fin de tour ; chaque dégât de brûlure **calcine** autant de PV max, pour de bon (la purification arrête la brûlure, pas la calcination) | `dot.ts` |
+| `glas_effet` | **le Glas**, la mécanique anti-survie : une ombre avance sur la barre de vie de la cible depuis la gauche, de `glasv` % de ses PV max à chaque début de son tour ; dès que ses PV passent sous l'ombre, elle meurt, sans évite la mort ni réanimation. Relancé, il accélère de moins en moins (+1/2, +1/4…). Une purification brise un de ses 3 crânes et fait reculer l'ombre d'un tiers, la 3e l'efface | `knell.ts` |
 | `gel` | +1 niveau de gel (3 au plus) : 1 **givre** (`annul` % d'attaque annulée, et autant de points d'esquive en moins), 2 **gelée** (×2,5 pour les deux, 100 % au plus), 3 **glaciation** (n'attaque pas à son tour suivant, puis la glace éclate : `eclat` dégâts, 10 par défaut, et le gel est fini). Chaque gel garde les plus fortes valeurs et relance la durée (`tours`). Une carte solidifiée ne dépasse pas le niveau 2 ; une fracture sur une carte gelée fait éclater la glace ; la purification retire le gel. **Feu contre glace** : geler une carte qui brûle éteint le feu (la brûlure part, aucun gel n'est posé) ; brûler une carte gelée fait fondre la glace d'un niveau et inflige un tick de brûlure tout de suite (choc thermique) | `frost.ts`, `dot.ts` |
 | `fracture` | chance de se blesser en attaquant ; brise la solidification | `fracture.ts` |
 | `fatigue` | ATQ baissée pendant X tours, rendue ensuite | `fatigue.ts` |
@@ -105,7 +106,7 @@ Clés de `EFFECT_TYPES`, exécutées par `applyEffect` (`packages/engine/src/com
 | `reset_ultime` | l'ultime redevient utilisable | `ultimates.ts` |
 | `esquive_mod` | esquive ± X % | `dodge.ts` |
 | `aleatoire` | tire un effet au hasard parmi 45 (`POOL`), une ou plusieurs fois | `random.ts` |
-| `atk_fatigue`, `atk_detonation`, `atk_enchainement`, `atk_brulure`, `atk_poison`, `atk_etourdir`, `atk_saignement`, `atk_malediction`, `atk_fracture`, `atk_gel` | donnent à l'attaque de base le passif du même nom (sans `atk_`) (retiré avec la magie si elle est annulée ou détruite) | `attack-effects.ts` |
+| `atk_fatigue`, `atk_detonation`, `atk_enchainement`, `atk_brulure`, `atk_poison`, `atk_etourdir`, `atk_saignement`, `atk_malediction`, `atk_fracture`, `atk_gel`, `atk_glas` | donnent à l'attaque de base le passif du même nom (sans `atk_`) (retiré avec la magie si elle est annulée ou détruite) | `attack-effects.ts` |
 
 ## Passifs
 
@@ -120,7 +121,7 @@ Clés de `PASSIVE_TYPES`, lues par le moteur au moment indiqué.
 | `enchainement` | X % de chances d'une frappe de plus, retentée jusqu'à l'échec (10 au plus par défaut) | `strikes.ts` |
 | `vol_pct_atq` | X % de chances de se soigner d'une part des dégâts infligés | `life-steal.ts` |
 | `etourdir` | X % de chances d'étourdir à chaque coup | `stun.ts` |
-| `brulure`, `poison`, `saignement`, `malediction`, `fracture`, `gel`, `fatigue` | X % de chances de poser ce statut à chaque coup | `dot.ts`, `bleed.ts`, `curse.ts`, `fracture.ts`, `frost.ts`, `fatigue.ts` |
+| `brulure`, `poison`, `saignement`, `malediction`, `fracture`, `gel`, `glas`, `fatigue` | X % de chances de poser ce statut à chaque coup | `dot.ts`, `bleed.ts`, `curse.ts`, `fracture.ts`, `frost.ts`, `knell.ts`, `fatigue.ts` |
 | `execution` | X % de chances de poser une marque d'exécution à chaque coup, avec le coup, avant ses dégâts ; à 3 marques, un coup qui laisserait la cible sous le seuil **est** l'exécution (« évite la mort » ne se déclenche pas et l'exécution le **brise** dans tous les cas : passif, protection reçue, magie ou piège « évite la mort » (tranché, même s'il réanime aussi), il ne sauvera plus la carte ; la réanimation reste possible). **Statut marquant** (`statmarque` : `saignement`, `brulure`, `poison`, `tous` ; `chancemarque` %), sur toutes les formes de l'exécution : la carte marquée garde jusqu'à la fin du combat X % de chances de recevoir une marque à chaque dégât de ce statut (le plus haut % est gardé) | `execution.ts` |
 | `avalage` | fourchette, couteau, puis avalage à la 3e attaque réussie | `swallow.ts` |
 | `bonus_frappe` | frappé X fois depuis son dernier tour : prochaine attaque renforcée | `counter.ts` |

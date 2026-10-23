@@ -52,6 +52,8 @@ export const EFFECT_TYPES = [
   'atk_malediction',
   'atk_fracture',
   'atk_gel',
+  'glas_effet',
+  'atk_glas',
   'esquive_mod',
   'reset_ultime',
   'mort_evitee',
@@ -97,6 +99,7 @@ export const PASSIVE_TYPES = [
   'purification',
   'programmation',
   'detonation',
+  'glas',
 ] as const;
 export type PassiveType = (typeof PASSIVE_TYPES)[number];
 

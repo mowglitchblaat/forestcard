@@ -32,6 +32,7 @@ export type Combat = {
   pendingEffects: (() => void)[]; // traps and avoid-death shown AFTER the damage line
   executing: number; // an execution ignores avoid-death
   noRevive: number; // detonation damage: a card it kills cannot be revived (legacy: NOREV)
+  knelling: number; // the knell takes a card: no avoid-death
   trapChainDepth: number;
   held: HeldEvent[][]; // nested holds, innermost last
   triggers: Triggers; // what the event hook does, from both decks (mechanics/triggers.ts)
@@ -195,6 +196,7 @@ export function createCombat(rules: Rules, seed: number, onEvent: OnEvent): Comb
     pendingEffects: [],
     executing: 0,
     noRevive: 0,
+    knelling: 0,
     trapChainDepth: 0,
     held: [],
     triggers: { any: false, traps: false },

@@ -110,6 +110,7 @@ export const EDITOR_FIELDS = {
     'n',
   ],
   eclat: ['Gel niveau 3 : dégâts quand la glace éclate (10 par défaut)', 'n'],
+  glasv: ["Glas : vitesse de l'ombre (% des PV max par tour)", 'n'],
   fchance: ['Chance de se blesser en attaquant (%)', 'n'],
   degfrac: ['Dégâts subis en attaquant', 'n'],
 } as const satisfies Record<string, Field>;
@@ -243,6 +244,11 @@ export const EDITOR_PASSIVES: Record<PassiveType, EditorEntry> = {
     'machebase',
     'tours',
     'repos',
+  ],
+  glas: [
+    'À X % de chances, fait sonner le Glas (ombre de la mort qui avance de X % des PV max par tour)',
+    'chance',
+    'glasv',
   ],
 };
 
@@ -425,6 +431,11 @@ export const EDITOR_ULTIMATES: { readonly [K in EffectType]?: EditorEntry } = {
     'seuilexec',
     'statmarque',
     'chancemarque',
+  ],
+  glas_effet: [
+    "Glas : une ombre de la mort avance de X % des PV max par tour (pas d'évite la mort ni de réanimation)",
+    'ciblem',
+    'glasv',
   ],
 };
 
@@ -677,6 +688,16 @@ export const EDITOR_MAGICS: { readonly [K in EffectType]?: EditorEntry } = {
   marque_avalage: [
     "Avalage : pose directement X marques d'avalage (\u{1F374} puis \u{1F52A}, 2 maximum) sur l'adversaire",
     'nbmarques',
+  ],
+  glas_effet: [
+    "Glas : une ombre de la mort avance de X % des PV max par tour (pas d'évite la mort ni de réanimation)",
+    'ciblem',
+    'glasv',
+  ],
+  atk_glas: [
+    'Attaque de base : X % de chances de faire sonner le Glas (X % des PV max par tour)',
+    'chance',
+    'glasv',
   ],
 };
 

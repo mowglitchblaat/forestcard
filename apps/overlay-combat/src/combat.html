@@ -15,7 +15,10 @@ body.obs{background:transparent}
 .card.hit{animation:hit .4s}.card.atk{transform:scale(1.07)}.card.ko{filter:grayscale(1) brightness(.5)}
 @keyframes hit{25%{transform:translateX(-12px)}75%{transform:translateX(12px)}}
 .nm{margin:1vh 0 .5vh;font-size:2.4vh;font-weight:700;text-shadow:0 0 6px #000}
-.bar{height:2.4vh;background:#400;border-radius:8px;overflow:hidden}.bar i{display:block;height:100%;width:100%;background:#22c55e;transition:width .5s}
+.bar{position:relative;height:2.4vh;background:#400;border-radius:8px;overflow:hidden}
+.bar .glas{position:absolute;left:0;top:0;bottom:0;width:0;z-index:2;background:linear-gradient(90deg,#07030d,#2e1065 70%,#6d28d9);box-shadow:inset 0 0 .8vh #000,0 0 1vh rgba(139,92,246,.8);transition:width .9s ease}
+.bar .glas::after{content:'💀';position:absolute;right:0;top:50%;transform:translate(50%,-50%);font-size:2vh;line-height:1;filter:drop-shadow(0 0 .5vh #a78bfa)}
+.bar .glas .gc{position:absolute;left:.5vh;top:50%;transform:translateY(-50%);font-size:1.2vh;line-height:1;white-space:nowrap;opacity:.9}.bar i{display:block;height:100%;width:100%;background:#22c55e;transition:width .5s}
 .pv{font-size:2vh;text-shadow:0 0 4px #000}
 /* ATQ (rouge) et PV (bleu) en direct sur la carte — seulement si la carte a une « image pour le combat » (sans chiffres).
    Réglages : --sl / --sr = distance du bord gauche / droit, --sb = distance du bas, --ss = taille des chiffres */
@@ -815,6 +818,39 @@ async function gelNiveau(c,n){const card=$('#p'+c+' .card');if(!card)return;card
  const K=rc(c);addFx(.9,(x,t,u)=>{x.globalCompositeOperation='lighter';orb(x,K.cx,K.cy,K.w*(.4+.25*n)*ez(cl(t/.3)),`rgba(170,225,255,${(.25+.12*n)*(1-u)})`,'rgba(150,215,255,0)');x.globalCompositeOperation='source-over'});
  if(n>=3){givreCoup(c);card.animate([{filter:'brightness(1.6) saturate(.4)'},{filter:'none'}],{duration:700})}
  flot(c,['Givre','Gelée !','GLACIATION !'][Math.min(3,n)-1],'#bae6fd',n>=3?'big':'');await wait(n>=3?1300:800)}
+// LE GLAS : une ombre violette avance sur la barre de vie depuis la gauche, un crâne à son bord ; les crânes restants (purifications à faire) sont écrits dedans
+function glasBarre(c,s,n){const bar=$('#p'+c+' .bar');if(!bar)return;let g=bar.querySelector('.glas');
+ if(!g){g=document.createElement('div');g.className='glas';g.innerHTML='<span class="gc"></span>';bar.appendChild(g)}
+ if(s!=null)g.style.width=Math.min(100,s)+'%';if(n!=null)g.querySelector('.gc').textContent='💀'.repeat(Math.max(0,n))}
+// La cloche du Glas : des ondes sombres partent du haut de la carte, comme le son d'une cloche
+function glasCloche(c){const K=rc(c),cx=K.cx,cy=K.y-K.h*.06;
+ addFx(1.6,(x,t)=>{for(let i=0;i<3;i++){const q=cl((t-i*.22)/1.1);if(q<=0||q>=1)continue;x.strokeStyle=`rgba(167,139,250,${.75*(1-q)})`;x.lineWidth=Math.max(2,K.w*.02)*(1-q);x.beginPath();x.ellipse(cx,cy,K.w*(.15+q*.9),K.w*(.08+q*.45),0,0,7);x.stroke()}
+  const a=Math.sin(Math.PI*cl(t/1.2));x.save();x.globalAlpha=a;x.font=`${Math.round(K.w*.22)}px serif`;x.textAlign='center';x.textBaseline='middle';x.translate(cx,cy);x.rotate(Math.sin(t*14)*.35*(1-cl(t/1.2)));x.fillText('🔔',0,0);x.restore()})}
+// LE GLAS A SONNÉ : le monde s'assombrit, la cloche sonne trois fois, une faux spectrale fauche la carte, elle devient grise puis se désagrège en poussière qui s'envole
+async function glasMort(c){const card=$('#p'+c+' .cw .card');if(!card)return;const K=rc(c);card.dataset.cendre='1';
+ const tex0=texCarte(card,K),C=12,L=17,F=[],sw=K.w/C,sh=K.h/L;
+ // la carte en gris, préparée une seule fois (un filtre par morceau et par image figerait l'écran)
+ const tex=document.createElement('canvas');tex.width=tex0.width;tex.height=tex0.height;const tg=tex.getContext('2d');
+ const gris=()=>{tg.clearRect(0,0,tex.width,tex.height);tg.filter='grayscale(1) brightness(.8)';tg.drawImage(tex0,0,0);tg.filter='none';tg.globalCompositeOperation='source-atop';tg.fillStyle='rgba(124,58,237,.18)';tg.fillRect(0,0,tex.width,tex.height);tg.globalCompositeOperation='source-over'};
+ gris();setTimeout(gris,400);const tw=tex.width/C,th=tex.height/L;
+ for(let j=0;j<L;j++)for(let i=0;i<C;i++)F.push({i,j,d:(i/C)*.6+R(0,.3),vx:R(.4,1.5),vy:R(-1.4,-.4),r:R(-5,5)});   // morceaux de la vraie carte, qui partent de gauche à droite
+ // la faux : une lame en croissant, lumineuse, qui balaie la carte en arc, avec sa traînée
+ const lame=(x,cx0,cy0,R0,a,al,w)=>{x.beginPath();x.arc(cx0,cy0,R0,a-.42,a);x.arc(cx0,cy0,R0*(1-w),a,a-.32,true);x.closePath();x.globalAlpha=al;x.fill()};
+ addFx(4.6,(x,t)=>{const dk=Math.min(1,t/.5)*(1-cl((t-3.8)/.8));x.fillStyle=`rgba(8,3,16,${.6*dk})`;x.fillRect(0,0,x.canvas.width,x.canvas.height);
+  for(let i=0;i<3;i++){const q=cl((t-i*.35)/1.2);if(q<=0||q>=1)continue;x.strokeStyle=`rgba(196,181,253,${.8*(1-q)})`;x.lineWidth=Math.max(3,K.w*.03)*(1-q);x.beginPath();x.ellipse(K.cx,K.y,K.w*(.2+q*1.6),K.w*(.1+q*.8),0,0,7);x.stroke()}
+  if(t>.55&&t<1.7){const cx0=K.x+K.w*1.35,cy0=K.y-K.h*.05,R0=Math.hypot(K.cx-cx0,K.cy-cy0),ac=Math.atan2(K.cy-cy0,K.cx-cx0),q=ez(cl((t-.55)/.6)),fade=1-cl((t-1.3)/.4),a=ac+.75-1.6*q;   // l'arc de la lame passe par le centre de la carte, de haut en bas
+   x.save();x.shadowColor='rgba(167,139,250,1)';x.shadowBlur=40;
+   const gr=x.createLinearGradient(K.x,K.y,K.x+K.w,K.y+K.h);gr.addColorStop(0,'#f5f3ff');gr.addColorStop(.5,'#c4b5fd');gr.addColorStop(1,'#7c3aed');x.fillStyle=gr;
+   for(let k=5;k>=1;k--)lame(x,cx0,cy0,R0,a+k*.09,fade*.13*(6-k),.16);
+   lame(x,cx0,cy0,R0,a,fade,.16);x.globalAlpha=fade*.7;x.strokeStyle='#ede9fe';x.lineWidth=Math.max(2,K.w*.012);x.beginPath();x.arc(cx0,cy0,R0,a-.42,a);x.stroke();
+   x.restore()}
+  if(t<1.25)return;
+  for(const f of F){const q=cl((t-1.25-f.d)/1.6);if(q>=1)continue;const px=K.x+f.i*sw+q*q*f.vx*K.w*.9+Math.sin(t*5+f.j)*q*6,py=K.y+f.j*sh+q*f.vy*K.h*.45,z=1-q*.55;
+   x.setTransform(1,0,0,1,0,0);const d0=Math.min(1.5,window.devicePixelRatio||1),cs=Math.cos(f.r*q)*d0,sn=Math.sin(f.r*q)*d0;x.setTransform(cs,sn,-sn,cs,(px+sw/2)*d0,(py+sh/2)*d0);
+   x.globalAlpha=1-q;x.drawImage(tex,f.i*tw,f.j*th,tw,th,-sw*z/2,-sh*z/2,sw*z,sh*z)}});
+ await wait(1100);card.style.transition='filter .2s';card.style.filter='grayscale(1) brightness(.8)';
+ flot(c,'LE GLAS A SONNÉ','#c4b5fd','big');await wait(150);card.style.visibility='hidden';const g2=$('#p'+c+' .bar .glas');if(g2)g2.style.width='100%';
+ await wait(2700)}
 // FEU CONTRE GLACE : un nuage de vapeur blanche monte de la carte (la glace fond, ou le feu s'éteint), avec un sifflement de gouttelettes
 function vapeurFx(c){const K=rc(c),P=Array.from({length:22},()=>({x:R(.1,.9),d:R(0,.5),s:R(.18,.35),v:R(.5,1),w:R(-.15,.15)}));
  addFx(1.8,(x,t)=>{for(const p of P){const q=cl((t-p.d)/1.2);if(q<=0||q>=1)continue;const px=K.x+K.w*(p.x+p.w*q),py=K.y+K.h*(.85-q*.95*p.v),r=K.w*p.s*(.5+q);
@@ -1206,7 +1242,7 @@ async function jouer(res){
    if(e.k&&AVK[e.k]){maj(e);await AVK[e.k](e);continue}   // avalage : marques, langue, mâche, recrache
    if(e.t==='degats'&&e.k==='renvoi')await renvoiFx(e.from,e.c);
    maj(e);
-   if(e.t==='degats'){card.classList.add('hit');if(e.k==='fracture')os(e.c);const gros=e.n/e.max[e.c]>=.2&&e.k!=='poison'&&e.k!=='brûlure'&&e.k!=='saignement';flot(e.c,'-'+e.n,e.k==='poison'?'#22ff55':e.k==='brûlure'?'#ff8a00':e.k==='saignement'?'#c4121e':e.k==='fracture'?'#fde68a':e.k==='gel'?'#7dd3fc':e.k==='choc'?'#fdba74':gros?'#ff1111':'#ff6a6a',gros?'big':'');setTimeout(()=>card.classList.remove('hit'),450)}
+   if(e.t==='degats'){card.classList.add('hit');if(e.k==='fracture')os(e.c);const gros=e.n/e.max[e.c]>=.2&&e.k!=='poison'&&e.k!=='brûlure'&&e.k!=='saignement';flot(e.c,'-'+e.n,e.k==='poison'?'#22ff55':e.k==='brûlure'?'#ff8a00':e.k==='saignement'?'#c4121e':e.k==='fracture'?'#fde68a':e.k==='gel'?'#7dd3fc':e.k==='choc'?'#fdba74':e.k==='glas'?'#a78bfa':gros?'#ff1111':'#ff6a6a',gros?'big':'');setTimeout(()=>card.classList.remove('hit'),450)}
    else if(e.t==='soin'){flot(e.c,'+'+e.n,'#4ade80');soin(e.c);if(e.k==='revive')aureole(e.c)}
    else if(e.t==='esquive'){flot(e.c,'Esquive !','#e5e7eb');vent(e.c)}
    else if(e.t==='bloque'){if(/une partie/.test(e.txt||'')){bouclier(e.c,{partiel:1});flot(e.c,'Dégâts réduits','#fcd34d')}else if(/est bloquée/.test(e.txt||'')){bouclier(e.c,{partiel:1});flot(e.c,'Attaque bloquée','#fcd34d')}else{annuleFx(1-e.c);flot(1-e.c,'Attaque annulée','#fca5a5')}}   // annulée = rien ne passe · bloquée / partiel = le coup touche (statuts et marques passent)   // annulée = rien ne passe · partiel = le coup touche quand même
@@ -1241,6 +1277,12 @@ async function jouer(res){
    else if(e.t==='statut'&&e.k==='gel'){await gelNiveau(e.c,e.n||1)}
    else if(e.t==='statut'&&e.k==='glaciation'){givreCoup(e.c);flot(e.c,'Prisonnier de la glace !','#bae6fd','big');await wait(1100)}
    else if(e.t==='statut'&&e.k==='eclat_glace'){await eclatGlace(e.c)}
+   else if(e.t==='statut'&&e.k==='glas'){glasBarre(e.c,null,3);glasCloche(e.c);flot(e.c,'🔔 Le Glas sonne','#c4b5fd',e.v>=10?'big':'');await wait(1100)}
+   else if(e.t==='statut'&&e.k==='glas_monte'){glasBarre(e.c,e.s);await wait(450)}
+   else if(e.t==='statut'&&e.k==='glas_recul'){glasBarre(e.c,e.s,e.n);flot(e.c,'Le Glas recule ('+e.n+' 💀)','#e9d5ff');await wait(700)}
+   else if(e.t==='finstatut'&&e.k==='glas'){const g=$('#p'+e.c+' .bar .glas');if(g){g.style.width='0';setTimeout(()=>g.remove(),900)}flot(e.c,'Le Glas se tait','#e9d5ff')}
+   else if(e.t==='statut'&&e.k==='glas_mort'){await glasMort(e.c)}
+   else if(e.t==='statut'&&e.k==='glas_rea'){flot(e.c,'Pas de retour…','#a78bfa');await wait(700)}
    else if(e.t==='statut'&&e.k==='degel'){vapeurFx(e.c);const cd=$('#p'+e.c+' .card');if(cd&&e.n>0)cd.dataset.gel=e.n;flot(e.c,'La glace fond !','#fdba74');await wait(900)}   // feu sur glace : -1 niveau de gel
    else if(e.t==='statut'&&e.k==='feu_eteint'){vapeurFx(e.c);flot(e.c,'Feu éteint !','#bae6fd');await wait(900)}   // glace sur feu : la brûlure part
    else if(e.t==='stat'&&e.k==='calcine'){calcineFx(e.c);carboniser(e.c,e);flot(e.c,'🔥 PV max '+e.d,'#fb923c');await wait(700)}   // calcination : PV max brûlés pour de bon
@@ -1363,6 +1405,7 @@ if(DEMO){
   ['Statuts','Gel : attaque bloquée',c=>{flot(c,'Gelé !','#bae6fd');givreCoup(c)},1500],
   ['Statuts','Brûlure : calcination (PV max brûlés, la carte se carbonise)',async c=>{const card=$('#p'+c+' .card'),m=100;for(const k of[1,2,3]){calcineFx(c);carboniser(c,{max:c?[0,m-10*k]:[m-10*k,0],d:-10});flot(c,'🔥 PV max -10','#fb923c');await wait(1300)}await wait(1500);const ch=card.querySelector('.char');if(ch)ch.remove();delete card.dataset.max0},6000],
   ['Statuts','Feu contre glace : la glace fond / le feu s\'éteint',async c=>{vapeurFx(c);flot(c,'La glace fond !','#fdba74');await wait(1600);vapeurFx(c);flot(c,'Feu éteint !','#bae6fd')},3400],
+  ['Statuts','Le Glas : l\'ombre avance, puis le Glas sonne',async c=>{glasBarre(c,null,3);glasCloche(c);flot(c,'🔔 Le Glas sonne','#c4b5fd');for(const s of[15,30,45,60]){await wait(800);glasBarre(c,s)}await wait(700);await glasMort(c)},9000,null,null,true],
   ['Statuts','Gel en 3 niveaux, puis la glace éclate',async c=>{for(const n of[1,2,3]){await gelNiveau(c,n);await wait(700)}flot(c,'Prisonnier de la glace !','#bae6fd','big');await wait(1000);await eclatGlace(c);statut(c,'gel',false);delete $('#p'+c+' .card').dataset.gel},8000],
   ['Souffle','Souffle de feu (brûlure)',c=>souffle(1-c,c,'brulure'),1900],
   ['Souffle','Souffle de glace (gel)',c=>souffle(1-c,c,'gel'),1900],
