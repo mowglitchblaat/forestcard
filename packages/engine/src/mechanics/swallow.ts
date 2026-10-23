@@ -122,7 +122,16 @@ function transferStatuses(c: Combat, a: Side, d: Side): void {
       cause: 'statusesLeft',
     });
   }
-  dots.forEach((x) => damageOverTime(c, a, x.kind, round(x.amount * 1.5), longer(x.turns)));
+  dots.forEach((x) =>
+    damageOverTime(
+      c,
+      a,
+      x.kind,
+      round(x.amount * 1.5),
+      longer(x.turns),
+      x.amount > 0 ? (x.calc * 100) / x.amount : 100,
+    ),
+  );
   frosts.forEach((f) =>
     freeze(
       c,

@@ -244,6 +244,16 @@ test('brûlure : chaque dégât de brûlure calcine autant de PV max, pour de bo
   assert.ok(fin.max[1] < 200, 'les PV max restent brûlés');
 });
 
+test('brûlure : la part calcinée se règle par carte (calcine, % des dégâts ; vide = 100 %, 0 = aucune)', () => {
+  const moitie = combat([C('Feu', 5, SOLIDE, { passif: { type: 'brulure', chance: 100, pctpv: 5, tours: 2, calcine: 50 } })], [C('b', 5, 200)], { regles: { maxTours: 3, maxProlong: 0 } });
+  const iB = moitie.journal.findIndex(e => e.txt === 'b subit 10 (brûlure)');
+  assert.ok(iB > 0, 'tick de brûlure : 5 % de 200');
+  assert.equal(moitie.journal[iB + 1].txt, 'PV max de b −5 (calcination)', '50 % des 10 dégâts');
+  const sans = combat([C('Feu', 5, SOLIDE, { passif: { type: 'brulure', chance: 100, pctpv: 5, tours: 2, calcine: 0 } })], [C('b', 5, 200)], { regles: { maxTours: 3, maxProlong: 0 } });
+  assert.ok(sans.journal.some(e => e.txt === 'b subit 10 (brûlure)'), 'la brûlure brûle toujours');
+  assert.ok(!sans.journal.some(e => e.k === 'calcine'), 'mais ne calcine rien');
+});
+
 test('feu contre glace : brûler une carte gelée fait fondre la glace d\'un niveau, avec un choc thermique', () => {
   const r = combat([C('Feu', 5, SOLIDE, { passif: { type: 'brulure', chance: 100, pctpv: 5, tours: 2 } }), MAG('Givre', { type: 'gel', ciblem: 'adversaire', annul: 20, tours: 5 })], [C('b', 5, 200)], { regles: { maxTours: 2, maxProlong: 0 } });
   const iD = r.journal.findIndex(e => e.k === 'degel');

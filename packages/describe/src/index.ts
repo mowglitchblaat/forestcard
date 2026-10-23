@@ -36,6 +36,12 @@ const FORK = '\u{1F374}';
 const KNIFE = '\u{1F52A}';
 
 export const nz = (v: unknown): number => +(v as number) || 0;
+// Burn calcination (calcine: % of the damage taken off max HP; 100 when empty).
+const calcTxt = (v: unknown): string => {
+  const p = v === undefined || v === null || v === '' ? 100 : nz(v);
+  if (p === 100) return 'chaque dégât calcine autant de PV max';
+  return p > 0 ? `chaque dégât calcine ${p} % de sa valeur en PV max` : 'sans calciner les PV max';
+};
 const trs = (t: number) => `${t} tour${t > 1 ? 's' : ''}`;
 const sgn = (v: number) => (v > 0 ? '+' : '') + v;
 const upc = (u: unknown) => (u === 'pct' ? ' %' : '');
@@ -173,7 +179,7 @@ const PASSIVE_TEXT: Record<PassiveType, (p: Fx, x: PassiveContext) => string> = 
   vol_pct_atq: (p, { c }) =>
     `${c} % de chances de se soigner de ${nz(p.pctatq)} % des dégâts infligés`,
   brulure: (p, { c, T }) =>
-    `${c} % de chances de brûler la cible (${nz(p.pctpv)} % de ses PV max par tour, ${trs(T)} ; chaque dégât calcine autant de PV max ; fait fondre la glace d'un niveau)`,
+    `${c} % de chances de brûler la cible (${nz(p.pctpv)} % de ses PV max par tour, ${trs(T)} ; ${calcTxt(p.calcine)} ; fait fondre la glace d'un niveau)`,
   poison: (p, { c, T }) =>
     `${c} % de chances d'empoisonner la cible (${nz(p.degtour)} dégâts par tour, ${trs(T)})`,
   malediction: (_, { c, v, T }) =>
@@ -347,7 +353,7 @@ const EFFECT_TEXT: Record<EffectType, (e: Fx, x: EffectContext) => string[]> = {
     `Empoisonne ${ci} : ${nz(e.degtour)} dégâts par tour pendant ${trs(T)}`,
   ],
   brulure_effet: (e, { T, ci }) => [
-    `Brûle ${ci} : ${nz(e.pctpv)} % des PV max par tour pendant ${trs(T)} (chaque dégât calcine autant de PV max ; fait fondre la glace d'un niveau)`,
+    `Brûle ${ci} : ${nz(e.pctpv)} % des PV max par tour pendant ${trs(T)} (${calcTxt(e.calcine)} ; fait fondre la glace d'un niveau)`,
   ],
   etourdir_effet: (e, { T }) => {
     const ch = isEmpty(e.chance) ? 100 : nz(e.chance);

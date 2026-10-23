@@ -94,6 +94,7 @@ export const EDITOR_FIELDS = {
   vv2: ['Transcendance : vol de vie niveau II (20 par défaut)', 'n'],
   vv3: ['Transcendance : vol de vie niveau III (30 par défaut)', 'n'],
   pctpv: ['% des PV max de la cible perdus par tour', 'n'],
+  calcine: ['% des dégâts de brûlure retirés aux PV max (100 si vide, 0 = aucun)', 'n'],
   degtour: ['Points de dégâts par tour', 'n'],
   ciblem: ['Cible (adversaire par défaut)', ['adversaire', 'soi']],
   max: ['Plafond de frappes en plus', 'n'],
@@ -181,6 +182,7 @@ export const EDITOR_PASSIVES: Record<PassiveType, EditorEntry> = {
     'chance',
     'pctpv',
     'tours',
+    'calcine',
   ],
   poison: ['À X % de chances, applique un poison (points par tour)', 'chance', 'degtour', 'tours'],
   malediction: [
@@ -366,6 +368,7 @@ export const EDITOR_ULTIMATES: { readonly [K in EffectType]?: EditorEntry } = {
     'ciblem',
     'pctpv',
     'tours',
+    'calcine',
   ],
   solidification: [
     "Solidification : X % de chances de se solidifier pendant X tours de l'adversaire (insensible à l'étourdissement, ne se purge pas, brisée par une fracture ; détonations et missiles ne lui font que la moitié des dégâts de statuts)",
@@ -502,6 +505,7 @@ export const EDITOR_MAGICS: { readonly [K in EffectType]?: EditorEntry } = {
     'ciblem',
     'pctpv',
     'tours',
+    'calcine',
   ],
   etourdir_effet: [
     'À X % de chances, étourdit pendant X tours (soi ou adversaire ; 100 % si la chance est vide)',
@@ -523,6 +527,7 @@ export const EDITOR_MAGICS: { readonly [K in EffectType]?: EditorEntry } = {
     'chance',
     'pctpv',
     'tours',
+    'calcine',
   ],
   atk_poison: [
     "Attaque de base : X % de chances d'empoisonner (X points par tour, X tours)",

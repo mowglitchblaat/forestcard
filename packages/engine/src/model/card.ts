@@ -39,6 +39,7 @@ export type EffectData = {
 
   // Statuses.
   pctpv?: Num;
+  calcine?: Num; // burn: % of each tick's damage taken off max HP (100 when empty)
   reducsoin?: Num;
   degtour?: Num;
   annul?: Num;

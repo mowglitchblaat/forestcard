@@ -187,7 +187,10 @@ function undoStatusesLater(
     M.status.dots = M.status.dots.filter((z) => before.dots.some((y) => y.kind === z.kind));
     M.status.dots.forEach((z) => {
       const y = before.dots.find((q) => q.kind === z.kind);
-      if (y) z.amount = y.amount;
+      if (y) {
+        z.amount = y.amount;
+        z.calc = y.calc;
+      }
     });
     if (M.status.frosts.length && !before.frost) statusEnds(M, 'frost');
     if (M.status.fractures.length > before.fractures && !before.fractures)
