@@ -205,7 +205,8 @@ export function fxPassif(passive: Fx): string {
 const frostLevels = (e: Fx, T: number): string => {
   const a = nz(e.annul);
   const s = isEmpty(e.eclat) ? 10 : nz(e.eclat);
-  return `+1 niveau de gel, ${trs(T)} (1 : ${a} % d'attaque annulée · 2 : ${Math.min(100, a * 2)} %, ne peut plus esquiver · 3 : glaciation, n'attaque pas à son tour suivant puis la glace éclate, ${s} dégâts)`;
+  const a2 = Math.min(100, Math.round(a * 2.5));
+  return `+1 niveau de gel, ${trs(T)} (1 : ${a} % d'attaque annulée et esquive −${a} % · 2 : ${a2} % et esquive −${a2} % · 3 : glaciation, n'attaque pas à son tour suivant puis la glace éclate, ${s} dégâts)`;
 };
 
 // ── Effects (magics, ultimates, trap payloads) ──

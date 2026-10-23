@@ -769,8 +769,8 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
           e.level >= 3
             ? `${name(e.side)} est pris dans la glace (gel 3/3) : il n'attaquera pas à son prochain tour, puis la glace éclatera !`
             : e.level === 2
-              ? `${name(e.side)} est gelé (gel 2/3${e.held ? ', solidifié : la glace ne peut pas le prendre' : ''} : ${e.cancelChance} % d'attaque annulée, ne peut plus esquiver, ${turns(e.turns)}) !`
-              : `${name(e.side)} se couvre de givre (gel 1/3 : ${e.cancelChance} % d'attaque annulée, ${turns(e.turns)}) !`,
+              ? `${name(e.side)} est gelé (gel 2/3${e.held ? ', solidifié : la glace ne peut pas le prendre' : ''} : ${e.cancelChance} % d'attaque annulée, esquive −${e.cancelChance} %, ${turns(e.turns)}) !`
+              : `${name(e.side)} se couvre de givre (gel 1/3 : ${e.cancelChance} % d'attaque annulée, esquive −${e.cancelChance} %, ${turns(e.turns)}) !`,
         o: { c: e.side, k: 'gel', n: e.level },
       };
     case 'frostShattered':

@@ -105,7 +105,10 @@ export const EDITOR_FIELDS = {
   nbalea: ["Nombre d'effets aléatoires tirés (1 par défaut)", 'n'],
   every: ['Agit tous les X tours', 'n'],
   fois: ['Nombre de fois (1 = une seule)', 'n'],
-  annul: ["Gel niveau 1 : chance d'annuler l'attaque (%, doublée au niveau 2)", 'n'],
+  annul: [
+    "Gel niveau 1 : chance d'annuler l'attaque et esquive en moins (%, ×2,5 au niveau 2)",
+    'n',
+  ],
   eclat: ['Gel niveau 3 : dégâts quand la glace éclate (10 par défaut)', 'n'],
   fchance: ['Chance de se blesser en attaquant (%)', 'n'],
   degfrac: ['Dégâts subis en attaquant', 'n'],

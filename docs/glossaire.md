@@ -84,7 +84,7 @@ Clés de `EFFECT_TYPES`, exécutées par `applyEffect` (`packages/engine/src/com
 | `saignement` | X % des PV max perdus en fin de tour, soins réduits | `bleed.ts` |
 | `poison_effet` | dégâts fixes en fin de tour | `dot.ts` |
 | `brulure_effet` | X % des PV max en fin de tour | `dot.ts` |
-| `gel` | +1 niveau de gel (3 au plus) : 1 **givre** (`annul` % d'attaque annulée), 2 **gelée** (chance doublée, ne peut plus esquiver), 3 **glaciation** (n'attaque pas à son tour suivant, puis la glace éclate : `eclat` dégâts, 10 par défaut, et le gel est fini). Chaque gel garde les plus fortes valeurs et relance la durée (`tours`). Une carte solidifiée ne dépasse pas le niveau 2 ; une fracture sur une carte gelée fait éclater la glace ; la purification retire le gel | `frost.ts` |
+| `gel` | +1 niveau de gel (3 au plus) : 1 **givre** (`annul` % d'attaque annulée, et autant de points d'esquive en moins), 2 **gelée** (×2,5 pour les deux, 100 % au plus), 3 **glaciation** (n'attaque pas à son tour suivant, puis la glace éclate : `eclat` dégâts, 10 par défaut, et le gel est fini). Chaque gel garde les plus fortes valeurs et relance la durée (`tours`). Une carte solidifiée ne dépasse pas le niveau 2 ; une fracture sur une carte gelée fait éclater la glace ; la purification retire le gel | `frost.ts` |
 | `fracture` | chance de se blesser en attaquant ; brise la solidification | `fracture.ts` |
 | `fatigue` | ATQ baissée pendant X tours, rendue ensuite | `fatigue.ts` |
 | `rage` | dégâts en plus par coup pendant X tours, puis fatigue | `rage.ts` |

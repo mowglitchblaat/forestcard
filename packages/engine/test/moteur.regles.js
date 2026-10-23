@@ -214,17 +214,24 @@ test('gel : chaque gel monte d\'un niveau (givre, gelée, glaciation) ; au nivea
   assert.equal(suite[iT + 2].k, 'eclat_glace', 'puis la glace éclate');
   assert.equal(suite[iT + 3].txt, 'b subit 30 dégâts (éclat de glace)');
   assert.equal(suite[iT + 4].t, 'finstatut', 'le gel est fini');
-  assert.match(r.journal.find(e => e.k === 'gel' && e.n === 2).txt, /50 % d'attaque annulée, ne peut plus esquiver/, 'niveau 2 : chance doublée');
+  assert.match(r.journal.find(e => e.k === 'gel' && e.n === 1).txt, /25 % d'attaque annulée, esquive −25 %/, 'niveau 1');
+  assert.match(r.journal.find(e => e.k === 'gel' && e.n === 2).txt, /63 % d'attaque annulée, esquive −63 %/, 'niveau 2 : ×2,5');
 });
 
-test('gel : à partir du niveau 2, la carte ne peut plus esquiver', () => {
-  for (const seed of [1, 2, 3, 4, 5]) {
-    const r = combat([C('Golem', 10, SOLIDE, { passif: GEL({ annul: 0, tours: 99 }) })], [C('b', 10, SOLIDE, { passif: { type: 'esquive', chance: 75 } })], { seed, regles: { maxTours: 8, maxProlong: 0 } });
+test('gel : la carte gelée perd autant de points d\'esquive que sa chance d\'attaque annulée (×2,5 au niveau 2)', () => {
+  // esquive 50 % : au niveau 2 d'un gel à 20 % (−50 points), elle n'esquive plus jamais
+  for (const seed of [1, 2, 3, 4, 5, 6]) {
+    const r = combat([C('Golem', 10, SOLIDE, { passif: GEL({ annul: 20, tours: 99 }) })], [C('b', 10, SOLIDE, { passif: { type: 'esquive', chance: 50 } })], { seed, regles: { maxTours: 10, maxProlong: 0 } });
     const i2 = r.journal.findIndex(e => e.k === 'gel' && e.n === 2);
     if (i2 < 0) continue;
     const i3 = r.journal.findIndex(e => e.k === 'gel' && e.n === 3);
-    assert.ok(!r.journal.slice(i2, i3 < 0 ? undefined : i3).some(e => e.t === 'esquive' && e.c === 1), `seed ${seed} : aucune esquive au niveau 2`);
+    assert.ok(!r.journal.slice(i2, i3 < 0 ? undefined : i3).some(e => e.t === 'esquive' && e.c === 1), `seed ${seed} : plus d'esquive au niveau 2`);
   }
+  // niveau 1 seulement (une magie gèle une fois au début) : esquive 60 % → 30 % avec un gel à 30 %
+  const taux = (deckA) => { let att = 0, esq = 0; for (let seed = 1; seed <= 200; seed++) { const g = combat(deckA, [C('b', 1, SOLIDE, { passif: { type: 'esquive', chance: 60 } })], { seed, regles: { maxTours: 4, maxProlong: 0 } }); g.journal.forEach(e => { if (e.t === 'attaque' && e.c === 0) att++; if (e.t === 'esquive' && e.c === 1) esq++; }); } return esq / att; };
+  const gele = taux([C('a', 1, SOLIDE), MAG('Givre', { type: 'gel', ciblem: 'adversaire', annul: 30, tours: 99 })]);
+  const libre = taux([C('a', 1, SOLIDE)]);
+  assert.ok(Math.abs(libre - 0.6) < 0.08 && Math.abs(gele - 0.3) < 0.08, `esquive ${Math.round(libre * 100)} % sans gel, ${Math.round(gele * 100)} % au niveau 1 (attendu 60 et 30)`);
 });
 
 test('gel : une carte solidifiée ne dépasse pas le niveau 2', () => {

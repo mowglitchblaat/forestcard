@@ -1,6 +1,7 @@
 // Frost, in 3 levels: each frost laid on a card raises its level by one (3 at most).
-//   1 Givre (rime): when it attacks, `annul` % chance its attack is cancelled.
-//   2 Gelée (frozen): twice that chance (100 % at most), and it can no longer dodge.
+//   1 Givre (rime): when it attacks, `annul` % chance its attack is cancelled, and its dodge chance
+//     loses as many points.
+//   2 Gelée (frozen): 2.5 times that (100 % at most), for both.
 //   3 Glaciation: caught in the ice, it does not attack at its next turn; then the ice shatters:
 //     it takes the shatter damage (`eclat`) and the frost is gone.
 // The strongest values laid are kept; each frost resets the duration (`tours`, counted on the frozen
@@ -28,12 +29,16 @@ export type FrostState = {
 };
 export const frostState = (): FrostState => ({ frosts: [] });
 
-// The chance a frozen card's attack is cancelled, at its level (glaciation: it does not attack).
+// The chance a frozen card's attack is cancelled at its level, and the dodge points it loses (the
+// same value): level 2 is 2.5 times level 1 (glaciation: it does not attack at all).
 export const cancelAt = (f: Frost): number =>
-  f.level >= 2 ? Math.min(100, f.cancelChance * 2) : Math.min(100, f.cancelChance);
+  Math.min(100, f.level >= 2 ? Math.round(f.cancelChance * 2.5) : f.cancelChance);
 
-// A card at level 2 or more cannot dodge (mechanics/dodge.ts).
-export const cannotDodge = (s: Side): boolean => (s.status.frosts[0]?.level ?? 0) >= 2;
+// Dodge points a frozen card loses (mechanics/dodge.ts).
+export const frostDodgeMalus = (s: Side): number => {
+  const f = s.status.frosts[0];
+  return f ? cancelAt(f) : 0;
+};
 
 const num = (v: Num | undefined, d: number): number => {
   const n = parseInt(String(v), 10);
