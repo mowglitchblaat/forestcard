@@ -27,12 +27,13 @@ export function swapAtqEffect({ c, o, x }: EffectContext): void {
   emit(c, { type: 'statsSwapped', side: id(c, o), with: id(c, x), what: 'atq' });
 }
 
-// One card's ATQ and HP swapped: the opponent by default, or itself.
+// One card's ATQ and HP swapped: the opponent by default, or itself. Its max HP become its new HP
+// (5 ATQ → 5/5 HP), whether they went up or down.
 export function swapAtqHpEffect({ c, statusTarget }: EffectContext): void {
   const Q = statusTarget();
   [Q.atq, Q.hp] = [Q.hp, Q.atq];
   Q.hp = Math.max(1, Q.hp);
-  Q.maxHp = Math.max(Q.maxHp, Q.hp);
+  Q.maxHp = Q.hp;
   emit(c, { type: 'attackAndHpSwapped', side: id(c, Q) });
 }
 

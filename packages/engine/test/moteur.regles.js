@@ -294,6 +294,16 @@ test('Glas : il faut 3 purifications pour l\'effacer ; chacune fait reculer l\'o
   assert.equal(recul[0].s, Math.round(avant.s * 2 / 3 * 10) / 10, 'recul d\'un tiers');
 });
 
+test('échange ATQ/PV : les PV max deviennent les nouveaux PV (5 ATQ → 5/5 PV)', () => {
+  const colosse = C('Colosse', 5, 100, { ultime: { type: 'echange_atq_def', ciblem: 'soi', apres_tours: 1, delai_tours: 0, utilisations: 1 } });
+  const r = combat([colosse], [C('b', 1, SOLIDE)], { regles: { maxTours: 3, maxProlong: 0 } });
+  const i = r.journal.findIndex(e => /ATQ et PV échangés/.test(e.txt || ''));
+  assert.ok(i > 0, "l'échange a lieu");
+  assert.equal(r.journal[i].pv[0], 5, 'ses PV deviennent son ancienne ATQ');
+  const fin = r.journal.at(-1);
+  assert.ok(fin.pv[0] <= 5, 'ses PV max ont suivi : ses PV ne remontent plus au-dessus de 5');
+});
+
 test('gel : une carte solidifiée ne dépasse pas le niveau 2', () => {
   const r = combat([C('Golem', 10, SOLIDE, { passif: GEL({ annul: 0, tours: 99 }) })], [C('b', 10, SOLIDE, { passif: { type: 'solidification', chance: 100, tours: 99 } })], { regles: { maxTours: 6, maxProlong: 0 } });
   assert.ok(r.journal.some(e => e.k === 'gel' && e.n === 2), 'niveau 2 atteint');

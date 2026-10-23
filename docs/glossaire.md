@@ -79,7 +79,7 @@ Clés de `EFFECT_TYPES`, exécutées par `applyEffect` (`packages/engine/src/com
 | `echange_atq` | échange les ATQ des deux cartes | `stats.ts` |
 | `echange_pv` | échange les PV (et PV max) des deux cartes | `stats.ts` |
 | `echange_tout` | échange ATQ et PV | `stats.ts` |
-| `echange_atq_def` | échange l'ATQ et les PV d'une même carte (l'adversaire par défaut) | `stats.ts` |
+| `echange_atq_def` | échange l'ATQ et les PV d'une même carte (l'adversaire par défaut) ; ses PV max deviennent ses nouveaux PV (5 ATQ → 5/5 PV) | `stats.ts` |
 | `malediction` | l'ATQ baisse à chaque début de tour, puis revient petit à petit | `curse.ts` |
 | `saignement` | X % des PV max perdus en fin de tour, soins réduits | `bleed.ts` |
 | `poison_effet` | dégâts fixes en fin de tour | `dot.ts` |
