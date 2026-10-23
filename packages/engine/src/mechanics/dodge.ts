@@ -7,6 +7,7 @@ import { emit, id, roll, type Combat } from '../combat/combat.ts';
 import type { EffectContext, EffectRules } from '../combat/effect-context.ts';
 import type { StrikeFlow } from '../combat/flow.ts';
 import type { Side } from '../combat/state.ts';
+import { cannotDodge } from './frost.ts';
 
 // Its part of a card's status (combat/state.ts).
 export type DodgeState = {
@@ -16,6 +17,7 @@ export const dodgeState = (): DodgeState => ({ dodgeBonus: 0 });
 
 // One draw (if the chance is above 0): does d dodge?
 export function dodges(c: Combat, d: Side): boolean {
+  if (cannotDodge(d)) return false; // frost level 2 or more
   const chance = Math.min(
     c.rules.plafondEsquive,
     d.passives.filter((p) => p.type === 'esquive').reduce((q, p) => q + (p.chance || 0), 0) +

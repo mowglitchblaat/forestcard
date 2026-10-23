@@ -128,8 +128,9 @@ function transferStatuses(c: Combat, a: Side, d: Side): void {
       c,
       a,
       Math.min(100, round(f.cancelChance * 1.5)),
-      Math.min(100, round(f.stunChance * 1.5)),
+      round(f.shatter * 1.5),
       longer(f.turns),
+      f.level,
     ),
   );
   curses.forEach((x) => curse(c, a, round(x.amount * 1.5), longer(x.turns)));

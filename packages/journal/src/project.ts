@@ -449,11 +449,11 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
             txt: `${name(e.side)} est gelé : son attaque est annulée !`,
             o: { c: e.side, k: 'gel_bloque' },
           };
-        case 'paralysed':
+        case 'glaciation':
           return {
             t: 'statut',
-            txt: `${name(e.side)} est paralysé par le givre : il n'attaque pas !`,
-            o: { c: e.side, k: 'gel_bloque' },
+            txt: `${name(e.side)} est prisonnier de la glace : il n'attaque pas !`,
+            o: { c: e.side, k: 'glaciation' },
           };
       }
       return null;
@@ -574,6 +574,12 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
             t: 'degats',
             txt: `${name(c)} subit ${n} dégâts (missile renvoyé)`,
             o: { c, n, k: 'detonation' },
+          };
+        case 'shatter':
+          return {
+            t: 'degats',
+            txt: `${name(c)} subit ${n} dégâts (éclat de glace)`,
+            o: { c, n, k: 'gel' },
           };
         case 'chew':
           return {
@@ -759,8 +765,22 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
     case 'frozen':
       return {
         t: 'statut',
-        txt: `${name(e.side)} est gelé (${e.cancelChance} % d'attaque annulée, ${e.stunChance} % d'être étourdi, ${turns(e.turns)}) !`,
-        o: { c: e.side, k: 'gel' },
+        txt:
+          e.level >= 3
+            ? `${name(e.side)} est pris dans la glace (gel 3/3) : il n'attaquera pas à son prochain tour, puis la glace éclatera !`
+            : e.level === 2
+              ? `${name(e.side)} est gelé (gel 2/3${e.held ? ', solidifié : la glace ne peut pas le prendre' : ''} : ${e.cancelChance} % d'attaque annulée, ne peut plus esquiver, ${turns(e.turns)}) !`
+              : `${name(e.side)} se couvre de givre (gel 1/3 : ${e.cancelChance} % d'attaque annulée, ${turns(e.turns)}) !`,
+        o: { c: e.side, k: 'gel', n: e.level },
+      };
+    case 'frostShattered':
+      return {
+        t: 'statut',
+        txt:
+          e.cause === 'fracture'
+            ? `La fracture brise la glace de ${name(e.side)} : elle éclate !`
+            : `La glace de ${name(e.side)} éclate !`,
+        o: { c: e.side, k: 'eclat_glace' },
       };
     case 'fractured':
       return {

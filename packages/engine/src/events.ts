@@ -82,7 +82,8 @@ export type DamageCause =
   | 'detonation' // a detonation's explosion
   | 'missile' // a missile's explosion
   | 'blast' // a share of an explosion, on the cards around it
-  | 'missileReturned'; // a reflected missile exploding on its shooter
+  | 'missileReturned' // a reflected missile exploding on its shooter
+  | 'shatter'; // the ice of a frost shattering (glaciation, or a fracture)
 
 export type CannotAttackReason =
   | 'mouthFull'
@@ -90,7 +91,7 @@ export type CannotAttackReason =
   | 'digesting'
   | 'stunned'
   | 'frozen'
-  | 'paralysed';
+  | 'glaciation'; // frost level 3: caught in the ice
 
 // Keys of the random effect pool (randomEffect in simulate.ts).
 export type RandomEffectKey =
@@ -289,7 +290,17 @@ export type DomainEvent =
       turns: number;
       afterRage: boolean;
     }
-  | { type: 'frozen'; side: SideIndex; cancelChance: number; stunChance: number; turns: number }
+  // frost: its level (1 to 3), the chance an attack is cancelled at that level; held: a solidified card
+  // stays at level 2
+  | {
+      type: 'frozen';
+      side: SideIndex;
+      level: number;
+      cancelChance: number;
+      turns: number;
+      held: boolean;
+    }
+  | { type: 'frostShattered'; side: SideIndex; cause: 'glaciation' | 'fracture' }
   | { type: 'fractured'; side: SideIndex; chance: number; damage: number; turns: number }
   | { type: 'solidified'; side: SideIndex; turns: number }
   | { type: 'solidBroken'; side: SideIndex }

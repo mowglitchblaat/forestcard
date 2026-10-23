@@ -11,6 +11,7 @@ import type { EffectContext, EffectRules } from '../combat/effect-context.ts';
 import type { Flow } from '../combat/flow.ts';
 import type { Side } from '../combat/state.ts';
 import type { EffectData } from '../model/card.ts';
+import { shatter } from './frost.ts';
 
 export type Fracture = { chance: number; damage: number; turns: number };
 
@@ -33,6 +34,8 @@ export function fracture(
   }
   d.status.fractures.push({ chance, damage: damageOnAttack, turns });
   emit(c, { type: 'fractured', side: id(c, d), chance, damage: damageOnAttack, turns });
+  // a fracture on a frozen card shatters the ice at once
+  if (d.status.frosts.length) shatter(c, d, 'fracture');
 }
 
 // Before its strikes: a chance to get hurt. Iterates the live list on purpose (legacy).

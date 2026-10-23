@@ -42,7 +42,8 @@ export type EffectData = {
   reducsoin?: Num;
   degtour?: Num;
   annul?: Num;
-  stunch?: Num;
+  stunch?: Num; // old frost (a chance of stun), no longer read
+  eclat?: Num; // frost: shatter damage at glaciation (level 3)
   fchance?: Num;
   degfrac?: Num;
 

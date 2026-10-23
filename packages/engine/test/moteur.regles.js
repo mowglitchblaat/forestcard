@@ -201,8 +201,56 @@ test('valeurs en % : calculées sur la stat de la carte (7 % de 300 ATQ = 21)', 
 });
 
 // ================= Statuts =================
+// ================= Gel en 3 niveaux =================
+const GEL = (x = {}) => ({ type: 'gel', chance: 100, annul: 25, eclat: 30, tours: 5, ...x });
+test('gel : chaque gel monte d\'un niveau (givre, gelée, glaciation) ; au niveau 3, pas d\'attaque puis la glace éclate', () => {
+  const r = combat([C('Golem', 10, SOLIDE, { passif: GEL() })], [C('b', 10, SOLIDE)], { regles: { maxTours: 6, maxProlong: 0 } });
+  const niv = r.journal.filter(e => e.k === 'gel' && e.t === 'statut').map(e => e.n);
+  assert.deepEqual(niv.slice(0, 3), [1, 2, 3], 'niveaux 1, 2, 3');
+  const i3 = r.journal.findIndex(e => e.k === 'gel' && e.n === 3);
+  const suite = r.journal.slice(i3 + 1);
+  const iT = suite.findIndex(e => e.t === 'tour' && e.c === 1);
+  assert.equal(suite[iT + 1].k, 'glaciation', 'à son tour suivant, la carte prise dans la glace n\'attaque pas');
+  assert.equal(suite[iT + 2].k, 'eclat_glace', 'puis la glace éclate');
+  assert.equal(suite[iT + 3].txt, 'b subit 30 dégâts (éclat de glace)');
+  assert.equal(suite[iT + 4].t, 'finstatut', 'le gel est fini');
+  assert.match(r.journal.find(e => e.k === 'gel' && e.n === 2).txt, /50 % d'attaque annulée, ne peut plus esquiver/, 'niveau 2 : chance doublée');
+});
+
+test('gel : à partir du niveau 2, la carte ne peut plus esquiver', () => {
+  for (const seed of [1, 2, 3, 4, 5]) {
+    const r = combat([C('Golem', 10, SOLIDE, { passif: GEL({ annul: 0, tours: 99 }) })], [C('b', 10, SOLIDE, { passif: { type: 'esquive', chance: 75 } })], { seed, regles: { maxTours: 8, maxProlong: 0 } });
+    const i2 = r.journal.findIndex(e => e.k === 'gel' && e.n === 2);
+    if (i2 < 0) continue;
+    const i3 = r.journal.findIndex(e => e.k === 'gel' && e.n === 3);
+    assert.ok(!r.journal.slice(i2, i3 < 0 ? undefined : i3).some(e => e.t === 'esquive' && e.c === 1), `seed ${seed} : aucune esquive au niveau 2`);
+  }
+});
+
+test('gel : une carte solidifiée ne dépasse pas le niveau 2', () => {
+  const r = combat([C('Golem', 10, SOLIDE, { passif: GEL({ annul: 0, tours: 99 }) })], [C('b', 10, SOLIDE, { passif: { type: 'solidification', chance: 100, tours: 99 } })], { regles: { maxTours: 6, maxProlong: 0 } });
+  assert.ok(r.journal.some(e => e.k === 'gel' && e.n === 2), 'niveau 2 atteint');
+  assert.ok(!r.journal.some(e => e.k === 'gel' && e.n === 3), 'jamais de glaciation');
+  assert.ok(r.journal.some(e => /solidifié : la glace ne peut pas le prendre/.test(e.txt || '')));
+});
+
+test('gel : une fracture sur une carte gelée fait éclater la glace tout de suite', () => {
+  const r = combat([C('Golem', 10, SOLIDE, { passif: { briques: [GEL({ annul: 0 }), { type: 'fracture', chance: 100, fchance: 0, degfrac: 0, tours: 1 }] } })], [C('b', 10, SOLIDE)], { regles: { maxTours: 2, maxProlong: 0 } });
+  const iE = r.journal.findIndex(e => e.k === 'eclat_glace');
+  assert.ok(iE > 0, 'la glace éclate');
+  assert.match(r.journal[iE].txt, /La fracture brise la glace de b/);
+  assert.equal(r.journal[iE + 1].txt, 'b subit 30 dégâts (éclat de glace)');
+});
+
+test('gel : la purification retire le gel', () => {
+  const purif = { type: 'purification', every: 1, fois: 9 };
+  const r = combat([C('Golem', 10, SOLIDE, { passif: GEL({ annul: 0, tours: 99 }) })], [C('b', 10, SOLIDE, { passif: purif })], { regles: { maxTours: 6, maxProlong: 0 } });
+  assert.ok(r.journal.some(e => e.k === 'gel' && e.n === 1), 'gelée');
+  assert.ok(!r.journal.some(e => e.k === 'gel' && e.n === 3), 'purifiée avant la glaciation');
+});
+
 test('souffle élémentaire : dégâts puis le statut choisi (chaque élément)', () => {
-  const att = { brulure: /brûle/, gel: /est gelé \(12 %/, malediction: /maudit \(ATQ −12/, poison: /empoisonné/, saignement: /saigne \(12 %/, fatigue: /fatigué \(ATQ −\d+/ };
+  const att = { brulure: /brûle/, gel: /se couvre de givre \(gel 1\/3 : 12 %/, malediction: /maudit \(ATQ −12/, poison: /empoisonné/, saignement: /saigne \(12 %/, fatigue: /fatigué \(ATQ −\d+/ };
   for (const [el, re] of Object.entries(att)) {
     const r = combat([C('a', 10, SOLIDE), MAG('Souffle', { type: 'souffle', val: 50, statut: el, chance: 100, sval: 12, tours: 2 })], [C('b', 300, SOLIDE)], { regles: { maxTours: 2, maxProlong: 0 } });
     const i = r.journal.findIndex(e => e.t === 'souffle');

@@ -84,7 +84,7 @@ const CAN_ATTACK: AttackStep[] = [
   stunned, // a stun always skips the attack, before cancellation
   cancelled,
   blockedAttack, // not a stop: the attack happens at 0 damage
-  frozen, // two draws: cancel, then paralyse
+  frozen, // glaciation (no attack, the ice shatters), or a draw: cancelled
 ];
 
 // How many strikes: extra strikes first, then the chain retries after them.

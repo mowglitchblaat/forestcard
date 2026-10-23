@@ -182,8 +182,7 @@ const PASSIVE_TEXT: Record<PassiveType, (p: Fx, x: PassiveContext) => string> = 
     `${c} % de chances de frapper une fois de plus, puis retente${nz(p.max) > 0 ? ` (${p.max} frappes en plus au maximum)` : ''}`,
   saignement: (p, { c, T }) =>
     `${c} % de chances de faire saigner la cible (${nz(p.pctpv)} % des PV max par tour, soins −${nz(p.reducsoin)} %, ${trs(T)})`,
-  gel: (p, { c, T }) =>
-    `${c} % de chances de geler la cible (${nz(p.annul)} % d'attaque annulée, ${nz(p.stunch)} % d'être étourdie, ${trs(T)})`,
+  gel: (p, { c, T }) => `${c} % de chances de geler la cible : ${frostLevels(p, T)}`,
   execution: (p) => executionText(p),
   avalage: (p) => avTxt(p),
   transcendance: (p) => transcendenceText(p),
@@ -201,6 +200,13 @@ export function fxPassif(passive: Fx): string {
   const T = t || 1;
   return has(PASSIVE_TEXT, p.type) ? PASSIVE_TEXT[p.type](p, { c, t, v, T }) : cat(p.type);
 }
+
+// Frost in 3 levels (mechanics/frost.ts): what each level does, with the frost's values.
+const frostLevels = (e: Fx, T: number): string => {
+  const a = nz(e.annul);
+  const s = isEmpty(e.eclat) ? 10 : nz(e.eclat);
+  return `+1 niveau de gel, ${trs(T)} (1 : ${a} % d'attaque annulée · 2 : ${Math.min(100, a * 2)} %, ne peut plus esquiver · 3 : glaciation, n'attaque pas à son tour suivant puis la glace éclate, ${s} dégâts)`;
+};
 
 // ── Effects (magics, ultimates, trap payloads) ──
 type EffectContext = { t: number; T: number; v: number; pct: boolean; ci: string };
@@ -294,7 +300,7 @@ const EFFECT_TEXT: Record<EffectType, (e: Fx, x: EffectContext) => string[]> = {
     `Fait saigner ${ci} : ${nz(e.pctpv)} % des PV max par tour, soins −${nz(e.reducsoin)} %, ${trs(T)}`,
   ],
   gel: (e, { T, ci }) => [
-    `Gèle ${ci} (${nz(e.annul)} % d'attaque annulée, ${nz(e.stunch)} % d'étourdissement, ${trs(T)})`,
+    `Gèle ${ci} : ${frostLevels(e, T)}`,
   ],
   souffle: (e) => {
     const al = e.statut === 'aleatoire';

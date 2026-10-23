@@ -153,7 +153,7 @@ function undoStatusesLater(
     curse: M.status.curses[0] && { ...M.status.curses[0] },
     bleed: M.status.bleeds[0] && { ...M.status.bleeds[0] },
     dots: M.status.dots.map((z) => ({ ...z })),
-    frosts: M.status.frosts.length,
+    frost: M.status.frosts[0] && { ...M.status.frosts[0] },
     fractures: M.status.fractures.length,
     stunTurns: M.status.stunTurns,
     nextAttackCancelled: M.status.nextAttackCancelled,
@@ -186,11 +186,11 @@ function undoStatusesLater(
       const y = before.dots.find((q) => q.kind === z.kind);
       if (y) z.amount = y.amount;
     });
-    if (M.status.frosts.length > before.frosts && !before.frosts) statusEnds(M, 'frost');
+    if (M.status.frosts.length && !before.frost) statusEnds(M, 'frost');
     if (M.status.fractures.length > before.fractures && !before.fractures)
       statusEnds(M, 'fracture');
     if (M.status.stunTurns > before.stunTurns && !before.stunTurns) statusEnds(M, 'stun');
-    M.status.frosts = M.status.frosts.slice(0, before.frosts);
+    M.status.frosts = before.frost && M.status.frosts.length ? [{ ...before.frost }] : [];
     M.status.fractures = M.status.fractures.slice(0, before.fractures);
     M.status.stunTurns = Math.min(M.status.stunTurns, before.stunTurns);
     M.status.nextAttackCancelled = Math.min(

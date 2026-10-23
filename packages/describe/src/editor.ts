@@ -105,8 +105,8 @@ export const EDITOR_FIELDS = {
   nbalea: ["Nombre d'effets aléatoires tirés (1 par défaut)", 'n'],
   every: ['Agit tous les X tours', 'n'],
   fois: ['Nombre de fois (1 = une seule)', 'n'],
-  annul: ["Chance d'annuler l'attaque (%)", 'n'],
-  stunch: ["Chance d'être étourdi avant l'attaque (%)", 'n'],
+  annul: ["Gel niveau 1 : chance d'annuler l'attaque (%, doublée au niveau 2)", 'n'],
+  eclat: ['Gel niveau 3 : dégâts quand la glace éclate (10 par défaut)', 'n'],
   fchance: ['Chance de se blesser en attaquant (%)', 'n'],
   degfrac: ['Dégâts subis en attaquant', 'n'],
 } as const satisfies Record<string, Field>;
@@ -198,10 +198,10 @@ export const EDITOR_PASSIVES: Record<PassiveType, EditorEntry> = {
     'tours',
   ],
   gel: [
-    "À X % de chances, gèle la cible (chance d'annuler son attaque ou de l'étourdir)",
+    'À X % de chances, gèle la cible : +1 niveau de gel (3 niveaux : givre, gelée, glaciation)',
     'chance',
     'annul',
-    'stunch',
+    'eclat',
     'tours',
   ],
   fracture: [
@@ -289,10 +289,10 @@ export const EDITOR_ULTIMATES: { readonly [K in EffectType]?: EditorEntry } = {
     'tours',
   ],
   gel: [
-    "Gel : chance d'annuler l'attaque / d'être étourdi, pendant X tours",
+    'Gel : +1 niveau de gel (1 givre, 2 gelée, 3 glaciation), pendant X tours',
     'ciblem',
     'annul',
-    'stunch',
+    'eclat',
     'tours',
   ],
   fracture: [
@@ -582,10 +582,10 @@ export const EDITOR_MAGICS: { readonly [K in EffectType]?: EditorEntry } = {
     'tours',
   ],
   atk_gel: [
-    "Attaque de base : X % de chances de geler (X % d'attaque annulée, X % d'étourdi, X tours)",
+    'Attaque de base : X % de chances de geler (+1 niveau de gel, X tours)',
     'chance',
     'annul',
-    'stunch',
+    'eclat',
     'tours',
   ],
   reset_ultime: ["Réinitialise l'ultime (utilisable à nouveau)", 'cible'],
@@ -597,10 +597,10 @@ export const EDITOR_MAGICS: { readonly [K in EffectType]?: EditorEntry } = {
     'tours',
   ],
   gel: [
-    "Gel : chance d'annuler l'attaque / d'être étourdi, pendant X tours",
+    'Gel : +1 niveau de gel (1 givre, 2 gelée, 3 glaciation), pendant X tours',
     'ciblem',
     'annul',
-    'stunch',
+    'eclat',
     'tours',
   ],
   fracture: [

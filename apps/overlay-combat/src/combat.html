@@ -356,12 +356,19 @@ function fxStart(card,k){
    x.fillStyle=gr;x.beginPath();x.rect(p.x-p.w*.34,p.y-tl,p.w*.68,tl);x.fill();
    x.fillStyle=`rgba(190,10,20,${a})`;x.beginPath();x.moveTo(p.x,p.y-p.w*1.1);x.quadraticCurveTo(p.x+p.w*.85,p.y+p.w*.3,p.x,p.y+p.w*.85);x.quadraticCurveTo(p.x-p.w*.85,p.y+p.w*.3,p.x,p.y-p.w*1.1);x.fill();
    x.fillStyle=`rgba(255,170,170,${a*.55})`;x.beginPath();x.ellipse(p.x-p.w*.25,p.y,p.w*.14,p.w*.28,0,0,7);x.fill()}}
- function givre(){
-  if(Math.random()<.22)P.push({x:R(0,W),y:-4,vy:R(.35,.9)*H/500,s:R(.006,.016)*W,l:0,d:R(3.2,5),ph:R(0,6)});
-  x.clearRect(0,0,W,H);const g=x.createRadialGradient(W/2,H/2,H*.2,W/2,H/2,H*.78);g.addColorStop(0,'rgba(190,235,255,.1)');g.addColorStop(1,'rgba(140,210,255,.55)');x.fillStyle=g;x.fillRect(0,0,W,H);
+ function givre(){   // gel en 3 niveaux (card.dataset.gel) : 1 givre léger sur les bords, 2 glace épaisse, 3 carte prise dans un bloc de glace
+  const lv=Math.min(3,Math.max(1,+(card.dataset.gel||1))),k3=lv/3;
+  if(Math.random()<.12+.08*lv)P.push({x:R(0,W),y:-4,vy:R(.35,.9)*H/500,s:R(.006,.016)*W,l:0,d:R(3.2,5),ph:R(0,6)});
+  x.clearRect(0,0,W,H);const g=x.createRadialGradient(W/2,H/2,H*(.3-.08*lv),W/2,H/2,H*.78);g.addColorStop(0,`rgba(190,235,255,${.04+.06*lv})`);g.addColorStop(1,`rgba(140,210,255,${.3+.18*lv})`);x.fillStyle=g;x.fillRect(0,0,W,H);
   const sp=(px,py,ang,len,wd,tw)=>{x.save();x.translate(px,py);x.rotate(ang);x.fillStyle=`rgba(225,248,255,${.78*tw})`;x.strokeStyle=`rgba(255,255,255,${.95*tw})`;x.lineWidth=1;x.beginPath();x.moveTo(0,-wd/2);x.lineTo(len,0);x.lineTo(0,wd/2);x.closePath();x.fill();x.stroke();x.restore()};
-  for(let i=0;i<13;i++){const f=i/12,h=(.04+.06*Math.abs(Math.sin(i*12.9)))*H,w=(.05+.04*Math.abs(Math.sin(i*7.1)))*W,tw=.75+.25*Math.sin(t*4+i);
+  for(let i=0;i<13;i++){const f=i/12,h=(.04+.06*Math.abs(Math.sin(i*12.9)))*H*(.55+.45*lv),w=(.05+.04*Math.abs(Math.sin(i*7.1)))*W*(.7+.3*lv),tw=.75+.25*Math.sin(t*4+i);
    sp(f*W,H,-1.571,h,w,tw);sp(f*W,0,1.571,h*.8,w,tw);sp(0,f*H,0,h*.55,w*1.3,tw);sp(W,f*H,3.1416,h*.55,w*1.3,tw)}
+  if(lv>=3){   // bloc de glace : voile cristallin, reflets qui passent, fissures qui palpitent (la glace va éclater)
+   x.fillStyle='rgba(205,238,255,.3)';x.fillRect(0,0,W,H);
+   const b=((t*.5)%1.6-.3)*(W+H),gl=x.createLinearGradient(b-W*.3,0,b+W*.3,W*.6);gl.addColorStop(0,'rgba(255,255,255,0)');gl.addColorStop(.5,'rgba(255,255,255,.35)');gl.addColorStop(1,'rgba(255,255,255,0)');x.fillStyle=gl;x.fillRect(0,0,W,H);
+   x.strokeStyle=`rgba(255,255,255,${.55+.3*Math.sin(t*9)})`;x.lineWidth=Math.max(1.2,W*.006);x.beginPath();
+   [[.5,.45,-2.4,.5],[.5,.45,-.5,.45],[.5,.45,1.1,.55],[.5,.45,2.6,.4]].forEach(([cx,cy,a,l])=>{let px=cx*W,py=cy*H;x.moveTo(px,py);for(let s=1;s<=4;s++){px+=Math.cos(a+Math.sin(s*7.3)*.5)*l*W*.22;py+=Math.sin(a+Math.sin(s*7.3)*.5)*l*W*.22;x.lineTo(px,py)}});x.stroke();
+   x.strokeStyle='rgba(225,248,255,.9)';x.lineWidth=Math.max(2,W*.014);x.strokeRect(1,1,W-2,H-2)}
   for(const p of P){p.l+=.016/p.d;if(p.l>=1)continue;p.y+=p.vy;const a=Math.sin(Math.PI*p.l),px=p.x+Math.sin(t*2+p.ph)*W*.03;x.strokeStyle=`rgba(255,255,255,${a*.9})`;x.lineWidth=1.3;
    for(let j=0;j<3;j++){const an=j*1.047;x.beginPath();x.moveTo(px-Math.cos(an)*p.s,p.y-Math.sin(an)*p.s);x.lineTo(px+Math.cos(an)*p.s,p.y+Math.sin(an)*p.s);x.stroke()}}}
  let PG=null;
@@ -800,6 +807,19 @@ function purif(c){const K=rc(c),top=K.cy-K.h/2,sp=Array.from({length:28},()=>({x
   x.restore();x.globalCompositeOperation='source-over';
   x.save();x.shadowColor='rgba(255,220,60,1)';x.shadowBlur=22;x.strokeStyle=`rgba(255,236,120,${.85*al})`;x.lineWidth=Math.max(3,K.w*.016);x.strokeRect(K.cx-K.w/2,top,K.w,K.h);x.restore()})}
 
+// GEL EN 3 NIVEAUX : la glace gagne la carte (le voile de givre grossit), le nom du niveau s'affiche ; au 3e, la carte se fige dans un bloc
+async function gelNiveau(c,n){const card=$('#p'+c+' .card');if(!card)return;card.dataset.gel=n;
+ if(!st[c+'gel']){st[c+'gel']=1;fxStart(card,'gel')}
+ const K=rc(c);addFx(.9,(x,t,u)=>{x.globalCompositeOperation='lighter';orb(x,K.cx,K.cy,K.w*(.4+.25*n)*ez(cl(t/.3)),`rgba(170,225,255,${(.25+.12*n)*(1-u)})`,'rgba(150,215,255,0)');x.globalCompositeOperation='source-over'});
+ if(n>=3){givreCoup(c);card.animate([{filter:'brightness(1.6) saturate(.4)'},{filter:'none'}],{duration:700})}
+ flot(c,['Givre','Gelée !','GLACIATION !'][Math.min(3,n)-1],'#bae6fd',n>=3?'big':'');await wait(n>=3?1300:800)}
+// LA GLACE ÉCLATE : éclair blanc, la carte tremble, une gerbe d'éclats de glace part dans tous les sens et retombe
+async function eclatGlace(c){const K=rc(c),card=$('#p'+c+' .card'),Sh=Array.from({length:34},()=>({a:R(0,6.28),v:R(.6,1.5),s:R(.025,.07),r:R(0,6),vr:R(-8,8)}));
+ if(card)card.animate([{transform:'translate(0,0)'},{transform:'translate(-9px,4px)'},{transform:'translate(8px,-4px)'},{transform:'translate(-5px,2px)'},{transform:'translate(0,0)'}],{duration:320});
+ addFx(1.5,(x,t,u)=>{const fl=1-cl(t/.25);x.globalCompositeOperation='lighter';orb(x,K.cx,K.cy,K.w*1.1,`rgba(235,250,255,${.85*fl})`,'rgba(170,225,255,0)');x.globalCompositeOperation='source-over';
+  for(const q of Sh){const d=ez(cl(t/.7))*K.w*.9*q.v,px=K.cx+Math.cos(q.a)*d,py=K.cy+Math.sin(q.a)*d+u*u*K.h*.5,al=1-cl((t-.6)/.9);
+   x.save();x.translate(px,py);x.rotate(q.r+q.vr*t);x.fillStyle=`rgba(220,246,255,${al})`;x.strokeStyle=`rgba(255,255,255,${al})`;x.lineWidth=1;x.beginPath();x.moveTo(0,-q.s*K.w*.6);x.lineTo(q.s*K.w*.5,0);x.lineTo(0,q.s*K.w*.6);x.lineTo(-q.s*K.w*.35,0);x.closePath();x.fill();x.stroke();x.restore()}});
+ flot(c,'La glace éclate !','#e0f2fe','big');await wait(900)}
 // GEL : l'attaque est bloquée par un éclat de glace (étoile de givre qui s'étend, éclats)
 function givreCoup(c){const K=rc(c),Sh=Array.from({length:12},(_,i)=>({a:i*.524+R(-.2,.2),v:R(.5,1.1),s:R(.03,.06)}));
  addFx(1.4,(x,t,u)=>{const e=ez(cl(t/.35)),al=1-cl((t-.7)/.7);x.globalCompositeOperation='lighter';orb(x,K.cx,K.cy,K.w*(.3+.7*e),`rgba(190,235,255,${.55*(1-u)})`,'rgba(150,215,255,0)');x.globalCompositeOperation='source-over';
@@ -1172,7 +1192,7 @@ async function jouer(res){
    if(e.k&&AVK[e.k]){maj(e);await AVK[e.k](e);continue}   // avalage : marques, langue, mâche, recrache
    if(e.t==='degats'&&e.k==='renvoi')await renvoiFx(e.from,e.c);
    maj(e);
-   if(e.t==='degats'){card.classList.add('hit');if(e.k==='fracture')os(e.c);const gros=e.n/e.max[e.c]>=.2&&e.k!=='poison'&&e.k!=='brûlure'&&e.k!=='saignement';flot(e.c,'-'+e.n,e.k==='poison'?'#22ff55':e.k==='brûlure'?'#ff8a00':e.k==='saignement'?'#c4121e':e.k==='fracture'?'#fde68a':gros?'#ff1111':'#ff6a6a',gros?'big':'');setTimeout(()=>card.classList.remove('hit'),450)}
+   if(e.t==='degats'){card.classList.add('hit');if(e.k==='fracture')os(e.c);const gros=e.n/e.max[e.c]>=.2&&e.k!=='poison'&&e.k!=='brûlure'&&e.k!=='saignement';flot(e.c,'-'+e.n,e.k==='poison'?'#22ff55':e.k==='brûlure'?'#ff8a00':e.k==='saignement'?'#c4121e':e.k==='fracture'?'#fde68a':e.k==='gel'?'#7dd3fc':gros?'#ff1111':'#ff6a6a',gros?'big':'');setTimeout(()=>card.classList.remove('hit'),450)}
    else if(e.t==='soin'){flot(e.c,'+'+e.n,'#4ade80');soin(e.c);if(e.k==='revive')aureole(e.c)}
    else if(e.t==='esquive'){flot(e.c,'Esquive !','#e5e7eb');vent(e.c)}
    else if(e.t==='bloque'){if(/une partie/.test(e.txt||'')){bouclier(e.c,{partiel:1});flot(e.c,'Dégâts réduits','#fcd34d')}else if(/est bloquée/.test(e.txt||'')){bouclier(e.c,{partiel:1});flot(e.c,'Attaque bloquée','#fcd34d')}else{annuleFx(1-e.c);flot(1-e.c,'Attaque annulée','#fca5a5')}}   // annulée = rien ne passe · bloquée / partiel = le coup touche (statuts et marques passent)   // annulée = rien ne passe · partiel = le coup touche quand même
@@ -1204,6 +1224,10 @@ async function jouer(res){
    else if(e.t==='statut'&&e.k==='solide_bloque'){solideCoup(e.c);flot(e.c,'Solide !','#e7e5e4');await wait(500)}
    else if(e.t==='statut'&&e.k==='solide_brise'){if(st[e.c+'solide'])statut(e.c,'solide',false);solideBrise(e.c);flot(e.c,'Brisé !','#a8a29e');await wait(900)}
    else if(e.t==='statut'&&e.k==='gel_bloque'){givreCoup(e.c);flot(e.c,'Gelé !','#bae6fd');await wait(500)}
+   else if(e.t==='statut'&&e.k==='gel'){await gelNiveau(e.c,e.n||1)}
+   else if(e.t==='statut'&&e.k==='glaciation'){givreCoup(e.c);flot(e.c,'Prisonnier de la glace !','#bae6fd','big');await wait(1100)}
+   else if(e.t==='statut'&&e.k==='eclat_glace'){await eclatGlace(e.c)}
+   else if(e.t==='finstatut'&&e.k==='gel'){const cd=$('#p'+e.c+' .card');statut(e.c,'gel',false);if(cd)delete cd.dataset.gel}
    else if(e.t==='statut'&&e.k==='fracture'){statut(e.c,'fracture',true);os(e.c)}
    else if(e.t==='vol'&&e.k==='copie_ultime'){auraFx(e.from);flot(e.c,'⧉ Ultime copié','#fca5a5');await wait(1100);card.classList.add('ult');auraFx(e.c);setTimeout(()=>card.classList.remove('ult'),2200)}
    else if(e.t==='vol'&&e.k==='vol_ultime'){volUlt(e.from,e.c);await wait(1300);card.classList.add('ult');auraFx(e.c);setTimeout(()=>card.classList.remove('ult'),2200)}
@@ -1320,6 +1344,7 @@ if(DEMO){
   ['Statuts','Purification (aura jaune)',c=>{flot(c,'Purifié !','#fde047');purif(c)},2000],
   ['Statuts','Gel (givre)',c=>statut(c,'gel',true),3000,c=>statut(c,'gel',false),'gel'],
   ['Statuts','Gel : attaque bloquée',c=>{flot(c,'Gelé !','#bae6fd');givreCoup(c)},1500],
+  ['Statuts','Gel en 3 niveaux, puis la glace éclate',async c=>{for(const n of[1,2,3]){await gelNiveau(c,n);await wait(700)}flot(c,'Prisonnier de la glace !','#bae6fd','big');await wait(1000);await eclatGlace(c);statut(c,'gel',false);delete $('#p'+c+' .card').dataset.gel},8000],
   ['Souffle','Souffle de feu (brûlure)',c=>souffle(1-c,c,'brulure'),1900],
   ['Souffle','Souffle de glace (gel)',c=>souffle(1-c,c,'gel'),1900],
   ['Souffle','Souffle maudit (malédiction)',c=>souffle(1-c,c,'malediction'),1900],
@@ -1377,7 +1402,7 @@ if(DEMO){
   const LB={evite_mort:'évite la mort une fois',soin_tour:'se soigne chaque tour',renvoi:'renvoie des dégâts',atq_tours:"augmente l'ATQ tous les X tours",pv_tours:'augmente les PV tous les X tours',multi_frappe:'frappe plusieurs fois',reduc_degats:'réduit les dégâts reçus',bonus_frappe:'bonus de dégâts si frappé',etourdir:'étourdit',vol_pct_atq:'vole de la vie',brulure:'brûlure',poison:'poison',esquive:'esquive',degats:'dégâts directs',voler:'vole une carte',detruire:'détruit une carte',equiper:'équipe une carte',soin:'se soigne',vol_vie:'vole de la vie',echange_atq:"échange l'ATQ",annule_attaque:"annule l'attaque",double_degats:'double ses dégâts',echange_atq_def:"échange ATQ et PV de l'adversaire"};
   Object.assign(LB,{souffle:'souffle élémentaire (dégâts + statut au choix)',execution:'exécution (marques puis exécution sous X % de PV)',execution_direct:'exécution (pose X marques)',avalage:'avalage (🍴, 🔪, puis avale la cible)',atk_avalage:'attaque de base : avalage',marque_avalage:'avalage (pose X marques)',transcendance:'transcendance (après X tours : purifiée, ATQ et PV en hausse)',solidification:'solidification (insensible à l\'étourdissement)',rage:'rage puis fatigue',fatigue:'fatigue (réduit les dégâts)',aleatoire:'effet aléatoire',atk_fatigue:'attaque de base : fatigue',purification:'purification (retire les statuts négatifs)',reanimation:'réanimation (meurt puis revient)',soin_tours:'régénération (soigne chaque tour)',purification:'purification (retire les statuts négatifs)',atk_enchainement:'attaque de base : enchaînement',atk_saignement:'attaque de base : saignement',atk_malediction:'attaque de base : malédiction',atk_fracture:'attaque de base : fracture',atk_gel:'attaque de base : gel',saignement:'saignement (dégâts sur la durée, soins réduits)',gel:'gel (attaque annulée ou étourdi)',fracture:'fracture (se blesse en attaquant)',vol_ultime:"vole l'ultime",malediction:'malédiction (ATQ en baisse par tour)',enchainement:'enchaîne les frappes tant que ça réussit',poison_effet:'poison',brulure_effet:'brûlure',etourdir_effet:'étourdit',atk_brulure:"attaque de base : brûlure",atk_poison:"attaque de base : poison",atk_etourdir:"attaque de base : étourdissement",esquive_mod:"modifie l'esquive (%)",reset_ultime:"réinitialise l'ultime",atq_mod:"modifie l'ATQ",pv_mod:'modifie les PV max',insensible_piege:'insensible aux pièges',annule_magies:'annule les magies',mort_evitee:'évite la mort (1 PV)',degats_tours:'dégâts différés'});
   const CL={adv_attaque:"l'adversaire a attaqué X fois",adv_ultime:"l'adversaire utilise son ultime",proprio_pv_sous:'le propriétaire passe sous X % de PV',adv_pv_bas:"l'adversaire passe sous X % de PV",adv_soigne:"l'adversaire se soigne",proprio_soigne:'le propriétaire se soigne',proprio_meurt:'le propriétaire meurt',proprio_statut:'le propriétaire reçoit un statut',adv_statut:"l'adversaire reçoit un statut",proprio_esquive:'le propriétaire esquive',adv_esquive:"l'adversaire esquive",proprio_attaque:'le propriétaire a attaqué X fois',proprio_coup_fort:'le propriétaire subit X dégâts en un coup',proprio_bloque:'le propriétaire bloque',adv_piege:'le piège adverse se déclenche',proprio_ultime:'le propriétaire lance son ultime',tour_n:'au tour X'};
-  const KL={ratio:'ratio PV/ATQ',pctmache:'% de mâche',machebase:'mâche sur',repos:'tours de digestion',tourdecl:'au tour',duree:'volée pendant X tours',nbalea:"nombre d'effets tirés",ragev:'rage : dégâts en plus',ragetours:'rage : tours',fatval:'fatigue : dégâts en moins',fattours:'fatigue : tours',pctrev:'% PV au retour',every:'tous les X tours',fois:'nombre de fois',reducsoin:'soins en moins %',annul:'attaque annulée %',stunch:'étourdi %',fchance:'se blesse %',degfrac:'dégâts en attaquant',val:'valeur',chance:'chance %',apres_tours:'après N tours',degtour:'dégâts par tour',pctpv:'% des PV max',pctatq:'% de l\'ATQ',tours:'tours',frappes:'frappes',coups:'coups',carte:'carte'};
+  const KL={ratio:'ratio PV/ATQ',pctmache:'% de mâche',machebase:'mâche sur',repos:'tours de digestion',tourdecl:'au tour',duree:'volée pendant X tours',nbalea:"nombre d'effets tirés",ragev:'rage : dégâts en plus',ragetours:'rage : tours',fatval:'fatigue : dégâts en moins',fattours:'fatigue : tours',pctrev:'% PV au retour',every:'tous les X tours',fois:'nombre de fois',reducsoin:'soins en moins %',annul:'gel : attaque annulée %',eclat:'gel : dégâts de l\'éclat',fchance:'se blesse %',degfrac:'dégâts en attaquant',val:'valeur',chance:'chance %',apres_tours:'après N tours',degtour:'dégâts par tour',pctpv:'% des PV max',pctatq:'% de l\'ATQ',tours:'tours',frappes:'frappes',coups:'coups',carte:'carte'};
   const fmt=o=>!o||!o.type?'aucun':(LB[o.type]||o.type)+' ('+Object.entries(o).filter(([k,v])=>!['type','utilisations','delai_tours','sur_carte','u','udecl','udx'].includes(k)&&v!=null&&v!==false&&v!==0).map(([k,v])=>(KL[k]||k)+' '+v+(k==='val'&&o.u==='pct'?' %':'')).join(', ')+')';
   const fmtE=e=>!e?'aucun':e.briques?e.briques.map(fmtE).join(' + '):fmt(e);
   const fmtC=c=>!c||!c.effet?'aucun effet':c.type==='piege'?`Quand ${(c.effet.condition&&CL[c.effet.condition.type])||'?'}${c.effet.condition&&c.effet.condition.coups?' ('+c.effet.condition.coups+')':''}${c.effet.condition&&c.effet.condition.seuilpv?' ('+c.effet.condition.seuilpv+' %)':''} → ${fmtE(c.effet.effet)}`:fmtE(c.effet);
