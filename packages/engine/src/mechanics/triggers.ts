@@ -45,9 +45,17 @@ const ULTIMATE_ONLY: ReadonlySet<string> = new Set<UltimateOnlyKind>([
 
 type Classify<K extends EventType> = (e: Extract<DomainEvent, { type: K }>) => TriggerFact | null;
 
-const fact =
-  (kind: 'status' | 'dodge' | 'trap' | 'block' | 'heal' | 'ultimate' | 'attack' | UltimateOnlyKind) =>
-  (e: { side: SideIndex }): TriggerFact => ({ kind, who: e.side });
+type FactKind =
+  | 'status'
+  | 'dodge'
+  | 'trap'
+  | 'block'
+  | 'heal'
+  | 'ultimate'
+  | 'attack'
+  | UltimateOnlyKind;
+
+const fact = (kind: FactKind) => (e: { side: SideIndex }): TriggerFact => ({ kind, who: e.side });
 
 // Every event type, so that a new one must be classed. The legacy lines (trig):
 //   statut with a negative status k  → status   (curse, bleed, poison, burn, frost, fracture, stun,
