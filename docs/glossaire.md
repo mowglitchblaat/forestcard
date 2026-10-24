@@ -181,8 +181,22 @@ Clés de `ULTIMATE_TRIGGER_TYPES`, dans le champ `udecl` de l'ultime, avec leur 
 | `son_piege` | après le déclenchement de son piège | — |
 | `piege_adv` | après le déclenchement du piège adverse | — |
 | `adv_ultime` | après un ultime de l'adversaire | — |
+| `adv_soigne` | après un soin reçu par l'adversaire | — |
+| `adv_statut` | après un statut négatif reçu par l'adversaire | — |
+| `adv_esquive` | après une esquive de l'adversaire | — |
+| `adv_bloque` | après un blocage de l'adversaire | — |
+| `inflige_coup_fort` | après un coup d'au moins X dégâts infligé à l'adversaire (hors poison, brûlure, saignement) | 1 |
+| `purifie` | après une purification qui lui retire quelque chose | — |
+| `adv_purifie` | après une purification de l'adversaire qui lui retire quelque chose | — |
+| `evite_mort` | après avoir évité la mort | — |
+| `adv_evite_mort` | après que l'adversaire a évité la mort | — |
+| `reanime` | après sa réanimation | — |
+| `adv_reanime` | après la réanimation de l'adversaire | — |
+| `atq_baisse` | après une baisse de son ATQ (malédiction, fatigue, effet, échange…) | — |
+| `adv_atq_baisse` | après une baisse de l'ATQ de l'adversaire | — |
+| `pvmax_baisse` | après une baisse de ses PV max (calcination, effet…) | — |
 
-Un déclencheur d'événement pose un drapeau sur l'emplacement d'ultime (`triggered`) ; l'ultime part au prochain passage de `ultimate`, au tour de sa carte, et le drapeau retombe. Un ultime volé ou copié arrive sans drapeau.
+Un déclencheur d'événement pose un drapeau sur l'emplacement d'ultime (`triggered`) ; l'ultime part au prochain passage de `ultimate`, au tour de sa carte, et le drapeau retombe. Un ultime volé ou copié arrive sans drapeau. Les faits `purify`, `avoidDeath`, `revive`, `atqDown` et `maxDown` ne servent qu'aux ultimes : aucune condition de piège ne les lit, et ils ne lancent pas de scan de piège.
 
 ## Statuts (état interne)
 

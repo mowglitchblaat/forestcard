@@ -30,12 +30,23 @@ export type TriggerFact =
       who: SideIndex;
     }
   | { kind: 'hit'; who: SideIndex; amount: number }
-  | { kind: 'turn'; who: SideIndex; turn: number };
+  | { kind: 'turn'; who: SideIndex; turn: number }
+  // Read by ultimate triggers only (never by trap conditions: no trap scan for them).
+  | { kind: UltimateOnlyKind; who: SideIndex };
+
+type UltimateOnlyKind = 'purify' | 'avoidDeath' | 'revive' | 'atqDown' | 'maxDown';
+const ULTIMATE_ONLY: ReadonlySet<string> = new Set<UltimateOnlyKind>([
+  'purify',
+  'avoidDeath',
+  'revive',
+  'atqDown',
+  'maxDown',
+]);
 
 type Classify<K extends EventType> = (e: Extract<DomainEvent, { type: K }>) => TriggerFact | null;
 
 const fact =
-  (kind: 'status' | 'dodge' | 'trap' | 'block' | 'heal' | 'ultimate' | 'attack') =>
+  (kind: 'status' | 'dodge' | 'trap' | 'block' | 'heal' | 'ultimate' | 'attack' | UltimateOnlyKind) =>
   (e: { side: SideIndex }): TriggerFact => ({ kind, who: e.side });
 
 // Every event type, so that a new one must be classed. The legacy lines (trig):
@@ -50,6 +61,9 @@ const fact =
 //   soin                             → heal
 //   ultime                           → ultimate (programmed ones too)
 //   attaque without k                → attack   (extraStrike has k 'enchaine')
+// And, for the ultimate triggers only (no legacy line): purified with something removed → purify,
+// deathAvoided → avoidDeath, revived → revive, statChanged with a loss of ATQ → atqDown, of max HP
+// → maxDown.
 export const TRIGGER_FACT: { [K in EventType]: Classify<K> | null } = {
   combatStarted: null,
   turnStarted: (e) => ({ kind: 'turn', who: e.side, turn: e.turn }),
@@ -98,20 +112,21 @@ export const TRIGGER_FACT: { [K in EventType]: Classify<K> | null } = {
       ? { kind: 'hit', who: e.side, amount: e.amount }
       : null,
   healed: fact('heal'),
-  deathAvoided: null,
+  deathAvoided: fact('avoidDeath'),
   avoidDeathBroken: null,
   avoidDeathGranted: null,
   reviveGranted: null,
   shattered: null,
-  revived: null,
+  revived: fact('revive'),
   reviveDenied: null,
-  statChanged: null,
+  statChanged: (e) =>
+    e.delta < 0 ? { kind: e.stat === 'atq' ? 'atqDown' : 'maxDown', who: e.side } : null,
   dodgeChanged: null,
   statsSwapped: null,
   attackAndHpSwapped: null,
   statusEnded: null,
   statusDispelled: null,
-  purified: null,
+  purified: (e) => (e.removedSomething ? { kind: 'purify', who: e.side } : null),
   rageStarted: null,
   regenStarted: null,
   regenEnded: null,
@@ -219,6 +234,22 @@ function meets(c: Combat, i: number, udecl: string, x: number, f: TriggerFact): 
     soigne: f.kind === 'heal' && me,
     coup_fort: f.kind === 'hit' && me && f.amount >= x,
     bloque: f.kind === 'block' && me,
+    // the opponent's side of the same facts
+    adv_soigne: f.kind === 'heal' && opponentOf,
+    adv_statut: f.kind === 'status' && opponentOf,
+    adv_esquive: f.kind === 'dodge' && opponentOf,
+    adv_bloque: f.kind === 'block' && opponentOf,
+    inflige_coup_fort: f.kind === 'hit' && opponentOf && f.amount >= x,
+    // facts read by the ultimates only
+    purifie: f.kind === 'purify' && me,
+    adv_purifie: f.kind === 'purify' && opponentOf,
+    evite_mort: f.kind === 'avoidDeath' && me,
+    adv_evite_mort: f.kind === 'avoidDeath' && opponentOf,
+    reanime: f.kind === 'revive' && me,
+    adv_reanime: f.kind === 'revive' && opponentOf,
+    atq_baisse: f.kind === 'atqDown' && me,
+    adv_atq_baisse: f.kind === 'atqDown' && opponentOf,
+    pvmax_baisse: f.kind === 'maxDown' && me,
   };
   return !!triggers[udecl];
 }
@@ -235,7 +266,7 @@ export function noticeTrigger(c: Combat, e: DomainEvent): void {
       if (meets(c, i, u.udecl, x, f)) slot.triggered = 1;
     }),
   );
-  if (!c.triggers.traps) return;
+  if (!c.triggers.traps || ULTIMATE_ONLY.has(f.kind)) return;
   // A trap that fired is answered at once, before its own effect (a counter-trap, adv_piege):
   // traps.ts then drops the effect of a trap destroyed or stolen meanwhile.
   if (f.kind === 'trap') scan(c, { kind: 'fact', fact: f });

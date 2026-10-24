@@ -453,6 +453,20 @@ const ULTIMATE_TRIGGER_TEXT: Record<UltimateTriggerType, string> = {
   son_piege: 'quand son piège se déclenche',
   piege_adv: 'quand le piège adverse se déclenche',
   adv_ultime: "quand l'adversaire lance son ultime",
+  adv_soigne: "quand l'adversaire est soigné",
+  adv_statut: "quand l'adversaire reçoit un statut (brûlure, poison, gel, malédiction…)",
+  adv_esquive: "quand l'adversaire esquive",
+  adv_bloque: "quand l'adversaire bloque une attaque",
+  inflige_coup_fort: "quand il inflige au moins X dégâts en un coup",
+  purifie: "quand il est purifié",
+  adv_purifie: "quand l'adversaire est purifié",
+  evite_mort: "quand il évite la mort",
+  adv_evite_mort: "quand l'adversaire évite la mort",
+  reanime: "quand il est réanimé",
+  adv_reanime: "quand l'adversaire est réanimé",
+  atq_baisse: "quand son ATQ baisse (malédiction, fatigue, vol d'ATQ…)",
+  adv_atq_baisse: "quand l'ATQ de l'adversaire baisse",
+  pvmax_baisse: "quand ses PV max baissent (calcination…)",
 };
 
 export function fxCond(c: TrapCondition | null | undefined): string {

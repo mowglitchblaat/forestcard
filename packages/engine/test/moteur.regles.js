@@ -607,6 +607,24 @@ test('déclencheurs : ultime sur événement ou sous X % de PV, nouvelles condit
   assert.ok(i4 > 0 && r4.journal.slice(0, i4).some(e => e.t === 'esquive' && e.c === 0));
 });
 
+test('déclencheurs d\'ultime côté adversaire et nouveaux faits : soin, statut, coup infligé, ATQ et PV max qui baissent', () => {
+  const R = { regles: { maxTours: 6, maxProlong: 0 } }, ult = (x) => ({ type: 'degats', val: 1, utilisations: 1, ...x });
+  const part = r => r.journal.some(e => e.t === 'ultime' && e.c === 0);
+  // l'adversaire se soigne chaque tour
+  assert.ok(part(combat([C('a', 5, SOLIDE, { ultime: ult({ udecl: 'adv_soigne' }) })], [C('b', 5, SOLIDE, { passif: { type: 'soin_tour', u: 'pts', val: 10 } })], R)), 'adv_soigne');
+  assert.ok(!part(combat([C('a', 5, SOLIDE, { ultime: ult({ udecl: 'adv_soigne' }) })], [C('b', 5, SOLIDE)], R)), 'adv_soigne : pas de soin, pas d\'ultime');
+  // il empoisonne l'adversaire à chaque coup
+  assert.ok(part(combat([C('a', 5, SOLIDE, { ultime: ult({ udecl: 'adv_statut' }), passif: { type: 'poison', chance: 100, degtour: 2, tours: 2 } })], [C('b', 5, SOLIDE)], R)), 'adv_statut');
+  // il inflige au moins X en un coup
+  assert.ok(part(combat([C('a', 30, SOLIDE, { ultime: ult({ udecl: 'inflige_coup_fort', udx: 20 }) })], [C('b', 5, SOLIDE)], R)), 'inflige_coup_fort atteint');
+  assert.ok(!part(combat([C('a', 30, SOLIDE, { ultime: ult({ udecl: 'inflige_coup_fort', udx: 100 }) })], [C('b', 5, SOLIDE)], R)), 'inflige_coup_fort pas atteint');
+  // l'adversaire le maudit : son ATQ baisse
+  assert.ok(part(combat([C('a', 30, SOLIDE, { ultime: ult({ udecl: 'atq_baisse' }) })], [C('b', 5, SOLIDE, { passif: { type: 'malediction', chance: 100, val: 3, tours: 2 } })], R)), 'atq_baisse');
+  // l'adversaire le brûle : la calcination baisse ses PV max
+  assert.ok(part(combat([C('a', 5, SOLIDE, { ultime: ult({ udecl: 'pvmax_baisse' }) })], [C('b', 5, SOLIDE, { passif: { type: 'brulure', chance: 100, pctpv: 1, tours: 2 } })], R)), 'pvmax_baisse');
+  assert.ok(!part(combat([C('a', 5, SOLIDE, { ultime: ult({ udecl: 'pvmax_baisse' }) })], [C('b', 5, SOLIDE, { passif: { type: 'brulure', chance: 100, pctpv: 1, tours: 2, calcine: 0 } })], R)), 'pvmax_baisse : brûlure sans calcination');
+});
+
 test('programmation sans liste : tire au hasard parmi tous les passifs et ultimes du jeu', () => {
   const r = combat([C('Robot', 20, SOLIDE, { passif: { type: 'programmation', chance: 100, nbpassif: 3 } })], [C('b', 20, SOLIDE)], { regles: { maxTours: 8, maxProlong: 0 } });
   const P = r.journal.filter(e => e.k === 'prog');
