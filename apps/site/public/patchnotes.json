@@ -1,5 +1,31 @@
 [
   {
+    "date": "2026-10-24",
+    "intro": "Les ultimes gagnent 14 nouvelles façons de se déclencher, et c’est désormais vous qui proposez les équilibrages des cartes.",
+    "groupes": [
+      {
+        "titre": "Combat",
+        "points": [
+          "14 nouveaux déclencheurs d’ultime : quand l’adversaire se soigne, reçoit un statut, esquive ou bloque, quand on frappe fort, et quand une carte est purifiée, évite la mort, est réanimée ou perd de l’ATQ ou des PV max.",
+          "L’échange ATQ/PV d’une carte est corrigé : ses PV max suivent maintenant l’échange (5 ATQ donnent 5/5 PV).",
+          "La calcination de la brûlure peut être réglée carte par carte, de totale à aucune."
+        ]
+      },
+      {
+        "titre": "Site",
+        "points": [
+          "Nouvel onglet Votes : propose un nerf, un up ou un rework d’une de tes cartes, et tous les joueurs votent oui ou non. 5 propositions par semaine, une seule par carte jusqu’au lundi suivant."
+        ]
+      },
+      {
+        "titre": "Admin",
+        "points": [
+          "Un récap des 10 propositions les plus soutenues, et l’éditeur de cartes gère les nouveaux déclencheurs d’ultime et la calcination."
+        ]
+      }
+    ]
+  },
+  {
     "date": "2026-10-23",
     "intro": "Le Glas fait son entrée, et le gel comme la brûlure deviennent bien plus redoutables.",
     "groupes": [
