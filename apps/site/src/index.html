@@ -53,6 +53,13 @@ form.f select{max-width:100%;min-width:0}form.f>*{min-width:0}
 .vrow{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:7px 0;border-top:1px solid #2c2c38}.vrow .lb{flex:1;min-width:200px}
 .vrow button{padding:4px 10px}.vrow button.nerf.on{background:#b91c1c;border-color:#b91c1c}.vrow button.up.on{background:#15803d;border-color:#15803d}.vrow button.rework.on{background:#b45309;border-color:#b45309}
 .vres{display:flex;gap:6px 14px;flex-wrap:wrap;font-size:13px;color:#ccc}.vres b{color:#fff}
+.vc.lk{cursor:not-allowed;opacity:.45}.vlab{display:flex;flex-direction:column;gap:4px;font-size:13px;color:#ccc;margin-top:8px}.vlab select,.vlab input{max-width:100%}
+.vps{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}.vp{margin:0;display:flex;flex-direction:column;gap:8px}.vph{display:flex;gap:12px;align-items:flex-start}.vph img{width:64px;aspect-ratio:5/7;object-fit:cover;border-radius:6px;box-shadow:0 0 8px var(--g,#555);flex:none}.vph h4{margin:0 0 4px}
+.vsens{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;background:#333}.vsens.nerf{background:#7f1d1d}.vsens.up{background:#14532d}.vsens.rework{background:#78350f}
+.vasp{font-size:13px;color:#ccc;margin-top:4px}.vcom{font-size:13px;color:#aaa;font-style:italic;margin-top:4px;overflow-wrap:anywhere}
+.vjauge{height:8px;border-radius:999px;background:#7f1d1d;overflow:hidden}.vjauge i{display:block;height:100%;background:#16a34a}
+.vcpt{display:flex;gap:6px 14px;flex-wrap:wrap;align-items:baseline;font-size:13px}.vcpt small{color:#aaa}
+.vp .row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.vp button.on.oui{background:#15803d;border-color:#15803d}.vp button.on.non{background:#b91c1c;border-color:#b91c1c}
 .av10{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}.av10 .rk{font-size:26px;font-weight:800;color:#a78bfa;min-width:34px}.av10 img{width:70px;border-radius:6px}.av10 .bd{flex:1;min-width:240px}
 .avt{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}.avt td{padding:3px 6px;border-top:1px solid #2c2c38}.avt td.n{text-align:center;width:78px;white-space:nowrap}.avt td.top{font-weight:800;border-radius:4px}.avt td.top.nerf{background:#7f1d1d}.avt td.top.up{background:#14532d}.avt td.top.rework{background:#78350f}
 .pf{display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start}.pf .apv{width:200px;aspect-ratio:5/7;border-radius:10px;background:#262633 center/cover;border:2px dashed #444;display:flex;align-items:center;justify-content:center;color:#888;font-size:13px;text-align:center;padding:10px;box-sizing:border-box}
@@ -1235,8 +1242,9 @@ async function vPatch(){
   box.innerHTML=`<p><small>Chaque modification de carte faite par l'admin, avec la valeur avant et après.</small></p>`+Object.entries(G).map(([d,l])=>`<div class="pn"><h4>${esc(jour(d))}</h4>${l.map(x=>`<div class="eq"><span class="nm">${esc(x.carte_nom)}</span><span class="ch">${(x.changements||[]).map(c=>c.avant==null?`<div><span class="nw">${esc(c.champ)}</span>${c.apres?` : ${esc(c.apres)}`:''}</div>`:`<div>${esc(c.champ)} : ${c.avant?`<span class="av">${esc(c.avant)}</span>`:'<span style="color:#9ca3af">aucun</span>'} → <span class="${cls(c)}">${esc(c.apres||'aucun')}</span></div>`).join('')}</span>${isAdmin?`<button class="sec" data-eqdel="${x.id}" title="Retirer cette ligne">🗑️</button>`:''}</div>`).join('')}</div>`).join('');
   box.querySelectorAll('[data-eqdel]').forEach(b=>b.onclick=async()=>{if(!(await uiConfirm('Retirer cette ligne des patch notes ?')))return;const d=await sb.from('equilibrage').delete().eq('id',b.dataset.eqdel);if(d.error)uiAlert(d.error.message);vPatch()});
 }
-// Votes : chaque joueur choisit jusqu'à 5 cartes par semaine et indique pour chacune ce qu'il voudrait voir changer (nerf / up / rework)
-let vCartes=null,vSel=null,vFiltre='tout',vRech='',vSem=0;
+// Votes : chaque joueur propose jusqu'à 5 de ses cartes par semaine (nerf / up / rework, sur toute la carte ou une partie) ;
+// la proposition est publiée chez tous les joueurs, qui votent OUI ou NON. Une carte ne se propose qu'une fois par semaine (39-votes-propositions.sql).
+let vCartes=null,vMien=null,vSel=null,vFiltre='tout',vRech='',vSem=0,vSens='nerf',vAsp='',vCom='';
 const SENS={nerf:'⬇️ Nerf',up:'⬆️ Up',rework:'🔁 Rework'};
 function vAspects(c){const A=[];
   if(c.type=='combattant'){A.push({k:'atq',l:`ATQ (${c.atq??'?'})`},{k:'pv',l:`PV / défense (${c.pv??'?'})`});
@@ -1246,41 +1254,61 @@ function vAspects(c){const A=[];
   else A.push({k:'effet',l:(c.type=='piege'?'Piège : ':'Effet : ')+(txtEq.effet(c)||'—')});
   return A}
 const vImg=c=>{const v=(c.variantes_carte||[]).find(x=>x.nom=='Standard'&&x.image_path)||(c.variantes_carte||[]).find(x=>x.image_path);return v?img(v.image_path):''};
+const vLabA=(c,k)=>{if(!k)return'Toute la carte';const a=c&&vAspects(c).find(z=>z.k==k);return a?a.l:({atq:'ATQ',pv:'PV',ultime:'Ultime',effet:'Effet'}[k]||'Passif')};
 async function vVotes(box){
   if(!vCartes){const r=await sb.from('cartes').select('id,nom,type,atq,pv,actif,passif,ultime,effet,raretes(nom,couleur,poids),variantes_carte(nom,image_path)').eq('actif',true).order('nom');
     if(r.error){box.innerHTML='<p class="ko">Impossible de charger les cartes.</p>';return}
-    let L=r.data||[];
-    if(!isAdmin){   // joueurs : uniquement les cartes qu'ils possèdent (toutes les cartes du jeu restent réservées à l'admin)
-      const cj=await sb.from('collection_joueur').select('quantite,variantes_carte(carte_id)').eq('joueur_id',user.id);
-      const mien=new Set((cj.data||[]).filter(x=>x.quantite>0&&x.variantes_carte).map(x=>x.variantes_carte.carte_id));L=L.filter(c=>mien.has(c.id))}
-    const ord={combattant:0,magie:1,piege:2};vCartes=L.sort((a,b)=>(ord[a.type]-ord[b.type])||a.nom.localeCompare(b.nom,'fr'))}
-  const mv=await sb.rpc('mes_votes'),rs=await sb.rpc('resultats_votes',{p_decalage:vSem});
-  if(mv.error||rs.error){box.innerHTML='<p class="ko">Votes indisponibles pour le moment (l\'admin doit d\'abord lancer 11-votes.sql dans Supabase).</p>'+(isAdmin?`<p><small>Détail technique : ${esc((mv.error||rs.error).message||'')}</small></p>`:'');return}
-  const mes={};(mv.data||[]).forEach(v=>{(mes[v.carte_id]=mes[v.carte_id]||{})[v.aspect]=v.sens});
-  const reste=Math.max(0,5-Object.keys(mes).length),byId={};vCartes.forEach(c=>byId[c.id]=c);
-  const liste=vCartes.filter(c=>(vFiltre=='tout'||c.type==vFiltre)&&(!vRech||c.nom.toLowerCase().includes(vRech.toLowerCase())));
+    const ord={combattant:0,magie:1,piege:2};vCartes=(r.data||[]).sort((a,b)=>(ord[a.type]-ord[b.type])||a.nom.localeCompare(b.nom,'fr'));
+    // cartes proposables : celles que le joueur possède (toutes pour l'admin)
+    if(isAdmin)vMien=new Set(vCartes.map(c=>c.id));
+    else{const cj=await sb.from('collection_joueur').select('quantite,variantes_carte(carte_id)').eq('joueur_id',user.id);
+      vMien=new Set((cj.data||[]).filter(x=>x.quantite>0&&x.variantes_carte).map(x=>x.variantes_carte.carte_id))}}
+  const [cur,old]=await Promise.all([sb.rpc('propositions_vote',{p_decalage:0}),vSem?sb.rpc('propositions_vote',{p_decalage:vSem}):null]);
+  const err=cur.error||(old&&old.error);
+  if(err){box.innerHTML='<p class="ko">Votes indisponibles pour le moment (l\'admin doit d\'abord lancer 39-votes-propositions.sql dans Supabase).</p>'+(isAdmin?`<p><small>Détail technique : ${esc(err.message||'')}</small></p>`:'');return}
+  const C=cur.data||[],L=(old?old.data:C)||[],byId={};vCartes.forEach(c=>byId[c.id]=c);
+  const prise=new Set(C.map(x=>+x.carte_id)),miennes=C.filter(x=>x.a_moi).length,reste=Math.max(0,5-miennes);
+  const mes=vCartes.filter(c=>vMien.has(c.id)&&(vFiltre=='tout'||c.type==vFiltre)&&(!vRech||c.nom.toLowerCase().includes(vRech.toLowerCase())));
+  if(vSel&&prise.has(vSel))vSel=null;
   const c=vSel&&byId[vSel];
-  // résultats agrégés
-  const R={};(rs.data||[]).filter(x=>isAdmin||byId[x.carte_id]).forEach(x=>{const o=R[x.carte_id]=R[x.carte_id]||{nom:x.carte_nom,votants:+x.votants,a:{}};(o.a[x.aspect]=o.a[x.aspect]||{nerf:0,up:0,rework:0})[x.sens]=+x.nb});
-  const resL=Object.entries(R).sort((a,b)=>b[1].votants-a[1].votants);
-  const labA=(cid,k)=>{const cc=byId[cid];const a=cc&&vAspects(cc).find(z=>z.k==k);return a?a.l:({atq:'ATQ',pv:'PV',ultime:'Ultime',effet:'Effet'}[k]||'Passif')};
-  box.innerHTML=`${!isAdmin&&!vCartes.length?'<p class="ko">Tu n\'as encore aucune carte : ouvre des boosters pour pouvoir voter sur les tiennes.</p>':''}<p><small>Choisis parmi <b>tes cartes</b> jusqu'à <b>5 par semaine</b> et dis ce que tu voudrais voir changer : <b>nerf</b> (plus faible), <b>up</b> (plus forte) ou <b>rework</b> (à repenser). Les votes repartent à zéro chaque lundi. Il te reste <b>${reste}</b> carte${reste>1?'s':''} à voter cette semaine.</small></p>
+  if(c&&vAsp&&!vAspects(c).some(a=>a.k==vAsp))vAsp='';
+  const tot=x=>+x.oui+ +x.non;
+  const liste=L.slice().sort((a,b)=>tot(b)-tot(a)||String(b.cree_le).localeCompare(String(a.cree_le)));
+  const fini=vSem>0;
+  box.innerHTML=`<p><small>Propose une de <b>tes cartes</b> (jusqu'à <b>5 par semaine</b>) : <b>nerf</b> (plus faible), <b>up</b> (plus forte) ou <b>rework</b> (à repenser), sur toute la carte ou une partie précise. Ta proposition est publiée chez tous les joueurs, qui votent <b>oui</b> ou <b>non</b>. Une carte déjà proposée 🔒 ne peut plus l'être avant lundi : vote sur sa proposition. Les votes repartent à zéro chaque lundi.</small></p>
+   <h3 style="margin:14px 0 4px">Proposer une carte <small style="color:#aaa;font-weight:400">· il te reste ${reste} proposition${reste>1?'s':''} cette semaine</small></h3>
+   ${!vMien.size?'<p class="ko">Tu n\'as encore aucune carte : ouvre des boosters pour pouvoir proposer les tiennes (tu peux déjà voter sur les propositions des autres).</p>':`
    <div class="vbar"><input id="vq" placeholder="Rechercher une carte…" value="${esc(vRech)}"><select id="vt">${[['tout','Toutes'],['combattant','Combattants'],['magie','Magies'],['piege','Pièges']].map(([k,l])=>`<option value="${k}" ${k==vFiltre?'selected':''}>${l}</option>`).join('')}</select></div>
-   <div class="vstrip">${liste.map(x=>{const u=vImg(x),g=(x.raretes&&x.raretes.couleur)||'#555';return`<div class="vc${x.id==vSel?' sel':''}" data-vc="${x.id}" style="--g:${g}">${mes[x.id]?'<div class="ck">✓</div>':''}${u?`<img src="${esc(u)}" alt="" loading="lazy">`:'<div class="ph"></div>'}<span>${esc(x.nom)}</span></div>`}).join('')||'<small>Aucune carte.</small>'}</div>
-   ${c?`<div class="pn vsel">${vImg(c)?`<img loading="lazy" src="${esc(vImg(c))}" alt="">`:''}<div class="vf"><h4>${esc(c.nom)}</h4><small>Pour chaque ligne, choisis ce que tu voudrais (ou rien).</small>
-     ${vAspects(c).map(a=>`<div class="vrow" data-k="${esc(a.k)}"><span class="lb">${esc(a.l)}</span>${Object.entries(SENS).map(([s,l])=>`<button class="sec ${s}${mes[c.id]&&mes[c.id][a.k]==s?' on':''}" data-s="${s}">${l}</button>`).join('')}</div>`).join('')}
-     <div class="row" style="margin-top:10px"><button id="vok">${mes[c.id]?'Mettre à jour mon vote':'Valider mon vote'}</button>${mes[c.id]?'<button class="sec" id="vdel">Retirer mon vote</button>':''}</div></div></div>`:'<p><small>Clique sur une carte pour voter.</small></p>'}
-   <div class="vbar" style="margin-top:18px"><h3 style="margin:0">Résultats</h3><button class="${vSem==0?'on':'sec'}" data-sem="0">Cette semaine</button><button class="${vSem==1?'on':'sec'}" data-sem="1">Semaine dernière</button></div>
-   ${resL.length?resL.map(([cid,o])=>`<div class="pn"><h4>${esc(o.nom)} <small style="color:#aaa;font-weight:400">· ${o.votants} votant${o.votants>1?'s':''}</small></h4>${Object.entries(o.a).map(([k,n])=>`<div class="vres"><b>${esc(labA(cid,k))}</b><span>⬇️ ${n.nerf}</span><span>⬆️ ${n.up}</span><span>🔁 ${n.rework}</span></div>`).join('')}</div>`).join(''):'<p><small>Aucun vote pour cette semaine.</small></p>'}`;
-  const q=$('#vq');q.oninput=()=>{vRech=q.value;clearTimeout(q._t);q._t=setTimeout(()=>{vVotes(box).then(()=>{const n=$('#vq');if(n){n.focus();n.setSelectionRange(n.value.length,n.value.length)}})},300)};
-  $('#vt').onchange=e=>{vFiltre=e.target.value;vVotes(box)};
-  box.querySelectorAll('[data-vc]').forEach(d=>d.onclick=()=>{vSel=+d.dataset.vc;vVotes(box)});
+   <div class="vstrip">${mes.map(x=>{const u=vImg(x),g=(x.raretes&&x.raretes.couleur)||'#555',lk=prise.has(x.id);return`<div class="vc${x.id==vSel?' sel':''}${lk?' lk':''}" ${lk?'title="Déjà proposée cette semaine"':`data-vc="${x.id}"`} style="--g:${g}">${lk?'<div class="ck">🔒</div>':''}${u?`<img src="${esc(u)}" alt="" loading="lazy">`:'<div class="ph"></div>'}<span>${esc(x.nom)}</span></div>`}).join('')||'<small>Aucune carte.</small>'}</div>
+   ${c?`<div class="pn vsel">${vImg(c)?`<img loading="lazy" src="${esc(vImg(c))}" alt="">`:''}<div class="vf"><h4>${esc(c.nom)}</h4>
+     <div class="vrow"><span class="lb">Ce que tu proposes</span>${Object.entries(SENS).map(([k,l])=>`<button class="sec ${k}${vSens==k?' on':''}" data-sens="${k}">${l}</button>`).join('')}</div>
+     <label class="vlab">Sur quoi<select id="vasp"><option value="">Toute la carte</option>${vAspects(c).map(a=>`<option value="${esc(a.k)}" ${a.k==vAsp?'selected':''}>${esc(a.l)}</option>`).join('')}</select></label>
+     <label class="vlab">Pourquoi ? <small>(facultatif, 200 caractères max)</small><input id="vcom" maxlength="200" placeholder="Ex. : son ultime tombe trop tôt" value="${esc(vCom)}"></label>
+     <div class="row" style="margin-top:10px"><button id="vok" ${reste?'':'disabled'}>Publier la proposition</button></div>
+     ${reste?'':'<small>Tu as déjà fait 5 propositions cette semaine.</small>'}</div></div>`:'<p><small>Clique sur une de tes cartes pour la proposer.</small></p>'}`}
+   <div class="vbar" style="margin-top:18px"><h3 style="margin:0">Propositions</h3><button class="${vSem==0?'on':'sec'}" data-sem="0">Cette semaine</button><button class="${vSem==1?'on':'sec'}" data-sem="1">Semaine dernière</button></div>
+   ${liste.length?`<div class="vps">${liste.map(x=>{const cc=byId[x.carte_id],u=cc?vImg(cc):'',g=(cc&&cc.raretes&&cc.raretes.couleur)||'#555',n=tot(x),pc=n?Math.round(100*x.oui/n):0;
+     return`<div class="pn vp"><div class="vph">${u?`<img loading="lazy" src="${esc(u)}" alt="" style="--g:${g}">`:''}<div><h4>${esc(x.carte_nom)}</h4><span class="vsens ${esc(x.sens)}">${SENS[x.sens]||esc(x.sens)}</span><div class="vasp">${esc(vLabA(cc,x.aspect))}</div>${x.commentaire?`<div class="vcom">« ${esc(x.commentaire)} »</div>`:''}</div></div>
+      <div class="vjauge"><i style="width:${pc}%"></i></div>
+      <div class="vcpt"><span>✅ Oui <b>${x.oui}</b></span><span>❌ Non <b>${x.non}</b></span><small>${pc} % de oui</small></div>
+      ${fini?'':x.a_moi?`<div class="row"><small>Ta proposition (ton vote compte pour oui)</small>${n<=1?`<button class="sec" data-vret="${x.id}">Retirer</button>`:''}</div>`:`<div class="row"><button class="${x.mon_avis===true?'on oui':'sec'}" data-vav="${x.id}" data-o="1">✅ Oui</button><button class="${x.mon_avis===false?'on non':'sec'}" data-vav="${x.id}" data-o="0">❌ Non</button>${x.mon_avis!=null?`<button class="sec" data-vav="${x.id}" data-o="">Retirer mon vote</button>`:''}</div>`}
+      ${isAdmin&&!x.a_moi?`<button class="sec" data-vret="${x.id}" style="margin-top:6px">🗑️ Supprimer (admin)</button>`:''}</div>`}).join('')}</div>`:`<p><small>Aucune proposition ${fini?'la semaine dernière':'pour cette semaine : sois le premier !'}</small></p>`}`;
+  const q=$('#vq');if(q)q.oninput=()=>{vRech=q.value;clearTimeout(q._t);q._t=setTimeout(()=>{vVotes(box).then(()=>{const n=$('#vq');if(n){n.focus();n.setSelectionRange(n.value.length,n.value.length)}})},300)};
+  const vt=$('#vt');if(vt)vt.onchange=e=>{vFiltre=e.target.value;vVotes(box)};
+  box.querySelectorAll('[data-vc]').forEach(d=>d.onclick=()=>{vSel=+d.dataset.vc;vAsp='';vCom='';vVotes(box)});
   box.querySelectorAll('[data-sem]').forEach(b=>b.onclick=()=>{vSem=+b.dataset.sem;vVotes(box)});
-  box.querySelectorAll('.vrow button').forEach(b=>b.onclick=()=>{const on=b.classList.contains('on');b.parentElement.querySelectorAll('button').forEach(x=>x.classList.remove('on'));if(!on)b.classList.add('on')});
-  const envoyer=async choix=>{const r=await sb.rpc('voter_carte',{p_carte:c.id,p_choix:choix});if(r.error){uiAlert(r.error.message);return}vVotes(box)};
-  const ok=$('#vok');if(ok)ok.onclick=()=>{const ch=[...box.querySelectorAll('.vrow')].map(rw=>{const b=rw.querySelector('button.on');return b?{aspect:rw.dataset.k,sens:b.dataset.s}:null}).filter(Boolean);
-    if(!ch.length){uiAlert('Choisis au moins une ligne (nerf, up ou rework).');return}envoyer(ch)};
-  const del=$('#vdel');if(del)del.onclick=()=>envoyer([]);
+  box.querySelectorAll('[data-sens]').forEach(b=>b.onclick=()=>{vSens=b.dataset.sens;box.querySelectorAll('[data-sens]').forEach(x=>x.classList.toggle('on',x===b))});
+  const sa=$('#vasp');if(sa)sa.onchange=()=>vAsp=sa.value;
+  const sc=$('#vcom');if(sc)sc.oninput=()=>vCom=sc.value;
+  const ok=$('#vok');if(ok)ok.onclick=async()=>{ok.disabled=true;
+    const r=await sb.rpc('proposer_vote',{p_carte:c.id,p_sens:vSens,p_aspect:vAsp||null,p_commentaire:vCom.trim()||null});
+    if(r.error){ok.disabled=false;uiAlert(r.error.message);return}
+    vSel=null;vAsp='';vCom='';vSem=0;vVotes(box)};
+  box.querySelectorAll('[data-vav]').forEach(b=>b.onclick=async()=>{b.disabled=true;
+    const r=await sb.rpc('voter_proposition',{p_proposition:+b.dataset.vav,p_oui:b.dataset.o===''?null:b.dataset.o==='1'});
+    if(r.error)uiAlert(r.error.message);vVotes(box)});
+  box.querySelectorAll('[data-vret]').forEach(b=>b.onclick=async()=>{if(!(await uiConfirm('Retirer cette proposition ? La carte redeviendra proposable.')))return;
+    const r=await sb.rpc('retirer_proposition',{p_proposition:+b.dataset.vret});if(r.error)uiAlert(r.error.message);vVotes(box)});
 }
 
 // Équilibrage : enregistre automatiquement ce qui change sur une carte (appelé par l'admin). Ne bloque jamais l'enregistrement de la carte.
@@ -1310,24 +1338,24 @@ async function noteEquilibrage(avant,apres){
 let avSem=0;
 async function aVotes(){
   const box=$('#sub');box.innerHTML='<p><small>Chargement…</small></p>';
-  const [rs,cr]=await Promise.all([sb.rpc('resultats_votes',{p_decalage:avSem}),sb.from('cartes').select('id,nom,type,atq,pv,passif,ultime,effet,raretes(nom,couleur),variantes_carte(nom,image_path)')]);
-  if(rs.error){box.innerHTML='<p class="ko">Votes indisponibles : lance d\'abord 11-votes.sql dans Supabase.</p>';return}
+  const [rs,cr]=await Promise.all([sb.rpc('propositions_vote',{p_decalage:avSem}),sb.from('cartes').select('id,nom,type,atq,pv,passif,ultime,effet,raretes(nom,couleur),variantes_carte(nom,image_path)')]);
+  if(rs.error){box.innerHTML='<p class="ko">Votes indisponibles : lance d\'abord 39-votes-propositions.sql dans Supabase.</p>';return}
   const byId={};(cr.data||[]).forEach(c=>byId[c.id]=c);
-  const R={};(rs.data||[]).forEach(x=>{const o=R[x.carte_id]=R[x.carte_id]||{id:x.carte_id,nom:x.carte_nom,votants:+x.votants,total:0,a:{}};const a=o.a[x.aspect]=o.a[x.aspect]||{nerf:0,up:0,rework:0};a[x.sens]=+x.nb;o.total+=+x.nb});
-  const top=Object.values(R).sort((a,b)=>(b.votants-a.votants)||(b.total-a.total)).slice(0,10);
-  const lab=(c,k)=>{const a=c&&vAspects(c).find(z=>z.k==k);return a?a.l:({atq:'ATQ',pv:'PV',ultime:'Ultime',effet:'Effet'}[k]||'Passif')};
+  const all=(rs.data||[]).map(x=>({...x,oui:+x.oui,non:+x.non}));
+  // classement : le plus de oui, puis le moins de non
+  const top=all.slice().sort((a,b)=>(b.oui-a.oui)||(a.non-b.non)).slice(0,10);
   const semL=['Cette semaine','Semaine dernière','Il y a 2 semaines','Il y a 3 semaines'];
-  const nbVotes=Object.keys(R).length;
-  box.innerHTML=`<h3>Les 10 cartes les plus votées</h3>
+  box.innerHTML=`<h3>Les 10 propositions les plus soutenues</h3>
    <div class="vbar">${semL.map((l,i)=>`<button class="${i==avSem?'on':'sec'}" data-avs="${i}">${l}</button>`).join('')}</div>
-   <p><small>${nbVotes} carte${nbVotes>1?'s':''} ont reçu des votes. Classement par nombre de votants ; dans chaque ligne, la case surlignée est l'avis majoritaire. « Modifier » ouvre directement la carte dans l'onglet Cartes (le changement apparaîtra tout seul dans l'onglet Équilibrage).</small></p>
-   ${top.length?top.map((o,i)=>{const c=byId[o.id],u=c?vImg(c):'';
-     return`<div class="pn av10"><span class="rk">${i+1}</span>${u?`<img loading="lazy" src="${esc(u)}" alt="">`:''}<div class="bd"><h4 style="margin:0">${esc(o.nom)} <small style="color:#aaa;font-weight:400">· ${o.votants} votant${o.votants>1?'s':''} · ${o.total} avis</small></h4>
-      <table class="avt"><tr><td></td><td class="n">⬇️ Nerf</td><td class="n">⬆️ Up</td><td class="n">🔁 Rework</td></tr>
-      ${Object.entries(o.a).sort((x,y)=>(y[1].nerf+y[1].up+y[1].rework)-(x[1].nerf+x[1].up+x[1].rework)).map(([k,n])=>{const m=Math.max(n.nerf,n.up,n.rework),t=s=>n[s]&&n[s]==m&&[n.nerf,n.up,n.rework].filter(v=>v==m).length==1?` top ${s}`:'';
-        return`<tr><td>${esc(lab(c,k))}</td><td class="n${t('nerf')}">${n.nerf}</td><td class="n${t('up')}">${n.up}</td><td class="n${t('rework')}">${n.rework}</td></tr>`}).join('')}</table>
-      ${c?`<button class="sec" data-avedit="${o.id}" style="margin-top:8px">✏️ Modifier la carte</button>`:''}</div></div>`}).join(''):'<p><small>Aucun vote pour cette semaine.</small></p>'}`;
+   <p><small>${all.length} proposition${all.length>1?'s':''}. Classement par nombre de oui (l'auteur compte pour oui), puis le moins de non. « Modifier » ouvre directement la carte dans l'onglet Cartes (le changement apparaîtra tout seul dans l'onglet Équilibrage). « Supprimer » libère la carte, qui redevient proposable.</small></p>
+   ${top.length?top.map((o,i)=>{const c=byId[o.carte_id],u=c?vImg(c):'',n=o.oui+o.non;
+     return`<div class="pn av10"><span class="rk">${i+1}</span>${u?`<img loading="lazy" src="${esc(u)}" alt="">`:''}<div class="bd"><h4 style="margin:0">${esc(o.carte_nom)} <span class="vsens ${esc(o.sens)}">${SENS[o.sens]||esc(o.sens)}</span></h4>
+      <div class="vasp">${esc(vLabA(c,o.aspect))}</div>${o.commentaire?`<div class="vcom">« ${esc(o.commentaire)} »</div>`:''}
+      <div class="vcpt"><span>✅ Oui <b>${o.oui}</b></span><span>❌ Non <b>${o.non}</b></span><small>${n?Math.round(100*o.oui/n):0} % de oui</small></div>
+      <div class="row" style="margin-top:8px">${c?`<button class="sec" data-avedit="${o.carte_id}">✏️ Modifier la carte</button>`:''}<button class="sec" data-avdel="${o.id}">🗑️ Supprimer</button></div></div></div>`}).join(''):'<p><small>Aucune proposition pour cette semaine.</small></p>'}`;
   box.querySelectorAll('[data-avs]').forEach(b=>b.onclick=()=>{avSem=+b.dataset.avs;aVotes()});
+  box.querySelectorAll('[data-avdel]').forEach(b=>b.onclick=async()=>{if(!(await uiConfirm('Supprimer cette proposition et ses votes ?')))return;
+    const r=await sb.rpc('retirer_proposition',{p_proposition:+b.dataset.avdel});if(r.error)uiAlert(r.error.message);aVotes()});
   box.querySelectorAll('[data-avedit]').forEach(b=>b.onclick=async()=>{const id=b.dataset.avedit;sub='cartes';vAdmin();
     for(let k=0;k<40;k++){await new Promise(r=>setTimeout(r,100));const e=document.querySelector(`#sub button[data-edit="${id}"]`);if(e){e.click();return}}});
 }
@@ -1562,7 +1590,7 @@ function vRegles(){
   ${h('La communauté','p','Le jeu évolue avec vous.')}
   <div class="stats">
    ${c('📜 Patch notes','Chaque jour, les nouveautés et corrections du jeu, et tous les changements d\'équilibrage des cartes.')}
-   ${c('🗳️ Votes','Chaque semaine, vote pour le nerf, le up ou le rework de tes cartes (5 maximum) : les plus votées sont étudiées.')}
+   ${c('🗳️ Votes','Propose le nerf, le up ou le rework de tes cartes (5 par semaine) et vote oui ou non sur les propositions des autres : les plus soutenues sont étudiées.')}
    ${c('🎨 Propositions','Propose ton splash art et ton idée de carte : les meilleures pourront entrer dans le jeu !')}
   </div>
 
