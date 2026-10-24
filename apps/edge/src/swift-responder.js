@@ -115,6 +115,7 @@ const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers
   'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Expose-Headers': 'x-message' };
 const PAUSE = "🎬 Le jeu est en pause pendant le let's play : ouvre tes boosters et fais tes combats sur le site !";
 const EN_LIVE = 'Le jeu se joue en live en ce moment : rejoins le stream pour jouer !';
+const FERME = '🔒 Le jeu est fermé pour le moment, à bientôt !';
 
 function entetes() {
   const K = Deno.env.get('SERVICE_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
@@ -234,6 +235,14 @@ async function jeuEnLive() {
   } catch { /* réglage illisible : en live, comme avant */ }
   return true;
 }
+// Jeu fermé (Admin > Réglages, 40-jeu-ferme.sql) : ni en live ni sur le site, sauf pour l'admin qui teste depuis le site
+async function jeuFerme() {
+  try {
+    const r = await rest('reglages_jeu?cle=eq.jeu_ferme&select=valeur');
+    if (r.ok && Array.isArray(r.data) && r.data[0]) return String(r.data[0].valeur) === '1';
+  } catch { /* réglage illisible : ouvert, comme avant */ }
+  return false;
+}
 // Joueur connecté au site : son jeton de connexion (Authorization) donne son compte, son identifiant Twitch, son gold, et s'il est admin
 async function joueurDuSite(req, corps) {
   // le site envoie son jeton dans le corps (requête « simple », sans pré-vérification CORS du navigateur), ou dans l'en-tête Authorization
@@ -282,7 +291,9 @@ async function traiter(req) {
     if (!site) return txt('Accès refusé.', 401);
   }
   delete b.jeton;
-  const live = await jeuEnLive();
+  const [live, ferme] = await Promise.all([jeuEnLive(), jeuFerme()]);
+  // fermé : tout est coupé, en live comme sur le site ; l'admin peut encore tester depuis le site
+  if (ferme && !(site && site.admin)) return txt(FERME, 409);
   if (site) {
     // le combat pour le titre se joue uniquement en live, dans le chat (!accepter) : jamais depuis le site
     if (b.mode === 'accepter') return txt('Le combat pour le titre se joue en live : accepte le défi dans le chat avec !accepter.', 409);

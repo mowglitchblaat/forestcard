@@ -29,6 +29,10 @@ Dans l'onglet Propositions, le joueur crée sa carte entièrement avec le même 
 
 Quand l'admin met le jeu en pause (Admin > Réglages > « Jeu en live », `db/migrations/32-mode-site.sql`), l'onglet « 🎮 Jouer » apparaît pour tous (toujours visible pour l'admin, pour tester). On y ouvre ses boosters (`ouvrir_booster_site`, la même ouverture que `!booster`), on récupère son booster du jour et on fait ses combats (combat du jour, duel payé en gold), calculés par `swift-responder` avec le jeton de connexion du joueur. Les animations sont celles du live : `overlay.html?site` et `combat.html?site`, affichées en plein écran dans le site et nourries par `postMessage`.
 
+## Jeu fermé
+
+Troisième position de l'interrupteur (Admin > Réglages, `db/migrations/40-jeu-ferme.sql`) : « 🔒 Fermé partout ». Le réglage `jeu_ferme` passe à `1` (et `jeu_live` à `0`, pour arrêter les compteurs du championnat comme en pause). L'onglet « 🎮 Jouer » est masqué pour les joueurs (toujours visible pour l'admin, pour tester), un bandeau « jeu fermé » s'affiche au-dessus des onglets, et la boutique dit que les boosters s'ouvriront à la réouverture. `etat_jeu` renvoie `ferme`. Collection, deck, boutique et jeux du jour restent ouverts.
+
 ## Atelier des cartes (atelier.html)
 
 Le même composeur que l'admin (`src/composeur.js`, inséré par le build dans `index.html` et dans `atelier.html` au marqueur `/*@@COMPOSEUR@@*/`), sur une page à part, pour que d'autres personnes testent une carte sans accès admin : dessin seul, cadre, écriteau, explications, chiffres, et téléchargement des deux images. On peut partir d'une carte publiée du jeu (lue avec la clé publique) ou écrire ses lignes à la main (titre, catégorie de couleur, explication). Rien n'est enregistré dans le jeu. Le build écrit `dist/atelier.html`, servi à `atelier.html`.
