@@ -1,5 +1,29 @@
 [
   {
+    "date": "2026-10-25",
+    "intro": "Le jeu peut désormais être fermé partout, et les effets d’attaque qui se cumulent deviennent plus simples à lire.",
+    "groupes": [
+      {
+        "titre": "Combat",
+        "points": [
+          "Quand une carte a le même effet d’attaque par plusieurs sources (un passif et une magie, par exemple), les chances s’additionnent : 20 % + 30 % de gel donnent 50 %, tirés une seule fois par coup."
+        ]
+      },
+      {
+        "titre": "Animations",
+        "points": [
+          "La détonation part maintenant en même temps que le coup qui la provoque, et le réglage de vitesse des combats ainsi que le récap de fin fonctionnent de nouveau en live."
+        ]
+      },
+      {
+        "titre": "Site",
+        "points": [
+          "Nouvel état « jeu fermé » : les combats et l’ouverture des boosters sont coupés en live comme sur le site, avec un bandeau d’information. Collection, deck, boutique et jeux du jour restent ouverts."
+        ]
+      }
+    ]
+  },
+  {
     "date": "2026-10-24",
     "intro": "Les ultimes gagnent 14 nouvelles façons de se déclencher, et c’est désormais vous qui proposez les équilibrages des cartes.",
     "groupes": [
