@@ -8,11 +8,11 @@ import type { EffectData } from '../model/card.ts';
 // The sources of one attack effect (passives, then the basic attack effects), grouped by type in the
 // order the card holds them: a card with a frost passive and a magic giving its attack a frost has ONE
 // frost source, whose chances add up.
-export function attackSources(a: Side, keep: (type: string) => boolean): EffectData[][] {
+export function attackSources(a: Side, keep: (q: EffectData) => boolean): EffectData[][] {
   const groups = new Map<string, EffectData[]>();
   for (const q of [...a.passives, ...a.status.attackEffects]) {
     const t = q.type;
-    if (t === undefined || !keep(t)) continue;
+    if (t === undefined || !keep(q)) continue;
     const g = groups.get(t);
     if (g) g.push(q);
     else groups.set(t, [q]);

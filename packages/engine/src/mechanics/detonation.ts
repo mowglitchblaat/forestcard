@@ -98,7 +98,7 @@ export function detonate(
 // Detonation BEFORE the strike's new statuses: it consumes those already laid. Several detonation
 // sources (passive + attack effect): their chances add up, one detonation at most per strike.
 export function detonationOnHit(c: Combat, { a, d }: Attack): StrikeFlow {
-  const g = attackSources(a, (t) => t === 'detonation')[0];
+  const g = attackSources(a, (q) => q.type === 'detonation')[0];
   if (g && d.hp > 0) {
     const first = g[0] as EffectData;
     if (g.length === 1) {

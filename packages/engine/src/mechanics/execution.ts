@@ -83,7 +83,7 @@ export const executesNow = (d: Side, n: number): boolean =>
 // Execution: X % to place a mark on every hit, with the hit, before its damage. Several execution
 // sources (passive + attack effect): their chances add up, one mark at most per hit.
 export function executionMarks(c: Combat, { a, d }: Attack): StrikeFlow {
-  const g = attackSources(a, (t) => t === 'execution')[0];
+  const g = attackSources(a, (q) => q.type === 'execution')[0];
   if (!g || d.hp <= 0) return undefined;
   const first = g[0] as EffectData;
   if (g.length === 1) {

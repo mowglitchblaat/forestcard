@@ -94,7 +94,7 @@ export const LAID_ON_HIT: Record<string, (c: Combat, q: EffectData, d: Side) => 
 // A strike that landed: the statuses given by passives and by basic attack effects, in the order the
 // card holds them. A single source draws as it always did; several of the same status add up.
 export function statusesOnHit(c: Combat, { a, d }: Attack): StrikeFlow {
-  for (const g of attackSources(a, (t) => Object.hasOwn(LAID_ON_HIT, t))) {
+  for (const g of attackSources(a, (q) => Object.hasOwn(LAID_ON_HIT, q.type as string))) {
     const first = g[0] as EffectData;
     const lay = LAID_ON_HIT[first.type as string] as (c: Combat, q: EffectData, d: Side) => void;
     if (g.length === 1) lay(c, first, d);
