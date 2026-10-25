@@ -15,6 +15,7 @@ import { rageBonus } from '../mechanics/rage.ts';
 import type { EffectData } from '../model/card.ts';
 import type { BlockRiposte } from '../mechanics/block.ts';
 import { emit, type Combat } from './combat.ts';
+import { attackSources, mergedSource } from './sources.ts';
 import { damage } from './damage.ts';
 import type { Flow, StrikeFlow } from './flow.ts';
 import type { Side } from './state.ts';
@@ -91,12 +92,16 @@ export const LAID_ON_HIT: Record<string, (c: Combat, q: EffectData, d: Side) => 
 };
 
 // A strike that landed: the statuses given by passives and by basic attack effects, in the order the
-// card holds them.
+// card holds them. A single source draws as it always did; several of the same status add up.
 export function statusesOnHit(c: Combat, { a, d }: Attack): StrikeFlow {
-  for (const q of [...a.passives, ...a.status.attackEffects]) {
-    const lay =
-      q.type !== undefined && Object.hasOwn(LAID_ON_HIT, q.type) ? LAID_ON_HIT[q.type] : undefined;
-    if (lay) lay(c, q, d);
+  for (const g of attackSources(a, (t) => Object.hasOwn(LAID_ON_HIT, t))) {
+    const first = g[0] as EffectData;
+    const lay = LAID_ON_HIT[first.type as string] as (c: Combat, q: EffectData, d: Side) => void;
+    if (g.length === 1) lay(c, first, d);
+    else {
+      const q = mergedSource(c, g, 0);
+      if (q) lay(c, q, d);
+    }
   }
   return undefined;
 }

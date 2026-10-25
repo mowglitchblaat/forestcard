@@ -929,3 +929,16 @@ test('relais : une magie déjà jouée n\'est pas retirée au combattant suivant
   const noms = r.journal.filter(e => e.t === 'magie' && e.c === 0).map(e => e.txt);
   assert.equal(noms.length, 1, 'A garde son premier combattant : sa magie n\'est révélée qu\'une fois');
 });
+
+// ================= Sources d'un même effet d'attaque =================
+test('cumul : un passif et une magie qui donnent le même effet à l\'attaque additionnent leurs chances (un seul tirage)', () => {
+  const poison = { type: 'poison', chance: 50, degtour: 1, tours: 1 };
+  for (const seed of [1, 2, 3, 4, 5]) {
+    const r = combat([C('A', 1, SOLIDE, { passif: poison }), MAG('Venin', { type: 'atk_poison', chance: 50, degtour: 1, tours: 1 })],
+      [C('B', 0, SOLIDE)], { seed, regles: { maxTours: 12, maxProlong: 0 } });
+    const attaques = auxAttaquesDeA(r, e => e.t === 'attaque' && e.c === 0);
+    const poses = auxAttaquesDeA(r, e => e.t === 'statut' && e.k === 'poison' && e.c === 1);
+    assert.ok(attaques.length > 3);
+    assert.deepEqual(poses, attaques, '50 % + 50 % = 100 % : chaque attaque empoisonne, une seule fois');
+  }
+});

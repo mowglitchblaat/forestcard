@@ -9,6 +9,7 @@
 // (Breaths and missiles are defended like an attack: mechanics/dodge.ts, block.ts, reflect.ts.)
 
 import type { Attack } from '../combat/attack.ts';
+import { attackSources, mergedSource } from '../combat/sources.ts';
 import { emit, id, over, raw, roll, round, type Combat } from '../combat/combat.ts';
 import { damage } from '../combat/damage.ts';
 import type { EffectContext, EffectRules } from '../combat/effect-context.ts';
@@ -94,15 +95,20 @@ export function detonate(
   return n;
 }
 
-// Detonation BEFORE the strike's new statuses: it consumes those already laid.
+// Detonation BEFORE the strike's new statuses: it consumes those already laid. Several detonation
+// sources (passive + attack effect): their chances add up, one detonation at most per strike.
 export function detonationOnHit(c: Combat, { a, d }: Attack): StrikeFlow {
-  for (const q of [...a.passives, ...a.status.attackEffects])
-    if (
-      q.type === 'detonation' &&
-      d.hp > 0 &&
-      roll(c, q.chance == null || q.chance === '' ? 100 : +q.chance)
-    )
-      detonate(c, a, d, q, true);
+  const g = attackSources(a, (t) => t === 'detonation')[0];
+  if (g && d.hp > 0) {
+    const first = g[0] as EffectData;
+    if (g.length === 1) {
+      if (roll(c, first.chance == null || first.chance === '' ? 100 : +first.chance))
+        detonate(c, a, d, first, true);
+    } else {
+      const q = mergedSource(c, g, 100);
+      if (q) detonate(c, a, d, q, true);
+    }
+  }
   if (d.hp <= 0 || a.hp <= 0 || over(c)) return 'stop';
   return undefined;
 }

@@ -1226,7 +1226,8 @@ function verrouLacher(nom){clearInterval(battement);const v=lireVerrou();if(v&&v
 const ACTION_FIN=new URLSearchParams(location.search).get('action')||'Combat - Résultat';
 async function jouer(res){
  file.push(res);if(enCours)return;enCours=true;
- while(file.length){const R=file.shift();await verrouPrendre('combat');await chargerMiroir();   // liste des images copiées sur GitHub, relue à chaque combat : OBS ouvert longtemps ne repasse jamais par Supabase pour une image copiée depuisif(!TEST&&!DEMO)await chargerVitesse();journalRecap=R;$('#log').innerHTML='';
+ while(file.length){const R=file.shift();await verrouPrendre('combat');await chargerMiroir();   // liste des images copiées sur GitHub, relue à chaque combat : OBS ouvert longtemps ne repasse jamais par Supabase pour une image copiée
+  if(!TEST&&!DEMO)await chargerVitesse();journalRecap=R;$('#log').innerHTML='';let detoAvant=-1;
   for(let ix=0;ix<R.journal.length;ix++){const e=R.journal[ix];
    $('#ban').className=e.t;$('#ban').textContent=e.txt;$('#log').innerHTML+=e.txt+'<br>';$('#log').scrollTop=1e5;
    if(e.t==='debut'||e.t==='prolongation'||e.t==='relais')chargerZones(e.joueurs);
@@ -1313,6 +1314,9 @@ async function jouer(res){
    else if(e.t==='piege'){revele(e.c,e);await zoomCarte('g'+e.c,e,'piege');allumerMini(e.c,'t');$('#g'+e.c).classList.toggle('annule',e.k==='bloque')}
    let ms={magie:600,piege:600,ultime:2200,fin:5000,degats:900,soin:1300,esquive:1100,bloque:1500,statut:1100,stat:1500,vol:1500,protege:2900,finstatut:250,frappe:350}[e.t]||900;
    if(e.t==='degats'&&R.journal.slice(ix+1,ix+4).some(z=>z.t==='protege'&&z.c===e.c))ms=200;
+   // coup détonant : la détonation part avec le coup de l'attaque, pas après (ce qui se passe entre les deux, vol de vie, étourdissement, suit le même rythme)
+   if(e.t==='degats'&&!e.k){const z=R.journal.slice(ix+1,ix+6),j=z.findIndex(x=>x.t==='detonation'&&!x.mis&&x.c===e.c);if(j>=0&&!z.slice(0,j).some(x=>['degats','frappe','attaque','tour','esquive','bloque'].includes(x.t)))detoAvant=ix+j+1}
+   if(ix<detoAvant)ms=Math.min(ms,120);
    // salve de missiles : rythme accéléré, du tir du premier missile jusqu'à la fin de la salve (prochain tour, attaque ou ultime)
    if(e.t==='missile')enSalve=true;else if(['tour','attaque','ultime','fin','prolongation','relais'].includes(e.t))enSalve=false;
    if(enSalve)ms=Math.min(ms,{missile:0,detonation:200,degats:520,statut:560,finstatut:150,stat:600,esquive:600,bloque:700,soin:700}[e.t]??500);   // coup fatal évité : les dégâts et l'effet « évite la mort » apparaissent presque ensemble

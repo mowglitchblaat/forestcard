@@ -106,7 +106,7 @@ Clés de `EFFECT_TYPES`, exécutées par `applyEffect` (`packages/engine/src/com
 | `reset_ultime` | l'ultime redevient utilisable | `ultimates.ts` |
 | `esquive_mod` | esquive ± X % | `dodge.ts` |
 | `aleatoire` | tire un effet au hasard parmi 45 (`POOL`), une ou plusieurs fois | `random.ts` |
-| `atk_fatigue`, `atk_detonation`, `atk_enchainement`, `atk_brulure`, `atk_poison`, `atk_etourdir`, `atk_saignement`, `atk_malediction`, `atk_fracture`, `atk_gel`, `atk_glas` | donnent à l'attaque de base le passif du même nom (sans `atk_`) (retiré avec la magie si elle est annulée ou détruite) | `attack-effects.ts` |
+| `atk_fatigue`, `atk_detonation`, `atk_enchainement`, `atk_brulure`, `atk_poison`, `atk_etourdir`, `atk_saignement`, `atk_malediction`, `atk_fracture`, `atk_gel`, `atk_glas` | donnent à l'attaque de base le passif du même nom (sans `atk_`) (retiré avec la magie si elle est annulée ou détruite). Plusieurs sources du même effet sur une carte (passif + magie, deux magies…) n'en font qu'une : leurs chances s'additionnent (100 % au plus), un seul tirage par coup, et les valeurs (durée, dégâts…) sont celles d'une des sources, tirée au prorata de sa chance, comme pour l'étourdissement (`combat/sources.ts`). Hors enchaînement, où chaque source retente seule | `attack-effects.ts` |
 
 ## Passifs
 

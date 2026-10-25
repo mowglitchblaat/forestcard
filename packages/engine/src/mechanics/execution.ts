@@ -7,6 +7,7 @@
 // until the end of the combat. Like the threshold, it is carried by the target, highest chance kept.
 
 import type { Attack } from '../combat/attack.ts';
+import { attackSources, mergedSource } from '../combat/sources.ts';
 import { emit, id, roll, type Combat } from '../combat/combat.ts';
 import { damage } from '../combat/damage.ts';
 import type { EffectContext, EffectRules } from '../combat/effect-context.ts';
@@ -79,15 +80,19 @@ export const executesNow = (d: Side, n: number): boolean =>
   d.status.executionMarks >= 3 &&
   d.hp - n < (d.maxHp * (d.status.executionThreshold || 10)) / 100;
 
-// Execution: X % to place a mark on every hit, with the hit, before its damage.
+// Execution: X % to place a mark on every hit, with the hit, before its damage. Several execution
+// sources (passive + attack effect): their chances add up, one mark at most per hit.
 export function executionMarks(c: Combat, { a, d }: Attack): StrikeFlow {
-  for (const q of [...a.passives, ...a.status.attackEffects])
-    if (
-      q.type === 'execution' &&
-      d.hp > 0 &&
-      roll(c, q.chance == null || q.chance === '' ? 100 : +q.chance)
-    )
-      mark(c, d, 1, q.seuilexec, q);
+  const g = attackSources(a, (t) => t === 'execution')[0];
+  if (!g || d.hp <= 0) return undefined;
+  const first = g[0] as EffectData;
+  if (g.length === 1) {
+    if (roll(c, first.chance == null || first.chance === '' ? 100 : +first.chance))
+      mark(c, d, 1, first.seuilexec, first);
+  } else {
+    const q = mergedSource(c, g, 100);
+    if (q) mark(c, d, 1, q.seuilexec, q);
+  }
   return undefined;
 }
 
