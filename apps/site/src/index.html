@@ -342,6 +342,7 @@ const TABS={collection:'Ma collection',boutique:'Boutique',jeux:'🎲 Jeux du jo
 function erreurConnexion(){
   const P=new URLSearchParams(location.search+'&'+location.hash.slice(1)),e=P.get('error_description')||P.get('error');
   if(!e)return '';try{history.replaceState(null,'',location.pathname)}catch(x){}
+  if(/banned|bann/i.test(e))return '<p class="ko"><b>⚠️ Activité suspecte détectée sur ce compte.</b><br>Ton accès au site est suspendu. Prends contact avec un fondateur pour en parler.</p>';   // compte suspendu (auth.users.banned_until)
   const m=/email/i.test(e)?'Ton compte Twitch n\'a pas d\'adresse e-mail confirmée. Sur Twitch : Paramètres → Sécurité et confidentialité → confirme ton e-mail, puis reconnecte-toi ici.'
     :/access_denied|denied/i.test(e)?'La connexion a été refusée sur la page de Twitch. Recommence et clique sur « Autoriser ».'
     :'La connexion a échoué. Réessaie depuis Chrome, Safari ou Firefox (pas depuis le navigateur intégré de Twitch, Discord ou Instagram).';
