@@ -1,5 +1,33 @@
 [
   {
+    "date": "2026-10-26",
+    "intro": "Une grosse fournée de nouvelles mécaniques arrive en combat : headshots, brume, liens parasitaires, mutation insecte et mue.",
+    "groupes": [
+      {
+        "titre": "Combat",
+        "points": [
+          "Headshot : un coup peut devenir critique et ajouter une part de l’ATQ aux dégâts ; le nouvel ultime Ciblage marque l’adversaire pour que chaque coup sur lui soit un headshot.",
+          "Mutation insecte en 3 niveaux (stats en plus, puis réduction des dégâts et saignement, puis mue, esquive et lien parasitaire), et la mue : après 2 tours sous statut négatif, la carte se débarrasse de ses statuts et marques mais perd un peu d’ATQ et de PV.",
+          "Nouveau passif Réaction : quand la carte prend des dégâts ou un statut, une stat au choix monte (ATQ, PV, esquive, blocage ou réduction), avec un plafond."
+        ]
+      },
+      {
+        "titre": "Magies et pièges",
+        "points": [
+          "Brume : les statuts négatifs posés sur la carte se dissipent, et une brume relancée renvoie le prochain statut à l’adversaire.",
+          "Lien parasitaire : une part des soins du porteur part chez l’adversaire ; les liens se cumulent, peuvent être posés à plusieurs d’un coup et fonctionnent dans les deux sens.",
+          "Nouveaux effets Mue forcée et Réduction des dégâts, et une magie peut désormais attendre un tour précis avant d’agir et ne durer qu’un nombre de tours donné."
+        ]
+      },
+      {
+        "titre": "Animations",
+        "points": [
+          "Chaque nouvelle mécanique a son animation (réticule, brume, vrilles, carapace et ailes, mue), et les animations sont allégées pour un live plus fluide, sans rien changer à l’affichage."
+        ]
+      }
+    ]
+  },
+  {
     "date": "2026-10-25",
     "intro": "Le jeu peut désormais être fermé partout, et les effets d’attaque qui se cumulent deviennent plus simples à lire.",
     "groupes": [
