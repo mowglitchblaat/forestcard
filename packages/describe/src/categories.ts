@@ -33,6 +33,11 @@ export const CATEGORY_LABELS: Record<string, string> = {
   prog: 'Programmation',
   deto: 'Détonation / missiles',
   cartes: 'Magies et pièges (vol, destruction…)',
+  headshot: 'Headshot / ciblage',
+  brume: 'Brume',
+  parasite: 'Lien parasitaire',
+  insecte: 'Mutation / mue',
+  reaction: 'Réaction',
   autre: 'Autres',
 };
 // Category (legend colour) of each effect and passive type.
@@ -99,6 +104,13 @@ const CATEGORY_OF: Record<string, string> = {
   equiper: 'cartes',
   annule_magies: 'cartes',
   insensible_piege: 'cartes',
+  headshot: 'headshot',
+  ciblage: 'headshot',
+  brume: 'brume',
+  lien_parasite: 'parasite',
+  mutation: 'insecte',
+  mue: 'insecte',
+  reaction: 'reaction',
 };
 export const categoryOf = (t: unknown): string =>
   CATEGORY_OF[String(t).replace(/^atk_/, '')] || 'autre';
@@ -139,5 +151,10 @@ export const CATEGORY_STYLES: Record<
   prog: { background: '#0e7490', color: '#ecfeff' },
   deto: { background: '#c2410c', color: '#fff7ed' },
   cartes: { background: '#4338ca', color: '#e0e7ff' },
+  headshot: { background: '#7f1d1d', color: '#fff', border: '1px solid #ff3b30' },
+  brume: { background: '#e2e8f0', color: '#334155', border: '1px solid #94a3b8' },
+  parasite: { background: '#4a0d1c', color: '#fda4af', border: '1px solid #a3203f' },
+  insecte: { background: '#3f6212', color: '#ecfccb', border: '1px solid #9be15d' },
+  reaction: { background: '#0f766e', color: '#ccfbf1' },
   autre: { background: '#6b7280', color: '#fff' },
 };

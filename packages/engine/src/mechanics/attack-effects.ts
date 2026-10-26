@@ -53,4 +53,5 @@ export const effects = {
   atk_fracture: { run: attackEffectGrant },
   atk_gel: { run: attackEffectGrant },
   atk_glas: { run: attackEffectGrant },
+  atk_headshot: { run: attackEffectGrant },
 } satisfies EffectRules;

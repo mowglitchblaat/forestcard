@@ -12,6 +12,7 @@ import type { Flow } from '../combat/flow.ts';
 import type { Side } from '../combat/state.ts';
 import type { EffectData } from '../model/card.ts';
 import { shatter } from './frost.ts';
+import { mistTakes } from './mist.ts';
 
 export type Fracture = { chance: number; damage: number; turns: number };
 
@@ -28,6 +29,7 @@ export function fracture(
   damageOnAttack: number,
   turns: number,
 ): void {
+  if (mistTakes(c, d, 'fracture', (t) => fracture(c, t, chance, damageOnAttack, turns))) return;
   if (d.status.solidTurns > 0) {
     d.status.solidTurns = 0;
     emit(c, { type: 'solidBroken', side: id(c, d) });

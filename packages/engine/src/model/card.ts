@@ -117,6 +117,33 @@ export type EffectData = {
   udecl?: string; // an ULTIMATE_TRIGGER_TYPES key: on an event, or under X % of HP
   udx?: Num; // its X: count, damage or percent
 
+  // Headshot (`pctcrit`: % of the ATQ added to the strike, 50 when empty) and targeting
+  // (`consomme`: 'non' keeps the mark after its first headshot).
+  pctcrit?: Num;
+  consomme?: string;
+  // Parasitic link: % of the carrier's heals that goes to the opponent (50 when empty).
+  pctlien?: Num;
+  // Insect mutation: level I (ATQ and HP, unit `u`), level II (damage reduction %, bleed on the
+  // attack), level III (dodge %, a parasitic link of `lientours` turns; and an instant molt).
+  matq?: Num;
+  mpv?: Num;
+  mreduc?: Num;
+  msaignch?: Num;
+  msaignpct?: Num;
+  msaigntours?: Num;
+  mesq?: Num;
+  lientours?: Num;
+  // Molt: ATQ and HP lost (units `uatq`, `upv`: 'pct' or 'pts').
+  mueatq?: Num;
+  uatq?: string;
+  muepv?: Num;
+  upv?: string;
+  // Reaction passive: when (`quand`: 'degats' or 'statut'), which stat grows (`stat`), by `val`
+  // (unit `u`), up to `plafond` in all.
+  quand?: string;
+  stat?: string;
+  plafond?: Num;
+
   // Trap payload: when it fires, what it does, how many times.
   condition?: TrapCondition;
   effet?: EffectData | null;

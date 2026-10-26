@@ -81,6 +81,10 @@ const EFFECT_LABELS: Record<EffectType, (e: Fx) => string> = {
   missiles: () => 'Missiles',
   atk_detonation: () => 'Coup détonant',
   programmation: () => 'Programmation',
+  atk_headshot: () => 'Headshot',
+  ciblage: () => 'Ciblage',
+  brume: () => 'Brume',
+  lien_parasite: () => 'Lien parasitaire',
 };
 
 const PASSIVE_LABELS: Record<PassiveType, (p: Fx) => string> = {
@@ -114,6 +118,19 @@ const PASSIVE_LABELS: Record<PassiveType, (p: Fx) => string> = {
   programmation: () => 'Programmation',
   detonation: () => 'Détonation',
   glas: () => 'Glas',
+  headshot: () => 'Headshot',
+  lien_parasite: () => 'Lien parasitaire',
+  mutation: () => 'Mutation insecte',
+  mue: () => 'Mue',
+  reaction: (p) => REACTION_LABELS[String(p.stat)] ?? 'Réaction',
+};
+
+const REACTION_LABELS: Record<string, string> = {
+  atq: 'Colère',
+  pv: 'Carapace',
+  esquive: 'Instinct',
+  blocage: 'Garde',
+  reduc: 'Endurcissement',
 };
 
 // t: the short label; d: the explanation of the effect (empty without a describer).

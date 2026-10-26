@@ -9,6 +9,7 @@ import type { EffectContext, EffectRules } from '../combat/effect-context.ts';
 import type { Flow } from '../combat/flow.ts';
 import type { Side } from '../combat/state.ts';
 import type { EffectData, Num } from '../model/card.ts';
+import { mistTakes } from './mist.ts';
 
 // lost: attack actually removed, given back when the fatigue ends or is purified.
 export type Fatigue = { amount: number; lost: number; turns: number };
@@ -27,6 +28,8 @@ export function fatigue(
   turnsIn: Num,
   afterRage?: boolean,
 ): void {
+  // the fatigue after a rage is the card's own cost: no mist for it
+  if (!afterRage && mistTakes(c, d, 'fatigue', (t) => fatigue(c, t, value, unit, turnsIn))) return;
   const v = Math.max(0, unit === 'pct' ? round((d.atq * raw(value)) / 100) : +raw(value) || 0);
   const turns = Math.max(1, parseInt(String(turnsIn), 10) || 1);
   let current = d.status.fatigues[0];

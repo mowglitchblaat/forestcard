@@ -189,6 +189,23 @@ export const TRIGGER_FACT: { [K in EventType]: Classify<K> | null } = {
   programmingActivated: null,
   programmedPassivesAwake: null,
   programmedUltimate: fact('ultimate'),
+  // New mechanics (no legacy line): a parasitic link is a negative status received.
+  headshot: null,
+  targeted: null,
+  targetMissed: null,
+  targetEnded: null,
+  mistRaised: null,
+  mistMissed: null,
+  mistBlocked: null,
+  mistReturned: null,
+  mistFaded: null,
+  parasiteLinked: fact('status'),
+  parasiteFed: null,
+  parasiteEnded: null,
+  mutated: null,
+  moltStarted: null,
+  molted: null,
+  defenseChanged: null,
 };
 
 export function triggerFact(e: DomainEvent): TriggerFact | null {

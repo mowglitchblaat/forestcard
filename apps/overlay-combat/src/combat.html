@@ -281,7 +281,11 @@ function allumerEffets(e){if(e.c==null&&e.from==null)return;const c=e.c,o=c!=nul
  if(e.k==='solide')return allumer(c,['solidification']);
  if(e.k==='prog'||e.k==='prog_act')return allumer(c,['programmation']);
  if(e.k==='purif')return allumer(c,['purification']);
- if(e.k==='bonus')return allumer(c,['bonus_frappe'])}
+ if(e.k==='bonus')return allumer(c,['bonus_frappe']);
+ if(e.k==='headshot')return allumer(c,['headshot']);
+ if(e.k==='mutation')return allumer(c,['mutation']);
+ if(e.k==='mue'||e.k==='mue_debut')return allumer(c,['mue','mutation']);
+ if(e.k==='lien')return allumer(e.to,['lien_parasite'])}
 // COMBAT EN RELAIS (championnat) : combattants envoyés par joueur ({n, of}), null en combat normal ; les pastilles à côté du pseudo
 let EQUIPE=[null,null];
 // CEINTURES (championnat) : celles que détient chaque joueur, autour de sa carte, comme les champions UFC : la 1re à l'horizontale
@@ -1224,6 +1228,93 @@ async function verrouPrendre(nom){if(TEST||DEMO||SITE)return;const t0=Date.now()
  clearInterval(battement);battement=setInterval(ecrire,1500)}
 function verrouLacher(nom){clearInterval(battement);const v=lireVerrou();if(v&&v.o===nom){try{localStorage.removeItem(VERROU)}catch{}}}
 const ACTION_FIN=new URLSearchParams(location.search).get('action')||'Combat - Résultat';
+// ---------- Nouvelles mécaniques : headshot, ciblage, brume, lien parasitaire, mutation, mue ----------
+const NFX={cv:null,x:null,mist:[0,0],lien:null,P:[],O:[],on:false,t:0};
+function nfxCanvas(){if(NFX.cv)return;
+ const sty=document.createElement('style');sty.textContent=`
+.nret{position:absolute;inset:0;z-index:6;display:grid;place-items:center;pointer-events:none;opacity:0;transform:scale(2.2) rotate(-90deg);transition:opacity .35s,transform .5s cubic-bezier(.2,1.4,.4,1)}
+.nret svg{width:78%;overflow:visible;filter:drop-shadow(0 0 .8vh #ff3b30)}.nret.on{opacity:1;transform:none}.nret.on svg{animation:nretp 1.2s ease-in-out infinite}
+.nret.lock{transform:scale(.55) rotate(45deg);transition:transform .3s ease-in}@keyframes nretp{50%{transform:scale(1.06);opacity:.75}}
+.ncar{position:absolute;inset:0;z-index:3;pointer-events:none;opacity:0;transition:opacity .6s;mix-blend-mode:screen;border-radius:inherit;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='48'%3E%3Cpath d='M14 0L28 8v16L14 32 0 24V8zM14 32v16' fill='none' stroke='%239be15d' stroke-width='2'/%3E%3C/svg%3E");background-size:14% auto}
+.card.mut1 .ncar{opacity:.28}.card.mut2 .ncar{opacity:.55}.card.mut3 .ncar{opacity:.85}
+.card.mut2{box-shadow:0 0 0 .25vh #9be15d88,0 0 2vh #9be15d55,0 0 25px #000}.card.mut3{animation:nmtox 1.6s ease-in-out infinite;filter:hue-rotate(40deg) saturate(1.3)}
+@keyframes nmtox{0%,100%{box-shadow:0 0 0 .25vh #9be15d,0 0 3vh #9be15d99,0 0 25px #000}50%{box-shadow:0 0 0 .25vh #c8ff7a,0 0 5vh #9be15dcc,0 0 25px #000}}
+.card.mue{filter:sepia(.5) brightness(.85) saturate(.7);transition:filter .6s}
+.nail{position:absolute;top:8%;left:50%;width:240%;height:70%;transform:translateX(-50%);z-index:0;pointer-events:none;opacity:0;animation:nailf 1.6s ease-out forwards}
+.nail svg{width:100%;height:100%;overflow:visible}.nail .w{transform-box:fill-box;animation:nailb .07s linear infinite alternate}.nail .wl{transform-origin:right center}.nail .wr{transform-origin:left center}
+@keyframes nailb{from{transform:scaleX(1)}to{transform:scaleX(.35)}}@keyframes nailf{0%{opacity:0}15%{opacity:.9}70%{opacity:.8}100%{opacity:0}}`;
+ document.head.appendChild(sty);
+ const cv=document.createElement('canvas');cv.id='nfx';cv.style.cssText='position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:11';document.body.appendChild(cv);NFX.cv=cv;NFX.x=cv.getContext('2d');
+ const rs=()=>{const d=Math.min(1.5,devicePixelRatio||1);cv.width=innerWidth*d;cv.height=innerHeight*d;NFX.x.setTransform(d,0,0,d,0,0)};addEventListener('resize',rs);rs()}
+function nfxReset(){NFX.mist=[0,0];NFX.lien=null;NFX.P.length=0;NFX.O.length=0;
+ [0,1].forEach(c=>{const cw=$('#p'+c+' .cw');if(cw)cw.querySelectorAll('.nret,.nail').forEach(n=>n.remove());const k=$('#p'+c+' .card');if(k){k.classList.remove('mut1','mut2','mut3','mue');k.querySelectorAll('.ncar').forEach(n=>n.remove())}})}
+function nfxStart(){nfxCanvas();fxAll.add(nfxReset);if(NFX.on)return;NFX.on=true;requestAnimationFrame(nfxLoop)}
+const nbox=c=>{const k=$('#p'+c+' .card');if(!k)return null;const r=k.getBoundingClientRect();return{x:r.left,y:r.top,w:r.width,h:r.height,cx:r.left+r.width/2,cy:r.top+r.height/2}};
+const nadd=p=>{p.t=0;p.life=p.life||60;NFX.P.push(p)};
+function nburst(x,y,n,col,sp=4,sz=3,life=50,g=0){for(let i=0;i<n;i++){const a=R(0,6.283),v=R(.3,1)*sp;nadd({k:'dot',x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,s:R(.6,1.4)*sz,col,g,life:life*R(.7,1.2)})}}
+const nring=(x,y,r0,r1,col,w=3,life=30)=>nadd({k:'ring',x,y,r0,r1,col,w,life});
+function ncracks(x,y,n,len){for(let i=0;i<n;i++){let a=R(0,6.283),px=x,py=y;const pts=[[px,py]];for(let j=0;j<6;j++){a+=R(-.5,.5);const l=len/6*R(.6,1.4);px+=Math.cos(a)*l;py+=Math.sin(a)*l;pts.push([px,py])}nadd({k:'crack',pts,life:70})}}
+function nshards(x,y,n,col,g=.25,sp=7){for(let i=0;i<n;i++){const a=R(0,6.283),v=R(2,sp);nadd({k:'shard',x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-2,rot:R(0,6),vr:R(-.3,.3),s:R(3,8),col,g,life:R(40,70)})}}
+function ntendril(s){const L=NFX.lien,A=nbox(L.c),B=nbox(L.to);if(!A||!B)return null;const dir=B.cx>A.cx?1:-1,x0=A.cx+dir*A.w*.25,y0=A.cy+A.h*.05,x1=B.cx-dir*B.w*.25,y1=B.cy+B.h*.05,env=Math.sin(Math.PI*s);
+ return{x:x0+(x1-x0)*s,y:y0+(y1-y0)*s+env*A.h*.18+Math.sin(s*16-NFX.t*.09)*.7*innerHeight/100*env}}
+function nfxLoop(){const x=NFX.x;NFX.t++;x.clearRect(0,0,innerWidth,innerHeight);
+ if(NFX.lien&&ntendril(0)){x.save();x.lineCap='round';x.lineJoin='round';const pts=[];for(let i=0;i<=48;i++)pts.push(ntendril(i/48));const path=()=>{x.beginPath();pts.forEach((p,i)=>i?x.lineTo(p.x,p.y):x.moveTo(p.x,p.y))};const u=innerHeight/100;
+  x.shadowColor='#a3203f';x.shadowBlur=14;path();x.strokeStyle='#2a0812';x.lineWidth=1.1*u;x.stroke();x.shadowBlur=0;path();x.strokeStyle='#8c1a36';x.lineWidth=.6*u;x.stroke();
+  path();x.setLineDash([.3*u,1.5*u]);x.lineDashOffset=-NFX.t*.8;x.strokeStyle='#ff7a96';x.lineWidth=.25*u;x.stroke();x.setLineDash([]);
+  for(let i=1;i<6;i++){const p=ntendril(i/6);x.beginPath();x.arc(p.x,p.y,(.35+.18*Math.sin(NFX.t*.12+i))*u,0,7);x.fillStyle='#c33558';x.fill()}x.restore()}
+ [0,1].forEach(c=>{const lv=NFX.mist[c];if(!lv)return;const b=nbox(c);if(!b)return;for(let i=0;i<lv;i++)nadd({k:'fog',c,a:R(0,6.283),r:R(.45,.75),w:lv>1?R(.035,.055):R(.003,.008)*(Math.random()<.5?1:-1),s:R(.14,.28)*b.w,life:R(110,160)});
+  if(lv>1){x.save();x.lineCap='round';for(let i=0;i<4;i++){const a=NFX.t*.09+i*1.57;x.beginPath();x.ellipse(b.cx,b.cy,b.w*.68,b.h*.6,0,a,a+1.3);x.strokeStyle='rgba(230,240,250,.45)';x.lineWidth=2.5;x.stroke()}x.restore()}});
+ x.save();x.globalCompositeOperation='lighter';
+ for(let i=NFX.P.length-1;i>=0;i--){const p=NFX.P[i];p.t++;const k=p.t/p.life;if(k>=1){NFX.P.splice(i,1);continue}
+  if(p.k==='fog'){const b=nbox(p.c);if(!b||!NFX.mist[p.c]){p.k='puff';const v=R(2,4);p.vx=Math.cos(p.a)*v;p.vy=Math.sin(p.a)*v;p.life=p.t+50;continue}p.a+=p.w;p.x=b.cx+Math.cos(p.a)*b.w*p.r*1.1;p.y=b.cy+Math.sin(p.a)*b.h*p.r*.9;const al=Math.sin(Math.PI*k)*.16,g=x.createRadialGradient(p.x,p.y,0,p.x,p.y,p.s);g.addColorStop(0,`rgba(225,235,245,${al})`);g.addColorStop(1,'rgba(225,235,245,0)');x.fillStyle=g;x.fillRect(p.x-p.s,p.y-p.s,p.s*2,p.s*2);continue}
+  if(p.k==='puff'){p.x+=p.vx;p.y+=p.vy;p.vx*=.97;p.vy*=.97;p.s*=1.02;const g=x.createRadialGradient(p.x,p.y,0,p.x,p.y,p.s);g.addColorStop(0,`rgba(225,235,245,${(1-k)*.18})`);g.addColorStop(1,'rgba(225,235,245,0)');x.fillStyle=g;x.fillRect(p.x-p.s,p.y-p.s,p.s*2,p.s*2);continue}
+  if(p.k==='path'){if(!NFX.lien){NFX.P.splice(i,1);continue}p.sp+=p.v;if(p.sp>=1){NFX.P.splice(i,1);continue}const q=ntendril(p.sp);if(!q)continue;x.beginPath();x.arc(q.x,q.y,p.s,0,7);x.fillStyle='rgba(110,255,140,.9)';x.shadowColor='#6dff8a';x.shadowBlur=12;x.fill();x.shadowBlur=0;continue}
+  if(p.k==='ring'){const r=p.r0+(p.r1-p.r0)*(1-(1-k)*(1-k));x.beginPath();x.arc(p.x,p.y,r,0,7);x.strokeStyle=p.col;x.globalAlpha=1-k;x.lineWidth=p.w;x.stroke();x.globalAlpha=1;continue}
+  if(p.k==='crack'){x.globalCompositeOperation='source-over';x.beginPath();p.pts.forEach((q,j)=>j?x.lineTo(q[0],q[1]):x.moveTo(q[0],q[1]));x.strokeStyle=`rgba(255,240,220,${1-k})`;x.lineWidth=2;x.shadowColor='#ff3b30';x.shadowBlur=8;x.stroke();x.shadowBlur=0;x.globalCompositeOperation='lighter';continue}
+  p.vy+=p.g||0;p.x+=p.vx;p.y+=p.vy;
+  if(p.k==='shard'){p.rot+=p.vr;x.save();x.translate(p.x,p.y);x.rotate(p.rot);x.globalAlpha=1-k;x.fillStyle=p.col;x.beginPath();x.moveTo(0,-p.s);x.lineTo(p.s*.6,p.s*.4);x.lineTo(-p.s*.5,p.s*.7);x.closePath();x.fill();x.restore();continue}
+  x.globalAlpha=1-k;x.beginPath();x.arc(p.x,p.y,p.s,0,7);x.fillStyle=p.col;x.fill();x.globalAlpha=1}
+ for(let i=NFX.O.length-1;i>=0;i--){const o=NFX.O[i];o.t++;const k=Math.min(1,o.t/o.dur),f=o.from(),to=o.to();if(!f||!to){NFX.O.splice(i,1);o.res(null);continue}
+  const px=f.x+(to.x-f.x)*k,py=f.y+(to.y-f.y)*k-Math.sin(Math.PI*k)*o.arc;for(let j=0;j<2;j++)nadd({k:'dot',x:px+R(-3,3),y:py+R(-3,3),vx:R(-.4,.4),vy:R(-.4,.4),s:R(2,4),col:o.col,life:22});
+  const g=x.createRadialGradient(px,py,0,px,py,16);g.addColorStop(0,'#fff');g.addColorStop(.3,o.col);g.addColorStop(1,'rgba(0,0,0,0)');x.fillStyle=g;x.beginPath();x.arc(px,py,16,0,7);x.fill();
+  if(k>=1){NFX.O.splice(i,1);o.res({x:px,y:py})}}
+ x.restore();
+ if(!NFX.mist[0]&&!NFX.mist[1]&&!NFX.lien&&!NFX.P.length&&!NFX.O.length){NFX.on=false;x.clearRect(0,0,innerWidth,innerHeight);return}
+ requestAnimationFrame(nfxLoop)}
+const ncentre=c=>()=>{const b=nbox(c);return b&&{x:b.cx,y:b.cy}};
+function ntir(from,to,col){nfxStart();return new Promise(res=>NFX.O.push({from,to,col,t:0,dur:45,arc:innerHeight*.06,res}))}
+const NST_COL={curse:'#c084fc',bleed:'#ef4444',poison:'#22c55e',burn:'#f97316',frost:'#7dd3fc',knell:'#a78bfa',fracture:'#fde68a',stun:'#facc15',fatigue:'#94a3b8',parasite:'#e0607e'};
+// Ciblage : le réticule rouge reste sur la carte ciblée
+function nCible(c,on){const cw=$('#p'+c+' .cw');if(!cw)return;let r=cw.querySelector('.nret');
+ if(!on){if(r){r.classList.remove('on','lock');setTimeout(()=>r.remove(),400)}return}
+ nfxCanvas();fxAll.add(nfxReset);if(!r){r=document.createElement('div');r.className='nret';r.innerHTML='<svg viewBox="-50 -50 100 100"><g fill="none" stroke="#ff3b30" stroke-width="2.4"><circle r="34"/><circle r="12" stroke-width="1.6"/><path d="M0 -46V-22M0 22V46M-46 0H-22M22 0H46"/></g><circle r="2.5" fill="#ff3b30"/></svg>';cw.appendChild(r);void r.offsetWidth}r.classList.add('on')}
+// Headshot : le réticule se resserre, flash, fissures, éclats
+async function nHeadshot(a,d){nfxStart();const cw=$('#p'+d+' .cw');let r=cw&&cw.querySelector('.nret');const tmp=!r;if(tmp)nCible(d,true);r=cw&&cw.querySelector('.nret');await sleep(tmp?380:0);
+ if(r)r.classList.add('lock');await sleep(260);const k=$('#p'+d+' .card');if(k)k.animate([{filter:'brightness(3)'},{filter:'none'}],{duration:450});
+ const b=nbox(d);if(b){const y=b.y+b.h*.42;ncracks(b.cx,y,9,b.w*.5);nshards(b.cx,y,26,'#ffd9a0');nburst(b.cx,y,30,'#ff5a3c',7,3,40);nring(b.cx,y,10,b.w*.9,'#ffd24a',4,28);nring(b.cx,y,6,b.w*.6,'#ff3b30',3,22)}
+ flot(d,'HEADSHOT','#ffd24a','big');if(r){r.classList.remove('lock');if(tmp)nCible(d,false)}}
+// Brume : niveau 1 (brume qui tourne) ou 2 (vent tourné)
+function nBrume(c,lv){nfxStart();NFX.mist[c]=lv;const b=nbox(c);if(b)nring(b.cx,b.cy,b.w*.3,b.w*.9,'rgba(225,235,245,.6)',3,40);flot(c,lv>1?'Vent tourné':'Brume','#e2e8f0')}
+function nBrumeFin(c){NFX.mist[c]=0}
+function nBrumeBloque(c,s){nfxStart();const b=nbox(c);if(b){for(let i=0;i<10;i++)nadd({k:'puff',x:b.cx+R(-1,1)*b.w*.4,y:b.cy+R(-1,1)*b.h*.3,vx:R(-1.5,1.5),vy:R(-1.5,1.5),s:R(.1,.18)*b.w,life:40});nburst(b.cx,b.cy,14,NST_COL[s]||'#c9a0ff',2,2,30)}flot(c,'Dissipé','#e2e8f0')}
+async function nBrumeRenvoi(c,to,s){flot(c,'Renvoyé !','#e2e8f0');const p=await ntir(ncentre(c),ncentre(to),NST_COL[s]||'#b35cff');if(p)nburst(p.x,p.y,24,NST_COL[s]||'#b35cff',4,3)}
+// Lien parasitaire : une vrille de chair relie le porteur et l'autre carte
+function nLien(c,to,on){if(!on){if(NFX.lien&&NFX.lien.c===c)NFX.lien=null;return}nfxStart();NFX.lien={c,to};for(let i=0;i<=10;i++){const q=ntendril(i/10);if(q)nburst(q.x,q.y,4,'#c33558',2,2,30)}}
+async function nLienSoin(){if(!NFX.lien)return;nfxStart();for(let i=0;i<14;i++)setTimeout(()=>nadd({k:'path',sp:0,v:R(.018,.026),s:R(.25,.45)*innerHeight/100,life:999}),i*45);await sleep(1000)}
+// Mutation insecte : carapace, battement d'ailes ; niveau 3 : aura toxique
+function nMutation(c,niv){nfxStart();const k=$('#p'+c+' .card'),cw=$('#p'+c+' .cw');if(!k||!cw)return;if(!k.querySelector('.ncar')){const d=document.createElement('div');d.className='ncar';k.appendChild(d)}
+ k.classList.remove('mut1','mut2','mut3');k.classList.add('mut'+Math.min(3,niv));const w=document.createElement('div');w.className='nail';w.innerHTML='<svg viewBox="0 0 240 100"><g fill="#c8ff9a33" stroke="#c8ff9a99" stroke-width="1"><path class="w wl" d="M120 40Q40-10 6 30Q20 70 120 52Z"/><path class="w wl" d="M120 56Q50 60 26 92Q80 100 120 62Z"/><path class="w wr" d="M120 40Q200-10 234 30Q220 70 120 52Z"/><path class="w wr" d="M120 56Q190 60 214 92Q160 100 120 62Z"/></g></svg>';cw.appendChild(w);setTimeout(()=>w.remove(),1700);
+ const b=nbox(c);if(b){nburst(b.cx,b.cy,40,'#9be15d',5,3,55);nring(b.cx,b.cy,10,b.w*.85,'#9be15d',3,30)}flot(c,'MUTATION '+(['I','II','III'][niv-1]||''),'#9be15d','big')}
+function nMueDebut(c){const k=$('#p'+c+' .card');if(k)k.classList.add('mue');flot(c,'Mue…','#d9f99d')}
+function nMue(c){nfxStart();const k=$('#p'+c+' .card');if(k){k.classList.remove('mue');k.animate([{filter:'brightness(1.6) saturate(.4)'},{filter:'none'}],{duration:600})}const b=nbox(c);if(b)for(let i=0;i<18;i++)nadd({k:'shard',x:b.x+R(0,b.w),y:b.y+R(0,b.h*.7),vx:R(-1,1),vy:R(-1,.5),rot:R(0,6),vr:R(-.1,.1),s:R(3,6)*innerHeight/400,col:'#7fae4a',g:.15,life:70});flot(c,'MUE !','#d9f99d','big')}
+const NK={
+ 'statut:headshot':e=>nHeadshot(e.c,e.cible),
+ 'statut:cible':e=>{nCible(e.c,true);flot(e.c,'CIBLÉ','#ff3b30')},'finstatut:cible':e=>nCible(e.c,false),'statut:cible_rate':e=>flot(e.c,'Raté','#fca5a5'),
+ 'statut:brume':e=>nBrume(e.c,e.n||1),'finstatut:brume':e=>nBrumeFin(e.c),'statut:brume_rate':e=>flot(e.c,'Pas de brume','#cbd5e1'),
+ 'statut:brume_bloque':e=>nBrumeBloque(e.c,e.s),'statut:brume_renvoi':e=>nBrumeRenvoi(e.c,e.to,e.s),
+ 'statut:lien':e=>{nLien(e.c,e.to,true);flot(e.c,'Lien parasitaire','#fda4af')},'finstatut:lien':e=>nLien(e.c,e.to,false),'statut:lien_soin':()=>nLienSoin(),
+ 'statut:mutation':e=>nMutation(e.c,e.niv||1),'statut:mue_debut':e=>nMueDebut(e.c),'statut:mue':e=>nMue(e.c),
+ 'stat:defense':e=>flot(e.c,(e.s==='block'?'Blocage +':'Réduction +')+e.d+' %','#fcd34d')};
 async function jouer(res){
  file.push(res);if(enCours)return;enCours=true;
  while(file.length){const R=file.shift();await verrouPrendre('combat');await chargerMiroir();   // liste des images copiées sur GitHub, relue à chaque combat : OBS ouvert longtemps ne repasse jamais par Supabase pour une image copiée
@@ -1304,6 +1395,7 @@ async function jouer(res){
    else if(e.k==='piege_detruit'){const g=$('#g'+e.c);if(g){revele(e.c,e);g.classList.remove('annule');await wait(500);if(e.tranche){trancher(g);await wait(250);flot(e.c,'Piège tranché !','#ef4444');await wait(1900)}else{briser(e.c,g);await wait(2600)}}}   // piège détruit : la carte se brise comme à la défaite
    else if(e.k==='piege_rearme'){const g=$('#g'+e.c);if(g){g.classList.remove('annule');g.classList.add('act');setTimeout(()=>g.classList.remove('act'),1000)}flot(e.c,'Piège actif','#fca5a5');await wait(600)}   // fin de l'insensibilité : la croix part
    else if(e.t==='statut'&&e.k==='regen'){flot(e.c,'Régénération','#4ade80');await wait(600)}   // pas d'aura persistante (elle prenait l'aspect du poison) : le soin de chaque tour s'affiche avec l'animation de soin
+   else if(e.k&&NK[e.t+':'+e.k])await NK[e.t+':'+e.k](e);   // nouvelles mécaniques (headshot, ciblage, brume, lien, mutation, mue)
    else if(e.t==='statut'&&e.k){if(!['brulure','poison','saignement','malediction'].includes(e.k)||!st[e.c+e.k])statut(e.c,e.k,true);if(e.k==='malediction')cranes(e.c)}   // ces statuts se cumulent en UN seul effet : une réapplication ne doit pas empiler l'icône (sinon elle reste après la purification)
    else if(e.t==='stat'&&e.k==='malediction_tick'){cranes(e.c);flot(e.c,'ATQ '+e.d,'#c084fc')}
    else if(e.t==='stat'&&e.k==='mod'&&e.d)fleches(e.c,e.s,e.d);
@@ -1441,6 +1533,13 @@ if(DEMO){
   ['Combat','Dégâts poison puis brûlure',c=>{flot(c,'-3','#22ff55');setTimeout(()=>flot(c,'-4','#ff8a00'),600)},1800],
   ['Combat','Magie activée',c=>{const m=$('#m'+c);m.classList.add('act');setTimeout(()=>m.classList.remove('act'),1700)},1800],
   ['Combat','Piège déclenché',c=>{const g=$('#g'+c);g.classList.remove('back');g.classList.add('rev');g.textContent='Riposte'},2000],
+  ['Nouvelles mécaniques','Ciblage (réticule verrouillé)',c=>{nCible(c,true);flot(c,'CIBLÉ','#ff3b30')},1800,null,null,true],
+  ['Nouvelles mécaniques','Headshot (coup critique)',c=>nHeadshot(1-c,c),1800],
+  ['Nouvelles mécaniques','Brume niveau 1 : statut dissipé',async c=>{nBrume(c,1);await wait(1300);nBrumeBloque(c,'poison')},3000,null,null,true],
+  ['Nouvelles mécaniques','Brume niveau 2 : vent tourné (statut renvoyé)',async c=>{nBrume(c,2);await wait(1500);await nBrumeRenvoi(c,1-c,'poison');nBrumeFin(c)},3600,null,null,true],
+  ['Nouvelles mécaniques','Lien parasitaire : soin partagé',async c=>{nLien(c,1-c,true);flot(c,'Lien parasitaire','#fda4af');await wait(1300);flot(c,'+10','#4ade80');soin(c);await nLienSoin();flot(1-c,'+10','#4ade80');soin(1-c)},4200,null,null,true],
+  ['Nouvelles mécaniques','Mutation insecte (niveaux I, II, III)',async c=>{for(const n of[1,2,3]){nMutation(c,n);await wait(1600)}},5200,null,null,true],
+  ['Nouvelles mécaniques','Mue (2 tours, puis la carte mue)',async c=>{nMueDebut(c);await wait(1600);nMue(c)},2800,null,null,true],
   ['Fin','Défaite + victoire dorée',c=>{briser(1-c);auraFx(c,{gold:1})},5400,null,null,true]];
  const tg=()=>+$('#dc').value,dw=ms=>new Promise(r=>setTimeout(r,ms*(location.search.includes('fast')?.12:1)));
  const lab=(s,c)=>{$('#dl').textContent=s[1]+(s[0]==='Échanges'?'':' — '+(c?'Bot':'Toi'))};

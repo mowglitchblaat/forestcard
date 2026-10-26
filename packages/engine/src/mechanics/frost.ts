@@ -19,6 +19,7 @@ import type { EffectContext, EffectRules } from '../combat/effect-context.ts';
 import type { Flow } from '../combat/flow.ts';
 import type { Side } from '../combat/state.ts';
 import type { EffectData, Num } from '../model/card.ts';
+import { mistTakes } from './mist.ts';
 
 // Shatter damage when a frost does not say (breaths, missiles, the random effect, older cards).
 export const DEFAULT_SHATTER = 10;
@@ -56,6 +57,7 @@ export function freeze(
   turns: number,
   levels = 1,
 ): void {
+  if (mistTakes(c, d, 'frost', (t) => freeze(c, t, cancelChance, shatter, turns, levels))) return;
   // ice on fire: the burn is put out, the ice is spent doing it
   if (d.status.dots.some((z) => z.kind === 'brûlure')) {
     d.status.dots = d.status.dots.filter((z) => z.kind !== 'brûlure');

@@ -29,6 +29,11 @@ import { type SwallowState, swallowState } from '../mechanics/swallow.ts';
 import { type TheftState, theftState } from '../mechanics/theft.ts';
 import { type TranscendenceState, transcendenceState } from '../mechanics/transcendence.ts';
 import { type TrapImmunityState, trapImmunityState } from '../mechanics/trap-immunity.ts';
+import { type HeadshotState, headshotState } from '../mechanics/headshot.ts';
+import { type InsectState, insectState } from '../mechanics/insect.ts';
+import { type MistState, mistState } from '../mechanics/mist.ts';
+import { type ParasiteState, parasiteState } from '../mechanics/parasite.ts';
+import { type ReactionState, reactionState } from '../mechanics/reaction.ts';
 import type { Card, EffectData, Num } from '../model/card.ts';
 
 // An ultimate held by a card: its own, or one stolen or copied from the opponent.
@@ -74,7 +79,12 @@ export type Status = { turnsPlayed: number } & RageState &
   SwallowState &
   AvoidDeathState &
   CounterState &
-  ProgrammingState;
+  ProgrammingState &
+  HeadshotState &
+  MistState &
+  ParasiteState &
+  InsectState &
+  ReactionState;
 
 export type Side = {
   pseudo: string;
@@ -159,4 +169,9 @@ export const newStatus = (passives: EffectData[]): Status => ({
   ...avoidDeathState(passives),
   ...counterState(),
   ...programmingState(),
+  ...headshotState(),
+  ...mistState(),
+  ...parasiteState(),
+  ...insectState(),
+  ...reactionState(passives),
 });

@@ -10,6 +10,7 @@
 import { avoidDeath, breakAvoidDeath } from '../mechanics/avoid-death.ts';
 import { healReduction } from '../mechanics/bleed.ts';
 import { knellCheck } from '../mechanics/knell.ts';
+import { shareHeal, sharedPart } from '../mechanics/parasite.ts';
 import { reviveOnLethal, reviveTrapOnLethal } from '../mechanics/revive.ts';
 import { emit, id, round, type Combat } from './combat.ts';
 import type { Side } from './state.ts';
@@ -19,11 +20,15 @@ export function heal(c: Combat, s: Side, n: number): void {
   if (s.hp <= 0) return;
   const reduction = healReduction(s);
   if (reduction) n = round((n * (100 - reduction)) / 100);
-  n = Math.min(n, s.maxHp - s.hp);
-  if (n <= 0) return;
-  s.hp += n;
-  emit(c, { type: 'healed', side: id(c, s), amount: n, revive: !!c.reviving });
-  scan(c, { kind: 'heal', who: id(c, s) });
+  // a parasitic link: a share of the heal goes to the opponent (mechanics/parasite.ts)
+  const share = sharedPart(s, n);
+  n = Math.min(n - share, s.maxHp - s.hp);
+  if (n > 0) {
+    s.hp += n;
+    emit(c, { type: 'healed', side: id(c, s), amount: n, revive: !!c.reviving });
+    scan(c, { kind: 'heal', who: id(c, s) });
+  }
+  shareHeal(c, s, share, heal);
 }
 
 // Applies n damage from src to dst and returns the damage actually dealt. The caller emits the

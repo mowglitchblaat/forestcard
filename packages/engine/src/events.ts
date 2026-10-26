@@ -42,6 +42,19 @@ export type StatusKind =
   | 'fatigue'
   | 'solid';
 
+// A negative status a mist takes (mechanics/mist.ts).
+export type MistedStatus =
+  | 'curse'
+  | 'bleed'
+  | 'poison'
+  | 'burn'
+  | 'frost'
+  | 'knell'
+  | 'fracture'
+  | 'stun'
+  | 'fatigue'
+  | 'parasite';
+
 // A status removed by a purification, or moved away by a swallow (legacy keys, shown as such).
 export type DispelledStatus =
   | 'poison'
@@ -67,7 +80,10 @@ export type StatCause =
   | 'curseTick' // loss on a curse tick
   | 'curseFading' // a curse loss coming back
   | 'curseLifted' // by a purification
-  | 'statusesLeft'; // statuses moved to the swallower
+  | 'statusesLeft' // statuses moved to the swallower
+  | 'mutation' // insect mutation, level I
+  | 'molt' // a molt: ATQ and max HP lost
+  | 'reaction'; // reaction passive: a stat grows when the card takes damage or a status
 
 export type DamageCause =
   | 'direct'
@@ -363,6 +379,35 @@ export type DomainEvent =
   | { type: 'transcendenceArmed'; side: SideIndex; turn: number }
   | { type: 'transcendenceLost'; side: SideIndex }
   | { type: 'transcended'; side: SideIndex; level: number; lifeSteal: number | undefined }
+  // Headshot and targeting (mechanics/headshot.ts): side is the attacker for a headshot, the target
+  // for a targeting mark.
+  | { type: 'headshot'; side: SideIndex; target: SideIndex; bonus: number; forced: boolean }
+  | { type: 'targeted'; side: SideIndex; by: SideIndex; turns: number; consume: boolean }
+  | { type: 'targetMissed'; side: SideIndex; by: SideIndex }
+  | { type: 'targetEnded'; side: SideIndex }
+  // Mist (mechanics/mist.ts): level 1 takes the negative statuses, level 2 sends them back once.
+  | { type: 'mistRaised'; side: SideIndex; level: number; turns: number }
+  | { type: 'mistMissed'; side: SideIndex }
+  | { type: 'mistBlocked'; side: SideIndex; status: MistedStatus }
+  | { type: 'mistReturned'; side: SideIndex; to: SideIndex; status: MistedStatus }
+  | { type: 'mistFaded'; side: SideIndex }
+  // Parasitic link (mechanics/parasite.ts): side is the carrier, `to` the card its heals feed.
+  | {
+      type: 'parasiteLinked';
+      side: SideIndex;
+      to: SideIndex;
+      turns: number;
+      pct: number;
+      stacked: boolean;
+    }
+  | { type: 'parasiteFed'; side: SideIndex; to: SideIndex; amount: number }
+  | { type: 'parasiteEnded'; side: SideIndex }
+  // Insect mutation and molt (mechanics/insect.ts).
+  | { type: 'mutated'; side: SideIndex; level: number }
+  | { type: 'moltStarted'; side: SideIndex; turns: number; cause: 'mark' | 'statuses' }
+  | { type: 'molted'; side: SideIndex; instant: boolean }
+  // Damage reduction (%) or block chance (%) gained (mutation, reaction passive).
+  | { type: 'defenseChanged'; side: SideIndex; kind: 'block' | 'reduce'; delta: number }
   // Programming passive. label / effectType: the programmed effect's own label (`lib`, card data)
   // and type, from which the journal writes its name; drawn: what a programming without a list
   // drew, named from its key instead.

@@ -61,12 +61,18 @@ import {
 import { ultimate } from '../mechanics/ultimates.ts';
 import { aliveAtEnd, aliveAtStart, countTurn, everyTurnPassives } from './turn.ts';
 import { knellRises } from '../mechanics/knell.ts';
+import { headshotStrike, targetingEnd } from '../mechanics/headshot.ts';
+import { moltAtStart, moltWatch, mutationQuiet } from '../mechanics/insect.ts';
+import { mistEnd } from '../mechanics/mist.ts';
+import { parasiteEnd } from '../mechanics/parasite.ts';
+import { gainedDefenses } from '../mechanics/reaction.ts';
 
 type TurnStep = Step<Side>;
 
 // 1. Start of its turn, BEFORE its attack.
 const START_OF_TURN: TurnStep[] = [
   aliveAtStart,
+  moltAtStart, // the molt, before anything else of its turn
   solidificationAtStart,
   curseFading, // losses come back before the curse ticks again
   curseTicks, // the curse lowers ATQ before the attack
@@ -100,7 +106,9 @@ const STRIKE: StrikeStep[] = [
   dodge, // a dodge cancels the strike and its effects
   swallowAttempt, // third successful attack: swallowing replaces the damage
   strikePower,
+  headshotStrike, // a critical hit comes before the block and the reductions
   blockOrReduce,
+  gainedDefenses, // block chance and reduction gained (mutation, reaction passive)
   executionMarks, // the mark comes with the hit, before its damage
   hit, // with 3 marks and a hit leaving the target under the threshold, the hit is the execution
   transcendencePurifies,
@@ -145,6 +153,11 @@ const END_OF_TURN: TurnStep[] = [
   reflectsEnd,
   timedTheftsEnd,
   trapImmunityEnd,
+  mistEnd,
+  targetingEnd, // its targeting mark on the opponent
+  parasiteEnd,
+  moltWatch, // 2 turns ending with a negative status: the molt starts
+  mutationQuiet, // 4 turns without one: one level of mutation more
 ];
 
 // ── The skeletons ──

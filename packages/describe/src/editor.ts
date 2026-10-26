@@ -114,6 +114,36 @@ export const EDITOR_FIELDS = {
   glasv: ["Glas : vitesse de l'ombre (% des PV max par tour)", 'n'],
   fchance: ['Chance de se blesser en attaquant (%)', 'n'],
   degfrac: ['Dégâts subis en attaquant', 'n'],
+  pctcrit: ["Headshot : % de l'ATQ ajouté au coup (50 par défaut)", 'n'],
+  consomme: ['Ciblage : la marque saute au premier headshot', ['oui', 'non']],
+  pctlien: [
+    "Lien parasitaire : % des soins du porteur qui partent chez l'adversaire (50 par défaut)",
+    'n',
+  ],
+  matq: ['Mutation niveau I : ATQ en plus (unité ci-dessous)', 'n'],
+  mpv: ['Mutation niveau I : PV en plus (unité ci-dessous)', 'n'],
+  mreduc: ['Mutation niveau II : réduction des dégâts subis (%)', 'n'],
+  msaignch: ['Mutation niveau II : chance de faire saigner à chaque coup (%, 100 si vide)', 'n'],
+  msaignpct: [
+    'Mutation niveau II : saignement, % des PV max par tour (0 = pas de saignement)',
+    'n',
+  ],
+  msaigntours: ['Mutation niveau II : saignement, nombre de tours (2 par défaut)', 'n'],
+  mesq: ['Mutation niveau III : esquive en plus (%)', 'n'],
+  lientours: [
+    "Mutation niveau III : tours du lien parasitaire sur l'adversaire (3 par défaut)",
+    'n',
+  ],
+  mueatq: ['Mue : ATQ perdue (10 % si vide)', 'n'],
+  uatq: ["Mue : unité de l'ATQ perdue", ['pct', 'pts']],
+  muepv: ['Mue : PV max perdus (10 % si vide)', 'n'],
+  upv: ['Mue : unité des PV perdus', ['pct', 'pts']],
+  quand: ['Réaction : se déclenche quand la carte', ['degats', 'statut']],
+  stat: [
+    'Réaction : stat qui augmente (ATQ, PV, esquive %, chance de bloquer un coup %, réduction des dégâts %)',
+    ['atq', 'pv', 'esquive', 'blocage', 'reduc'],
+  ],
+  plafond: ['Réaction : plafond du gain total (vide ou 0 = aucun)', 'n'],
 } as const satisfies Record<string, Field>;
 
 export type FieldKey = keyof typeof EDITOR_FIELDS;
@@ -251,6 +281,49 @@ export const EDITOR_PASSIVES: Record<PassiveType, EditorEntry> = {
     'À X % de chances, fait sonner le Glas (ombre de la mort qui avance de X % des PV max par tour)',
     'chance',
     'glasv',
+  ],
+  headshot: [
+    'Headshot : à X % de chances, chaque coup ajoute X % de son ATQ en dégâts (coup critique, avant blocage et réductions)',
+    'chance',
+    'pctcrit',
+  ],
+  lien_parasite: [
+    'Lien parasitaire : à X % de chances, chaque coup pose un lien pendant X tours (X % des soins de la cible lui reviennent)',
+    'chance',
+    'tours',
+    'pctlien',
+  ],
+  mutation: [
+    "Mutation insecte : +1 niveau (3 max) à chaque statut négatif reçu et après 4 tours sans statut. I : ATQ et PV en plus · II : réduction des dégâts et saignement à l'attaque · III : mue instantanée, esquive en plus et lien parasitaire sur l'adversaire (valeurs de mue vides = celles du passif Mue de la carte, sinon 10 %)",
+    'matq',
+    'mpv',
+    'u',
+    'mreduc',
+    'msaignch',
+    'msaignpct',
+    'msaigntours',
+    'mesq',
+    'lientours',
+    'pctlien',
+    'mueatq',
+    'uatq',
+    'muepv',
+    'upv',
+  ],
+  mue: [
+    "Mue : déclenchée par une marque d'exécution ou 2 tours de suite avec un statut négatif ; 2 tours plus tard, la carte mue (statuts, marques, ciblage et lien retirés) mais perd de l'ATQ et des PV",
+    'mueatq',
+    'uatq',
+    'muepv',
+    'upv',
+  ],
+  reaction: [
+    'Réaction : quand la carte subit des dégâts (ou reçoit un statut négatif), une stat au choix augmente, avec un plafond',
+    'quand',
+    'stat',
+    'val',
+    'u',
+    'plafond',
   ],
 };
 
@@ -439,6 +512,23 @@ export const EDITOR_ULTIMATES: { readonly [K in EffectType]?: EditorEntry } = {
     "Glas : une ombre de la mort avance de X % des PV max par tour (pas d'évite la mort ni de réanimation)",
     'ciblem',
     'glasv',
+  ],
+  ciblage: [
+    "Ciblage : X % de chances de prendre l'adversaire pour cible pendant X tours (chaque coup sur lui est un headshot)",
+    'chance',
+    'tours',
+    'pctcrit',
+    'consomme',
+  ],
+  brume: [
+    "Brume : X % de chances de s'entourer de brume X tours (statuts négatifs dissipés ; relancée : vent tourné, renvoie le prochain statut)",
+    'chance',
+    'tours',
+  ],
+  lien_parasite: [
+    "Lien parasitaire sur l'adversaire pendant X tours (X % de ses soins reviennent à ta carte)",
+    'tours',
+    'pctlien',
   ],
 };
 
@@ -703,6 +793,21 @@ export const EDITOR_MAGICS: { readonly [K in EffectType]?: EditorEntry } = {
     'Attaque de base : X % de chances de faire sonner le Glas (X % des PV max par tour)',
     'chance',
     'glasv',
+  ],
+  atk_headshot: [
+    "Attaque de base : X % de chances de faire un headshot (+X % de l'ATQ en dégâts, avant blocage et réductions)",
+    'chance',
+    'pctcrit',
+  ],
+  brume: [
+    "Brume : X % de chances de s'entourer de brume X tours (statuts négatifs dissipés ; relancée : vent tourné, renvoie le prochain statut)",
+    'chance',
+    'tours',
+  ],
+  lien_parasite: [
+    "Lien parasitaire sur l'adversaire pendant X tours (X % de ses soins reviennent à ta carte)",
+    'tours',
+    'pctlien',
   ],
 };
 

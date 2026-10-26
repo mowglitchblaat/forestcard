@@ -38,6 +38,9 @@ import { effects as theft } from '../mechanics/theft.ts';
 import { effects as transcendence } from '../mechanics/transcendence.ts';
 import { effects as trapImmunity } from '../mechanics/trap-immunity.ts';
 import { effects as knell } from '../mechanics/knell.ts';
+import { effects as headshot } from '../mechanics/headshot.ts';
+import { effects as mist } from '../mechanics/mist.ts';
+import { effects as parasite } from '../mechanics/parasite.ts';
 import { effects as ultimates } from '../mechanics/ultimates.ts';
 import type { EffectData } from '../model/card.ts';
 import type { EffectType } from '../model/types.ts';
@@ -68,10 +71,13 @@ export const rules = (): Record<EffectType, EffectRule> =>
     ...fatigue,
     ...fracture,
     ...frost,
+    ...headshot,
     ...healing,
     ...knell,
     ...lifeSteal,
     ...magicCancel,
+    ...mist,
+    ...parasite,
     ...programming,
     ...purification,
     ...rage,

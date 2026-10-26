@@ -9,6 +9,7 @@ import type { EffectContext, EffectRules } from '../combat/effect-context.ts';
 import type { Flow } from '../combat/flow.ts';
 import type { Side } from '../combat/state.ts';
 import type { EffectData } from '../model/card.ts';
+import { mistTakes } from './mist.ts';
 
 export type CurseReturn = { amount: number; turns: number };
 export type Curse = { amount: number; turns: number; duration: number };
@@ -22,6 +23,7 @@ export type CurseState = {
 export const curseState = (): CurseState => ({ atqLostToCurses: 0, curseReturns: [], curses: [] });
 
 export function curse(c: Combat, dst: Side, amount: number, turns: number): void {
+  if (mistTakes(c, dst, 'curse', (t) => curse(c, t, amount, turns))) return;
   let current = dst.status.curses[0];
   const stacked = !!current;
   if (current) {

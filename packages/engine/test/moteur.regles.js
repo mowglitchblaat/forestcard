@@ -942,3 +942,109 @@ test('cumul : un passif et une magie qui donnent le même effet à l\'attaque ad
     assert.deepEqual(poses, attaques, '50 % + 50 % = 100 % : chaque attaque empoisonne, une seule fois');
   }
 });
+
+// ================= Headshot, ciblage, brume, lien parasitaire, mutation, mue, réaction =================
+
+const degatsAttaque = (r, c) => r.journal.filter(e => e.t === 'degats' && e.c === c && !e.k);
+
+test('headshot : à 100 %, chaque coup ajoute X % de l\'ATQ (50 % par défaut), avant les réductions', () => {
+  const r = combat([C('Sniper', 10, SOLIDE, { passif: { type: 'headshot', chance: 100 } })], [C('Cible', 0, SOLIDE)], { regles: { maxTours: 3, maxProlong: 0 } });
+  const hs = lignes(r, e => e.k === 'headshot');
+  assert.ok(hs.length >= 3);
+  assert.ok(hs.every(e => e.n === 5 && e.c === 0 && e.cible === 1));
+  assert.ok(degatsAttaque(r, 1).every(e => e.n === 15));
+});
+
+test('headshot : à 0 %, aucun coup critique', () => {
+  const r = combat([C('Sniper', 10, SOLIDE, { passif: { type: 'headshot', chance: 0, pctcrit: 100 } })], [C('Cible', 0, SOLIDE)], { regles: { maxTours: 4, maxProlong: 0 } });
+  assert.equal(lignes(r, e => e.k === 'headshot').length, 0);
+  assert.ok(degatsAttaque(r, 1).every(e => e.n === 10));
+});
+
+test('ciblage : la cible verrouillée prend un headshot à chaque coup, et la marque saute au premier (par défaut)', () => {
+  const ult = (x = {}) => ({ type: 'ciblage', tours: 3, pctcrit: 100, apres_tours: 1, utilisations: 1, ...x });
+  const r = combat([C('Chasseur', 10, SOLIDE, { ultime: ult() })], [C('Proie', 0, SOLIDE)], { regles: { maxTours: 4, maxProlong: 0 } });
+  assert.equal(lignes(r, e => e.k === 'cible' && e.t === 'statut').length, 1);
+  const hs = lignes(r, e => e.k === 'headshot');
+  assert.equal(hs.length, 1, 'la marque saute au premier headshot');
+  assert.equal(hs[0].n, 10);
+  const r2 = combat([C('Chasseur', 10, SOLIDE, { ultime: ult({ consomme: 'non' }) })], [C('Proie', 0, SOLIDE)], { regles: { maxTours: 6, maxProlong: 0 } });
+  assert.equal(lignes(r2, e => e.k === 'headshot').length, 3, 'consomme non : un headshot par tour de ciblage');
+  assert.ok(lignes(r2, e => e.t === 'finstatut' && e.k === 'cible').length === 1);
+});
+
+test('brume niveau 1 : les statuts négatifs sont dissipés', () => {
+  const r = combat([C('Brumeux', 0, SOLIDE, { ultime: { type: 'brume', tours: 50, apres_tours: 1, utilisations: 1 } })],
+    [C('Venin', 1, SOLIDE, { passif: { type: 'poison', chance: 100, degtour: 3, tours: 2 } })], { regles: { maxTours: 5, maxProlong: 0 } });
+  const brume = r.journal.findIndex(e => e.k === 'brume' && e.t === 'statut');
+  assert.ok(brume >= 0);
+  assert.ok(lignes(r, e => e.k === 'brume_bloque').length > 0);
+  assert.ok(!r.journal.slice(brume).some(e => e.t === 'statut' && e.k === 'poison' && e.c === 0), 'aucun poison après la brume');
+});
+
+test('brume niveau 2 (vent tourné) : brume relancée, le statut suivant est renvoyé puis la brume se dissipe', () => {
+  const r = combat([C('Brumeux', 0, SOLIDE, { ultime: { type: 'brume', tours: 50, apres_tours: 1, utilisations: 2, delai_tours: 0 } })],
+    [C('Venin', 1, SOLIDE, { passif: { type: 'poison', chance: 100, degtour: 3, tours: 2 } })], { regles: { maxTours: 6, maxProlong: 0 } });
+  const montee = r.journal.findIndex(e => e.k === 'brume' && e.n === 2);
+  assert.ok(montee >= 0, 'la brume passe au niveau 2');
+  const renvoi = r.journal.findIndex((e, k) => k > montee && e.k === 'brume_renvoi');
+  assert.ok(renvoi > montee);
+  assert.equal(r.journal[renvoi + 1].t, 'finstatut');
+  assert.ok(r.journal.slice(renvoi).some(e => e.t === 'statut' && e.k === 'poison' && e.c === 1), 'le poison est renvoyé à Venin');
+});
+
+test('lien parasitaire : le porteur partage X % de ses soins avec l\'adversaire', () => {
+  const r = combat([C('Tique', 0, 1000, { ultime: { type: 'lien_parasite', tours: 5, pctlien: 50, apres_tours: 1, utilisations: 1 } }), MAG('Saignée', { type: 'degats', val: 500 })],
+    [C('Hôte', 0, 1000, { passif: { type: 'soin_tour', val: 20 } })], { regles: { maxTours: 4, maxProlong: 0 } });
+  const fed = lignes(r, e => e.k === 'lien_soin');
+  assert.ok(fed.length > 0);
+  assert.ok(fed.every(e => e.c === 1 && e.to === 0 && e.n === 10));
+  const k = r.journal.indexOf(fed[0]);
+  assert.deepEqual([r.journal[k - 1].t, r.journal[k - 1].c, r.journal[k - 1].n], ['soin', 1, 10], 'l\'hôte ne garde que la moitié');
+});
+
+test('mutation : +1 niveau à chaque statut reçu (3 max), niveau I = ATQ et PV en plus, niveau III = mue', () => {
+  const mut = { type: 'mutation', matq: 5, mpv: 50, mreduc: 20, mesq: 10, lientours: 2 };
+  const r = combat([C('Cafard', 10, SOLIDE, { passif: mut })],
+    [C('Venin', 1, SOLIDE, { passif: { type: 'poison', chance: 100, degtour: 1, tours: 1 } })], { regles: { maxTours: 5, maxProlong: 0 } });
+  const niv = lignes(r, e => e.k === 'mutation').map(e => e.niv);
+  assert.deepEqual(niv, [1, 2, 3]);
+  const i1 = r.journal.findIndex(e => e.k === 'mutation');
+  assert.equal(r.journal[i1 + 1].atq[0], 15);
+  assert.ok(lignes(r, e => e.k === 'mue').length === 1, 'niveau III : mue instantanée');
+  assert.ok(lignes(r, e => e.k === 'lien' && e.t === 'statut' && e.c === 1).length === 1, 'niveau III : lien sur l\'adversaire');
+});
+
+test('mutation : 4 tours de suite sans statut font aussi monter d\'un niveau', () => {
+  const r = combat([C('Cafard', 10, SOLIDE, { passif: { type: 'mutation', matq: 5 } })], [C('Calme', 1, SOLIDE)], { regles: { maxTours: 9, maxProlong: 0 } });
+  const niv = lignes(r, e => e.k === 'mutation');
+  assert.deepEqual(niv.map(e => e.niv), [1, 2]);
+});
+
+test('mue : une marque d\'exécution lance la mue, 2 tours plus tard la carte mue (marques et statuts retirés, ATQ et PV perdus)', () => {
+  const r = combat([C('Mante', 20, 1000, { passif: { type: 'mue', mueatq: 5, uatq: 'pts', muepv: 100, upv: 'pts' } })],
+    [C('Bourreau', 1, SOLIDE, { passif: { type: 'execution', chance: 100 } })], { regles: { maxTours: 4, maxProlong: 0 } });
+  const debut = r.journal.findIndex(e => e.k === 'mue_debut');
+  const mue = r.journal.findIndex(e => e.k === 'mue');
+  assert.ok(debut >= 0 && mue > debut);
+  const apres = r.journal.slice(mue, mue + 8);
+  assert.ok(apres.some(e => e.t === 'finstatut' && e.k === 'marque' && e.n === 0));
+  assert.ok(apres.some(e => e.k === 'mod' && e.d === -5));
+  assert.ok(apres.some(e => e.k === 'mod' && e.d === -100));
+});
+
+test('réaction : quand la carte subit des dégâts, la stat choisie monte, jusqu\'au plafond', () => {
+  const r = combat([C('Hérisson', 1, SOLIDE, { passif: { type: 'reaction', quand: 'degats', stat: 'atq', val: 2, plafond: 5 } })],
+    [C('Frappeur', 10, SOLIDE)], { regles: { maxTours: 6, maxProlong: 0 } });
+  const gains = lignes(r, e => e.k === 'mod' && e.c === 0 && /réaction/.test(e.txt));
+  assert.deepEqual(gains.map(e => e.d), [2, 2, 1]);
+  assert.equal(r.journal.at(-1).atq[0], 6);
+});
+
+test('réaction : réduction des dégâts gagnée sur les coups suivants', () => {
+  const r = combat([C('Tortue', 1, SOLIDE, { passif: { type: 'reaction', quand: 'degats', stat: 'reduc', val: 50, plafond: 50 } })],
+    [C('Frappeur', 10, SOLIDE)], { regles: { maxTours: 4, maxProlong: 0 } });
+  const coups = degatsAttaque(r, 0).map(e => e.n);
+  assert.equal(coups[0], 10);
+  assert.ok(coups.slice(1).every(n => n === 5));
+});

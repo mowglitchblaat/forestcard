@@ -16,6 +16,7 @@ import type { EffectContext, EffectRules } from '../combat/effect-context.ts';
 import type { Flow } from '../combat/flow.ts';
 import type { Side } from '../combat/state.ts';
 import type { EffectData, Num } from '../model/card.ts';
+import { mistTakes } from './mist.ts';
 
 export type Knell = { threshold: number; speed: number; tolls: number; skulls: number };
 
@@ -34,6 +35,7 @@ const round1 = (n: number): number => Math.round(n * 10) / 10;
 // The knell tolls for d (or tolls again, faster).
 export function toll(c: Combat, d: Side, speed: number): void {
   if (d.hp <= 0 || speed <= 0) return;
+  if (mistTakes(c, d, 'knell', (t) => toll(c, t, speed))) return;
   const k = d.status.knell;
   if (!k) d.status.knell = { threshold: 0, speed: round1(speed), tolls: 1, skulls: 3 };
   else {

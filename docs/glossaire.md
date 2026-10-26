@@ -107,6 +107,10 @@ Clés de `EFFECT_TYPES`, exécutées par `applyEffect` (`packages/engine/src/com
 | `esquive_mod` | esquive ± X % | `dodge.ts` |
 | `aleatoire` | tire un effet au hasard parmi 45 (`POOL`), une ou plusieurs fois | `random.ts` |
 | `atk_fatigue`, `atk_detonation`, `atk_enchainement`, `atk_brulure`, `atk_poison`, `atk_etourdir`, `atk_saignement`, `atk_malediction`, `atk_fracture`, `atk_gel`, `atk_glas` | donnent à l'attaque de base le passif du même nom (sans `atk_`) (retiré avec la magie si elle est annulée ou détruite). Plusieurs sources du même effet sur une carte (passif + magie, deux magies…) n'en font qu'une : leurs chances s'additionnent (100 % au plus), un seul tirage par coup, et les valeurs (durée, dégâts…) sont celles d'une des sources, tirée au prorata de sa chance, comme pour l'étourdissement (`combat/sources.ts`). Hors enchaînement, où chaque source retente seule | `attack-effects.ts` |
+| `atk_headshot` | donne à l'attaque de base le passif `headshot` (chances additionnées avec le passif) | `headshot.ts`, `attack-effects.ts` |
+| `ciblage` | **ciblage** (ultime) : `chance` % (100 si vide) de marquer l'adversaire pendant `tours` tours de la carte qui l'a marqué ; chaque coup de cette carte sur lui est un **headshot** (`pctcrit` % de son ATQ, 50 si vide, ou le plus haut de ses headshots). `consomme` : la marque saute au premier headshot (`oui` par défaut) ou reste jusqu'à la fin de ses tours (`non`). Une mue la retire | `headshot.ts` |
+| `brume` | **brume** : `chance` % (100 si vide) de s'entourer de brume pendant `tours` de ses tours. Niveau 1 : tout statut négatif posé sur la carte (malédiction, saignement, poison, brûlure, gel, Glas, fracture, étourdissement, fatigue, lien parasitaire) se dissipe. Relancée sur une carte déjà embrumée : niveau 2, **vent tourné** : le prochain statut est renvoyé à l'adversaire, puis la brume se dissipe. La fatigue qui suit une rage n'est pas concernée. Une brume de magie part avec la magie | `mist.ts` |
+| `lien_parasite` | **lien parasitaire** sur l'adversaire (le porteur) pendant `tours` de ses tours (3 si vide) : `pctlien` % (50 si vide) de chacun de ses soins part chez l'autre carte au lieu de le soigner. Un statut négatif : la brume le prend, la mue le retire | `parasite.ts` |
 
 ## Passifs
 
@@ -136,6 +140,11 @@ Clés de `PASSIVE_TYPES`, lues par le moteur au moment indiqué.
 | `detonation` | à chaque coup, `chance` % de faire détoner les statuts de la cible (comme l'effet `detonation`), avant de poser les nouveaux statuts du coup | `detonation.ts` |
 | `programmation` | à chacun de ses tours, avant l'attaque, `chance` % de lancer une programmation. Les `nbpassif` premières sont passives (la carte acquiert au hasard un passif de `passifs` ou un ultime de `ultimes`, qui dort), ensuite 50 % passive / 50 % active. Active : les passifs programmés s'activent pour toujours, et tous les ultimes programmés se lancent. Sans liste (`passifs` et `ultimes` vides), la programmation passive tire au hasard parmi tous les passifs du jeu (50 %) ou tous les ultimes (le pool de l'effet aléatoire), avec des valeurs adaptées aux cartes. `lib` : le nom d'un effet programmé, donné par l'admin | `programming.ts` |
 | `reanimation` | revient après la mort (une fois) | `revive.ts` |
+| `headshot` | **headshot** (coup critique) : `chance` % (100 si vide) à chaque coup d'ajouter `pctcrit` % de son ATQ (50 si vide) aux dégâts du coup, juste après sa puissance, avant blocage et réductions. Un ciblage le force | `headshot.ts` |
+| `lien_parasite` | `chance` % à chaque coup de poser un lien parasitaire sur la cible (`tours`, `pctlien`) | `parasite.ts` |
+| `mutation` | **mutation insecte** : +1 niveau (3 au plus, pour tout le combat) à chaque statut négatif reçu, et après 4 de ses tours de suite sans statut négatif. Chaque niveau s'ajoute aux précédents. I : ATQ +`matq`, PV +`mpv` (unité `u`). II : dégâts subis −`mreduc` %, et son attaque fait saigner (`msaignch` % de chances, 100 si vide ; `msaignpct` % des PV max par tour ; `msaigntours` tours, 2 si vide). III : **mue instantanée** (valeurs `mueatq`/`muepv` de la mutation, sinon celles du passif `mue`, sinon 10 %), esquive +`mesq` %, lien parasitaire sur l'adversaire (`lientours`, `pctlien`) | `insect.ts` |
+| `mue` | **mue** : commence quand la carte reçoit une marque d'exécution, ou après 2 de ses tours de suite finis avec un statut négatif ; 2 tours plus tard, au début de son tour (avant l'attaque), la carte mue : statuts négatifs (étourdissement compris), marques d'exécution, ciblage et lien parasitaire retirés, et elle perd `mueatq` d'ATQ (`uatq`) et `muepv` de PV max (`upv`), 10 % si vide. Elle peut muer de nouveau | `insect.ts` |
+| `reaction` | **réaction** : quand la carte subit des dégâts (`quand` : `degats`) ou reçoit un statut négatif (`statut`), la stat `stat` monte de `val` : `atq`, `pv` (unité `u`), `esquive`, `blocage` (chance de bloquer un coup, 75 % au plus), `reduc` (réduction des dégâts des coups, 90 % au plus), en points de % pour ces trois. `plafond` : gain total maximum (vide ou 0 : aucun) | `reaction.ts` |
 
 ## Conditions de piège
 
@@ -217,3 +226,8 @@ ATQ boostée (affichage) : l'ATQ finale d'un coup montrée en direct sur la cart
 | étourdissement | `stunTurns` | `statusEnded: 'stun'` |
 | attaque bloquée | `nextAttackBlocked` (legacy : `blk`) | consommée par la prochaine attaque, souffle ou missile ; retirée par une purification |
 | solidification | `solidTurns` | `statusEnded: 'solid'` |
+| ciblage (sur la carte ciblée) | `targeted` | `targetEnded` |
+| brume | `mist` (`level` 1 ou 2) | `mistFaded` |
+| lien parasitaire (sur le porteur) | `parasite` | `parasiteEnded` |
+| mutation, mue | `mutationLevel`, `quietTurns`, `statusTurns`, `moltTurns` | `molted` |
+| défenses gagnées | `armorPct` (réduction %), `blockChance` (blocage %) | aucun : pour tout le combat |

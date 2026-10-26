@@ -11,6 +11,7 @@ import type { Flow } from '../combat/flow.ts';
 import type { Side } from '../combat/state.ts';
 import type { EffectData } from '../model/card.ts';
 import { statusDamageMarks } from './execution.ts';
+import { mistTakes } from './mist.ts';
 
 export type Bleed = { pct: number; healReduction: number; turns: number };
 
@@ -27,6 +28,7 @@ export function bleed(
   healReduction: number,
   turns: number,
 ): void {
+  if (mistTakes(c, dst, 'bleed', (t) => bleed(c, t, pct, healReduction, turns))) return;
   let current = dst.status.bleeds[0];
   const stacked = !!current;
   if (current) {

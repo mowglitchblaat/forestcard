@@ -9,6 +9,7 @@ import type {
   Card,
   CombatView,
   DomainEvent,
+  MistedStatus,
   ProgrammedDraw,
   RandomEffectKey,
   RandomPassiveKey,
@@ -91,6 +92,21 @@ const ATTACK_EFFECT_VERBS: Record<string, string> = {
   malediction: 'maudire',
   fracture: 'fracturer',
   gel: 'geler',
+  headshot: 'faire un headshot',
+};
+
+// The statuses a mist takes, with their article.
+const MISTED_ART: Record<MistedStatus, string> = {
+  curse: 'la malédiction',
+  bleed: 'le saignement',
+  poison: 'le poison',
+  burn: 'la brûlure',
+  frost: 'le gel',
+  knell: 'le Glas',
+  fracture: 'la fracture',
+  stun: "l'étourdissement",
+  fatigue: 'la fatigue',
+  parasite: 'le lien parasitaire',
 };
 
 // Explosion mark, written as an escape: the source stays emoji-free.
@@ -694,6 +710,12 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
           return { t: 'stat', txt: `${who} +${d} (malédiction levée)`, o: mod };
         case 'statusesLeft':
           return { t: 'stat', txt: `${who} +${d} (statuts partis)`, o: mod };
+        case 'mutation':
+          return { t: 'stat', txt: `${who} +${d} (mutation)`, o: mod };
+        case 'reaction':
+          return { t: 'stat', txt: `${who} +${d} (réaction)`, o: mod };
+        case 'molt':
+          return { t: 'stat', txt: `${who} −${-d} (mue)`, o: mod };
       }
       return null;
     }
@@ -1092,6 +1114,118 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
         txt: `ULTIME programmé de ${name(e.side)} : ${programLabel(e.label, e.effectType, e.drawn)} !`,
         o: { c: e.side },
       };
+
+    // ── Headshot, targeting ──
+    case 'headshot':
+      return {
+        t: 'statut',
+        txt: `HEADSHOT de ${name(e.side)} : +${e.bonus} dégâts${e.forced ? ' (cible verrouillée)' : ''} !`,
+        o: { c: e.side, k: 'headshot', cible: e.target, n: e.bonus },
+      };
+    case 'targeted':
+      return {
+        t: 'statut',
+        txt: `${name(e.by)} prend ${name(e.side)} pour cible (${turns(e.turns)}) : ses coups seront des headshots${e.consume ? ' (la marque saute au premier)' : ''}`,
+        o: { c: e.side, k: 'cible', from: e.by, n: e.turns },
+      };
+    case 'targetMissed':
+      return {
+        t: 'statut',
+        txt: `${name(e.by)} manque sa cible`,
+        o: { c: e.side, k: 'cible_rate', from: e.by },
+      };
+    case 'targetEnded':
+      return {
+        t: 'finstatut',
+        txt: `${name(e.side)} n'est plus ciblé`,
+        o: { c: e.side, k: 'cible' },
+      };
+
+    // ── Mist ──
+    case 'mistRaised':
+      return {
+        t: 'statut',
+        txt:
+          e.level >= 2
+            ? `La brume de ${name(e.side)} tourbillonne : vent tourné (le prochain statut sera renvoyé, ${turns(e.turns)})`
+            : `${name(e.side)} s'entoure de brume : protégé des statuts négatifs (${turns(e.turns)})`,
+        o: { c: e.side, k: 'brume', n: e.level },
+      };
+    case 'mistMissed':
+      return {
+        t: 'statut',
+        txt: `La brume de ${name(e.side)} ne prend pas`,
+        o: { c: e.side, k: 'brume_rate' },
+      };
+    case 'mistBlocked':
+      return {
+        t: 'statut',
+        txt: `La brume protège ${name(e.side)} : ${MISTED_ART[e.status]} se dissipe !`,
+        o: { c: e.side, k: 'brume_bloque', s: e.status },
+      };
+    case 'mistReturned':
+      return {
+        t: 'statut',
+        txt: `Vent tourné ! La brume de ${name(e.side)} renvoie ${MISTED_ART[e.status]} à ${name(e.to)}`,
+        o: { c: e.side, k: 'brume_renvoi', to: e.to, s: e.status },
+      };
+    case 'mistFaded':
+      return {
+        t: 'finstatut',
+        txt: `La brume de ${name(e.side)} se dissipe`,
+        o: { c: e.side, k: 'brume' },
+      };
+
+    // ── Parasitic link ──
+    case 'parasiteLinked':
+      return {
+        t: 'statut',
+        txt: e.stacked
+          ? `Le lien parasitaire de ${name(e.side)} se resserre (${turns(e.turns)})`
+          : `Un lien parasitaire s'accroche à ${name(e.side)} : ${e.pct} % de ses soins iront à ${name(e.to)} (${turns(e.turns)})`,
+        o: { c: e.side, k: 'lien', to: e.to, n: e.turns },
+      };
+    case 'parasiteFed':
+      return {
+        t: 'statut',
+        txt: `Le lien parasitaire détourne ${e.amount} PV de soin de ${name(e.side)} vers ${name(e.to)}`,
+        o: { c: e.side, k: 'lien_soin', to: e.to, n: e.amount },
+      };
+    case 'parasiteEnded':
+      return {
+        t: 'finstatut',
+        txt: `Le lien parasitaire de ${name(e.side)} se détache`,
+        o: { c: e.side, k: 'lien' },
+      };
+
+    // ── Insect mutation, molt ──
+    case 'mutated':
+      return {
+        t: 'statut',
+        txt: `${name(e.side)} MUTE (niveau ${['I', 'II', 'III'][e.level - 1]}) !`,
+        o: { c: e.side, k: 'mutation', niv: e.level },
+      };
+    case 'moltStarted':
+      return {
+        t: 'statut',
+        txt: `${name(e.side)} entre en mue (${e.cause === 'mark' ? "marque d'exécution" : 'statuts'}) : elle aura lieu dans ${turns(e.turns)}`,
+        o: { c: e.side, k: 'mue_debut', n: e.turns },
+      };
+    case 'molted':
+      return {
+        t: 'statut',
+        txt: `${name(e.side)} MUE${e.instant ? ' instantanément' : ''} : statuts et marques retirés !`,
+        o: { c: e.side, k: 'mue' },
+      };
+    case 'defenseChanged': {
+      const d = e.delta;
+      if (d === 0) return null;
+      return {
+        t: 'stat',
+        txt: `${e.kind === 'block' ? 'Chance de blocage' : 'Réduction des dégâts'} de ${name(e.side)} +${d} %`,
+        o: { c: e.side, k: 'defense', s: e.kind, d },
+      };
+    }
 
     case 'transcended':
       return {

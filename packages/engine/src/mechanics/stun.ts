@@ -8,6 +8,8 @@ import type { Attack } from '../combat/attack.ts';
 import { emit, id, raw, roll, type Combat } from '../combat/combat.ts';
 import type { EffectContext, EffectRules } from '../combat/effect-context.ts';
 import type { Flow, StrikeFlow } from '../combat/flow.ts';
+import type { Side } from '../combat/state.ts';
+import { mistTakes } from './mist.ts';
 
 // Its part of a card's status (combat/state.ts).
 export type StunState = {
@@ -49,13 +51,19 @@ export function stunOnHit(c: Combat, { a, d }: Attack): StrikeFlow {
     }
     u -= q.chance;
   }
-  const turns = Math.max(1, parseInt(String(source.tours), 10) || 1);
-  if (d.status.solidTurns > 0) emit(c, { type: 'stunBlockedBySolid', side: id(c, d) });
-  else {
-    d.status.stunTurns = Math.max(d.status.stunTurns, turns);
-    emit(c, { type: 'stunned', side: id(c, d), turns, by: 'attack' });
-  }
+  layStun(c, d, Math.max(1, parseInt(String(source.tours), 10) || 1), 'attack');
   return undefined;
+}
+
+// Lays a stun on M: a mist takes it, a solidification blocks it.
+export function layStun(c: Combat, M: Side, turns: number, by: 'effect' | 'attack'): void {
+  if (mistTakes(c, M, 'stun', (t) => layStun(c, t, turns, by))) return;
+  if (M.status.solidTurns > 0) {
+    emit(c, { type: 'stunBlockedBySolid', side: id(c, M) });
+    return;
+  }
+  M.status.stunTurns = Math.max(M.status.stunTurns, turns);
+  emit(c, { type: 'stunned', side: id(c, M), turns, by });
 }
 
 // X attempts in a row, the first success is enough; empty chance = 100 %.
@@ -70,12 +78,7 @@ export function stunEffect({ c, e, statusTarget }: EffectContext): void {
     emit(c, { type: 'stunResisted', side: id(c, M), chance, attempts });
     return;
   }
-  if (M.status.solidTurns > 0) {
-    emit(c, { type: 'stunBlockedBySolid', side: id(c, M) });
-    return;
-  }
-  M.status.stunTurns = Math.max(M.status.stunTurns, turns);
-  emit(c, { type: 'stunned', side: id(c, M), turns, by: 'effect' });
+  layStun(c, M, turns, 'effect');
 }
 
 // Its effects (the registry of effects.ts).

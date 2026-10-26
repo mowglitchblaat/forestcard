@@ -65,6 +65,10 @@ export const EFFECT_TYPES = [
   'missiles',
   'atk_detonation',
   'programmation',
+  'atk_headshot',
+  'ciblage',
+  'brume',
+  'lien_parasite',
 ] as const;
 export type EffectType = (typeof EFFECT_TYPES)[number];
 
@@ -100,6 +104,11 @@ export const PASSIVE_TYPES = [
   'programmation',
   'detonation',
   'glas',
+  'headshot',
+  'lien_parasite',
+  'mutation',
+  'mue',
+  'reaction',
 ] as const;
 export type PassiveType = (typeof PASSIVE_TYPES)[number];
 

@@ -196,8 +196,48 @@ const PASSIVE_TEXT: Record<PassiveType, (p: Fx, x: PassiveContext) => string> = 
     `À chacun de ses tours, ${c < 100 ? c + ' % de chances de se solidifier' : 'se solidifie'} pendant ${trs(T)} de l'adversaire (insensible à l'étourdissement, ne se purge pas, brisée par une fracture ; détonations et missiles ne lui font que la moitié des dégâts de statuts)`,
   fracture: (p, { c, T }) =>
     `${c} % de chances de fracturer la cible (${nz(p.fchance)} % de se blesser de ${nz(p.degfrac)} PV en attaquant, ${trs(T)})`,
+  headshot: (p, { c }) => headshotText(p, c),
+  lien_parasite: (p, { c }) =>
+    `${c} % de chances, à chaque coup, de poser un lien parasitaire sur la cible pendant ${trs(nz(p.tours) || 3)} : ${linkPct(p)} % de ses soins lui reviennent`,
+  mutation: (p) => mutationText(p),
+  mue: (p) =>
+    `Mue : quand la carte reçoit une marque d'exécution, ou après 2 tours de suite avec un statut négatif, elle entre en mue ; 2 tours plus tard, au début de son tour, elle mue : statuts négatifs (étourdissement compris), marques d'exécution, ciblage et lien parasitaire retirés, mais ${moltLoss(p)}`,
+  reaction: (p) => reactionText(p),
   glas: (p, { c }) =>
     `${c} % de chances de faire sonner le Glas : une ombre avance sur la vie de la cible de ${nz(p.glasv)} % de ses PV max par tour ; quand ses PV passent dessous, la mort l'emporte (pas d'évite la mort ni de réanimation ; 3 purifications pour l'effacer)`,
+};
+
+// Headshot, mist, parasitic link, mutation, molt, reaction (engine: mechanics/headshot.ts, mist.ts,
+// parasite.ts, insect.ts, reaction.ts).
+const critOf = (e: Fx) => (isEmpty(e.pctcrit) ? 50 : nz(e.pctcrit));
+const linkPct = (e: Fx) => (isEmpty(e.pctlien) ? 50 : Math.min(100, nz(e.pctlien)));
+const headshotText = (e: Fx, c: number) =>
+  `${c < 100 ? c + ' % de chances, à chaque coup, de faire' : 'Chaque coup fait'} un HEADSHOT : +${critOf(e)} % de son ATQ en dégâts, avant blocage et réductions`;
+const lossAmt = (v: unknown, u: unknown) => (isEmpty(v) ? '10 %' : `${nz(v)}${upc(u)}`);
+const moltLoss = (e: Fx) =>
+  `perd ${lossAmt(e.mueatq, e.uatq)} d'ATQ et ${lossAmt(e.muepv, e.upv)} de PV max`;
+const mutationText = (p: Fx) => {
+  const L2 = [
+    nz(p.mreduc) ? `dégâts subis −${nz(p.mreduc)} %` : '',
+    nz(p.msaignpct)
+      ? `son attaque fait saigner (${isEmpty(p.msaignch) ? 100 : nz(p.msaignch)} % de chances, ${nz(p.msaignpct)} % des PV max par tour, ${trs(nz(p.msaigntours) || 2)})`
+      : '',
+  ].filter(Boolean);
+  const own = !isEmpty(p.mueatq) || !isEmpty(p.muepv);
+  return `Mutation insecte : monte d'un niveau (3 max) à chaque statut négatif reçu et après 4 tours de suite sans statut négatif. I : ATQ +${nz(p.matq)}${upc(p.u)} et PV +${nz(p.mpv)}${upc(p.u)} · II : ${L2.join(', ') || 'rien de plus'} · III : mue instantanée${own ? ` (${moltLoss(p)})` : ''}, esquive +${nz(p.mesq)} % et lien parasitaire sur l'adversaire (${trs(nz(p.lientours) || 3)}, ${linkPct(p)} % de ses soins pour elle)`;
+};
+const REACTION_STATS: Record<string, string> = {
+  atq: 'ATQ',
+  pv: 'PV max',
+  esquive: 'esquive',
+  blocage: 'chance de bloquer un coup',
+  reduc: 'réduction des dégâts',
+};
+const reactionText = (p: Fx) => {
+  const stat = String(p.stat || 'atq');
+  const unit = stat === 'atq' || stat === 'pv' ? upc(p.u) : ' %';
+  const cap = nz(p.plafond);
+  return `Quand elle ${p.quand === 'statut' ? 'reçoit un statut négatif' : 'subit des dégâts'} : ${REACTION_STATS[stat] ?? stat} +${nz(p.val)}${unit}${cap > 0 ? ` (${cap}${unit === ' %' ? ' %' : ''} au total au maximum)` : ''}`;
 };
 
 export function fxPassif(passive: Fx): string {
@@ -387,6 +427,18 @@ const EFFECT_TEXT: Record<EffectType, (e: Fx, x: EffectContext) => string[]> = {
   atk_fracture: attackEffect,
   atk_gel: attackEffect,
   atk_glas: attackEffect,
+  atk_headshot: (e) => [
+    'Attaque de base : ' + headshotText(e, isEmpty(e.chance) ? 100 : nz(e.chance)),
+  ],
+  ciblage: (e, { T }) => [
+    `${isEmpty(e.chance) || nz(e.chance) >= 100 ? 'Prend' : nz(e.chance) + ' % de chances de prendre'} l'adversaire pour cible pendant ${trs(T)} : chacun de ses coups sur lui est un HEADSHOT (+${critOf(e)} % de son ATQ)${e.consomme === 'non' ? '' : ' ; la marque saute au premier headshot'}`,
+  ],
+  brume: (e, { T }) => [
+    `${isEmpty(e.chance) || nz(e.chance) >= 100 ? "S'entoure" : nz(e.chance) + " % de chances de s'entourer"} de brume pendant ${trs(T)} : les statuts négatifs reçus se dissipent. Brume relancée sur une carte déjà embrumée : vent tourné, le prochain statut est renvoyé à l'adversaire puis la brume se dissipe`,
+  ],
+  lien_parasite: (e) => [
+    `Pose un lien parasitaire sur l'adversaire pendant ${trs(nz(e.tours) || 3)} : ${linkPct(e)} % de ses soins reviennent à sa carte`,
+  ],
   glas_effet: (e, { ci }) => [
     `Fait sonner le Glas pour ${ci} : une ombre avance sur sa vie de ${nz(e.glasv)} % de ses PV max par tour ; quand ses PV passent dessous, la mort l'emporte (pas d'évite la mort ni de réanimation ; 3 purifications pour l'effacer)`,
   ],

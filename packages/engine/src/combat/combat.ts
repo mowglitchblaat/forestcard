@@ -12,6 +12,7 @@ import type { Rules } from '../model/rules.ts';
 import { damageFactor } from '../mechanics/double-damage.ts';
 import { flushRevives } from '../mechanics/revive.ts';
 import { noticeTrigger, type Triggers } from '../mechanics/triggers.ts';
+import { reactToEvent } from '../mechanics/reaction.ts';
 import { NO_MAGIC, NO_TRAP, newStatus, normalizePassives, type Side } from './state.ts';
 
 export type PendingRevive = { side: Side; pct: Num; reveal: (() => void) | null };
@@ -233,6 +234,8 @@ export function emit(c: Combat, event: DomainEvent): void {
   deliver(c, event, null);
   // Even during a hold: the legacy hook runs when a line is written, not when it is shown.
   if (c.triggers.any) noticeTrigger(c, event);
+  // The cards holding a reacting passive (mutation, molt, reaction) answer what happens to them.
+  reactToEvent(c, event);
   // A damage line flushes pending revives and deferred effects, even for 0 damage.
   if (event.type === 'damaged') flush(c);
 }

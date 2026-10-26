@@ -17,6 +17,7 @@ import type { Side } from '../combat/state.ts';
 import type { EffectData } from '../model/card.ts';
 import { statusDamageMarks } from './execution.ts';
 import { thaw } from './frost.ts';
+import { mistTakes } from './mist.ts';
 
 // kind is the legacy label, printed as is in the journal: 'poison' or 'brûlure'.
 // calc: max HP a full tick calcinates (burn only; amount × calcine %, summed over stacked burns).
@@ -41,6 +42,12 @@ export function damageOverTime(
   turns: number,
   calcPct = 100,
 ): void {
+  if (
+    mistTakes(c, M, kind === 'poison' ? 'poison' : 'burn', (t) =>
+      damageOverTime(c, t, kind, amount, turns, calcPct),
+    )
+  )
+    return;
   const calc = kind === 'poison' ? 0 : (amount * calcPct) / 100;
   if (kind === 'brûlure' && M.status.frosts.length) {
     thaw(c, M);
