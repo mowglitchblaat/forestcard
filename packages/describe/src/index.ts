@@ -198,7 +198,7 @@ const PASSIVE_TEXT: Record<PassiveType, (p: Fx, x: PassiveContext) => string> = 
     `${c} % de chances de fracturer la cible (${nz(p.fchance)} % de se blesser de ${nz(p.degfrac)} PV en attaquant, ${trs(T)})`,
   headshot: (p, { c }) => headshotText(p, c),
   lien_parasite: (p, { c }) =>
-    `${c} % de chances, à chaque coup, de poser un lien parasitaire sur la cible pendant ${trs(nz(p.tours) || 3)} : ${linkPct(p)} % de ses soins lui reviennent`,
+    `${c} % de chances, à chaque coup, de poser ${linksTxt(p)} sur la cible pendant ${trs(nz(p.tours) || 3)} : ${linkPct(p)} % de ses soins ${linkEach(p)}lui reviennent (les liens se cumulent)`,
   mutation: (p) => mutationText(p),
   mue: (p) =>
     `Mue : quand la carte reçoit une marque d'exécution, ou après 2 tours de suite avec un statut négatif, elle entre en mue ; 2 tours plus tard, au début de son tour, elle mue : statuts négatifs (étourdissement compris), marques d'exécution, ciblage et lien parasitaire retirés, mais ${moltLoss(p)}`,
@@ -211,6 +211,10 @@ const PASSIVE_TEXT: Record<PassiveType, (p: Fx, x: PassiveContext) => string> = 
 // parasite.ts, insect.ts, reaction.ts).
 const critOf = (e: Fx) => (isEmpty(e.pctcrit) ? 50 : nz(e.pctcrit));
 const linkPct = (e: Fx) => (isEmpty(e.pctlien) ? 50 : Math.min(100, nz(e.pctlien)));
+const linkN = (e: Fx) => Math.max(1, Math.floor(nz(e.nbliens)) || 1);
+const linksTxt = (e: Fx) =>
+  linkN(e) > 1 ? `${linkN(e)} liens parasitaires` : 'un lien parasitaire';
+const linkEach = (e: Fx) => (linkN(e) > 1 ? 'par lien ' : '');
 const headshotText = (e: Fx, c: number) =>
   `${c < 100 ? c + ' % de chances, à chaque coup, de faire' : 'Chaque coup fait'} un HEADSHOT : +${critOf(e)} % de son ATQ en dégâts, avant blocage et réductions`;
 const lossAmt = (v: unknown, u: unknown) => (isEmpty(v) ? '10 %' : `${nz(v)}${upc(u)}`);
@@ -437,7 +441,7 @@ const EFFECT_TEXT: Record<EffectType, (e: Fx, x: EffectContext) => string[]> = {
     `${isEmpty(e.chance) || nz(e.chance) >= 100 ? "S'entoure" : nz(e.chance) + " % de chances de s'entourer"} de brume pendant ${trs(T)} : les statuts négatifs reçus se dissipent. Brume relancée sur une carte déjà embrumée : vent tourné, le prochain statut est renvoyé à l'adversaire puis la brume se dissipe`,
   ],
   lien_parasite: (e) => [
-    `Pose un lien parasitaire sur l'adversaire pendant ${trs(nz(e.tours) || 3)} : ${linkPct(e)} % de ses soins reviennent à sa carte`,
+    `Pose ${linksTxt(e)} sur l'adversaire pendant ${trs(nz(e.tours) || 3)} : ${linkPct(e)} % de ses soins ${linkEach(e)}reviennent à sa carte (les liens se cumulent)`,
   ],
   glas_effet: (e, { ci }) => [
     `Fait sonner le Glas pour ${ci} : une ombre avance sur sa vie de ${nz(e.glasv)} % de ses PV max par tour ; quand ses PV passent dessous, la mort l'emporte (pas d'évite la mort ni de réanimation ; 3 purifications pour l'effacer)`,

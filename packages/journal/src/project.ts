@@ -1181,21 +1181,23 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
       return {
         t: 'statut',
         txt: e.stacked
-          ? `Le lien parasitaire de ${name(e.side)} se resserre (${turns(e.turns)})`
+          ? `Un lien parasitaire de plus s'accroche à ${name(e.side)} (${e.links} liens) : encore ${e.pct} % de ses soins iront à ${name(e.to)} (${turns(e.turns)})`
           : `Un lien parasitaire s'accroche à ${name(e.side)} : ${e.pct} % de ses soins iront à ${name(e.to)} (${turns(e.turns)})`,
-        o: { c: e.side, k: 'lien', to: e.to, n: e.turns },
+        o: { c: e.side, k: 'lien', to: e.to, n: e.turns, nb: e.links },
       };
     case 'parasiteFed':
       return {
         t: 'statut',
-        txt: `Le lien parasitaire détourne ${e.amount} PV de soin de ${name(e.side)} vers ${name(e.to)}`,
-        o: { c: e.side, k: 'lien_soin', to: e.to, n: e.amount },
+        txt: `${e.links > 1 ? `Les ${e.links} liens parasitaires détournent` : 'Le lien parasitaire détourne'} ${e.amount} PV de soin de ${name(e.side)} vers ${name(e.to)}`,
+        o: { c: e.side, k: 'lien_soin', to: e.to, n: e.amount, nb: e.links },
       };
     case 'parasiteEnded':
       return {
         t: 'finstatut',
-        txt: `Le lien parasitaire de ${name(e.side)} se détache`,
-        o: { c: e.side, k: 'lien' },
+        txt: e.links
+          ? `Un lien parasitaire de ${name(e.side)} se détache (encore ${e.links})`
+          : `Le lien parasitaire de ${name(e.side)} se détache`,
+        o: { c: e.side, k: 'lien', nb: e.links },
       };
 
     // ── Insect mutation, molt ──

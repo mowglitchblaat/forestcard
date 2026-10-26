@@ -20,7 +20,7 @@ import type { Flow } from '../combat/flow.ts';
 import type { Side } from '../combat/state.ts';
 import type { EffectData, Num } from '../model/card.ts';
 import { grantAttackEffect } from './attack-effects.ts';
-import { link, parasiteTurns, sharePct } from './parasite.ts';
+import { linkCount, links, parasiteTurns, sharePct, unlink } from './parasite.ts';
 import { hasPurifiableStatus, purify } from './purification.ts';
 import { gainOf, grow } from './reaction.ts';
 
@@ -43,7 +43,7 @@ const mutationOf = (s: Side): EffectData | undefined =>
 const moltOf = (s: Side): EffectData | undefined => s.passives.find((p) => p.type === 'mue');
 
 const negative = (s: Side): boolean =>
-  !!hasPurifiableStatus(s.status) || s.status.stunTurns > 0 || !!s.status.parasite;
+  !!hasPurifiableStatus(s.status) || s.status.stunTurns > 0 || s.status.parasites.length > 0;
 
 const filled = (v: Num | undefined): boolean => v != null && v !== '';
 const loss = (v: Num | undefined, unit: string | undefined, base: number): number =>
@@ -78,10 +78,7 @@ export function molt(c: Combat, s: Side, values: EffectData | undefined, instant
     s.status.targeted = null;
     emit(c, { type: 'targetEnded', side: id(c, s) });
   }
-  if (s.status.parasite) {
-    s.status.parasite = null;
-    emit(c, { type: 'parasiteEnded', side: id(c, s) });
-  }
+  unlink(c, s);
   const atq = Math.min(s.atq, Math.max(0, loss(q.mueatq, q.uatq, s.atq)));
   if (atq > 0) {
     s.atq -= atq;
@@ -150,7 +147,8 @@ function mutate(c: Combat, s: Side, p: EffectData): void {
     molt(c, s, own ? p : moltOf(s), true);
     grow(c, s, 'esquive', +(p.mesq as number) || 0, 'mutation');
     const x = opponent(c, s);
-    if (x.hp > 0) link(c, x, s, parasiteTurns(p.lientours), sharePct(p.pctlien));
+    if (x.hp > 0)
+      links(c, x, s, parasiteTurns(p.lientours), sharePct(p.pctlien), linkCount(p.nbliens));
   }
 }
 

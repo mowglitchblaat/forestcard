@@ -398,10 +398,11 @@ export type DomainEvent =
       to: SideIndex;
       turns: number;
       pct: number;
+      links: number; // the carrier's links now
       stacked: boolean;
     }
-  | { type: 'parasiteFed'; side: SideIndex; to: SideIndex; amount: number }
-  | { type: 'parasiteEnded'; side: SideIndex }
+  | { type: 'parasiteFed'; side: SideIndex; to: SideIndex; amount: number; links: number }
+  | { type: 'parasiteEnded'; side: SideIndex; links: number } // links: those left
   // Insect mutation and molt (mechanics/insect.ts).
   | { type: 'mutated'; side: SideIndex; level: number }
   | { type: 'moltStarted'; side: SideIndex; turns: number; cause: 'mark' | 'statuses' }

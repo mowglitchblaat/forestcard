@@ -1048,3 +1048,14 @@ test('réaction : réduction des dégâts gagnée sur les coups suivants', () =>
   assert.equal(coups[0], 10);
   assert.ok(coups.slice(1).every(n => n === 5));
 });
+
+test('lien parasitaire : les liens sont indépendants et se cumulent (X liens posés d\'un coup)', () => {
+  const r = combat([C('Tique', 0, 1000, { ultime: { type: 'lien_parasite', tours: 5, pctlien: 30, nbliens: 2, apres_tours: 1, utilisations: 1 } }), MAG('Saignée', { type: 'degats', val: 500 })],
+    [C('Hôte', 0, 1000, { passif: { type: 'soin_tour', val: 20 } })], { regles: { maxTours: 4, maxProlong: 0 } });
+  const poses = lignes(r, e => e.k === 'lien' && e.t === 'statut');
+  assert.deepEqual(poses.map(e => e.nb), [1, 2]);
+  const fed = lignes(r, e => e.k === 'lien_soin');
+  assert.ok(fed.length > 0 && fed.every(e => e.n === 12 && e.nb === 2), '30 % + 30 % de 20 = 12');
+  const k = r.journal.indexOf(fed[0]);
+  assert.deepEqual([r.journal[k - 1].t, r.journal[k - 1].c, r.journal[k - 1].n], ['soin', 1, 8]);
+});

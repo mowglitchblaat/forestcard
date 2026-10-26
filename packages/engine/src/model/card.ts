@@ -123,6 +123,7 @@ export type EffectData = {
   consomme?: string;
   // Parasitic link: % of the carrier's heals that goes to the opponent (50 when empty).
   pctlien?: Num;
+  nbliens?: Num; // links laid at once (1 when empty)
   // Insect mutation: level I (ATQ and HP, unit `u`), level II (damage reduction %, bleed on the
   // attack), level III (dodge %, a parasitic link of `lientours` turns; and an instant molt).
   matq?: Num;
