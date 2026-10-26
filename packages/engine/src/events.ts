@@ -407,6 +407,20 @@ export type DomainEvent =
   | { type: 'mutated'; side: SideIndex; level: number }
   | { type: 'moltStarted'; side: SideIndex; turns: number }
   | { type: 'molted'; side: SideIndex; instant: boolean }
+  // Damage reduction given by an effect (mechanics/guard.ts): value % (or points), turns 0 = whole combat.
+  | {
+      type: 'reductionGranted';
+      side: SideIndex;
+      chance: number;
+      value: number;
+      points: boolean;
+      turns: number;
+    }
+  | { type: 'reductionEnded'; side: SideIndex }
+  // A magic's timing (mechanics/magic-timing.ts): waiting for its turn, acting then, spent.
+  | { type: 'magicDelayed'; side: SideIndex; turn: number }
+  | { type: 'magicActivated'; side: SideIndex }
+  | { type: 'magicExpired'; side: SideIndex }
   // Damage reduction (%) or block chance (%) gained (mutation, reaction passive).
   | { type: 'defenseChanged'; side: SideIndex; kind: 'block' | 'reduce'; delta: number }
   // Programming passive. label / effectType: the programmed effect's own label (`lib`, card data)

@@ -545,6 +545,13 @@ export const EDITOR_ULTIMATES: { readonly [K in EffectType]?: EditorEntry } = {
     'muepv',
     'upv',
   ],
+  reduc_degats: [
+    'Réduction des dégâts : X % de chances de réduire chaque coup reçu de X (en % ou en points), pendant X tours (vide ou 0 = tout le combat)',
+    'chance',
+    'val',
+    'u',
+    'tours',
+  ],
 };
 
 export const EDITOR_MAGICS: { readonly [K in EffectType]?: EditorEntry } = {
@@ -833,6 +840,13 @@ export const EDITOR_MAGICS: { readonly [K in EffectType]?: EditorEntry } = {
     'uatq',
     'muepv',
     'upv',
+  ],
+  reduc_degats: [
+    'Réduction des dégâts : X % de chances de réduire chaque coup reçu de X (en % ou en points), pendant X tours (vide ou 0 = tout le combat)',
+    'chance',
+    'val',
+    'u',
+    'tours',
   ],
 };
 

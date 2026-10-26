@@ -206,6 +206,11 @@ export const TRIGGER_FACT: { [K in EventType]: Classify<K> | null } = {
   moltStarted: null,
   molted: null,
   defenseChanged: null,
+  reductionGranted: null,
+  reductionEnded: null,
+  magicDelayed: null,
+  magicActivated: null,
+  magicExpired: null,
 };
 
 export function triggerFact(e: DomainEvent): TriggerFact | null {

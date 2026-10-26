@@ -282,6 +282,26 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
         txt: `La magie de ${pseudo(e.side)} revient : ${at(e.side).magic.nom}`,
         o: { c: e.side, k: 'magie_retour' },
       };
+    case 'magicDelayed':
+      return {
+        t: 'statut',
+        txt: `La magie de ${pseudo(e.side)} attend : elle agira au début de son tour ${e.turn}`,
+        o: { c: e.side, k: 'magie_attente', n: e.turn },
+      };
+    case 'magicActivated': {
+      const magic = at(e.side).magic;
+      return {
+        t: 'magie',
+        txt: `La magie de ${pseudo(e.side)} agit : ${magic.nom}`,
+        o: { c: e.side, carte: magic.nom, img: magic.image || null },
+      };
+    }
+    case 'magicExpired':
+      return {
+        t: 'statut',
+        txt: `La magie de ${pseudo(e.side)} s'épuise : ses effets prennent fin`,
+        o: { c: e.side, k: 'magie_annulee' },
+      };
     case 'magicDestroyed':
       return {
         t: 'vol',
@@ -1228,6 +1248,19 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
         o: { c: e.side, k: 'defense', s: e.kind, d },
       };
     }
+
+    case 'reductionGranted':
+      return {
+        t: 'statut',
+        txt: `${name(e.side)} se protège : ${e.chance < 100 ? `${e.chance} % de chances de réduire` : 'réduit'} les dégâts reçus de ${e.value}${e.points ? '' : ' %'}${e.turns ? ` (${turns(e.turns)})` : ''}`,
+        o: { c: e.side, k: 'garde', n: e.value },
+      };
+    case 'reductionEnded':
+      return {
+        t: 'finstatut',
+        txt: `La protection de ${name(e.side)} se dissipe`,
+        o: { c: e.side, k: 'garde' },
+      };
 
     case 'transcended':
       return {

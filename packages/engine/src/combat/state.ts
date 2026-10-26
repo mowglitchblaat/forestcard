@@ -29,6 +29,7 @@ import { type SwallowState, swallowState } from '../mechanics/swallow.ts';
 import { type TheftState, theftState } from '../mechanics/theft.ts';
 import { type TranscendenceState, transcendenceState } from '../mechanics/transcendence.ts';
 import { type TrapImmunityState, trapImmunityState } from '../mechanics/trap-immunity.ts';
+import { type GuardState, guardState } from '../mechanics/guard.ts';
 import { type HeadshotState, headshotState } from '../mechanics/headshot.ts';
 import { type InsectState, insectState } from '../mechanics/insect.ts';
 import { type MistState, mistState } from '../mechanics/mist.ts';
@@ -81,6 +82,7 @@ export type Status = { turnsPlayed: number } & RageState &
   CounterState &
   ProgrammingState &
   HeadshotState &
+  GuardState &
   MistState &
   ParasiteState &
   InsectState &
@@ -112,6 +114,8 @@ export type Side = {
   magicNeverActed: number;
   magicStolen: number;
   trapBlocked: number; // blocked by immunity, may re-arm
+  magicStartTurn: number; // a waiting magic acts at the start of this turn of its card (0: none)
+  magicTurnsLeft: number; // turns before the magic is spent (0: no duration)
 };
 
 // Placeholders for a deck without magic or without trap.
@@ -170,6 +174,7 @@ export const newStatus = (passives: EffectData[]): Status => ({
   ...counterState(),
   ...programmingState(),
   ...headshotState(),
+  ...guardState(),
   ...mistState(),
   ...parasiteState(),
   ...insectState(),

@@ -66,6 +66,8 @@ import { moltAtStart, moltWatch, mutationQuiet } from '../mechanics/insect.ts';
 import { mistEnd } from '../mechanics/mist.ts';
 import { parasiteEnd } from '../mechanics/parasite.ts';
 import { gainedDefenses } from '../mechanics/reaction.ts';
+import { guardsEnd } from '../mechanics/guard.ts';
+import { delayedMagicAtStart, magicDurationEnd } from '../mechanics/magic-timing.ts';
 
 type TurnStep = Step<Side>;
 
@@ -73,6 +75,7 @@ type TurnStep = Step<Side>;
 const START_OF_TURN: TurnStep[] = [
   aliveAtStart,
   moltAtStart, // the molt, before anything else of its turn
+  delayedMagicAtStart, // a magic waiting for this turn acts
   solidificationAtStart,
   curseFading, // losses come back before the curse ticks again
   curseTicks, // the curse lowers ATQ before the attack
@@ -158,6 +161,8 @@ const END_OF_TURN: TurnStep[] = [
   parasiteEnd,
   moltWatch, // 2 turns ending with a negative status: the molt starts
   mutationQuiet, // 4 turns without one: one level of mutation more
+  guardsEnd,
+  magicDurationEnd, // a magic with a duration is spent
 ];
 
 // ── The skeletons ──

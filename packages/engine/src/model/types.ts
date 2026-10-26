@@ -70,6 +70,7 @@ export const EFFECT_TYPES = [
   'brume',
   'lien_parasite',
   'mue_forcee',
+  'reduc_degats',
 ] as const;
 export type EffectType = (typeof EFFECT_TYPES)[number];
 

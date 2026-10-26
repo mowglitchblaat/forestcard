@@ -1777,7 +1777,7 @@ async function aCartes(){
      <label><small>Programmations passives d'abord (N)</small><br><input name="pnb" type="number" min="0" value="2" style="width:90px"></label></div>
      <small style="color:#7dd3fc">🎲 Chaque programmation passive tire au hasard un passif ou un ultime parmi <b>tous ceux du jeu</b>, avec des valeurs adaptées à la carte : rien d'autre à remplir.</small>
      <div hidden><div id="b-ppas"></div><div id="b-pult"></div></div></div></div>
-   <div id="s-mag" style="display:none"><b>Effet de la magie</b><div id="b-mag"></div></div>
+   <div id="s-mag" style="display:none"><b>Effet de la magie</b><div id="b-mag"></div><div class="row"><label><small>Agit à partir de son tour N (vide ou 1 = dès le début)</small><br><input name="mdebut" type="number" min="0" style="width:110px"></label> <label><small>Dure N tours (vide ou 0 = tout le combat)</small><br><input name="mduree" type="number" min="0" style="width:110px"></label></div></div>
    <div id="s-pie" style="display:none"><b>Condition du piège</b><div id="b-con"></div><b>Effet du piège</b><div id="b-pef"></div>
     <label><small>Déclenchements max</small><br><input name="decl" type="number" min="1" value="1" style="width:90px"></label></div>
    <label><input type="checkbox" name="actif"> Publier (visible des joueurs et dans les boosters)</label>
@@ -1840,7 +1840,7 @@ async function aCartes(){
       if(f.prog.checked){const lb=q=>{const v=['val','chance','pctpv','degtour','ragev','tours'].filter(k=>q[k]!=null&&q[k]!=='').map(k=>q[k]);return{...q,lib:String(cat(q.type)||q.type).split(/ ?[:(]/)[0].slice(0,40)+(v.length?' ('+v.join(' · ')+')':'')}},ml=x=>!x?null:x.briques?{briques:x.briques.map(lb)}:lb(x);   // programmation : rangée dans les passifs
        const pb={type:'programmation',chance:f.pchance.value===''?50:+f.pchance.value,nbpassif:f.pnb.value===''?2:+f.pnb.value,passifs:null,ultimes:null};   // tirage au hasard parmi tous les passifs et ultimes du jeu
        pas=!pas?pb:pas.briques?{briques:[...pas.briques,pb]}:{briques:[pas,pb]}}}
-     else if(t=='magie')eff=B.mag.get();
+     else if(t=='magie'){eff=B.mag.get();if(eff){delete eff.magdebut;delete eff.magduree;if(+f.mdebut.value>1)eff.magdebut=+f.mdebut.value;if(+f.mduree.value>0)eff.magduree=+f.mduree.value}}   // début et durée de la magie, rangés sur son effet
      else{const c=B.con.get(),x=B.pef.get();if(c||x)eff={condition:c,effet:x,declenchements:+f.decl.value||1}}
      const cb=t=='combattant';
      const row={nom:v('nom'),type:t,collection_id:v('col')||null,rarete_id:+v('rar'),atq:cb&&v('atq')!==''?+v('atq'):null,pv:cb&&v('pv')!==''?+v('pv'):null,
@@ -1869,7 +1869,7 @@ async function aCartes(){
     const u=c.ultime||{};B.ult.set(c.ultime);f.utours.value=u.apres_tours||'';f.ucarte.checked=!!u.sur_carte;f.udecl.value=u.udecl||'';f.udx.value=u.udx??'';f.uuses.value=u.utilisations??1;f.ucd.value=u.delai_tours??0;
     {let pz=c.passif,pg=null;if(pz){const arr=pz.briques||[pz];pg=arr.find(b=>b&&b.type==='programmation')||null;if(pg){const rest=arr.filter(b=>b!==pg);pz=!rest.length?null:rest.length==1?rest[0]:{briques:rest}}}
      f.prog.checked=!!pg;$('#s-prog').style.display=pg?'':'none';if(pg){f.pchance.value=pg.chance??50;f.pnb.value=pg.nbpassif??2;B.ppas.set(pg.passifs);B.pult.set(pg.ultimes)}
-     if(pg){const a=!pz?[]:pz.briques||[pz];a.push({type:'programmation'});pz=a.length==1?a[0]:{briques:a}}B.pas.set(pz)}if(c.type=='magie')B.mag.set(c.effet);
+     if(pg){const a=!pz?[]:pz.briques||[pz];a.push({type:'programmation'});pz=a.length==1?a[0]:{briques:a}}B.pas.set(pz)}if(c.type=='magie'){B.mag.set(c.effet);f.mdebut.value=c.effet&&c.effet.magdebut||'';f.mduree.value=c.effet&&c.effet.magduree||''}
     if(c.type=='piege'&&c.effet){B.con.set(c.effet.condition);B.pef.set(c.effet.effet);f.decl.value=c.effet.declenchements||1}
     $('#ftitle').textContent='Modifier : '+c.nom;$('#fbtn').textContent='Enregistrer les modifications';$('#fcancel').style.display='';
     fc.scrollIntoView({behavior:'smooth'});

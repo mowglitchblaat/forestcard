@@ -14,6 +14,7 @@ import type { StrikeFlow } from '../combat/flow.ts';
 import type { Side } from '../combat/state.ts';
 import type { DomainEvent } from '../events.ts';
 import type { EffectData } from '../model/card.ts';
+import { guarded } from './guard.ts';
 import { mutationOnStatus } from './insect.ts';
 import { triggerFact } from './triggers.ts';
 
@@ -98,6 +99,11 @@ export function gainedDefenses(c: Combat, { d, ia, idd }: Attack, st: Strike): S
     st.n = 0;
     st.blocked = true;
     emit(c, { type: 'attackBlocked', side: ia, defender: idd });
+    return undefined;
+  }
+  st.n = guarded(c, d, st.n); // protections given by an effect (mechanics/guard.ts)
+  if (st.n <= 0) {
+    st.blocked = true;
     return undefined;
   }
   const reduce = Math.min(90, d.status.armorPct);

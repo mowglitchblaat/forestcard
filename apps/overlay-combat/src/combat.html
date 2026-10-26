@@ -1315,7 +1315,9 @@ const NK={
  'statut:lien':e=>{nLien(e.c,e.to,true,e.nb);flot(e.c,(e.nb||1)>1?'Lien parasitaire ×'+e.nb:'Lien parasitaire','#fda4af')},'finstatut:lien':e=>nLien(e.c,null,(e.nb||0)>0,e.nb||0),'statut:lien_soin':e=>nLienSoin(!!NFX.lien&&NFX.lien.c!==e.c),   // le soin remonte la vrille dans un sens ou dans l'autre
 
  'statut:mutation':e=>nMutation(e.c,e.niv||1),'statut:mue_debut':e=>nMueDebut(e.c),'statut:mue':e=>nMue(e.c),
- 'stat:defense':e=>flot(e.c,(e.s==='block'?'Blocage +':'Réduction +')+e.d+' %','#fcd34d')};
+ 'stat:defense':e=>flot(e.c,(e.s==='block'?'Blocage +':'Réduction +')+e.d+' %','#fcd34d'),
+ 'statut:garde':e=>{bouclier(e.c,{partiel:1});flot(e.c,'Protection','#fcd34d')},'finstatut:garde':()=>{},
+ 'statut:magie_attente':e=>flot(e.c,'Magie en attente','#93c5fd')};
 async function jouer(res){
  file.push(res);if(enCours)return;enCours=true;
  while(file.length){const R=file.shift();await verrouPrendre('combat');await chargerMiroir();   // liste des images copiées sur GitHub, relue à chaque combat : OBS ouvert longtemps ne repasse jamais par Supabase pour une image copiée

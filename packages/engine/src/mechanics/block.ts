@@ -19,6 +19,7 @@ import { damage } from '../combat/damage.ts';
 import { applyEffect } from '../combat/effects.ts';
 import type { EffectData } from '../model/card.ts';
 import { ELEMENTS, elementStatus } from './breath.ts';
+import { guarded } from './guard.ts';
 
 // What a block sends back to the attacker, once (bloque_attaque's `riposte` option).
 export type BlockRiposte = {
@@ -134,7 +135,7 @@ export function reduce(c: Combat, d: Side, n: number): number {
         n = Math.max(0, n - amount(p, n));
       }
     });
-  return n;
+  return guarded(c, d, n);
 }
 
 export function cancelAttackEffect({ c, x }: EffectContext): void {

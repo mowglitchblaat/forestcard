@@ -443,6 +443,9 @@ const EFFECT_TEXT: Record<EffectType, (e: Fx, x: EffectContext) => string[]> = {
   lien_parasite: (e) => [
     `Pose ${linksTxt(e)} sur l'adversaire pendant ${trs(nz(e.tours) || 3)} : ${linkPct(e)} % de ses soins ${linkEach(e)}reviennent à sa carte, qui partage les siens de la même façon (les liens se cumulent, 100 % au plus)`,
   ],
+  reduc_degats: (e, { v, T, t }) => [
+    `${isEmpty(e.chance) || nz(e.chance) >= 100 ? 'Réduit' : nz(e.chance) + ' % de chances de réduire'} chaque coup reçu de ${v}${e.u === 'pts' ? '' : ' %'} ${t > 0 ? `pendant ${trs(T)}` : "jusqu'à la fin du combat"}`,
+  ],
   mue_forcee: (e) => [
     `${isEmpty(e.chance) || nz(e.chance) >= 100 ? 'Force' : nz(e.chance) + ' % de chances de forcer'} la mue ${e.cible === 'adversaire' ? "de l'adversaire" : 'de sa carte'}, tout de suite : statuts négatifs (étourdissement compris), marques d'exécution, ciblage et liens parasitaires retirés, mais la carte ${isEmpty(e.mueatq) && isEmpty(e.muepv) ? "perd les valeurs de son passif Mue (10 % d'ATQ et de PV max sans passif)" : moltLoss(e)}`,
   ],
@@ -559,6 +562,19 @@ export type Section = {
   items: Item[];
 };
 
+// A magic's timing (`magdebut`, `magduree`): from which of its turns it acts, for how long.
+export function magicTiming(e: Fx | null | undefined): string {
+  if (!e) return '';
+  const from = nz(e.magdebut);
+  const lasts = nz(e.magduree);
+  return [
+    from > 1 ? `Agit au début de son ${from}e tour` : '',
+    lasts > 0 ? `dure ${trs(lasts)}, puis ses effets prennent fin` : '',
+  ]
+    .filter(Boolean)
+    .join(' · ');
+}
+
 export function describeCard(c: DescribedCard): Section[] {
   const sections: Section[] = [];
   if (c.type === 'combattant') {
@@ -586,7 +602,14 @@ export function describeCard(c: DescribedCard): Section[] {
     }
   } else if (c.type === 'magie') {
     const items = effectItems(c.effet);
-    if (items.length) sections.push({ kind: 'magic', title: 'Effet de la magie', items });
+    const timing = magicTiming(c.effet);
+    if (items.length)
+      sections.push({
+        kind: 'magic',
+        title: 'Effet de la magie',
+        ...(timing ? { meta: timing } : {}),
+        items,
+      });
   } else if (c.type === 'piege' && c.effet) {
     const e = c.effet;
     const items = effectItems(e.effet as Fx | null | undefined);

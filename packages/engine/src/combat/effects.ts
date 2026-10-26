@@ -39,6 +39,7 @@ import { effects as transcendence } from '../mechanics/transcendence.ts';
 import { effects as trapImmunity } from '../mechanics/trap-immunity.ts';
 import { effects as knell } from '../mechanics/knell.ts';
 import { effects as headshot } from '../mechanics/headshot.ts';
+import { effects as guard } from '../mechanics/guard.ts';
 import { effects as insect } from '../mechanics/insect.ts';
 import { effects as mist } from '../mechanics/mist.ts';
 import { effects as parasite } from '../mechanics/parasite.ts';
@@ -72,6 +73,7 @@ export const rules = (): Record<EffectType, EffectRule> =>
     ...fatigue,
     ...fracture,
     ...frost,
+    ...guard,
     ...headshot,
     ...healing,
     ...insect,

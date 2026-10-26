@@ -114,6 +114,8 @@ export function newSide(c: Combat, player: Player, exclude?: Card[], current?: C
     magicNeverActed: 0,
     magicStolen: 0,
     trapBlocked: 0,
+    magicStartTurn: 0,
+    magicTurnsLeft: 0,
   };
 }
 

@@ -1091,3 +1091,19 @@ test('mue forcée : un piège fait muer sa carte tout de suite (statuts retirés
   assert.ok(apres.some(e => e.k === 'mod' && e.d === -3), 'valeurs du passif Mue');
   assert.ok(apres.some(e => e.k === 'mod' && e.d === -50));
 });
+
+test('réduction des dégâts (magie) : X % de chances de réduire chaque coup de X %, pendant X tours', () => {
+  const r = combat([C('Tortue', 0, SOLIDE), MAG('Carapace', { type: 'reduc_degats', val: 50, tours: 2 })], [C('Frappeur', 10, SOLIDE)], { regles: { maxTours: 4, maxProlong: 0 } });
+  assert.equal(lignes(r, e => e.k === 'garde' && e.t === 'statut').length, 1);
+  const coups = degatsAttaque(r, 0).map(e => e.n);
+  assert.ok(coups.includes(5) && coups.includes(10), 'réduit pendant 2 tours, puis plus');
+  assert.equal(lignes(r, e => e.k === 'garde' && e.t === 'finstatut').length, 1);
+});
+
+test('magie : elle peut attendre son tour N avant d\'agir, et ne durer que X tours', () => {
+  const r = combat([C('Lent', 10, SOLIDE), MAG('Force tardive', { type: 'atq_mod', val: 10, cible: 'soi', magdebut: 3, magduree: 2 })], [C('B', 0, SOLIDE)], { regles: { maxTours: 7, maxProlong: 0 } });
+  assert.ok(lignes(r, e => e.k === 'magie_attente').length === 1);
+  const coups = degatsAttaque(r, 1).map(e => e.n);
+  assert.deepEqual(coups.slice(0, 5), [10, 10, 20, 20, 10], 'ATQ +10 aux tours 3 et 4 seulement');
+  assert.equal(lignes(r, e => e.k === 'magie_annulee').length, 1);
+});

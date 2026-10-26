@@ -24,10 +24,10 @@ import {
   opponent,
   over,
 } from './combat/combat.ts';
-import { applyEffect } from './combat/effects.ts';
 import { TURN } from './combat/moments.ts';
 import type { Side } from './combat/state.ts';
 import { settleMagicCancellations } from './mechanics/magic-cancel.ts';
+import { revealMagic } from './mechanics/magic-timing.ts';
 import { triggersOf } from './mechanics/triggers.ts';
 import type { OnEvent } from './events.ts';
 import type { Card, Player } from './model/card.ts';
@@ -162,8 +162,7 @@ function revealMagics(c: ReturnType<typeof createCombat>, order: Side[]): void {
       s.magicCancelStage !== 2 &&
       !s.magicStolen
     ) {
-      emit(c, { type: 'magicRevealed', side: id(c, s) });
-      applyEffect(c, s.magic.effet, s, opponent(c, s), true);
+      revealMagic(c, s);
     }
   });
 }

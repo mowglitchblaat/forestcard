@@ -86,6 +86,7 @@ const EFFECT_LABELS: Record<EffectType, (e: Fx) => string> = {
   brume: () => 'Brume',
   lien_parasite: () => 'Lien parasitaire',
   mue_forcee: () => 'Mue forcée',
+  reduc_degats: () => 'Protection',
 };
 
 const PASSIVE_LABELS: Record<PassiveType, (p: Fx) => string> = {
