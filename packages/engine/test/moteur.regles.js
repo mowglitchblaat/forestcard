@@ -1059,3 +1059,16 @@ test('lien parasitaire : les liens sont indépendants et se cumulent (X liens po
   const k = r.journal.indexOf(fed[0]);
   assert.deepEqual([r.journal[k - 1].t, r.journal[k - 1].c, r.journal[k - 1].n], ['soin', 1, 8]);
 });
+
+test('lien parasitaire : dans les deux sens, celui qui pose le lien partage aussi ses propres soins', () => {
+  const r = combat([C('Tique', 0, 1000, { passif: { type: 'soin_tour', val: 20 }, ultime: { type: 'lien_parasite', tours: 9, pctlien: 30, nbliens: 2, apres_tours: 1, utilisations: 1 } }), MAG('Saignée', { type: 'degats', val: 500 })],
+    [C('Hôte', 0, 1000, { passif: { type: 'soin_tour', val: 20 } }), MAG('Saignée', { type: 'degats', val: 500 })], { regles: { maxTours: 4, maxProlong: 0 } });
+  const fed = lignes(r, e => e.k === 'lien_soin');
+  assert.ok(fed.some(e => e.c === 0 && e.to === 1 && e.n === 12), 'Tique partage 60 % de ses soins');
+  assert.ok(fed.some(e => e.c === 1 && e.to === 0 && e.n === 12), 'Hôte aussi');
+  for (const f of fed) {
+    const k = r.journal.indexOf(f);
+    assert.equal(r.journal[k + 1].t, 'soin');
+    assert.equal(r.journal[k + 1].n, 12, 'le soin reçu par le lien n\'est pas repartagé');
+  }
+});

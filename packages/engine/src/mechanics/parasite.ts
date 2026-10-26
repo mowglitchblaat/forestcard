@@ -1,6 +1,6 @@
 // Parasitic link (lien parasitaire): laid on a card (the carrier) for X of its turns. While it
 // holds, the carrier shares its heals: X % of each heal (50 when empty) goes to the opponent
-// instead. Links are independent: a card can carry several, each with its own share and its own
+// instead, and the opponent shares its own heals with the carrier the same way. Links are independent: a card can carry several, each with its own share and its own
 // turns; together they take the whole heal at most. An effect or a passive can lay X at once
 // (`nbliens`).
 //
@@ -73,23 +73,39 @@ export function links(
   return laid;
 }
 
-// A heal of n on s (after the bleed's reduction): what each link takes, X % of the heal each (all
-// of them: the whole heal at most). The shares are healed on the other card right after
-// (shareHeal), never shared again.
-export type Share = { to: Side; amount: number };
+// A heal of n on s (after the bleed's reduction): what each link takes, X % of the heal each. A
+// link works both ways: the carrier shares its heals with the card that laid it, and that card
+// shares its own heals (not those the links bring) with the carrier. All the links together take
+// the whole heal at most. The shares are healed on the other card right after (shareHeal), never
+// shared again.
+export type Share = { to: Side; amount: number; links: number };
 let sharing = false;
-export function sharedParts(s: Side, n: number): Share[] {
-  if (sharing || n <= 0 || !s.status.parasites.length) return [];
-  const parts = new Map<Side, number>();
+export function sharedParts(c: Combat, s: Side, n: number): Share[] {
+  if (sharing || n <= 0) return [];
+  // the links that share s's heals: its own (towards the card that laid them), and those it laid
+  // on another card (towards that carrier)
+  const ways: { to: Side; pct: number }[] = [
+    ...s.status.parasites.map((p) => ({ to: p.to, pct: p.pct })),
+    ...c.sides
+      .filter((o) => o !== s)
+      .flatMap((o) =>
+        o.status.parasites.filter((p) => p.to === s).map((p) => ({ to: o, pct: p.pct })),
+      ),
+  ];
+  if (!ways.length) return [];
+  const parts = new Map<Side, Share>();
   let left = n;
-  for (const p of s.status.parasites) {
-    if (p.to.hp <= 0) continue;
-    const a = Math.min(left, round((n * p.pct) / 100));
+  for (const w of ways) {
+    if (w.to.hp <= 0) continue;
+    const a = Math.min(left, round((n * w.pct) / 100));
     if (a <= 0) continue;
     left -= a;
-    parts.set(p.to, (parts.get(p.to) ?? 0) + a);
+    const part = parts.get(w.to) ?? { to: w.to, amount: 0, links: 0 };
+    part.amount += a;
+    part.links++;
+    parts.set(w.to, part);
   }
-  return [...parts].map(([to, amount]) => ({ to, amount }));
+  return [...parts.values()];
 }
 export function shareHeal(
   c: Combat,
@@ -97,14 +113,8 @@ export function shareHeal(
   parts: Share[],
   heal: (c: Combat, s: Side, n: number) => void,
 ): void {
-  for (const { to, amount } of parts) {
-    emit(c, {
-      type: 'parasiteFed',
-      side: id(c, s),
-      to: id(c, to),
-      amount,
-      links: s.status.parasites.length,
-    });
+  for (const { to, amount, links } of parts) {
+    emit(c, { type: 'parasiteFed', side: id(c, s), to: id(c, to), amount, links });
     sharing = true;
     try {
       heal(c, to, amount);

@@ -198,7 +198,7 @@ const PASSIVE_TEXT: Record<PassiveType, (p: Fx, x: PassiveContext) => string> = 
     `${c} % de chances de fracturer la cible (${nz(p.fchance)} % de se blesser de ${nz(p.degfrac)} PV en attaquant, ${trs(T)})`,
   headshot: (p, { c }) => headshotText(p, c),
   lien_parasite: (p, { c }) =>
-    `${c} % de chances, à chaque coup, de poser ${linksTxt(p)} sur la cible pendant ${trs(nz(p.tours) || 3)} : ${linkPct(p)} % de ses soins ${linkEach(p)}lui reviennent (les liens se cumulent)`,
+    `${c} % de chances, à chaque coup, de poser ${linksTxt(p)} sur la cible pendant ${trs(nz(p.tours) || 3)} : ${linkPct(p)} % de ses soins ${linkEach(p)}lui reviennent, et elle partage les siens de la même façon (les liens se cumulent, 100 % au plus)`,
   mutation: (p) => mutationText(p),
   mue: (p) =>
     `Mue : quand la carte reçoit une marque d'exécution, ou après 2 tours de suite avec un statut négatif, elle entre en mue ; 2 tours plus tard, au début de son tour, elle mue : statuts négatifs (étourdissement compris), marques d'exécution, ciblage et lien parasitaire retirés, mais ${moltLoss(p)}`,
@@ -441,7 +441,7 @@ const EFFECT_TEXT: Record<EffectType, (e: Fx, x: EffectContext) => string[]> = {
     `${isEmpty(e.chance) || nz(e.chance) >= 100 ? "S'entoure" : nz(e.chance) + " % de chances de s'entourer"} de brume pendant ${trs(T)} : les statuts négatifs reçus se dissipent. Brume relancée sur une carte déjà embrumée : vent tourné, le prochain statut est renvoyé à l'adversaire puis la brume se dissipe`,
   ],
   lien_parasite: (e) => [
-    `Pose ${linksTxt(e)} sur l'adversaire pendant ${trs(nz(e.tours) || 3)} : ${linkPct(e)} % de ses soins ${linkEach(e)}reviennent à sa carte (les liens se cumulent)`,
+    `Pose ${linksTxt(e)} sur l'adversaire pendant ${trs(nz(e.tours) || 3)} : ${linkPct(e)} % de ses soins ${linkEach(e)}reviennent à sa carte, qui partage les siens de la même façon (les liens se cumulent, 100 % au plus)`,
   ],
   glas_effet: (e, { ci }) => [
     `Fait sonner le Glas pour ${ci} : une ombre avance sur sa vie de ${nz(e.glasv)} % de ses PV max par tour ; quand ses PV passent dessous, la mort l'emporte (pas d'évite la mort ni de réanimation ; 3 purifications pour l'effacer)`,

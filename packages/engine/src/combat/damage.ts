@@ -20,8 +20,8 @@ export function heal(c: Combat, s: Side, n: number): void {
   if (s.hp <= 0) return;
   const reduction = healReduction(s);
   if (reduction) n = round((n * (100 - reduction)) / 100);
-  // a parasitic link: a share of the heal goes to the opponent (mechanics/parasite.ts)
-  const parts = sharedParts(s, n);
+  // parasitic links, both ways: a share of the heal goes to the other card (mechanics/parasite.ts)
+  const parts = sharedParts(c, s, n);
   n = Math.min(n - parts.reduce((q, z) => q + z.amount, 0), s.maxHp - s.hp);
   if (n > 0) {
     s.hp += n;

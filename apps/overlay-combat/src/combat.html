@@ -1268,7 +1268,7 @@ function nfxLoop(){const x=NFX.x;NFX.t++;x.clearRect(0,0,innerWidth,innerHeight)
  for(let i=NFX.P.length-1;i>=0;i--){const p=NFX.P[i];p.t++;const k=p.t/p.life;if(k>=1){NFX.P.splice(i,1);continue}
   if(p.k==='fog'){const b=nbox(p.c);if(!b||!NFX.mist[p.c]){p.k='puff';const v=R(2,4);p.vx=Math.cos(p.a)*v;p.vy=Math.sin(p.a)*v;p.life=p.t+50;continue}p.a+=p.w;p.x=b.cx+Math.cos(p.a)*b.w*p.r*1.1;p.y=b.cy+Math.sin(p.a)*b.h*p.r*.9;const al=Math.sin(Math.PI*k)*.16,g=x.createRadialGradient(p.x,p.y,0,p.x,p.y,p.s);g.addColorStop(0,`rgba(225,235,245,${al})`);g.addColorStop(1,'rgba(225,235,245,0)');x.fillStyle=g;x.fillRect(p.x-p.s,p.y-p.s,p.s*2,p.s*2);continue}
   if(p.k==='puff'){p.x+=p.vx;p.y+=p.vy;p.vx*=.97;p.vy*=.97;p.s*=1.02;const g=x.createRadialGradient(p.x,p.y,0,p.x,p.y,p.s);g.addColorStop(0,`rgba(225,235,245,${(1-k)*.18})`);g.addColorStop(1,'rgba(225,235,245,0)');x.fillStyle=g;x.fillRect(p.x-p.s,p.y-p.s,p.s*2,p.s*2);continue}
-  if(p.k==='path'){if(!NFX.lien){NFX.P.splice(i,1);continue}p.sp+=p.v;if(p.sp>=1){NFX.P.splice(i,1);continue}const q=ntendril(p.sp);if(!q)continue;x.beginPath();x.arc(q.x,q.y,p.s,0,7);x.fillStyle='rgba(110,255,140,.9)';x.shadowColor='#6dff8a';x.shadowBlur=12;x.fill();x.shadowBlur=0;continue}
+  if(p.k==='path'){if(!NFX.lien){NFX.P.splice(i,1);continue}p.sp+=p.v;if(p.sp>=1){NFX.P.splice(i,1);continue}const q=ntendril(p.rev?1-p.sp:p.sp);if(!q)continue;x.beginPath();x.arc(q.x,q.y,p.s,0,7);x.fillStyle='rgba(110,255,140,.9)';x.shadowColor='#6dff8a';x.shadowBlur=12;x.fill();x.shadowBlur=0;continue}
   if(p.k==='ring'){const r=p.r0+(p.r1-p.r0)*(1-(1-k)*(1-k));x.beginPath();x.arc(p.x,p.y,r,0,7);x.strokeStyle=p.col;x.globalAlpha=1-k;x.lineWidth=p.w;x.stroke();x.globalAlpha=1;continue}
   if(p.k==='crack'){x.globalCompositeOperation='source-over';x.beginPath();p.pts.forEach((q,j)=>j?x.lineTo(q[0],q[1]):x.moveTo(q[0],q[1]));x.strokeStyle=`rgba(255,240,220,${1-k})`;x.lineWidth=2;x.shadowColor='#ff3b30';x.shadowBlur=8;x.stroke();x.shadowBlur=0;x.globalCompositeOperation='lighter';continue}
   p.vy+=p.g||0;p.x+=p.vx;p.y+=p.vy;
@@ -1300,7 +1300,7 @@ function nBrumeBloque(c,s){nfxStart();const b=nbox(c);if(b){for(let i=0;i<10;i++
 async function nBrumeRenvoi(c,to,s){flot(c,'Renvoyé !','#e2e8f0');const p=await ntir(ncentre(c),ncentre(to),NST_COL[s]||'#b35cff');if(p)nburst(p.x,p.y,24,NST_COL[s]||'#b35cff',4,3)}
 // Lien parasitaire : une vrille de chair relie le porteur et l'autre carte
 function nLien(c,to,on,nb){if(!on||nb===0){if(NFX.lien&&NFX.lien.c===c)NFX.lien=null;return}nfxStart();if(NFX.lien&&NFX.lien.c===c&&to==null){NFX.lien.n=nb;return}NFX.lien={c,to,n:nb||1};for(let i=0;i<=10;i++){const q=ntendril(i/10);if(q)nburst(q.x,q.y,4,'#c33558',2,2,30)}}
-async function nLienSoin(){if(!NFX.lien)return;nfxStart();for(let i=0;i<14;i++)setTimeout(()=>nadd({k:'path',sp:0,v:R(.018,.026),s:R(.25,.45)*innerHeight/100,life:999}),i*45);await sleep(1000)}
+async function nLienSoin(rev){if(!NFX.lien)return;nfxStart();for(let i=0;i<14;i++)setTimeout(()=>nadd({k:'path',sp:0,rev,v:R(.018,.026),s:R(.25,.45)*innerHeight/100,life:999}),i*45);await sleep(1000)}
 // Mutation insecte : carapace, battement d'ailes ; niveau 3 : aura toxique
 function nMutation(c,niv){nfxStart();const k=$('#p'+c+' .card'),cw=$('#p'+c+' .cw');if(!k||!cw)return;if(!k.querySelector('.ncar')){const d=document.createElement('div');d.className='ncar';k.appendChild(d)}
  k.classList.remove('mut1','mut2','mut3');k.classList.add('mut'+Math.min(3,niv));const w=document.createElement('div');w.className='nail';w.innerHTML='<svg viewBox="0 0 240 100"><g fill="#c8ff9a33" stroke="#c8ff9a99" stroke-width="1"><path class="w wl" d="M120 40Q40-10 6 30Q20 70 120 52Z"/><path class="w wl" d="M120 56Q50 60 26 92Q80 100 120 62Z"/><path class="w wr" d="M120 40Q200-10 234 30Q220 70 120 52Z"/><path class="w wr" d="M120 56Q190 60 214 92Q160 100 120 62Z"/></g></svg>';cw.appendChild(w);setTimeout(()=>w.remove(),1700);
@@ -1312,7 +1312,8 @@ const NK={
  'statut:cible':e=>{nCible(e.c,true);flot(e.c,'CIBLÉ','#ff3b30')},'finstatut:cible':e=>nCible(e.c,false),'statut:cible_rate':e=>flot(e.c,'Raté','#fca5a5'),
  'statut:brume':e=>nBrume(e.c,e.n||1),'finstatut:brume':e=>nBrumeFin(e.c),'statut:brume_rate':e=>flot(e.c,'Pas de brume','#cbd5e1'),
  'statut:brume_bloque':e=>nBrumeBloque(e.c,e.s),'statut:brume_renvoi':e=>nBrumeRenvoi(e.c,e.to,e.s),
- 'statut:lien':e=>{nLien(e.c,e.to,true,e.nb);flot(e.c,(e.nb||1)>1?'Lien parasitaire ×'+e.nb:'Lien parasitaire','#fda4af')},'finstatut:lien':e=>nLien(e.c,null,(e.nb||0)>0,e.nb||0),'statut:lien_soin':()=>nLienSoin(),
+ 'statut:lien':e=>{nLien(e.c,e.to,true,e.nb);flot(e.c,(e.nb||1)>1?'Lien parasitaire ×'+e.nb:'Lien parasitaire','#fda4af')},'finstatut:lien':e=>nLien(e.c,null,(e.nb||0)>0,e.nb||0),'statut:lien_soin':e=>nLienSoin(!!NFX.lien&&NFX.lien.c!==e.c),   // le soin remonte la vrille dans un sens ou dans l'autre
+
  'statut:mutation':e=>nMutation(e.c,e.niv||1),'statut:mue_debut':e=>nMueDebut(e.c),'statut:mue':e=>nMue(e.c),
  'stat:defense':e=>flot(e.c,(e.s==='block'?'Blocage +':'Réduction +')+e.d+' %','#fcd34d')};
 async function jouer(res){

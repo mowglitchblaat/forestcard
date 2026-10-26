@@ -292,7 +292,7 @@ export const EDITOR_PASSIVES: Record<PassiveType, EditorEntry> = {
     'pctcrit',
   ],
   lien_parasite: [
-    'Lien parasitaire : à X % de chances, chaque coup pose X liens pendant X tours (X % des soins de la cible par lien lui reviennent ; les liens se cumulent)',
+    'Lien parasitaire : à X % de chances, chaque coup pose X liens pendant X tours (X % des soins de la cible par lien lui reviennent, et elle partage les siens ; les liens se cumulent)',
     'chance',
     'tours',
     'pctlien',
@@ -531,7 +531,7 @@ export const EDITOR_ULTIMATES: { readonly [K in EffectType]?: EditorEntry } = {
     'tours',
   ],
   lien_parasite: [
-    "Lien parasitaire : pose X liens sur l'adversaire pendant X tours (X % de ses soins par lien reviennent à ta carte ; les liens se cumulent)",
+    "Lien parasitaire : pose X liens sur l'adversaire pendant X tours (X % de ses soins par lien reviennent à ta carte, qui partage les siens ; les liens se cumulent)",
     'tours',
     'pctlien',
     'nbliens',
@@ -811,7 +811,7 @@ export const EDITOR_MAGICS: { readonly [K in EffectType]?: EditorEntry } = {
     'tours',
   ],
   lien_parasite: [
-    "Lien parasitaire : pose X liens sur l'adversaire pendant X tours (X % de ses soins par lien reviennent à ta carte ; les liens se cumulent)",
+    "Lien parasitaire : pose X liens sur l'adversaire pendant X tours (X % de ses soins par lien reviennent à ta carte, qui partage les siens ; les liens se cumulent)",
     'tours',
     'pctlien',
     'nbliens',
