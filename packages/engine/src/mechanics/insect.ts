@@ -9,8 +9,8 @@
 //   III an instant molt (the molt values of the mutation, or of the card's mue passive), dodge
 //       +mesq %, and a parasitic link on the opponent for lientours turns (its heals feed the card).
 //
-// Molt (passive mue): starts when the card receives an execution mark, or after 2 of its turns in a
-// row ending with a negative status on it. Then 2 turns of molt: at the start of the second turn
+// Molt (passive mue): starts after 2 of its turns in a row ending with a negative status on it (an
+// execution mark is not a status: it does not start it). Then 2 turns of molt: at the start of the second turn
 // after, before its attack, the card molts: every negative status (stun included), its execution
 // marks, a targeting mark and a parasitic link on it are removed; it loses mueatq ATQ (unit uatq)
 // and muepv max HP (unit upv; 10 % each when empty). It can molt again later.
@@ -51,10 +51,10 @@ const loss = (v: Num | undefined, unit: string | undefined, base: number): numbe
 
 // ── Molt ──
 
-function startMolt(c: Combat, s: Side, cause: 'mark' | 'statuses'): void {
+function startMolt(c: Combat, s: Side): void {
   s.status.moltTurns = 2;
   s.status.statusTurns = 0;
-  emit(c, { type: 'moltStarted', side: id(c, s), turns: 2, cause });
+  emit(c, { type: 'moltStarted', side: id(c, s), turns: 2 });
 }
 
 // Values: the mutation's when it gives them, else the mue passive's.
@@ -92,11 +92,6 @@ export function molt(c: Combat, s: Side, values: EffectData | undefined, instant
   }
 }
 
-// An execution mark received: the molt starts.
-export function markedForMolt(c: Combat, s: Side): void {
-  if (moltOf(s) && !s.status.moltTurns) startMolt(c, s, 'mark');
-}
-
 // Start of its turn, before its attack: the molt counts down, and happens at 0.
 export function moltAtStart(c: Combat, s: Side): Flow {
   if (s.status.moltTurns > 0 && --s.status.moltTurns === 0) molt(c, s, moltOf(s), false);
@@ -107,7 +102,7 @@ export function moltAtStart(c: Combat, s: Side): Flow {
 export function moltWatch(c: Combat, s: Side): Flow {
   if (s.hp <= 0 || !moltOf(s) || s.status.moltTurns > 0) return undefined;
   if (!negative(s)) s.status.statusTurns = 0;
-  else if (++s.status.statusTurns >= 2) startMolt(c, s, 'statuses');
+  else if (++s.status.statusTurns >= 2) startMolt(c, s);
   return undefined;
 }
 

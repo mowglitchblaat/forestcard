@@ -405,7 +405,7 @@ export type DomainEvent =
   | { type: 'parasiteEnded'; side: SideIndex; links: number } // links: those left
   // Insect mutation and molt (mechanics/insect.ts).
   | { type: 'mutated'; side: SideIndex; level: number }
-  | { type: 'moltStarted'; side: SideIndex; turns: number; cause: 'mark' | 'statuses' }
+  | { type: 'moltStarted'; side: SideIndex; turns: number }
   | { type: 'molted'; side: SideIndex; instant: boolean }
   // Damage reduction (%) or block chance (%) gained (mutation, reaction passive).
   | { type: 'defenseChanged'; side: SideIndex; kind: 'block' | 'reduce'; delta: number }

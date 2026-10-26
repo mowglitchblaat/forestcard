@@ -14,7 +14,7 @@ import type { StrikeFlow } from '../combat/flow.ts';
 import type { Side } from '../combat/state.ts';
 import type { DomainEvent } from '../events.ts';
 import type { EffectData } from '../model/card.ts';
-import { markedForMolt, mutationOnStatus } from './insect.ts';
+import { mutationOnStatus } from './insect.ts';
 import { triggerFact } from './triggers.ts';
 
 // Its part of a card's status (combat/state.ts).
@@ -81,10 +81,6 @@ export function reactToEvent(c: Combat, e: DomainEvent): void {
   if (!s || !s.status.reacts || s.hp <= 0) return;
   if (e.type === 'damaged') {
     if (e.amount > 0) reactionPassives(c, s, 'degats');
-    return;
-  }
-  if (e.type === 'markReceived') {
-    markedForMolt(c, s);
     return;
   }
   const f = triggerFact(e);

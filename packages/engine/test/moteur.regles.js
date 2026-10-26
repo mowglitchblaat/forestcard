@@ -1021,16 +1021,23 @@ test('mutation : 4 tours de suite sans statut font aussi monter d\'un niveau', (
   assert.deepEqual(niv.map(e => e.niv), [1, 2]);
 });
 
-test('mue : une marque d\'exécution lance la mue, 2 tours plus tard la carte mue (marques et statuts retirés, ATQ et PV perdus)', () => {
+test('mue : 2 tours de suite avec un statut lancent la mue, 2 tours plus tard la carte mue (marques et statuts retirés, ATQ et PV perdus)', () => {
   const r = combat([C('Mante', 20, 1000, { passif: { type: 'mue', mueatq: 5, uatq: 'pts', muepv: 100, upv: 'pts' } })],
-    [C('Bourreau', 1, SOLIDE, { passif: { type: 'execution', chance: 100 } })], { regles: { maxTours: 4, maxProlong: 0 } });
+    [C('Bourreau', 1, SOLIDE, { passif: { briques: [{ type: 'execution', chance: 100 }, { type: 'poison', chance: 100, degtour: 1, tours: 3 }] } })], { regles: { maxTours: 5, maxProlong: 0 } });
+  const marque = r.journal.findIndex(e => e.k === 'marque' && e.c === 0);
   const debut = r.journal.findIndex(e => e.k === 'mue_debut');
   const mue = r.journal.findIndex(e => e.k === 'mue');
-  assert.ok(debut >= 0 && mue > debut);
+  assert.ok(marque >= 0 && debut > marque && mue > debut);
   const apres = r.journal.slice(mue, mue + 8);
   assert.ok(apres.some(e => e.t === 'finstatut' && e.k === 'marque' && e.n === 0));
   assert.ok(apres.some(e => e.k === 'mod' && e.d === -5));
   assert.ok(apres.some(e => e.k === 'mod' && e.d === -100));
+});
+
+test('mue : une marque d\'exécution seule ne lance pas la mue (ce n\'est pas un statut)', () => {
+  const r = combat([C('Mante', 20, 1000, { passif: { type: 'mue' } })], [C('Bourreau', 1, SOLIDE, { passif: { type: 'execution', chance: 100 } })], { regles: { maxTours: 6, maxProlong: 0 } });
+  assert.ok(lignes(r, e => e.k === 'marque').length > 0);
+  assert.equal(lignes(r, e => e.k === 'mue_debut' || e.k === 'mue').length, 0);
 });
 
 test('réaction : quand la carte subit des dégâts, la stat choisie monte, jusqu\'au plafond', () => {

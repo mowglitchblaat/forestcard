@@ -1210,7 +1210,7 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
     case 'moltStarted':
       return {
         t: 'statut',
-        txt: `${name(e.side)} entre en mue (${e.cause === 'mark' ? "marque d'exécution" : 'statuts'}) : elle aura lieu dans ${turns(e.turns)}`,
+        txt: `${name(e.side)} entre en mue : elle aura lieu dans ${turns(e.turns)}`,
         o: { c: e.side, k: 'mue_debut', n: e.turns },
       };
     case 'molted':

@@ -316,7 +316,7 @@ export const EDITOR_PASSIVES: Record<PassiveType, EditorEntry> = {
     'upv',
   ],
   mue: [
-    "Mue : déclenchée par une marque d'exécution ou 2 tours de suite avec un statut négatif ; 2 tours plus tard, la carte mue (statuts, marques, ciblage et lien retirés) mais perd de l'ATQ et des PV",
+    "Mue : déclenchée par 2 tours de suite avec un statut négatif ; 2 tours plus tard, la carte mue (statuts, marques, ciblage et lien retirés) mais perd de l'ATQ et des PV",
     'mueatq',
     'uatq',
     'muepv',

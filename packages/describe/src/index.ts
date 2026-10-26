@@ -201,7 +201,7 @@ const PASSIVE_TEXT: Record<PassiveType, (p: Fx, x: PassiveContext) => string> = 
     `${c} % de chances, à chaque coup, de poser ${linksTxt(p)} sur la cible pendant ${trs(nz(p.tours) || 3)} : ${linkPct(p)} % de ses soins ${linkEach(p)}lui reviennent, et elle partage les siens de la même façon (les liens se cumulent, 100 % au plus)`,
   mutation: (p) => mutationText(p),
   mue: (p) =>
-    `Mue : quand la carte reçoit une marque d'exécution, ou après 2 tours de suite avec un statut négatif, elle entre en mue ; 2 tours plus tard, au début de son tour, elle mue : statuts négatifs (étourdissement compris), marques d'exécution, ciblage et lien parasitaire retirés, mais ${moltLoss(p)}`,
+    `Mue : après 2 tours de suite avec un statut négatif, la carte entre en mue ; 2 tours plus tard, au début de son tour, elle mue : statuts négatifs (étourdissement compris), marques d'exécution, ciblage et lien parasitaire retirés, mais ${moltLoss(p)}`,
   reaction: (p) => reactionText(p),
   glas: (p, { c }) =>
     `${c} % de chances de faire sonner le Glas : une ombre avance sur la vie de la cible de ${nz(p.glasv)} % de ses PV max par tour ; quand ses PV passent dessous, la mort l'emporte (pas d'évite la mort ni de réanimation ; 3 purifications pour l'effacer)`,
