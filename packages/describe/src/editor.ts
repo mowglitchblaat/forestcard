@@ -536,6 +536,15 @@ export const EDITOR_ULTIMATES: { readonly [K in EffectType]?: EditorEntry } = {
     'pctlien',
     'nbliens',
   ],
+  mue_forcee: [
+    "Mue forcée : la cible (soi par défaut) mue tout de suite : statuts, marques d'exécution, ciblage et liens retirés, mais perte d'ATQ et de PV (vides = valeurs de son passif Mue, sinon 10 %)",
+    'cible',
+    'chance',
+    'mueatq',
+    'uatq',
+    'muepv',
+    'upv',
+  ],
 };
 
 export const EDITOR_MAGICS: { readonly [K in EffectType]?: EditorEntry } = {
@@ -815,6 +824,15 @@ export const EDITOR_MAGICS: { readonly [K in EffectType]?: EditorEntry } = {
     'tours',
     'pctlien',
     'nbliens',
+  ],
+  mue_forcee: [
+    "Mue forcée : la cible (soi par défaut) mue tout de suite : statuts, marques d'exécution, ciblage et liens retirés, mais perte d'ATQ et de PV (vides = valeurs de son passif Mue, sinon 10 %)",
+    'cible',
+    'chance',
+    'mueatq',
+    'uatq',
+    'muepv',
+    'upv',
   ],
 };
 

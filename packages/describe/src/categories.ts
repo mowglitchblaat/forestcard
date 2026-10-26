@@ -110,6 +110,7 @@ const CATEGORY_OF: Record<string, string> = {
   lien_parasite: 'parasite',
   mutation: 'insecte',
   mue: 'insecte',
+  mue_forcee: 'insecte',
   reaction: 'reaction',
 };
 export const categoryOf = (t: unknown): string =>

@@ -15,7 +15,8 @@
 // marks, a targeting mark and a parasitic link on it are removed; it loses mueatq ATQ (unit uatq)
 // and muepv max HP (unit upv; 10 % each when empty). It can molt again later.
 
-import { emit, id, opponent, round, type Combat } from '../combat/combat.ts';
+import { emit, id, opponent, roll, round, type Combat } from '../combat/combat.ts';
+import type { EffectContext, EffectRules } from '../combat/effect-context.ts';
 import type { Flow } from '../combat/flow.ts';
 import type { Side } from '../combat/state.ts';
 import type { EffectData, Num } from '../model/card.ts';
@@ -166,3 +167,20 @@ export function mutationQuiet(c: Combat, s: Side): Flow {
   }
   return undefined;
 }
+
+// ── Forced molt (effect mue_forcee: magic, ultimate, trap) ──
+
+// The target (`cible`: itself by default, or the opponent) molts at once, X % of chances (100 when
+// empty). Its values: the effect's own, else the target's mue passive, else 10 %.
+export function forcedMoltEffect({ c, e, o, x }: EffectContext): void {
+  const T = e.cible === 'adversaire' ? x : o;
+  const chance = e.chance == null || e.chance === '' ? 100 : +e.chance || 0;
+  if (chance < 100 && !roll(c, chance)) return;
+  const own = filled(e.mueatq) || filled(e.muepv);
+  molt(c, T, own ? e : moltOf(T), true);
+}
+
+// Its effects (the registry of effects.ts).
+export const effects = {
+  mue_forcee: { run: forcedMoltEffect, once: true },
+} satisfies EffectRules;

@@ -443,6 +443,9 @@ const EFFECT_TEXT: Record<EffectType, (e: Fx, x: EffectContext) => string[]> = {
   lien_parasite: (e) => [
     `Pose ${linksTxt(e)} sur l'adversaire pendant ${trs(nz(e.tours) || 3)} : ${linkPct(e)} % de ses soins ${linkEach(e)}reviennent à sa carte, qui partage les siens de la même façon (les liens se cumulent, 100 % au plus)`,
   ],
+  mue_forcee: (e) => [
+    `${isEmpty(e.chance) || nz(e.chance) >= 100 ? 'Force' : nz(e.chance) + ' % de chances de forcer'} la mue ${e.cible === 'adversaire' ? "de l'adversaire" : 'de sa carte'}, tout de suite : statuts négatifs (étourdissement compris), marques d'exécution, ciblage et liens parasitaires retirés, mais la carte ${isEmpty(e.mueatq) && isEmpty(e.muepv) ? "perd les valeurs de son passif Mue (10 % d'ATQ et de PV max sans passif)" : moltLoss(e)}`,
+  ],
   glas_effet: (e, { ci }) => [
     `Fait sonner le Glas pour ${ci} : une ombre avance sur sa vie de ${nz(e.glasv)} % de ses PV max par tour ; quand ses PV passent dessous, la mort l'emporte (pas d'évite la mort ni de réanimation ; 3 purifications pour l'effacer)`,
   ],

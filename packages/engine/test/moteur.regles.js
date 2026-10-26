@@ -1079,3 +1079,15 @@ test('lien parasitaire : dans les deux sens, celui qui pose le lien partage auss
     assert.equal(r.journal[k + 1].n, 12, 'le soin reçu par le lien n\'est pas repartagé');
   }
 });
+
+test('mue forcée : un piège fait muer sa carte tout de suite (statuts retirés, ATQ et PV perdus)', () => {
+  const r = combat([C('Cigale', 20, 1000, { passif: { type: 'mue', mueatq: 3, uatq: 'pts', muepv: 50, upv: 'pts' } }),
+    PIE('Exuvie', { type: 'proprio_statut' }, { type: 'mue_forcee' })],
+    [C('Venin', 1, SOLIDE, { passif: { type: 'poison', chance: 100, degtour: 2, tours: 3 } })], { regles: { maxTours: 3, maxProlong: 0 } });
+  const mue = r.journal.findIndex(e => e.k === 'mue');
+  assert.ok(mue > 0, 'le piège fait muer la carte');
+  const apres = r.journal.slice(mue, mue + 8);
+  assert.ok(apres.some(e => e.t === 'finstatut' && e.k === 'poison'));
+  assert.ok(apres.some(e => e.k === 'mod' && e.d === -3), 'valeurs du passif Mue');
+  assert.ok(apres.some(e => e.k === 'mod' && e.d === -50));
+});
