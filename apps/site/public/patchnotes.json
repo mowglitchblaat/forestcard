@@ -1,5 +1,17 @@
 [
   {
+    "date": "2026-10-27",
+    "intro": "Une petite mise à jour du site pour mieux informer les joueurs dont le compte est suspendu.",
+    "groupes": [
+      {
+        "titre": "Site",
+        "points": [
+          "Un joueur dont le compte est suspendu voit désormais un message clair qui l’invite à contacter un fondateur, au lieu d’un simple échec de connexion."
+        ]
+      }
+    ]
+  },
+  {
     "date": "2026-10-26",
     "intro": "Une grosse fournée de nouvelles mécaniques arrive en combat : headshots, brume, liens parasitaires, mutation insecte et mue.",
     "groupes": [
