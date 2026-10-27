@@ -74,7 +74,7 @@ Clés de `EFFECT_TYPES`, exécutées par `applyEffect` (`packages/engine/src/com
 | `insensible_piege` | les pièges adverses se déclenchent sans effet pendant X tours | `trap-immunity.ts` |
 | `annule_magies` | annule la magie adverse (`tours` à 0 ou vide : jusqu'à la fin du combat) | `magic-cancel.ts` |
 | `detruire` | détruit la magie ou le piège adverse (`carte`) | `cards.ts` |
-| `voler` | vole la magie ou le piège adverse, tout de suite ou au début du tour X (`tourdecl`), pour `duree` tours ou tout le combat | `theft.ts` |
+| `voler` | vole la magie ou le piège adverse, tout de suite ou au début du tour X (`tourdecl`), pour `duree` tours ou tout le combat ; un piège volé garde ses déclenchements (déjà utilisé, il ne se redéclenche pas chez le voleur) | `theft.ts` |
 | `equiper` | équipe une autre magie ou un autre piège du deck | `cards.ts` |
 | `echange_atq` | échange les ATQ des deux cartes | `stats.ts` |
 | `echange_pv` | échange les PV (et PV max) des deux cartes | `stats.ts` |
@@ -162,7 +162,7 @@ Clés de `TRAP_CONDITION_TYPES`, évaluées par `scan` (`packages/engine/src/com
 | `adv_pv_bas` | l'adversaire passe sous X % de PV |
 | `adv_soigne` | l'adversaire se soigne |
 | `proprio_soigne` | son propriétaire se soigne |
-| `proprio_meurt` | son propriétaire va mourir (avant la réanimation ; un piège « évite la mort » passe en premier) |
+| `proprio_meurt` | son propriétaire va mourir (avant la réanimation ; un piège « évite la mort » passe en premier). Piège qui réanime : la carte se brise, le piège se montre (un contre-piège peut le détruire ou le voler), puis la carte se reforme seulement si le piège tient encore ; contré, il ne fait rien et seule une autre réanimation (passif, magie) peut ramener la carte |
 | `proprio_statut` | son propriétaire reçoit un statut négatif (brûlure, poison, saignement, malédiction, gel, fatigue, étourdissement, fracture) |
 | `adv_statut` | l'adversaire reçoit un statut négatif |
 | `proprio_esquive` | son propriétaire esquive (attaque, souffle ou missile) |

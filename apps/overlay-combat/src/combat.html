@@ -1059,7 +1059,7 @@ async function prolongation(e){
 // le combattant suivant arrive avec sa magie et son piège, du centre de l'écran, et se retourne. L'autre côté ne bouge pas.
 async function relais(e){const i=e.c,p=$('#p'+i);if(!p)return;
  p.classList.remove('actif','idle');
- const k=$('#p'+i+' .cw .card'),cendre=k&&k.dataset.cendre==='1';
+ const k=$('#p'+i+' .cw .card'),cendre=k&&(k.dataset.cendre==='1'||k.dataset.brisee==='1');
  if(!cendre&&!coupee(i)){briser(i);await wait(2600)}else await wait(600);
  document.querySelectorAll('#p'+i+' canvas.fx').forEach(x=>x.remove());Object.keys(st).filter(x=>x.startsWith(String(i))).forEach(x=>st[x]=0);
  const vieux=[...document.querySelectorAll('#p'+i+' .cw, #p'+i+' .mini')];
@@ -1379,8 +1379,8 @@ async function jouer(res){
    else if(e.t==='esquive'){flot(e.c,'Esquive !','#e5e7eb');vent(e.c)}
    else if(e.t==='bloque'){if(/une partie/.test(e.txt||'')){bouclier(e.c,{partiel:1});flot(e.c,'Dégâts réduits','#fcd34d')}else if(/est bloquée/.test(e.txt||'')){bouclier(e.c,{partiel:1});flot(e.c,'Attaque bloquée','#fcd34d')}else{annuleFx(1-e.c);flot(1-e.c,'Attaque annulée','#fca5a5')}}   // annulée = rien ne passe · bloquée / partiel = le coup touche (statuts et marques passent)   // annulée = rien ne passe · partiel = le coup touche quand même
    else if(e.t==='protege')ailes(e.c);
-   else if(e.t==='reanim_mort'){document.querySelectorAll('#p'+e.c+' .card canvas.fx').forEach(k=>k.remove());Object.keys(st).filter(k=>k.startsWith(String(e.c))).forEach(k=>st[k]=0);if(coupee(e.c))await wait(900);else{briser(e.c);await wait(3100)}}   // exécutée : déjà coupée en deux, pas de 2e destruction
-   else if(e.t==='reanim'){reforme(e.c);flot(e.c,'+'+e.n,'#4ade80');await wait(2100)}
+   else if(e.t==='reanim_mort'){document.querySelectorAll('#p'+e.c+' .card canvas.fx').forEach(k=>k.remove());Object.keys(st).filter(k=>k.startsWith(String(e.c))).forEach(k=>st[k]=0);{const k=$('#p'+e.c+' .cw .card');if(k)k.dataset.brisee='1'}if(coupee(e.c))await wait(900);else{briser(e.c);await wait(3100)}}   // brisee : si son piège de réanimation est contré, elle reste brisée (pas de 2e destruction à la fin)   // exécutée : déjà coupée en deux, pas de 2e destruction
+   else if(e.t==='reanim'){{const k=$('#p'+e.c+' .cw .card');if(k)delete k.dataset.brisee}reforme(e.c);flot(e.c,'+'+e.n,'#4ade80');await wait(2100)}
    else if(e.t==='statut'&&e.k==='rage'){statut(e.c,'rage',true);colere(e.c);flot(e.c,'RAGE !','#ef4444','big');await wait(1000)}
    else if(e.t==='statut'&&e.k==='fatigue'){statut(e.c,'fatigue',true);flot(e.c,'Fatigue…','#94a3b8');await wait(700)}
    else if(e.t==='statut'&&e.k==='epuise'){flot(e.c,'ÉPUISÉ !','#94a3b8','big');await wait(900)}   // relais : 60 rounds sans KO, le plus entamé tombe
@@ -1452,7 +1452,7 @@ async function jouer(res){
    // salve de missiles : rythme accéléré, du tir du premier missile jusqu'à la fin de la salve (prochain tour, attaque ou ultime)
    if(e.t==='missile')enSalve=true;else if(['tour','attaque','ultime','fin','prolongation','relais'].includes(e.t))enSalve=false;
    if(enSalve)ms=Math.min(ms,{missile:0,detonation:200,degats:520,statut:560,finstatut:150,stat:600,esquive:600,bloque:700,soin:700}[e.t]??500);   // coup fatal évité : les dégâts et l'effet « évite la mort » apparaissent presque ensemble
-   if(e.t==='fin'){[0,1].forEach(i=>{faceMagie(i);const p=$('#p'+i);if(p)p.classList.remove('actif','idle')});fxAll.forEach(s=>s());fxAll.clear();document.querySelectorAll('canvas.fx').forEach(k=>k.remove());{const rw=e.recompenses[e.gagnant??0];$('#ban').textContent=e.txt+(rw>0?` (+${rw})`:'')+(e.bounty?(e.bounty.tout?` · 💰 Bounty ${e.bounty.total} : le gagnant rafle tout !`:` · 💰 Bounty ${e.bounty.total} !`):'');if(e.bounty){bourseBounty(e.bounty.parts);[0,1].forEach(i=>{if(e.bounty.parts[i]>0)setTimeout(()=>flot(i,'💰 Bounty +'+e.bounty.parts[i],'#fcd34d'),2100)})}}const cendre=i=>{const k=$('#p'+i+' .cw .card');return k&&k.dataset.cendre==='1'};if(e.gagnant!=null){if(!cendre(1-e.gagnant)&&!coupee(1-e.gagnant))briser(1-e.gagnant);auraFx(e.gagnant,{gold:1,dur:5.2});setTimeout(()=>ceintureFin(e.gagnant),900)}else{setTimeout(()=>titreFin(null),900);[0,1].forEach(i=>{if(e.pv&&e.pv[i]<=0&&!cendre(i)&&!coupee(i))briser(i)})}}   // double KO : les deux cartes se brisent
+   if(e.t==='fin'){[0,1].forEach(i=>{faceMagie(i);const p=$('#p'+i);if(p)p.classList.remove('actif','idle')});fxAll.forEach(s=>s());fxAll.clear();document.querySelectorAll('canvas.fx').forEach(k=>k.remove());{const rw=e.recompenses[e.gagnant??0];$('#ban').textContent=e.txt+(rw>0?` (+${rw})`:'')+(e.bounty?(e.bounty.tout?` · 💰 Bounty ${e.bounty.total} : le gagnant rafle tout !`:` · 💰 Bounty ${e.bounty.total} !`):'');if(e.bounty){bourseBounty(e.bounty.parts);[0,1].forEach(i=>{if(e.bounty.parts[i]>0)setTimeout(()=>flot(i,'💰 Bounty +'+e.bounty.parts[i],'#fcd34d'),2100)})}}const cendre=i=>{const k=$('#p'+i+' .cw .card');return k&&(k.dataset.cendre==='1'||k.dataset.brisee==='1')};if(e.gagnant!=null){if(!cendre(1-e.gagnant)&&!coupee(1-e.gagnant))briser(1-e.gagnant);auraFx(e.gagnant,{gold:1,dur:5.2});setTimeout(()=>ceintureFin(e.gagnant),900)}else{setTimeout(()=>titreFin(null),900);[0,1].forEach(i=>{if(e.pv&&e.pv[i]<=0&&!cendre(i)&&!coupee(i))briser(i)})}}   // double KO : les deux cartes se brisent
    await wait(ms);
   }
   if(!TEST&&!DEMO&&R.seed!=null)fetch('https://bjsvqikjnvaomyoifiml.supabase.co/rest/v1/rpc/combat_affiche',{method:'POST',headers:{apikey:'sb_publishable_-3cPqDCyE-zhb3z5r6dPhg_DJFKGAI6','Content-Type':'application/json'},body:JSON.stringify({p_seed:String(R.seed)})}).catch(()=>{});   // le combat apparaît dans l'historique du site seulement maintenant (pas de spoil)

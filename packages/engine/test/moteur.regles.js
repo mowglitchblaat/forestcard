@@ -174,11 +174,46 @@ test('vol de magie : la carte passe chez le voleur et son effet aussi', () => {
   assert.equal(apres.atq[1], 9, 'le voleur gagne le bonus');
 });
 
-test('piège de réanimation : caché jusqu\'à ce que la carte se reforme (brisée → reformée → piège)', () => {
+test('piège de réanimation : caché jusqu\'à ce que la carte se brise, puis il se montre avant qu\'elle se reforme (brisée → piège → reformée)', () => {
   const phenix = PIE('Phénix', { type: 'proprio_meurt' }, { briques: [{ type: 'reanimation', pctrev: 50 }, { type: 'degats', val: 5 }] });
   const r = combat([C('A', 40, 100)], [C('B', 5, 60), phenix]);
   const ordre = r.journal.filter(e => ['reanim_mort', 'reanim', 'piege'].includes(e.t)).map(e => e.t);
-  assert.deepEqual(ordre.slice(0, 3), ['reanim_mort', 'reanim', 'piege']);
+  assert.deepEqual(ordre.slice(0, 3), ['reanim_mort', 'piege', 'reanim']);
+  assert.ok(r.journal.some(e => /A subit 5 dégâts/.test(e.txt || '')), 'ses autres effets jouent après la réanimation');
+});
+
+test('piège de réanimation contré (détruit ou volé) : la carte ne se reforme pas, le piège ne fait rien', () => {
+  const sauce = PIE('Sauce', { type: 'proprio_meurt' }, { briques: [{ type: 'rage', u: 'pts', ragev: 8, ragetours: 2, fatval: 7, fattours: 2 }, { type: 'reanimation', pctrev: 45 }] });
+  for (const contre of [{ type: 'detruire', carte: 'piege' }, { type: 'voler', carte: 'piege', duree: 3 }]) {
+    const r = combat([C('A', 40, SOLIDE), PIE('MTP', { type: 'adv_piege' }, contre)], [C('B', 5, 60), sauce], { regles: { maxTours: 10, maxProlong: 0 } });
+    const iS = r.journal.findIndex(e => e.t === 'piege' && e.c === 1);
+    assert.ok(iS > 0, contre.type + ' : la sauce se montre');
+    assert.equal(r.journal[iS - 1].t, 'reanim_mort', contre.type + ' : sur la carte brisée');
+    assert.equal(r.journal[iS + 1].t, 'piege', contre.type + ' : le contre-piège répond aussitôt');
+    assert.ok(!r.journal.some(e => e.t === 'reanim'), contre.type + ' : pas de réanimation');
+    assert.ok(!r.journal.some(e => /B entre en rage/.test(e.txt || '')), contre.type + ' : pas de rage');
+    assert.equal(r.gagnant, 0, contre.type + ' : la carte reste détruite');
+  }
+});
+
+test('piège de réanimation contré : une autre réanimation (passif, magie) ramène quand même la carte', () => {
+  const sauce = PIE('Sauce', { type: 'proprio_meurt' }, { type: 'reanimation', pctrev: 45 });
+  const r = combat([C('A', 40, SOLIDE), PIE('MTP', { type: 'adv_piege' }, { type: 'detruire', carte: 'piege' })],
+    [C('B', 5, 60, { passif: { type: 'reanimation', pctrev: 20 } }), sauce], { regles: { maxTours: 3, maxProlong: 0 } });
+  const re = r.journal.find(e => e.t === 'reanim');
+  assert.ok(re, 'réanimée par son passif');
+  assert.match(re.txt, /20 %/);
+});
+
+test('piège volé : il garde ses déclenchements, un piège déjà utilisé ne se redéclenche pas chez le voleur', () => {
+  // B meurt : la sauce se montre, A la vole aussitôt (contre-piège) ; B revient par son passif, puis A meurt : la sauce, déjà utilisée, ne fait rien chez A
+  const sauce = PIE('Sauce', { type: 'proprio_meurt' }, { type: 'reanimation', pctrev: 45 });
+  const r = combat([C('A', 40, 100), PIE('MTP', { type: 'adv_piege' }, { type: 'voler', carte: 'piege', duree: 0 })],
+    [C('B', 30, 60, { passif: { type: 'reanimation', pctrev: 100 } }), sauce], { regles: { maxTours: 30, maxProlong: 0 } });
+  assert.ok(r.journal.some(e => e.k === 'vol_carte'), 'volée');
+  assert.equal(r.journal.filter(e => e.t === 'piege' && e.c === 0).length, 1, 'chez A, seul MTP se déclenche');
+  assert.ok(!r.journal.some(e => e.t === 'reanim' && e.c === 0), 'A ne se reforme pas');
+  assert.equal(r.gagnant, 1);
 });
 
 test('« évite la mort » passe avant la réanimation, et les dégâts s\'affichent avant l\'effet', () => {

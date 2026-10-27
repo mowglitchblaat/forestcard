@@ -10,12 +10,13 @@ import type { CombatView, DomainEvent, OnEvent, SideView } from '../events.ts';
 import type { Card, EffectData, Num, Player } from '../model/card.ts';
 import type { Rules } from '../model/rules.ts';
 import { damageFactor } from '../mechanics/double-damage.ts';
-import { flushRevives } from '../mechanics/revive.ts';
+import { flushRevives, type TrapRevive } from '../mechanics/revive.ts';
 import { noticeTrigger, type Triggers } from '../mechanics/triggers.ts';
 import { reactToEvent } from '../mechanics/reaction.ts';
 import { NO_MAGIC, NO_TRAP, newStatus, normalizePassives, type Side } from './state.ts';
 
-export type PendingRevive = { side: Side; pct: Num; reveal: (() => void) | null };
+// trap: a revive trap ("owner dies") still to reveal; it may be countered before the card reforms
+export type PendingRevive = { side: Side; pct: Num; trap: TrapRevive | null };
 
 // An event held back by the engine, with the view of the moment it happened.
 export type HeldEvent = { event: DomainEvent; view: CombatView };

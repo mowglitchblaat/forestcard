@@ -1,7 +1,8 @@
 // Theft of a magic or a trap, and undoing a magic's effects.
 //
 // The stolen card moves to the thief's side: in place of the trap if a trap steals, else in its magic
-// / trap slot. duree: turns OF THE THIEF it keeps the card; then it goes back to its owner (empty or 0
+// / trap slot. A stolen trap keeps its count of triggers (one with 1 trigger, already used, does
+// nothing more for the thief). duree: turns OF THE THIEF it keeps the card; then it goes back to its owner (empty or 0
 // = until the end of the combat).
 
 import { emit, id, opponent, over, type Combat } from '../combat/combat.ts';
@@ -94,7 +95,7 @@ export function steal(
     const ownerTriggers = x.trapTriggers;
     o.trap = x.trap;
     o.trapActive = 1;
-    o.trapTriggers = 0;
+    o.trapTriggers = ownerTriggers; // its triggers go with it: a trap already used stays used
     o.trapBlocked = 0;
     emit(c, { type: 'trapStolen', side: id(c, o), from: id(c, x), card: x.trap, turns });
     if (turns > 0)
@@ -138,7 +139,7 @@ export function giveBack(c: Combat, o: Side, theft: TimedTheft): void {
   } else {
     const holds = o.trap === theft.card && o.trapActive;
     const max = (theft.card.effet && theft.card.effet.declenchements) || 1;
-    const used = theft.ownerTriggers + (holds ? o.trapTriggers : 0);
+    const used = holds ? o.trapTriggers : theft.ownerTriggers; // the thief carried on its count
     restoreTrap(o, theft.previous);
     const ok = !!(holds && x.trap === theft.card && !x.trapActive);
     if (ok) {
