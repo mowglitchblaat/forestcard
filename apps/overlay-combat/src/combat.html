@@ -143,9 +143,20 @@ canvas.fx.solide{box-shadow:inset 0 0 30px 8px rgba(120,113,108,.75)}
 
 /* tour en cours : le pseudo du joueur s'allume au-dessus de sa carte */
 .pj{font-size:3.7vh;font-weight:900;letter-spacing:.02em;line-height:1.1;margin:0 0 1.2vh;color:#e5ece7;opacity:.55;text-shadow:0 0 8px #000,0 0 3px #000;transition:opacity .35s,transform .35s,color .35s;position:relative;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.eq{display:inline-flex;gap:.6vh;margin-left:1vh;vertical-align:middle}.eq b{width:1.5vh;height:1.5vh;border-radius:50%;background:#fcd34d;box-shadow:0 0 .8vh #f59e0b;display:inline-block}.eq b.off{background:#3f3f46;box-shadow:none}.eq b.go{animation:eqgo .9s ease-out}@keyframes eqgo{0%{transform:scale(2.2);background:#fff}100%{transform:none}}
+.eq{display:flex;justify-content:center;gap:.9vh;margin:-.6vh 0 1.2vh}.eq b{width:2.1vh;height:2.1vh;border:.25vh solid rgba(0,0,0,.6);border-radius:50%;background:#fcd34d;box-shadow:0 0 .8vh #f59e0b;display:inline-block}.eq b.off{background:#3f3f46;box-shadow:none}.eq b.go{animation:eqgo .9s ease-out}@keyframes eqgo{0%{transform:scale(2.2);background:#fff}100%{transform:none}}
 .belt{position:absolute;left:50%;bottom:14%;width:128%;transform:translateX(-50%);z-index:6;--r:0deg;pointer-events:none;filter:drop-shadow(0 .4vh .6vh rgba(0,0,0,.85)) drop-shadow(0 0 1.2vh rgba(255,215,120,.55));animation:beltlueur 2.6s ease-in-out infinite}
 @keyframes beltlueur{50%{filter:drop-shadow(0 .4vh .6vh rgba(0,0,0,.85)) drop-shadow(0 0 2.4vh rgba(255,230,150,.9))}}
+#titreban{position:absolute;top:2.5vh;left:50%;z-index:30;display:flex;align-items:center;gap:1.6vh;padding:1vh 3.2vh;border-radius:1.6vh;white-space:nowrap;pointer-events:none;
+ background:linear-gradient(180deg,rgba(60,38,4,.92),rgba(24,14,2,.92));border:.35vh solid #fcd34d;box-shadow:0 0 2.4vh rgba(252,211,77,.7),0 0 6vh rgba(245,158,11,.35),inset 0 0 1.6vh rgba(252,211,77,.35);
+ transform:translateX(-50%);animation:titrein 2.2s cubic-bezier(.3,1.2,.4,1) both,titreglow 2.4s ease-in-out 2.2s infinite}
+#titreban img{height:7.5vh;filter:drop-shadow(0 0 1vh rgba(255,215,120,.7))}
+#titreban .tx{display:flex;flex-direction:column;align-items:center;line-height:1.05;text-shadow:0 0 8px #000,0 0 3px #000}
+#titreban small{font-size:1.9vh;font-weight:800;letter-spacing:.35em;color:#fde68a}
+#titreban b{font-size:4.6vh;font-weight:900;letter-spacing:.04em;color:#fcd34d;text-shadow:0 0 1.4vh #f59e0b,0 0 3px #000}
+#titreban i{font-style:normal;font-size:2.3vh;font-weight:800;color:#fff;max-width:44vw;overflow:hidden;text-overflow:ellipsis}
+#titreban.fin i{color:#a7f3d0;font-size:2.8vh}#titreban.nouveau i{color:#fcd34d;font-size:3.1vh;animation:beltpop .9s cubic-bezier(.2,1.4,.4,1)}
+@keyframes titrein{0%{opacity:0;transform:translate(-50%,36vh) scale(.5)}18%{opacity:1;transform:translate(-50%,36vh) scale(1.45)}62%{opacity:1;transform:translate(-50%,36vh) scale(1.35)}100%{opacity:1;transform:translateX(-50%) scale(1)}}
+@keyframes titreglow{50%{box-shadow:0 0 3.6vh rgba(252,211,77,.95),0 0 9vh rgba(245,158,11,.5),inset 0 0 2vh rgba(252,211,77,.5)}}
 #beltmid{display:block;width:26vw;margin:0 auto 1.5vh;filter:drop-shadow(0 0 1.5vh rgba(255,215,120,.6));animation:beltlueur 2.6s ease-in-out infinite}
 .belt.pop,#beltmid.pop{animation:beltpop .9s cubic-bezier(.2,1.4,.4,1),beltlueur 2.6s ease-in-out .9s infinite}
 .belt.b1,.belt.b2{width:62%;bottom:auto;top:7%}.belt.b1{left:13%;--r:-45deg;transform:translateX(-50%) rotate(var(--r))}.belt.b2{left:87%;--r:45deg;transform:translateX(-50%) rotate(var(--r))}
@@ -286,7 +297,8 @@ function allumerEffets(e){if(e.c==null&&e.from==null)return;const c=e.c,o=c!=nul
  if(e.k==='mutation')return allumer(c,['mutation']);
  if(e.k==='mue'||e.k==='mue_debut')return allumer(c,['mue','mutation']);
  if(e.k==='lien')return allumer(e.to,['lien_parasite'])}
-// COMBAT EN RELAIS (championnat) : combattants envoyés par joueur ({n, of}), null en combat normal ; les pastilles à côté du pseudo
+// COMBAT EN RELAIS (championnat) : combattants envoyés par joueur ({n, of}), null en combat normal ; les pastilles sur leur propre ligne, sous le pseudo
+// (un pseudo long est coupé par « … » sans jamais cacher les pastilles)
 let EQUIPE=[null,null];
 // CEINTURES (championnat) : celles que détient chaque joueur, autour de sa carte, comme les champions UFC : la 1re à l'horizontale
 // en bas, la 2e en diagonale dans le coin en haut à gauche, la 3e dans le coin en haut à droite. Combat pour le titre (TITRE) :
@@ -298,11 +310,19 @@ function beltsDebut(R){TITRE=R.titre?{...R.titre}:null;const C=Array.isArray(R.c
  BELTS=[0,1].map(i=>{let L=[...(C[i]||[])].sort((a,b)=>ORDRE_B.indexOf(a)-ORDRE_B.indexOf(b));if(TITRE){L=L.filter(d=>d!==TITRE.division);if(TITRE.cote===i)L.unshift(TITRE.division)}return L});
  ceintureMilieu(!!TITRE&&TITRE.cote==null)}
 function ceintureMilieu(on){const m=$('#beltmid');if(m)m.remove();if(on&&TITRE)$('#mid').insertAdjacentHTML('afterbegin',`<img id="beltmid" src="cadres/ceinture-${TITRE.division}.webp" alt="">`)}
-function ceintureFin(g){if(!TITRE||g==null)return;const d=TITRE.division;
+// BANDEAU DU TITRE : un combat pour une ceinture s'annonce au centre de l'écran, puis reste en haut tout le combat ; à la fin, il dit qui repart avec
+const NOM_B={rare:'Rare',epique:'Épique',libre:'Libre'};
+function escT(x){return String(x??'').replace(/&/g,'&amp;').replace(/</g,'&lt;')}
+function titreBan(js){const o=$('#titreban');if(o)o.remove();if(!TITRE)return;const ch=TITRE.cote!=null&&js&&js[TITRE.cote];
+ $('#scene').insertAdjacentHTML('beforeend',`<div id="titreban"><img src="cadres/ceinture-${TITRE.division}.webp" alt=""><div class="tx"><small>🏆 COMBAT POUR LE TITRE 🏆</small><b>CEINTURE ${(NOM_B[TITRE.division]||TITRE.division).toUpperCase()}</b><i>${ch?escT(ch.pseudo)+' défend sa ceinture':'Ceinture vacante : le vainqueur la prend'}</i></div><img src="cadres/ceinture-${TITRE.division}.webp" alt=""></div>`)}
+function titreFin(g){const b=$('#titreban');if(!b||!TITRE)return;const i=b.querySelector('i'),nm=k=>escT(JOUEURS[k]&&JOUEURS[k].pseudo);
+ if(g==null){b.classList.add('fin');i.innerHTML=TITRE.cote!=null?`Match nul : ${nm(TITRE.cote)} garde sa ceinture`:'Match nul : la ceinture reste vacante';return}
+ if(TITRE.cote===g){b.classList.add('fin');i.innerHTML=`${nm(g)} conserve sa ceinture !`}else{b.classList.add('nouveau');i.innerHTML=`👑 NOUVEAU CHAMPION : ${nm(g)} !`}}
+function ceintureFin(g){titreFin(g);if(!TITRE||g==null)return;const d=TITRE.division;
  if(TITRE.cote===g){beltsMaj(g,d);return}
  BELTS=BELTS.map(L=>L.filter(x=>x!==d));BELTS[g].unshift(d);TITRE.cote=g;ceintureMilieu(false);beltsMaj(0,null);beltsMaj(1,null);beltsMaj(g,d)}
 function panneau(i,j){const im=j.imageCombat||j.image,t=tierRar(j.rar),col=(j.rar&&j.rar.couleur)||'#888',magV=/^Aucun/.test(j.magie);JOUEURS[i]=j;
- $('#p'+i).innerHTML=`<div class="pj">${String(j.pseudo).replace(/&/g,'&amp;').replace(/</g,'&lt;')}${EQUIPE[i]?`<span class="eq">${Array.from({length:EQUIPE[i].of},(_,k)=>`<b class="${k<EQUIPE[i].n-1?'off':''}"></b>`).join('')}</span>`:''}</div><div class="cw${t!=='co'?' rr rr-'+t:''}" style="--g:${col}"><div class="card" ${im?`style="background-image:url('${urlImg(im)}')"`:''}>${im?'':j.carte}<div class="dosf" style="${dosCSS(j)}">${j.dos?'':'🌲'}</div>${t==='ep'||t==='lg'||t==='ul'?'<span class="shn"></span>':''}${j.imageCombat?'<span class="sv sva" data-v=""></span><span class="sv svp" data-v=""></span>':''}</div>${beltsHtml(i)}</div>
+ $('#p'+i).innerHTML=`<div class="pj">${String(j.pseudo).replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div>${EQUIPE[i]?`<div class="eq">${Array.from({length:EQUIPE[i].of},(_,k)=>`<b class="${k<EQUIPE[i].n-1?'off':''}"></b>`).join('')}</div>`:''}<div class="cw${t!=='co'?' rr rr-'+t:''}" style="--g:${col}"><div class="card" ${im?`style="background-image:url('${urlImg(im)}')"`:''}>${im?'':j.carte}<div class="dosf" style="${dosCSS(j)}">${j.dos?'':'🌲'}</div>${t==='ep'||t==='lg'||t==='ul'?'<span class="shn"></span>':''}${j.imageCombat?'<span class="sv sva" data-v=""></span><span class="sv svp" data-v=""></span>':''}</div>${beltsHtml(i)}</div>
  <div class="nm">${j.carte}</div><div class="bar"><i></i></div><div class="pv"></div>
  <div class="mp"><div class="mw"><div class="mini${magV?' vide':' back dos mag'}" id="m${i}" ${magV?mini(j.magieImg):`style="${dosCSS(j)}"`}>${magV?(j.magieImg?'':j.magie):(j.dos?'':'?')}</div><small>Magie</small></div>
  <div class="mw"><div class="mini back${/^Aucun/.test(j.piege)?' vide':''}${j.dos?' dos':''}" id="g${i}" ${j.dos?`style="background-image:url('${urlImg(j.dos)}')"`:''}>${j.dos?'':'?'}</div><small>Piège</small></div></div>`}
@@ -1343,7 +1363,7 @@ async function jouer(res){
    $('#ban').className=e.t;$('#ban').textContent=e.txt;$('#log').innerHTML+=e.txt+'<br>';$('#log').scrollTop=1e5;
    if(e.t==='debut'||e.t==='prolongation'||e.t==='relais')chargerZones(e.joueurs);
    try{allumerEffets(e)}catch(_){}
-   if(e.t==='debut'){beltsDebut(R);EQUIPE=e.equipe?[{n:1,of:e.equipe},{n:1,of:e.equipe}]:[null,null];st={};fxL.length=0;fxAll.forEach(s=>s());fxAll.clear();JOUEURS=[];[0,1].forEach(i=>$('#p'+i).classList.remove('actif','idle'));e.joueurs.forEach((j,i)=>panneau(i,j));$('#scene').classList.add('on');maj(e);await wait(2200);   // les 3 dos de chaque joueur, puis les combattants se retournent
+   if(e.t==='debut'){beltsDebut(R);EQUIPE=e.equipe?[{n:1,of:e.equipe},{n:1,of:e.equipe}]:[null,null];st={};fxL.length=0;fxAll.forEach(s=>s());fxAll.clear();JOUEURS=[];[0,1].forEach(i=>$('#p'+i).classList.remove('actif','idle'));e.joueurs.forEach((j,i)=>panneau(i,j));titreBan(e.joueurs);$('#scene').classList.add('on');maj(e);await wait(2200);   // les 3 dos de chaque joueur, puis les combattants se retournent
     await Promise.all([0,1].map(i=>retourner($('#p'+i+' .card'),()=>{const d=$('#p'+i+' .dosf');if(d)d.remove()})));await wait(900);continue}
    if(e.t==='prolongation'){await prolongation(e);continue}
    if(e.t==='relais'){await relais(e);continue}
@@ -1432,13 +1452,13 @@ async function jouer(res){
    // salve de missiles : rythme accéléré, du tir du premier missile jusqu'à la fin de la salve (prochain tour, attaque ou ultime)
    if(e.t==='missile')enSalve=true;else if(['tour','attaque','ultime','fin','prolongation','relais'].includes(e.t))enSalve=false;
    if(enSalve)ms=Math.min(ms,{missile:0,detonation:200,degats:520,statut:560,finstatut:150,stat:600,esquive:600,bloque:700,soin:700}[e.t]??500);   // coup fatal évité : les dégâts et l'effet « évite la mort » apparaissent presque ensemble
-   if(e.t==='fin'){[0,1].forEach(i=>{faceMagie(i);const p=$('#p'+i);if(p)p.classList.remove('actif','idle')});fxAll.forEach(s=>s());fxAll.clear();document.querySelectorAll('canvas.fx').forEach(k=>k.remove());{const rw=e.recompenses[e.gagnant??0];$('#ban').textContent=e.txt+(rw>0?` (+${rw})`:'')+(e.bounty?(e.bounty.tout?` · 💰 Bounty ${e.bounty.total} : le gagnant rafle tout !`:` · 💰 Bounty ${e.bounty.total} !`):'');if(e.bounty){bourseBounty(e.bounty.parts);[0,1].forEach(i=>{if(e.bounty.parts[i]>0)setTimeout(()=>flot(i,'💰 Bounty +'+e.bounty.parts[i],'#fcd34d'),2100)})}}const cendre=i=>{const k=$('#p'+i+' .cw .card');return k&&k.dataset.cendre==='1'};if(e.gagnant!=null){if(!cendre(1-e.gagnant)&&!coupee(1-e.gagnant))briser(1-e.gagnant);auraFx(e.gagnant,{gold:1,dur:5.2});setTimeout(()=>ceintureFin(e.gagnant),900)}else[0,1].forEach(i=>{if(e.pv&&e.pv[i]<=0&&!cendre(i)&&!coupee(i))briser(i)})}   // double KO : les deux cartes se brisent
+   if(e.t==='fin'){[0,1].forEach(i=>{faceMagie(i);const p=$('#p'+i);if(p)p.classList.remove('actif','idle')});fxAll.forEach(s=>s());fxAll.clear();document.querySelectorAll('canvas.fx').forEach(k=>k.remove());{const rw=e.recompenses[e.gagnant??0];$('#ban').textContent=e.txt+(rw>0?` (+${rw})`:'')+(e.bounty?(e.bounty.tout?` · 💰 Bounty ${e.bounty.total} : le gagnant rafle tout !`:` · 💰 Bounty ${e.bounty.total} !`):'');if(e.bounty){bourseBounty(e.bounty.parts);[0,1].forEach(i=>{if(e.bounty.parts[i]>0)setTimeout(()=>flot(i,'💰 Bounty +'+e.bounty.parts[i],'#fcd34d'),2100)})}}const cendre=i=>{const k=$('#p'+i+' .cw .card');return k&&k.dataset.cendre==='1'};if(e.gagnant!=null){if(!cendre(1-e.gagnant)&&!coupee(1-e.gagnant))briser(1-e.gagnant);auraFx(e.gagnant,{gold:1,dur:5.2});setTimeout(()=>ceintureFin(e.gagnant),900)}else{setTimeout(()=>titreFin(null),900);[0,1].forEach(i=>{if(e.pv&&e.pv[i]<=0&&!cendre(i)&&!coupee(i))briser(i)})}}   // double KO : les deux cartes se brisent
    await wait(ms);
   }
   if(!TEST&&!DEMO&&R.seed!=null)fetch('https://bjsvqikjnvaomyoifiml.supabase.co/rest/v1/rpc/combat_affiche',{method:'POST',headers:{apikey:'sb_publishable_-3cPqDCyE-zhb3z5r6dPhg_DJFKGAI6','Content-Type':'application/json'},body:JSON.stringify({p_seed:String(R.seed)})}).catch(()=>{});   // le combat apparaît dans l'historique du site seulement maintenant (pas de spoil)
   if(!TEST&&!DEMO&&R.annonce&&wsLive&&wsLive.readyState===1)wsLive.send(JSON.stringify({request:'DoAction',id:'fin-combat',action:{name:ACTION_FIN},args:{message:R.annonce}}));   // annonce du résultat dans le chat, une fois l'animation terminée
   if(!TEST){$('#scene').classList.remove('on');await wait(800)}
-  ceintureMilieu(false);TITRE=null;BELTS=[[],[]];
+  ceintureMilieu(false);{const tb=$('#titreban');if(tb)tb.remove()}TITRE=null;BELTS=[[],[]];
   verrouLacher('combat');
   if(SITE)try{parent.postMessage({fc:'combat-fini'},location.origin)}catch(e){}
  }
