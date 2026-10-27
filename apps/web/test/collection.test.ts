@@ -71,7 +71,7 @@ describe('filters', () => {
 
   test('type, collection, rarity and duplicates combine', () => {
     expect(names(filterEntries(all, { type: 'magie' }))).toEqual(['Brume']);
-    expect(names(filterEntries(all, { group: 'Communes', type: 'combattant' }))).toEqual([
+    expect(names(filterEntries(all, { group: 'Basique', type: 'combattant' }))).toEqual([
       'Dieu Cerf',
       'Ours',
     ]);

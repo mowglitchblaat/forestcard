@@ -98,7 +98,7 @@ describe('collection helpers', () => {
     expect(p.byGroup.map((g) => `${g.name} ${g.mine}/${g.total}`)).toEqual([
       'Abysses 0/1',
       'Forêt 2/2',
-      'Communes 0/1',
+      'Basique 0/1',
     ]);
     expect(p.byRarity.map((r) => `${r.name} ${r.mine}/${r.total}`)).toEqual([
       'Rare 1/2',

@@ -77,7 +77,7 @@ h2{margin:18px 20px 8px;font-size:19px;border-bottom:3px solid #111827;padding-b
 /*@@DESCRIBE@@*/
 function cardHTML(c,img){
  const rar=c.raretes?`<span class="rar" style="background:${esc(c.raretes.couleur||'#6b7280')}">${esc(c.raretes.nom)}</span>`:'';
- const col=c.collections?.nom?esc(c.collections.nom):'Communes';
+ const col=c.collections?.nom?esc(c.collections.nom):'Basique';
  const ty={combattant:'Combattant',magie:'Magie',piege:'Piège'}[c.type]||c.type;
  const st=c.type==='combattant'?`<div class="stats"><div class="st atq"><small>ATQ</small>${c.atq??'–'}</div><div class="st pv"><small>PV</small>${c.pv??'–'}</div></div>`:'';
  const im=(c.variantes_carte||[]).find(v=>v.nom==='Standard')||(c.variantes_carte||[])[0];

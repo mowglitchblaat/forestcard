@@ -108,7 +108,11 @@ function reform(c: Combat, d: Side, pct: Num): void {
 
 export function flushRevives(c: Combat): void {
   while (c.pendingRevives.length) {
-    const { side: d, pct, trap } = c.pendingRevives.shift() as {
+    const {
+      side: d,
+      pct,
+      trap,
+    } = c.pendingRevives.shift() as {
       side: Side;
       pct: Num;
       trap: TrapRevive | null;

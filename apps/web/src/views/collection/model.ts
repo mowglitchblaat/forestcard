@@ -5,7 +5,8 @@ import type { CardType, CollectionEntry, GameCard } from '@/data/cards';
 import { compareEntries, rarityRank } from '@/lib/rarity';
 import type { CollectionSearch, Sort } from './search';
 
-export const COMMON = 'Communes';
+// the cards without a collection (they drop in every booster)
+export const COMMON = 'Basique';
 export const collectionOf = (e: { card: { collections: { nom: string } | null } }): string =>
   e.card.collections?.nom ?? COMMON;
 export const num = (v: unknown): number => Number(v) || 0;

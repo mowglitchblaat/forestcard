@@ -356,7 +356,7 @@ function Contents({
         )}
         {ordered.map((g) => (
           <div key={g.rows[0]?.collection_nom} className="flex flex-col gap-1">
-            <b>{g.rows[0]?.collection_nom}</b>
+            <b>{g.common ? 'Basique' : g.rows[0]?.collection_nom}</b>
             <div className="flex flex-wrap gap-1.5">
               {[...g.rows]
                 .sort((a, b) => (a.rarete_poids ?? 0) - (b.rarete_poids ?? 0))

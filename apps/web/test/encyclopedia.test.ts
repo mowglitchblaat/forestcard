@@ -25,7 +25,7 @@ test('collections by name, the common cards last, every card counted once', () =
     'Horreurs & Chasseurs',
     'Mythe et Fantastique',
     'Stream et Animals',
-    'Communes',
+    'Basique',
   ]);
   expect(rows.reduce((n, r) => n + r.total, 0)).toBe(CARDS.length);
   for (const r of rows)

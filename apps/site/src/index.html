@@ -394,7 +394,7 @@ function show(t){
 /* ---------- Collection ---------- */
 let deck=null,typeOf={},rarOf={},flt='tout',fcol='tout',collData=[],savedDecks=[],decksOK=true,selDeck='',curView=null;
 async function loadDecks(){const r=await sb.rpc('mes_decks');if(r.error){decksOK=false;savedDecks=[];return}decksOK=true;savedDecks=r.data||[]}
-const cn=x=>x.variantes_carte.cartes.collections?.nom||'Communes';
+const cn=x=>x.variantes_carte.cartes.collections?.nom||'Basique';
 const TYPES={combattant:'Combattants',magie:'Magies',piege:'Pièges'};
 let apercu=false,ownQ={},ALLCOLS=null,apEnCours=false,fantomes=[],voirManq=true;try{voirManq=localStorage.getItem('fc_manquantes')!=='0'}catch(e){}   // fantomes : cartes publiées non possédées, montrées en grisé dans la collection (tous les joueurs)   // ALLCOLS : collections des cartes publiées (filtres stables, avec ou sans aperçu)   // admin : voir toutes les cartes du jeu (rien n'est donné)
 async function chargerApercu(){
@@ -409,7 +409,7 @@ async function chargerFantomes(){try{
   let r=await sel('actif,atq,pv,description,passif,ultime,effet,');if(r.error)r=await sel('atq,pv,description,passif,ultime,effet,');if(r.error||!r.data)return[];   // sans accès : la collection reste comme avant, sans message
   return r.data.filter(v=>v.cartes&&v.cartes.raretes&&v.cartes.actif!==false&&!(ownQ[v.id]>0)).map(v=>({quantite:0,apercu:true,fantome:true,variantes_carte:v}))}catch(e){return[]}}
 async function loadColl(){
-  if(isAdmin){try{const r=await sb.from('cartes').select('collections(nom)').eq('actif',true);if(!r.error&&r.data)ALLCOLS=[...new Set(r.data.map(c=>(c.collections&&c.collections.nom)||'Communes'))]}catch(e){}}
+  if(isAdmin){try{const r=await sb.from('cartes').select('collections(nom)').eq('actif',true);if(!r.error&&r.data)ALLCOLS=[...new Set(r.data.map(c=>(c.collections&&c.collections.nom)||'Basique'))]}catch(e){}}
   if(apercu&&isAdmin){collData=await chargerApercu();collData.sort(cmpColl);typeOf={};rarOf={};collData.forEach(x=>{const c=x.variantes_carte.cartes;typeOf[c.id]=c.type;rarOf[c.id]=c.raretes});if(!deck){const dk=await q(sb.from('deck').select('carte_id').eq('joueur_id',user.id));deck=new Set(dk.map(x=>x.carte_id))}return}
   let r=await sb.from('collection_joueur').select('quantite,variantes_carte(id,nom,image_path,cartes(id,nom,type,atq,pv,description,passif,ultime,effet,collections(nom),raretes(nom,couleur,poids)))').eq('joueur_id',user.id);
   if(r.error)r=await sb.from('collection_joueur').select('quantite,variantes_carte(id,nom,image_path,cartes(id,nom,type,collections(nom),raretes(nom,couleur,poids)))').eq('joueur_id',user.id);
@@ -565,9 +565,9 @@ async function progression(){
   if(r.error||!r.data||!r.data.length){box.innerHTML='';return}
   const own=new Set();collData.forEach(x=>{if(x.quantite>0)own.add(x.variantes_carte.id)});
   const T=r.data.filter(v=>v.cartes).map(v=>({id:v.id,collections:v.cartes.collections,raretes:v.cartes.raretes})),tot=T.length,moi=T.filter(c=>own.has(c.id)).length,pc=n=>tot?Math.round(100*n/tot):0;
-  const C={};T.forEach(c=>{const k=(c.collections&&c.collections.nom)||'Communes',o=C[k]=C[k]||{n:0,m:0,r:{}};o.n++;const ok=own.has(c.id);if(ok)o.m++;
+  const C={};T.forEach(c=>{const k=(c.collections&&c.collections.nom)||'Basique',o=C[k]=C[k]||{n:0,m:0,r:{}};o.n++;const ok=own.has(c.id);if(ok)o.m++;
     const rn=(c.raretes&&c.raretes.nom)||'?',rr=o.r[rn]=o.r[rn]||{n:0,m:0,col:(c.raretes&&c.raretes.couleur)||'#aaa',p:+((c.raretes&&c.raretes.poids)||0)};rr.n++;if(ok)rr.m++});
-  const cols=Object.entries(C).sort((a,b)=>(a[0]=='Communes')-(b[0]=='Communes')||a[0].localeCompare(b[0],'fr'));
+  const cols=Object.entries(C).sort((a,b)=>(a[0]=='Basique')-(b[0]=='Basique')||a[0].localeCompare(b[0],'fr'));
   box.innerHTML=`<div class="prog"><div class="top"><span>📚 Ma collection : <b>${moi} / ${tot}</b> cartes (${pc(moi)} %)</span><span>${tot-moi?`Il t'en manque <b>${tot-moi}</b>`:'🎉 Collection complète !'}</span></div>
    <div class="pbar"><i style="width:${pc(moi)}%"></i></div>
    <details><summary>Détail par collection et par rareté</summary>${cols.map(([k,o])=>`<div class="pcol"><div class="top"><span>${esc(k)}</span><small>${o.m} / ${o.n}${o.n-o.m?` · il en manque ${o.n-o.m}`:' · complète ✓'}</small></div>
@@ -699,7 +699,7 @@ async function vBoutique(){
     q(sb.from('stock_boosters').select('quantite,types_boosters(nom)').eq('joueur_id',user.id).gt('quantite',0))]);
   const vv=await sb.rpc('vedettes_boosters'),ved={};(vv.data||[]).forEach(v=>(ved[v.type_id]=ved[v.type_id]||[]).push(v));
   // Contenu de chaque booster : collections + nombre de cartes par rareté (aucun taux de drop, aucune carte révélée)
-  const cb=await sb.rpc('contenu_boosters'),CB={};(cb.data||[]).forEach(r=>{const b=CB[r.type_id]=CB[r.type_id]||{};const k=r.collection_id??'communes';(b[k]=b[k]||{nom:r.collection_nom,com:r.collection_id==null,r:[]}).r.push(r)});
+  const cb=await sb.rpc('contenu_boosters'),CB={};(cb.data||[]).forEach(r=>{const b=CB[r.type_id]=CB[r.type_id]||{};const k=r.collection_id??'communes';(b[k]=b[k]||{nom:r.collection_id==null?'Basique':r.collection_nom,com:r.collection_id==null,r:[]}).r.push(r)});
   const contenu=id=>{const b=CB[id]||{};if(!CB[id]&&!(ved[id]||[]).length)return'';const L=Object.values(b).sort((x,y)=>(x.com-y.com)||x.nom.localeCompare(y.nom,'fr'));
     const tot=L.reduce((s,c)=>s+c.r.reduce((a,r)=>a+(+r.nb),0),0);
     const V=ved[id]||[];
@@ -906,7 +906,7 @@ function drawDeck(){
   dkModesBrancher();
   // ---- colonne de droite : filtres + cartes ----
   const rars=[...new Map(tous.map(x=>{const r=x.variantes_carte.cartes.raretes;return [r.nom,r]})).values()].sort((a,b)=>rangRar(a)[0]-rangRar(b)[0]||rangRar(a)[1]-rangRar(b)[1]);
-  const cols=[...new Set(tous.map(cn))].sort((a,b)=>(a=='Communes')-(b=='Communes')||a.localeCompare(b,'fr'));
+  const cols=[...new Set(tous.map(cn))].sort((a,b)=>(a=='Basique')-(b=='Basique')||a.localeCompare(b,'fr'));
   if(!$('#dkq')){$('#dkf').innerHTML=`<input id="dkq" type="search" placeholder="🔎 Chercher une carte…" value="${esc(dkF.q)}">
     <div class="row seg" id="dkt"></div>
     <div class="dksel"><select id="dkr" aria-label="Rareté"></select><select id="dkc" aria-label="Collection"></select><select id="dktri" aria-label="Trier par"><option value="rarete">Tri : rareté</option><option value="nom">Tri : nom</option><option value="atq">Tri : ATQ</option><option value="pv">Tri : PV</option><option value="qte">Tri : exemplaires</option></select></div>`;
@@ -1757,7 +1757,7 @@ async function aCartes(){
   $('#sub').innerHTML=`<h3 id="ftitle">Nouvelle carte</h3>
   <form class="f" id="fc"><input name="nom" placeholder="Nom" required>
    <select name="type"><option value="combattant">Combattant</option><option value="magie">Magie</option><option value="piege">Piège</option></select>
-   <select name="col"><option value="">Commune (aucune collection)</option>${opts(col)}</select>
+   <select name="col"><option value="">Basique (aucune collection)</option>${opts(col)}</select>
    <select name="rar">${opts(rar)}</select>
    <div class="row" id="r-stats"><input name="atq" type="number" placeholder="ATQ" style="width:90px"><input name="pv" type="number" placeholder="PV" style="width:90px"></div>
    <input name="desc" placeholder="Description (optionnel)">
