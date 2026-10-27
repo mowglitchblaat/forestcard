@@ -667,7 +667,8 @@ function histoireCeintures(E){
 }
 async function vCeintures(){
   main.innerHTML='<p>Chargement…</p>';
-  const [r,m]=await Promise.all([sb.rpc('ceintures_etat'),sb.from('decks_championnat').select('division,cartes').eq('joueur_id',user.id)]);
+  const [r,m,vr]=await Promise.all([sb.rpc('ceintures_etat'),sb.from('decks_championnat').select('division,cartes').eq('joueur_id',user.id),sb.rpc('titre_verrouille')]);
+  const verrou=!!(vr&&!vr.error&&vr.data);   // primes verrouillées (42-primes-verrou.sql) : pas de live, les champions gardent leur série
   if(r.error){main.innerHTML='<p class="ko">Championnat indisponible pour le moment (l\'admin doit lancer 33-championnat.sql dans Supabase).</p>';return}
   await chargerEtat().catch(()=>{});
   const E=r.data,mes={};((m&&m.data)||[]).forEach(x=>mes[x.division]=(x.cartes||[]).length===15);
@@ -676,7 +677,7 @@ async function vCeintures(){
     return `<div class="stat" style="text-align:center"><img src="${vf('cadres/ceinture-'+c.division+'.webp')}" alt="${esc(c.nom)}" style="width:100%;max-width:340px;filter:drop-shadow(0 0 10px rgba(255,215,120,.45))${c.pseudo?'':';opacity:.45;filter:grayscale(.6)'}"><h4 style="margin:4px 0">${esc(c.nom)}</h4>
      <small>${c.division==='rare'?'Cartes communes et rares':c.division==='epique'?'Jusqu\'aux cartes épiques':'Toutes les raretés'}</small>
      <div style="font-size:22px;font-weight:900;margin:8px 0">${c.pseudo?'👑 '+esc(c.pseudo):'<span style="opacity:.6">Vacante</span>'}</div>
-     ${c.en_cours?'<small>⚔️ Combat pour le titre en cours à l\'écran… le résultat s\'affiche à la fin de l\'animation.</small>':c.pseudo?`<small>Depuis le ${date(c.depuis)} · ${c.defenses} défense${c.defenses>1?'s':''} · refus ${c.refus}/${c.refus_max}<br>${c.prime!=null?`💰 Prime à minuit : <b>${c.prime} gold</b> ${c.defendu?'(ceinture défendue aujourd\'hui ✓)':'s\'il fait un combat pour le titre aujourd\'hui'}${c.jours?` · série : ${c.jours} jour${c.jours>1?'s':''}`:''}<br>`:''}Sans combat pour le titre, la ceinture redevient vacante dans ${jours(c.vacante_le)} jour${jours(c.vacante_le)>1?'s':''}</small>`:'<small>Le premier qui gagne un combat pour cette ceinture la prend.</small>'}
+     ${c.en_cours?'<small>⚔️ Combat pour le titre en cours à l\'écran… le résultat s\'affiche à la fin de l\'animation.</small>':c.pseudo?`<small>Depuis le ${date(c.depuis)} · ${c.defenses} défense${c.defenses>1?'s':''} · refus ${c.refus}/${c.refus_max}<br>${verrou?'🔒 Pas de live aujourd\'hui : primes en pause, la série est gardée et la ceinture ne peut pas devenir vacante.<br>':''}${c.prime!=null&&!verrou?`💰 Prime à minuit : <b>${c.prime} gold</b> ${c.defendu?'(ceinture défendue aujourd\'hui ✓)':'s\'il fait un combat pour le titre aujourd\'hui'}${c.jours?` · série : ${c.jours} jour${c.jours>1?'s':''}`:''}<br>`:''}${verrou?'':`Sans combat pour le titre, la ceinture redevient vacante dans ${jours(c.vacante_le)} jour${jours(c.vacante_le)>1?'s':''}`}</small>`:'<small>Le premier qui gagne un combat pour cette ceinture la prend.</small>'}
      <div class="row" style="justify-content:center;margin-top:8px">${moi?'<b>C\'est toi !</b>':attente?'<small>Un défi est en attente.</small>':!mes[c.division]?`<button class="sec" data-dk="${c.division}">Prépare ton deck ${D.e}</button>`:`<small>🥊 Défie ${c.pseudo?esc(c.pseudo):'le joueur de ton choix'} en live dans le chat : <b>!defi ${c.division==='epique'?'épique':c.division}${c.pseudo?'':' @pseudo'}</b></small>`}</div></div>`};
   const defi=d=>{const pourMoi=d.adversaire===user.id,deMoi=d.challenger===user.id,D=DIVS[d.division];
     return `<li>${D.e} <b>${esc(d.pseudo_challenger)}</b> défie <b>${esc(d.pseudo_adversaire)}</b> pour la ${esc(D.nom)} <small>(expire le ${date(d.expire_le)} à ${new Date(d.expire_le).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})})</small>
@@ -2108,6 +2109,10 @@ async function aReglages(){
     <div class="row"><label><input type="radio" name="live" value="1" ${String(v.jeu_ferme??'0')!=='1'&&String(v.jeu_live??'1')!=='0'?'checked':''}> 🎥 Jeu en live</label><label><input type="radio" name="live" value="0" ${String(v.jeu_ferme??'0')!=='1'&&String(v.jeu_live??'1')==='0'?'checked':''}> 🎬 En pause : on joue sur le site</label><label><input type="radio" name="live" value="off" ${String(v.jeu_ferme??'0')==='1'?'checked':''}> 🔒 Fermé partout</label></div>
     <label><small>Prix d'un duel lancé depuis le site (en live, il coûte des points de chaîne)</small><br><input name="prix" type="number" min="0" max="100000" value="${esc(v.duel_site_prix??50)}" style="width:90px"> gold</label>
     <button>Enregistrer</button></form>
+   <form class="f" id="fverrou" style="flex-direction:column;align-items:flex-start"><b>🔒 Primes des ceintures</b>
+    <small>À verrouiller les jours où tu ne peux pas faire de live : sans live, pas de combat pour le titre, donc les champions ne doivent pas perdre leur série. Verrouillé : une journée sans combat pour le titre ne paie pas de prime mais garde la série des +10 % (une journée avec un combat pour le titre paie normalement), et les 7 jours d'inactivité et les 24 h des défis sont arrêtés. Une journée compte comme verrouillée si le verrou a été mis à un moment de la journée. (42-primes-verrou.sql)</small>
+    <label><input name="on" type="checkbox" ${String(v.titre_primes_verrou??'0')==='1'?'checked':''}> 🔒 Primes des ceintures verrouillées</label>
+    <button>Enregistrer</button></form>
    <form class="f" id="fvit"><label><b>⏱️ Vitesse des combats</b> (overlay OBS)<br>
     <small>Vitesse des animations et des pauses pendant les combats en live. Prise en compte dès le combat suivant, sans recharger OBS. (La page de test garde sa propre liste « Vitesse ».)</small><br>
     <select name="v"><option value="0.5"${String(+(v.vitesse_combat??1))==='0.5'?' selected':''}>⚡⚡ Très rapide (×2)</option><option value="0.75"${String(+(v.vitesse_combat??1))==='0.75'?' selected':''}>⚡ Rapide</option><option value="1"${String(+(v.vitesse_combat??1))==='1'?' selected':''}>Normal</option><option value="1.3"${String(+(v.vitesse_combat??1))==='1.3'?' selected':''}>🐢 Lent</option><option value="1.6"${String(+(v.vitesse_combat??1))==='1.6'?' selected':''}>🐢🐢 Très lent</option></select></label><button>Enregistrer</button></form>
@@ -2174,6 +2179,10 @@ async function aReglages(){
     await q(sb.from('reglages_jeu').upsert([{cle:'jeu_live',valeur:live==='1'?'1':'0'},{cle:'jeu_ferme',valeur:live==='off'?'1':'0'},{cle:'duel_site_prix',valeur:String(prix)}]));await chargerEtat();
     if(live==='off'&&!JEU.ferme){uiAlert('⚠️ Le jeu n\'a pas pu être fermé : lance d\'abord 40-jeu-ferme.sql dans Supabase.');show(tab);return}
     uiAlert(live==='off'?'🔒 Jeu fermé partout : les commandes du live répondent « jeu fermé », !booster est refusé et l\'onglet « Jouer » est masqué pour les joueurs.':live==='0'?'🎬 Jeu en pause : les joueurs jouent sur le site (onglet « 🎮 Jouer »). Pense à fermer Streamer.bot ou à mettre tes récompenses de points de chaîne en pause.':'🎥 Jeu de nouveau en live : l\'onglet « Jouer » est masqué pour les joueurs.');show(tab)};
+  $('#fverrou').onsubmit=async e=>{e.preventDefault();const on=e.target.on.checked;
+    await q(sb.from('reglages_jeu').upsert({cle:'titre_primes_verrou',valeur:on?'1':'0'}));
+    const ok=await sb.rpc('titre_verrouille');if(ok.error){uiAlert('⚠️ Lance d\'abord 42-primes-verrou.sql dans Supabase.');aReglages();return}
+    uiAlert(on?'🔒 Primes des ceintures verrouillées : les champions gardent leur série, les compteurs du championnat sont arrêtés. Pense à déverrouiller à ton retour en live.':'🔓 Primes des ceintures déverrouillées : tout repart normalement.');aReglages()};
   $('#fvit').onsubmit=async e=>{e.preventDefault();const v=e.target.v.value;
     await q(sb.from('reglages_jeu').upsert({cle:'vitesse_combat',valeur:v}));uiAlert('Vitesse des combats enregistrée : '+e.target.v.selectedOptions[0].textContent+'. (Si rien ne change en live, lance 27-vitesse-combat.sql dans Supabase.)');aReglages()};
   $('#fr').onsubmit=async e=>{e.preventDefault();const n=Math.max(0,Math.min(50,parseInt(e.target.n.value,10)||0));
