@@ -43,6 +43,7 @@ export type Strike = {
   k: number; // index of the strike, from 0
   n: number; // damage of the strike
   blocked: boolean; // all its damage absorbed: counts as blocked, its statuses still apply
+  shielded?: boolean; // all its damage taken by a shield (mechanics/earth.ts): a block does not riposte
 };
 
 export type AttackStep = (c: Combat, at: Attack) => Flow;

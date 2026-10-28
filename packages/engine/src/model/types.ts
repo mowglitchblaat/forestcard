@@ -117,6 +117,8 @@ export const PASSIVE_TYPES = [
   'reaction',
   'enracinement',
   'contamination',
+  'sedimentation',
+  'replique',
 ] as const;
 export type PassiveType = (typeof PASSIVE_TYPES)[number];
 

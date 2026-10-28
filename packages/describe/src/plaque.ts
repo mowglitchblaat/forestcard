@@ -141,6 +141,8 @@ const PASSIVE_LABELS: Record<PassiveType, (p: Fx) => string> = {
   reaction: (p) => REACTION_LABELS[String(p.stat)] ?? 'Réaction',
   enracinement: rootLabel,
   contamination: () => 'Contamination',
+  sedimentation: () => 'Sédimentation',
+  replique: () => 'Réplique sismique',
 };
 
 const REACTION_LABELS: Record<string, string> = {

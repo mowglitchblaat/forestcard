@@ -107,7 +107,7 @@ export type EffectData = {
 
   // Passives.
   frappes?: Num;
-  pctatq?: Num;
+  pctatq?: Num; // vol_pct_atq: % of the damage healed; replique: counter-strike, % of its ATQ
   coups?: Num;
 
   // Card theft, destruction, equipment: which card ("magie" | "piege"), delay and duration.

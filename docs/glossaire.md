@@ -133,6 +133,8 @@ Clés de `PASSIVE_TYPES`, lues par le moteur au moment indiqué.
 | `vol_pct_atq` | X % de chances de se soigner d'une part des dégâts infligés | `life-steal.ts` |
 | `etourdir` | X % de chances d'étourdir à chaque coup | `stun.ts` |
 | `brulure`, `poison`, `saignement`, `malediction`, `fracture`, `gel`, `glas`, `fatigue`, `enracinement`, `contamination` | X % de chances de poser ce statut à chaque coup | `dot.ts`, `bleed.ts`, `curse.ts`, `fracture.ts`, `frost.ts`, `knell.ts`, `fatigue.ts`, `rooting.ts`, `contamination.ts` |
+| `sedimentation` | **sédimentation** (Terre, compétence) : chaque frappe reçue qui touche (dégâts, ou prise toute par ses propres défenses : blocage, réduction, bouclier ; pas une esquive, ni une frappe sans dégâts) donne une couche de roche ; à 3 couches, un **bouclier** se lève (`val`, unité `u` : points ou % de ses PV max ; 20 % si vide) et les couches repartent de zéro. Le bouclier, des PV temporaires, encaisse les coups (et souffles, missiles) avant le blocage et les réductions, jusqu'à être épuisé ; deux boucliers s'additionnent. S'il prend tout un coup bloqué, le blocage ne riposte pas sur ce coup. Une mue retire les couches | `earth.ts` |
+| `replique` | **réplique sismique** (Terre, compétence) : chaque frappe reçue qui touche (même règle) donne une charge ; à 3 charges, la terre frappe l'attaquant (`pctatq` % de l'ATQ de la carte, 50 si vide) et les charges repartent de zéro. Ce sont des dégâts directs, pas une attaque (aucun compteur, aucun piège « attaqué N fois », jamais critique) ; l'attaquant peut l'esquiver. Une mue retire les charges | `earth.ts` |
 | `execution` | X % de chances de poser une marque d'exécution à chaque coup, avec le coup, avant ses dégâts ; à 3 marques, un coup qui laisserait la cible sous le seuil **est** l'exécution (« évite la mort » ne se déclenche pas et l'exécution le **brise** dans tous les cas : passif, protection reçue, magie ou piège « évite la mort » (tranché, même s'il réanime aussi), il ne sauvera plus la carte ; la réanimation reste possible). **Statut marquant** (`statmarque` : `saignement`, `brulure`, `poison`, `tous` ; `chancemarque` %), sur toutes les formes de l'exécution : la carte marquée garde jusqu'à la fin du combat X % de chances de recevoir une marque à chaque dégât de ce statut (le plus haut % est gardé) | `execution.ts` |
 | `avalage` | fourchette, couteau, puis avalage à la 3e attaque réussie | `swallow.ts` |
 | `bonus_frappe` | frappé X fois depuis son dernier tour : prochaine attaque renforcée | `counter.ts` |
@@ -239,6 +241,7 @@ Noms des statuts dans l'état du moteur (`Status`, `packages/engine/src/combat/s
 | enracinement | `rootings` (une entrée par variante : `variant`, `turns`, `val`, `level`, `poisonTurns`) | `rootEnded` (avec sa variante) |
 | contamination | `contamination` (`turns`) | `statusEnded: 'contamination'` |
 | faiblesse | `weakness` (`pct`, `turns`) | `statusEnded: 'weakness'` |
+| couches, charges, bouclier (Terre) | `layers`, `charges`, `shield` | aucun : le bouclier s'épuise (`shieldAbsorbed`, `left: 0`) |
 | rage | `rages` | `statusEnded: 'rage'` |
 | dégâts doublés | `doubleDamageTurns` | aucun : le compteur baisse en fin de tour de la carte |
 

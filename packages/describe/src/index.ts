@@ -245,6 +245,10 @@ const PASSIVE_TEXT: Record<PassiveType, (p: Fx, x: PassiveContext) => string> = 
     `${c} % de chances, à chaque coup, d'enraciner la cible (${rootTxt(p)}, ${trs(nz(p.tours) || 2)})`,
   contamination: (p, { c }) =>
     `${c} % de chances, à chaque coup, de contaminer la cible (${contaminationTxt}, ${trs(nz(p.tours) || 2)})`,
+  sedimentation: (p) =>
+    `Sédimentation : chaque coup reçu (hors esquive) lui donne une couche de roche ; à 3 couches, un bouclier de ${isEmpty(p.val) ? '20 % de ses PV max' : `${nz(p.val)}${p.u === 'pct' ? ' % de ses PV max' : ''}`} se lève (il encaisse les coups avant le blocage et les réductions ; les boucliers s'additionnent)`,
+  replique: (p) =>
+    `Réplique sismique : chaque coup reçu (hors esquive) lui donne une charge ; à 3 charges, la terre frappe l'attaquant (${isEmpty(p.pctatq) ? 50 : nz(p.pctatq)} % de son ATQ, esquivable ; ce n'est pas une attaque)`,
 };
 
 // Headshot, mist, parasitic link, mutation, molt, reaction (engine: mechanics/headshot.ts, mist.ts,

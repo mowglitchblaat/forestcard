@@ -638,6 +638,12 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
             txt: `${name(c)} subit ${n} dégâts (le Glas)`,
             o: { c, n, k: 'glas' },
           };
+        case 'seismic':
+          return {
+            t: 'degats',
+            txt: `RÉPLIQUE SISMIQUE ! ${name(c)} subit ${n} dégâts`,
+            o: { c, n, k: 'replique' },
+          };
         case 'thorns':
           return {
             t: 'degats',
@@ -952,6 +958,38 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
         t: 'statut',
         txt: `VAPORISATION ! L'eau et le feu se rencontrent sur ${name(e.side)} : la brûlure part en vapeur`,
         o: { c: e.side, k: 'vaporisation' },
+      };
+    case 'layerGained':
+      return {
+        t: 'statut',
+        txt: `${name(e.side)} se couvre de roche (sédimentation ${e.layers}/3)`,
+        o: { c: e.side, k: 'couche', n: e.layers },
+      };
+    case 'shieldRaised':
+      return {
+        t: 'statut',
+        txt: `La roche de ${name(e.side)} se fait bouclier : +${e.amount} (bouclier ${e.total})`,
+        o: { c: e.side, k: 'bouclier', n: e.amount, v: e.total },
+      };
+    case 'shieldAbsorbed':
+      return {
+        t: 'statut',
+        txt: `Le bouclier de ${name(e.side)} encaisse ${e.amount} dégâts${e.left > 0 ? ` (reste ${e.left})` : ' et se brise'}`,
+        o: { c: e.side, k: 'bouclier_encaisse', n: e.amount, v: e.left },
+      };
+    case 'chargeGained':
+      return {
+        t: 'statut',
+        txt: `La terre gronde sous ${name(e.side)} (charge sismique ${e.charges}/3)`,
+        o: { c: e.side, k: 'charge', n: e.charges },
+      };
+    case 'seismicStrike':
+      return {
+        t: 'statut',
+        txt: e.dodged
+          ? `La terre frappe sous ${name(e.target)}, qui l'esquive !`
+          : `La terre se soulève sous ${name(e.target)} : réplique sismique de ${name(e.side)} !`,
+        o: { c: e.side, k: e.dodged ? 'replique_esquivee' : 'replique', to: e.target },
       };
     case 'weakened':
       return {

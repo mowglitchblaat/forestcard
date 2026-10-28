@@ -1249,3 +1249,43 @@ test('vaporisation : pas sur une carte gelée (la glace fond, la brûlure part a
   assert.ok(r.journal.some(e => e.k === 'degel'), 'la glace fond');
   assert.ok(!r.journal.some(e => e.k === 'vaporisation'), 'pas de vaporisation');
 });
+
+// ================= Terre : Sédimentation, Réplique sismique =================
+test('sédimentation : une couche par coup reçu qui touche ; à 3 couches, un bouclier qui encaisse avant le blocage', () => {
+  const r = combat([C('Roc', 1, SOLIDE, { passif: { type: 'sedimentation', val: 30, u: 'pts' } })], [C('B', 10, SOLIDE, { passif: { type: 'multi_frappe', chance: 100, frappes: 4 } })], { regles: { maxTours: 2, maxProlong: 0 } });
+  const couches = lignes(r, e => e.k === 'couche').map(e => e.n);
+  assert.deepEqual(couches.slice(0, 3), [1, 2, 3]);
+  assert.ok(r.journal.some(e => /se fait bouclier : \+30 \(bouclier 30\)/.test(e.txt || '')));
+  // la 4e frappe (10 dégâts) est encaissée par le bouclier
+  assert.ok(r.journal.some(e => e.k === 'bouclier_encaisse' && e.n === 10 && e.v === 20), 'encaisse 10, reste 20');
+});
+
+test('sédimentation : une frappe esquivée ne donne pas de couche', () => {
+  const r = combat([C('Roc', 1, SOLIDE, { passif: { briques: [{ type: 'sedimentation' }, { type: 'esquive', chance: 75 }] } })], [C('B', 10, SOLIDE)], { regles: { maxTours: 6, maxProlong: 0 } });
+  const esquives = lignes(r, e => e.t === 'esquive' && e.c === 0).length;
+  const coups = lignes(r, e => e.t === 'attaque' && e.c === 1).length;
+  const couches = lignes(r, e => e.k === 'couche').length;
+  assert.equal(couches, coups - esquives, `${coups} coups, ${esquives} esquives, ${couches} couches`);
+});
+
+test('bouclier qui encaisse tout : le blocage ne riposte pas (il riposte au 1er coup qu\'il bloque vraiment)', () => {
+  const bloc = PIE('Bloc', { type: 'adv_attaque', coups: 1 }, { type: 'bloque_attaque', riposte: 'renvoi', pctriposte: 100 });
+  const r = combat([C('Roc', 1, SOLIDE, { passif: { type: 'sedimentation', val: 25, u: 'pts' } }), bloc], [C('B', 10, SOLIDE, { passif: { type: 'multi_frappe', chance: 100, frappes: 3 } })], { regles: { maxTours: 2, maxProlong: 0 } });
+  const i = r.journal.findIndex(e => e.k === 'riposte');
+  assert.ok(i > 0, 'une riposte');
+  // juste avant : le bouclier n'a pris qu'une partie (5 sur 10), le blocage a pris le reste
+  assert.ok(r.journal.slice(i - 3, i).some(e => e.k === 'bouclier_encaisse' && e.n === 5 && e.v === 0), 'riposte sur la frappe que le bouclier ne prend pas toute');
+  assert.equal(lignes(r, e => e.k === 'riposte').length, 1, 'une seule riposte');
+  assert.ok(r.journal.find(e => e.k === 'renvoi' && e.c === 1).n === 5, 'renvoie les 5 dégâts bloqués');
+});
+
+test('réplique sismique : à 3 charges, la terre frappe l\'attaquant (% de l\'ATQ), sans que ce soit une attaque', () => {
+  const r = combat([C('Faille', 40, SOLIDE, { passif: { type: 'replique', pctatq: 50 } })], [C('B', 1, SOLIDE, { passif: { type: 'multi_frappe', chance: 100, frappes: 3 } })], { regles: { maxTours: 2, maxProlong: 0 } });
+  const charges = lignes(r, e => e.k === 'charge').map(e => e.n);
+  assert.deepEqual(charges.slice(0, 3), [1, 2, 3]);
+  const rep = lignes(r, e => e.t === 'degats' && e.k === 'replique');
+  assert.ok(rep.length >= 1 && rep[0].n === 20, '50 % de 40 ATQ = 20');
+  // deux cartes à réplique : pas de boucle sans fin
+  const r2 = combat([C('A', 5, SOLIDE, { passif: { briques: [{ type: 'replique' }, { type: 'multi_frappe', chance: 100, frappes: 3 }] } })], [C('B', 5, SOLIDE, { passif: { briques: [{ type: 'replique' }, { type: 'multi_frappe', chance: 100, frappes: 3 }] } })], { regles: { maxTours: 3, maxProlong: 0 } });
+  assert.ok(r2.journal.length < 400, 'pas de boucle');
+});

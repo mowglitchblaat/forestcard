@@ -40,6 +40,7 @@ export const CATEGORY_LABELS: Record<string, string> = {
   reaction: 'Réaction',
   racine: 'Enracinement',
   eau: 'Contamination / vaporisation',
+  terre: 'Sédimentation / réplique sismique',
   autre: 'Autres',
 };
 // Category (legend colour) of each effect and passive type.
@@ -116,6 +117,8 @@ const CATEGORY_OF: Record<string, string> = {
   reaction: 'reaction',
   enracinement: 'racine',
   contamination: 'eau',
+  sedimentation: 'terre',
+  replique: 'terre',
 };
 export const categoryOf = (t: unknown): string =>
   CATEGORY_OF[String(t).replace(/^atk_/, '')] || 'autre';
@@ -163,5 +166,6 @@ export const CATEGORY_STYLES: Record<
   reaction: { background: '#0f766e', color: '#ccfbf1' },
   racine: { background: '#3f2a14', color: '#d9f99d', border: '1px solid #65a30d' },
   eau: { background: '#0c4a6e', color: '#bae6fd', border: '1px solid #0ea5e9' },
+  terre: { background: '#57534e', color: '#fde68a', border: '1px solid #a16207' },
   autre: { background: '#6b7280', color: '#fff' },
 };

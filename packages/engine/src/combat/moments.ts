@@ -70,6 +70,7 @@ import { guardsEnd } from '../mechanics/guard.ts';
 import { delayedMagicAtStart, magicDurationEnd } from '../mechanics/magic-timing.ts';
 import { rootedStrike, rootingsEnd } from '../mechanics/rooting.ts';
 import { contaminationEnd } from '../mechanics/contamination.ts';
+import { earthCounters, shieldStrike } from '../mechanics/earth.ts';
 
 type TurnStep = Step<Side>;
 
@@ -113,6 +114,7 @@ const STRIKE: StrikeStep[] = [
   swallowAttempt, // third successful attack: swallowing replaces the damage
   strikePower,
   headshotStrike, // a critical hit comes before the block and the reductions
+  shieldStrike, // a sedimentation shield takes the strike first, before the block and the reductions
   blockOrReduce,
   gainedDefenses, // block chance and reduction gained (mutation, reaction passive)
   executionMarks, // the mark comes with the hit, before its damage
@@ -128,6 +130,7 @@ const LANDED: StrikeStep[] = [
   stunOnHit,
   detonationOnHit, // BEFORE the new statuses: it consumes those already laid
   statusesOnHit,
+  earthCounters, // the layers and charges of the card hit; a seismic counter-strike
 ];
 
 // After the landed steps, every strike.

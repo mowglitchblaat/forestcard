@@ -112,6 +112,7 @@ export type DamageCause =
   | 'shatter' // the ice of a frost shattering (glaciation, or a fracture)
   | 'thermalShock' // fire on ice: a burn laid on a frozen card
   | 'thorns' // a thorny rooting: the rooted card's own strike hurts it
+  | 'seismic' // a seismic counter-strike (mechanics/earth.ts)
   | 'knell'; // the knell takes the card
 
 export type CannotAttackReason =
@@ -375,6 +376,12 @@ export type DomainEvent =
   // contamination (mechanics/contamination.ts): prolonged, how many statuses gained a turn
   | { type: 'contaminated'; side: SideIndex; stacked: boolean; turns: number; prolonged: number }
   | { type: 'vaporized'; side: SideIndex } // burn + contamination: the burn is spent
+  // earth skills (mechanics/earth.ts): layers and shield, charges and counter-strike
+  | { type: 'layerGained'; side: SideIndex; layers: number }
+  | { type: 'shieldRaised'; side: SideIndex; amount: number; total: number }
+  | { type: 'shieldAbsorbed'; side: SideIndex; amount: number; left: number }
+  | { type: 'chargeGained'; side: SideIndex; charges: number }
+  | { type: 'seismicStrike'; side: SideIndex; target: SideIndex; dodged: boolean }
   | { type: 'weakened'; side: SideIndex; stacked: boolean; pct: number; turns: number }
   // fracture: at its level, the chance to get hurt when attacking and the damage, % of its own ATQ
   | {

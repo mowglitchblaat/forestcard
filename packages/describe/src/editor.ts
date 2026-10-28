@@ -86,7 +86,10 @@ export const EDITOR_FIELDS = {
   pct: ['% PV rendus en plus', 'n'],
   pctrev: ['% des PV max au retour', 'n'],
   val2: ['2e valeur', 'n'],
-  pctatq: ["% de l'ATQ infligée volé en PV", 'n'],
+  pctatq: [
+    "% de l'ATQ (vol de vie : de l'ATQ infligée, volé en PV · réplique sismique : de sa propre ATQ)",
+    'n',
+  ],
   vv1: ['Transcendance : vol de vie niveau I, en % des dégâts (10 par défaut)', 'n'],
   vv2: ['Transcendance : vol de vie niveau II (20 par défaut)', 'n'],
   vv3: ['Transcendance : vol de vie niveau III (30 par défaut)', 'n'],
@@ -344,6 +347,15 @@ export const EDITOR_PASSIVES: Record<PassiveType, EditorEntry> = {
     'val',
     'niveau',
     'ptours',
+  ],
+  sedimentation: [
+    'Sédimentation (Terre) : chaque coup reçu donne une couche de roche ; à 3 couches, un bouclier se lève (X points, ou X % de ses PV max ; 20 % si vide), qui encaisse les coups avant le blocage et les réductions',
+    'val',
+    'u',
+  ],
+  replique: [
+    "Réplique sismique (Terre) : chaque coup reçu donne une charge ; à 3 charges, la terre frappe l'attaquant (X % de son ATQ, 50 si vide ; esquivable, ce n'est pas une attaque)",
+    'pctatq',
   ],
   contamination: [
     'Contamination : à X % de chances, chaque coup contamine la cible pendant X tours (ses statuts négatifs durent un tour de plus ; avec une brûlure : vaporisation, la brûlure part et la cible est affaiblie)',

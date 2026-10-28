@@ -19,6 +19,7 @@ import { damage } from '../combat/damage.ts';
 import { applyEffect } from '../combat/effects.ts';
 import type { EffectData } from '../model/card.ts';
 import { ELEMENTS, elementStatus } from './breath.ts';
+import { shieldShot } from './earth.ts';
 import { guarded } from './guard.ts';
 
 // What a block sends back to the attacker, once (bloque_attaque's `riposte` option).
@@ -108,6 +109,7 @@ export function blockOrReduce(c: Combat, at: Attack, st: Strike): StrikeFlow {
     const n = st.n;
     st.n = 0;
     emit(c, { type: 'attackBlocked', side: ia, defender: idd });
+    if (st.shielded) return undefined; // a shield took it all: nothing for the block to riposte to
     const r = at.riposte;
     at.riposte = null; // once, on the first strike it blocks
     riposte(c, d, a, n, r);
@@ -127,6 +129,7 @@ export function blockOrReduce(c: Combat, at: Attack, st: Strike): StrikeFlow {
 
 // The reduction passives on a breath or a missile, each with its chance.
 export function reduce(c: Combat, d: Side, n: number): number {
+  n = shieldShot(c, d, n); // a shield takes it first (mechanics/earth.ts)
   d.passives
     .filter((p) => p.type === 'reduc_degats')
     .forEach((p) => {
