@@ -219,6 +219,10 @@ button.chm:disabled:not(.vise){opacity:.45}
 .sbar{height:9px;border-radius:99px;background:#0f0f15;overflow:hidden;border:1px solid #2c2c38}.sbar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,color-mix(in srgb,var(--g) 55%,#000),var(--g))}
 .sec2{margin:14px 0 0}.sec2 h4{margin:0 0 6px;font-size:14px;color:color-mix(in srgb,var(--g) 70%,#fff)}
 .sec2 ul{margin:0;padding-left:18px;line-height:1.5;font-size:14px}.sec2 li{margin:3px 0}
+/* fenêtre d'une carte : un texte long (effet, description) est replié à 5 lignes, « Lire la suite » le déplie */
+.cmd .clamp{max-height:7.5em;overflow:hidden;-webkit-mask-image:linear-gradient(#000 55%,transparent);mask-image:linear-gradient(#000 55%,transparent)}
+.cmd .clamp.open{max-height:none;-webkit-mask-image:none;mask-image:none}
+.cmd .more{display:block;margin:2px 0 0;padding:4px 0;background:none;border:0;min-height:0;font-size:13px;font-weight:600;color:color-mix(in srgb,var(--g) 60%,#fff);cursor:pointer}
 .trg{font-size:12px;color:#9a9aa8;margin:0 0 6px}
 .dsc{font-style:italic;color:#aeb0c0;border-left:3px solid var(--g);padding:2px 12px;margin:14px 0 0}
 .cmf{display:flex;gap:8px;margin-top:18px;flex-wrap:wrap;align-items:center}.cmf .sp{flex:1}
@@ -530,6 +534,10 @@ function mdDraw(){
     ${c.description?`<div class="dsc">${esc(c.description)}</div>`:''}
     <div class="cmf"><button class="sec" data-nav="-1" ${mdList.length<2?'disabled':''}>‹ Précédente</button><button class="sec" data-nav="1" ${mdList.length<2?'disabled':''}>Suivante ›</button><span class="sp"></span>${surplus(x)>0&&v.id?`<button class="sec" data-mrec>♻ Recycler ×${surplus(x)} · ${gainTxt(gainDe(x))}</button>`:''}<button class="${on?'sec':''}" data-mdeck ${x.apercu?'disabled':''}>${x.apercu?'Aperçu (non possédée)':on?'✓ Retirer du deck':'Ajouter au deck'}</button></div>
    </div>`;
+  // textes longs repliés (mesurés une fois affichés) : « Lire la suite » pour tout voir
+  box.querySelectorAll('.sec2 ul,.dsc').forEach(el=>{el.classList.add('clamp');if(el.scrollHeight<=el.clientHeight+8){el.classList.remove('clamp');return}
+   const b=document.createElement('button');b.type='button';b.className='more';b.textContent='Lire la suite ▾';
+   b.onclick=()=>{const o=el.classList.toggle('open');b.textContent=o?'Réduire ▴':'Lire la suite ▾'};el.after(b)});
   box.querySelector('.cx').onclick=mdClose;
   box.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>mdNav(+b.dataset.nav));
   const mr=box.querySelector('[data-mrec]');if(mr)mr.onclick=()=>{const g=gainDe(x);recycler(v.id,`Recycler ${g.n} exemplaire${g.n>1?'s':''} en trop de « ${c.nom} » ?\nTu en gardes 1. Tu reçois ${gainTxt(g).replace(/\+/g,'')}.`)};
