@@ -1378,3 +1378,78 @@ test("embrasement : la glace l'éteint (et s'use), l'eau l'éteint avec une vapo
   assert.ok(eau.journal.some(e => /VAPORISATION .*l'embrasement part en vapeur/.test(e.txt || '')), 'vaporisation');
   assert.ok(eau.journal.some(e => e.k === 'faiblesse' && e.c === 0), 'faiblesse');
 });
+
+// ================= Compétences d'octobre 2026 =================
+test('embrasement en magie, et une carte déjà contaminée : l\'eau l\'éteint tout de suite', () => {
+  const r = combat([C('A', 10, 1000), MAG('Feu', { type: 'embrasement' })], [C('B', 1, SOLIDE)], { regles: { maxTours: 2, maxProlong: 0 } });
+  assert.ok(r.journal.some(e => e.k === 'embrasement' && /s'embrase/.test(e.txt || '')), 'magie');
+  const eau = combat([C('A', 10, 1000, { ultime: { type: 'embrasement', apres_tours: 2, utilisations: 1 } })], [C('B', 1, SOLIDE, { passif: { type: 'contamination', chance: 100, tours: 5 } })], { regles: { maxTours: 4, maxProlong: 0 } });
+  const i = eau.journal.findIndex(e => /s'embrase/.test(e.txt || ''));
+  assert.equal(eau.journal[i + 1].txt, "L'eau éteint l'embrasement de A !", 'éteint aussitôt');
+});
+
+test('fureur incandescente : +5 % d\'ATQ par perte de PV (50 % au plus), un soin en retire un', () => {
+  const r = combat([C('A', 20, 1000, { passif: { type: 'fureur_incandescente' } })], [C('B', 5, SOLIDE)], { regles: { maxTours: 30, maxProlong: 0 } });
+  const f = lignes(r, e => e.k === 'fureur').map(e => e.n);
+  assert.deepEqual(f.slice(0, 3), [5, 10, 15]);
+  assert.equal(Math.max(...f), 50, 'plafond');
+  const coups = lignes(r, e => e.t === 'degats' && e.c === 1 && /^B subit \d+ dégâts$/.test(e.txt || '')).map(e => e.n);
+  assert.deepEqual(coups.slice(0, 3), [21, 22, 23], '20 +5 %, +10 %, +15 %');
+  const s = combat([C('A', 20, 1000, { passif: { briques: [{ type: 'fureur_incandescente' }, { type: 'soin_tour', val: 1 }] } })], [C('B', 5, SOLIDE)], { regles: { maxTours: 4, maxProlong: 0 } });
+  assert.ok(s.journal.some(e => /^La fureur de A (retombe|s'apaise)/.test(e.txt || '')), 'le soin en retire un');
+});
+
+test('sangsue toxique : chaque tic de poison de l\'adversaire soigne 20 / 35 / 50 % selon le niveau', () => {
+  const r = combat([C('A', 10, 1000, { passif: { briques: [{ type: 'sangsue_toxique' }, { type: 'poison', chance: 100, niveau: 2, tours: 3 }] } })], [C('B', 50, SOLIDE)], { regles: { maxTours: 4, maxProlong: 0 } });
+  const i = r.journal.findIndex(e => e.k === 'sangsue_soin');
+  assert.ok(i > 0, 'aspire');
+  assert.equal(r.journal[i].txt, 'Sangsue toxique : A aspire 35 % du poison de B');
+  assert.equal(r.journal[i + 1].txt, 'A récupère 3 PV', '35 % de 8');
+});
+
+test('injection virulente : pose un poison I, le monte d\'un niveau, puis au III fait 50 % des dégâts restants', () => {
+  const inj = { type: 'injection_virulente' };
+  const r = combat([C('A', 1, 1000), MAG('Venin', { briques: [inj, inj, inj, inj] })], [C('B', 1, SOLIDE)], { regles: { maxTours: 1, maxProlong: 0 } });
+  assert.deepEqual(lignes(r, e => e.k === 'poison' && e.t === 'statut').map(e => e.n), [1, 2, 3]);
+  const d = lignes(r, e => e.t === 'degats' && /venin explose/.test(e.txt || ''));
+  assert.equal(d.length, 1);
+  assert.equal(d[0].n, 21, '50 % de 14 × 3 tours');
+});
+
+test('surcharge : s\'électrocute (10 % des PV max), ATQ −40 %, la foudre à chaque coup, 2 tours', () => {
+  const r = combat([C('A', 10, 1000, { ultime: { type: 'surcharge', apres_tours: 1, utilisations: 1 } })], [C('B', 1, SOLIDE)], { regles: { maxTours: 4, maxProlong: 0 } });
+  assert.ok(r.journal.some(e => e.txt === "A s'électrocute (surcharge) : 100 dégâts"), 'auto-électrocution');
+  assert.ok(lignes(r, e => e.k === 'foudre' && e.c === 1).length >= 2, 'foudre à chaque coup');
+  assert.ok(r.journal.some(e => e.txt === 'La surcharge de A retombe'), 'fin');
+  let max = 0;
+  for (let seed = 1; seed <= 30; seed++) {
+    const g = combat([C('A', 10, 1000, { ultime: { type: 'surcharge', apres_tours: 1, utilisations: 1 } })], [C('B', 1, SOLIDE)], { seed, regles: { maxTours: 4, maxProlong: 0 } });
+    let n = 0; g.journal.forEach(e => { if (e.t === 'attaque' && / attaque$/.test(e.txt || '')) n = 0; if (e.t === 'degats' && e.c === 1 && /^B subit/.test(e.txt || '')) max = Math.max(max, ++n); });
+  }
+  assert.equal(max, 3, 'enchaîne jusqu\'à 3 coups, pas plus');
+});
+
+test('accumulateur : 3 marques de foudre posées, la prochaine attaque fait +50 %', () => {
+  const r = combat([C('A', 10, 1000, { passif: { briques: [{ type: 'accumulateur' }, { type: 'foudre', chance: 100 }] } })], [C('B', 1, SOLIDE)], { regles: { maxTours: 8, maxProlong: 0 } });
+  assert.ok(r.journal.some(e => /^L'accumulateur de A est plein \(3\/3\)/.test(e.txt || '')), 'plein');
+  const i = r.journal.findIndex(e => e.k === 'decharge');
+  const coup = r.journal.slice(i).find(e => e.t === 'degats' && e.c === 1);
+  assert.equal(coup.n, 21, '(10 + 50 %) puis la marque I (+40 %)');
+});
+
+test('étreinte maudite : chaque attaque du maudit lui retire 1 ATQ par malédiction ; brisure de volonté : 2 × l\'ATQ perdue', () => {
+  const r = combat([C('A', 1, 1000, { passif: { briques: [{ type: 'etreinte_maudite' }, { type: 'malediction', chance: 100, tours: 3 }] }, ultime: { type: 'brisure_volonte', apres_tours: 4, utilisations: 1 } })], [C('B', 20, SOLIDE)], { regles: { maxTours: 8, maxProlong: 0 } });
+  assert.deepEqual(lignes(r, e => /étreinte maudite/.test(e.txt || '')).map(e => e.d).slice(0, 3), [-1, -2, -3]);
+  assert.ok(r.journal.some(e => e.txt === 'BRISURE DE VOLONTÉ ! B a perdu 15 ATQ aux malédictions : A le brise (30 dégâts)'));
+});
+
+test('verrouillage total : les 3 prochains coups sont des headshots ; visée maintenue peut garder la cible', () => {
+  const r = combat([C('A', 10, 1000, { ultime: { type: 'verrouillage_total', apres_tours: 1, utilisations: 1 } })], [C('B', 1, SOLIDE)], { regles: { maxTours: 10, maxProlong: 0 } });
+  assert.equal(lignes(r, e => e.k === 'headshot').length, 3);
+  let gardee = false;
+  for (let seed = 1; seed <= 20 && !gardee; seed++) {
+    const g = combat([C('A', 10, 1000, { passif: { type: 'visee_maintenue' }, ultime: { type: 'verrouillage_total', apres_tours: 1, utilisations: 1 } })], [C('B', 1, SOLIDE)], { seed, regles: { maxTours: 10, maxProlong: 0 } });
+    gardee = g.journal.some(e => e.k === 'visee') && lignes(g, e => e.k === 'headshot').length > 3;
+  }
+  assert.ok(gardee, 'au moins une fois gardée');
+});

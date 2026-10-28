@@ -12,6 +12,8 @@ import { levelTable, type StatusLevels } from '../model/levels.ts';
 import type { Rules } from '../model/rules.ts';
 import { doublingsOf } from '../mechanics/double-damage.ts';
 import { blazeBonus } from '../mechanics/blaze.ts';
+import { furyBonus } from '../mechanics/fury.ts';
+import { overloadMalus } from '../mechanics/overload.ts';
 import { flushRevives, type TrapRevive } from '../mechanics/revive.ts';
 import { noticeTrigger, type Triggers } from '../mechanics/triggers.ts';
 import { reactToEvent } from '../mechanics/reaction.ts';
@@ -135,6 +137,10 @@ export function disableEmptySlots(s: Side): void {
 const rageOf = (s: Side): number =>
   s.status.rages.reduce((q, g) => q + (g.turns > 0 ? g.bonus : 0), 0);
 
+// The bonus (or malus) of its strikes on top of its ATQ, for the view: rage, blaze, fury, overload.
+const strikeBoost = (c: Combat, s: Side): number =>
+  rageOf(s) + blazeBonus(c, s) + furyBonus(c, s) - overloadMalus(c, s);
+
 export function createCombat(rules: Rules, seed: number, onEvent: OnEvent): Combat {
   const sides: Side[] = [];
   let currentRound = 0;
@@ -168,7 +174,7 @@ export function createCombat(rules: Rules, seed: number, onEvent: OnEvent): Comb
           return s.atq;
         },
         get rage() {
-          return rageOf(s) + blazeBonus(combat, s);
+          return strikeBoost(combat, s);
         },
         get doublings() {
           return doublingsOf(s);
@@ -228,7 +234,7 @@ const frozenView = (c: Combat): CombatView => ({
     hp: s.hp,
     maxHp: s.maxHp,
     atq: s.atq,
-    rage: rageOf(s) + blazeBonus(c, s),
+    rage: strikeBoost(c, s),
     doublings: doublingsOf(s),
     statuses: statusBadges(s),
   })),

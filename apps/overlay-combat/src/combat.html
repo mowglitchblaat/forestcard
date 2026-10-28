@@ -1225,7 +1225,9 @@ function aureole(c,o={}){const K=rc(c),W=K.w,cx=K.cx;
   if(o.croix===false)return;   // transcendance : auréole sans la croix de soin
   const cs=W*.16*(.9+.1*Math.sin(t*8)),tt=cs*.32;x.save();x.shadowColor=`rgba(80,255,160,${env})`;x.shadowBlur=25;x.fillStyle=`rgba(210,255,225,${env})`;x.fillRect(cx-tt/2,K.cy-cs,tt,cs*2);x.fillRect(cx-cs,K.cy-tt/2,cs*2,tt);x.restore()})}
 
-function statut(c,k,on){if(k==='fracture')return;const key=c+k;st[key]=Math.max(0,(st[key]||0)+(on?1:-1));const card=$('#p'+c+' .card'),f=card.querySelector('canvas.fx.'+k);
+// seuls ces statuts ont une aura dessinée (fxStart) : une autre clé (foudre_coup, courant, charge…) n'en pose pas, sinon elle prenait l'aspect du poison
+const FXK=new Set(['brulure','etourdi','malediction','saignement','rage','fatigue','gel','solide','transc','poison']);
+function statut(c,k,on){if(!FXK.has(k))return;const key=c+k;st[key]=Math.max(0,(st[key]||0)+(on?1:-1));const card=$('#p'+c+' .card'),f=card.querySelector('canvas.fx.'+k);
  if(st[key]>0&&!f)fxStart(card,k);else if(!st[key]&&f){f._stop();f.remove()}}
 function maj(e){[0,1].forEach(i=>{const p=$('#p'+i);p.querySelector('.bar i').style.width=Math.max(0,e.pv[i]/e.max[i]*100)+'%';
  // ATQ boostée (rage, ATQ ×2, ×4…) : la valeur finale d'un coup est affichée tant que l'effet dure (champ `boost` du journal)
@@ -1236,9 +1238,9 @@ function maj(e){[0,1].forEach(i=>{const p=$('#p'+i);p.querySelector('.bar i').st
 // STATUTS PORTÉS (champ `etats` du journal : [statut, nombre] par carte) : une pastille par statut, son niveau en chiffre romain
 // (ou son nombre : malédictions, lames, courant, PV du bouclier) ; la pastille grossit quand le niveau monte ; l'aura suit le niveau
 const ROM=['','I','II','III'],ET={poison:['☠️','#22c55e',1],brulure:['🔥','#f97316',1],saignement:['🩸','#ef4444',1],fatigue:['💤','#94a3b8',1],fracture:['🦴','#fde68a',1],glas:['🔔','#a78bfa',1],gel:['❄️','#7dd3fc',1],foudre:['⚡','#facc15',1],brume:['🌫️','#e2e8f0',1],
- malediction:['💀','#c084fc',2],lames:['🌪️','#a5f3fc',2],courant:['🌬️','#bae6fd',2],bouclier:['🪨','#d6b88a',3],embrasement:['🌋','#fb923c',0],etourdi:['💫','#facc15',0],contamination:['🧪','#a3e635',0],faiblesse:['💧','#60a5fa',0],enracinement:['🌿','#4ade80',0]};
+ malediction:['💀','#c084fc',2],lames:['🌪️','#a5f3fc',2],courant:['🌬️','#bae6fd',2],bouclier:['🪨','#d6b88a',3],embrasement:['🌋','#fb923c',0],fureur:['💢','#f97316',2],sangsue:['🧛','#86efac',0],surcharge:['🔌','#facc15',0],charge:['🔋','#fde047',2],cible:['🎯','#ff3b30',2],etourdi:['💫','#facc15',0],contamination:['🧪','#a3e635',0],faiblesse:['💧','#60a5fa',0],enracinement:['🌿','#4ade80',0]};
 function etats(e){[0,1].forEach(i=>{const box=$('#p'+i+' .etats'),card=$('#p'+i+' .card');if(!box)return;const L=(e.etats&&e.etats[i])||[],prev=box._v||{},now={};
- const html=L.filter(([k])=>ET[k]).map(([k,n])=>{now[k]=n;const [ic,col,m]=ET[k],v=m===1?ROM[n]||'':m===2?'×'+n:m===3?String(n):'',cl=['et'];if(m===1&&n>=2)cl.push('n'+Math.min(3,n));
+ const html=L.filter(([k])=>ET[k]).map(([k,n])=>{now[k]=n;const [ic,col,m]=ET[k],v=m===1?ROM[n]||'':m===2?(n>0?'×'+n:''):m===3?String(n):'',cl=['et'];if(m===1&&n>=2)cl.push('n'+Math.min(3,n));
   if(!(k in prev))cl.push('new');else if(n>prev[k])cl.push('up');return `<div class="${cl.join(' ')}" style="--ec:${col}">${ic}${v?`<b>${v}</b>`:''}</div>`}).join(''),sig=JSON.stringify(now);
  if(box._s!==sig){box.innerHTML=html;box._s=sig}box._v=now;
  if(card)['poison','brulure','saignement','fatigue'].forEach(k=>{if(now[k])card.dataset['n'+k]=now[k];else delete card.dataset['n'+k]})})}
@@ -1367,7 +1369,7 @@ function nMueDebut(c){const k=$('#p'+c+' .card');if(k){if(!k.querySelector('.nti
 function nMue(c){nfxStart();const k=$('#p'+c+' .card');if(k){k.classList.remove('mue');k.animate([{filter:'brightness(1.6) saturate(.4)'},{filter:'none'}],{duration:600})}const b=nbox(c);if(b)for(let i=0;i<18;i++)nadd({k:'shard',x:b.x+R(0,b.w),y:b.y+R(0,b.h*.7),vx:R(-1,1),vy:R(-1,.5),rot:R(0,6),vr:R(-.1,.1),s:R(3,6)*innerHeight/400,col:'#7fae4a',g:.15,life:70});flot(c,'MUE !','#d9f99d','big')}
 const NK={
  'statut:headshot':e=>nHeadshot(e.c,e.cible),
- 'statut:cible':e=>{nCible(e.c,true);flot(e.c,'CIBLÉ','#ff3b30')},'finstatut:cible':e=>nCible(e.c,false),'statut:cible_rate':e=>flot(e.c,'Raté','#fca5a5'),
+ 'statut:cible':e=>{nCible(e.c,true);flot(e.c,(e.n||1)>1?'VERROUILLÉ ×'+e.n:'CIBLÉ','#ff3b30',(e.n||1)>1?'big':'')},'statut:visee':e=>flot(e.c,'Visée maintenue','#ff3b30'),'finstatut:cible':e=>nCible(e.c,false),'statut:cible_rate':e=>flot(e.c,'Raté','#fca5a5'),
  'statut:brume':e=>nBrume(e.c,e.n||1),'finstatut:brume':e=>nBrumeFin(e.c),'statut:brume_rate':e=>flot(e.c,'Pas de brume','#cbd5e1'),
  'statut:brume_bloque':e=>nBrumeBloque(e.c,e.s),'statut:brume_renvoi':e=>nBrumeRenvoi(e.c,e.to,e.s),
  'statut:lien':e=>{nLien(e.c,e.to,true,e.nb);flot(e.c,(e.nb||1)>1?'Lien parasitaire ×'+e.nb:'Lien parasitaire','#fda4af')},'finstatut:lien':e=>nLien(e.c,null,(e.nb||0)>0,e.nb||0),'statut:lien_soin':e=>nLienSoin(!!NFX.lien&&NFX.lien.c!==e.c),   // le soin remonte la vrille dans un sens ou dans l'autre
@@ -1375,7 +1377,14 @@ const NK={
  'statut:mutation':e=>nMutation(e.c,e.niv||1),'statut:mue_debut':e=>nMueDebut(e.c),'statut:mue':e=>nMue(e.c),
  'stat:defense':e=>flot(e.c,(e.s==='block'?'Blocage +':'Réduction +')+e.d+' %','#fcd34d'),
  'statut:garde':e=>{bouclier(e.c,{partiel:1});flot(e.c,'Protection','#fcd34d')},'finstatut:garde':()=>{},
- 'statut:magie_attente':e=>flot(e.c,'Magie en attente','#93c5fd')};
+ 'statut:magie_attente':e=>flot(e.c,'Magie en attente','#93c5fd'),
+ // compétences d'octobre 2026 : un texte flottant (la pastille de la carte dit le reste)
+ 'statut:fureur':e=>flot(e.c,e.n?(e.up?'Fureur +'+e.n+' %':'Fureur '+e.n+' %'):'Fureur incandescente','#fb923c',e.up?'':'big'),
+ 'statut:sangsue':e=>flot(e.c,'Sangsue toxique','#86efac'),'finstatut:sangsue':()=>{},'statut:sangsue_soin':e=>flot(e.c,'Sangsue','#86efac'),
+ 'statut:injection':e=>flot(e.c,e.r==='burst'?'LE VENIN EXPLOSE !':'Injection virulente','#4ade80',e.r==='burst'?'big':''),
+ 'statut:surcharge':e=>flot(e.c,'SURCHARGE !','#facc15','big'),'finstatut:surcharge':()=>{},
+ 'statut:charge':e=>flot(e.c,e.plein?'CHARGÉ !':'Charge '+e.n,'#fde047',e.plein?'big':''),'statut:decharge':e=>flot(e.c,'DÉCHARGE !','#facc15','big'),
+ 'statut:brisure':e=>flot(e.c,'BRISURE DE VOLONTÉ','#c084fc','big')};
 async function jouer(res){
  file.push(res);if(enCours)return;enCours=true;
  while(file.length){const R=file.shift();await verrouPrendre('combat');await chargerMiroir();   // liste des images copiées sur GitHub, relue à chaque combat : OBS ouvert longtemps ne repasse jamais par Supabase pour une image copiée

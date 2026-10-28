@@ -11,6 +11,7 @@
 import { avoidDeath, breakAvoidDeath } from '../mechanics/avoid-death.ts';
 import { healReduction } from '../mechanics/bleed.ts';
 import { knellCheck } from '../mechanics/knell.ts';
+import { furyOnHeal, furyOnLoss } from '../mechanics/fury.ts';
 import { weakened } from '../mechanics/contamination.ts';
 import { shareHeal, sharedParts } from '../mechanics/parasite.ts';
 import { reviveOnLethal, reviveTrapOnLethal, type TrapRevive } from '../mechanics/revive.ts';
@@ -28,6 +29,7 @@ export function heal(c: Combat, s: Side, n: number): void {
   if (n > 0) {
     s.hp += n;
     emit(c, { type: 'healed', side: id(c, s), amount: n, revive: !!c.reviving });
+    furyOnHeal(c, s); // an incandescent fury loses a gain (mechanics/fury.ts)
     scan(c, { kind: 'heal', who: id(c, s) });
   }
   shareHeal(c, s, parts, heal);
@@ -50,6 +52,7 @@ export function damage(c: Combat, src: Side, dst: Side, n: number): number {
   }
   const lethal = n >= dst.hp;
   dst.hp = Math.max(0, dst.hp - n); // HP stop at 0, never negative
+  if (n > 0) furyOnLoss(c, dst); // an incandescent fury gains (mechanics/fury.ts)
   src.damageDealt += n;
   if (lethal) reviveOnLethal(c, dst, trapRevive);
   if (after) c.pendingEffects.push(after);

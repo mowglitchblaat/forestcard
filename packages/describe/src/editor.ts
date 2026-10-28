@@ -398,6 +398,21 @@ export const EDITOR_PASSIVES: Record<PassiveType, EditorEntry> = {
     'u',
     'plafond',
   ],
+  fureur_incandescente: [
+    "🔥 Fureur incandescente (Feu) : chaque perte de PV donne +X % d'ATQ à ses coups (cumulable jusqu'à un plafond) ; chaque soin en retire un (valeurs dans Réglages > Niveaux)",
+  ],
+  sangsue_toxique: [
+    "☠️ Sangsue toxique (Poison) : à chaque tic de poison de l'adversaire, récupère un % de ses dégâts selon le niveau du poison (valeurs dans Réglages > Niveaux)",
+  ],
+  accumulateur: [
+    '⚡ Accumulateur (Foudre) : chaque marque de foudre posée donne une charge ; à X charges, la prochaine attaque fait +X % (valeurs dans Réglages > Niveaux)',
+  ],
+  etreinte_maudite: [
+    "💀 Étreinte maudite (Malédiction) : à chaque attaque de l'adversaire, chacune de ses malédictions lui retire X ATQ de plus, rendue avec la malédiction (valeur dans Réglages > Niveaux)",
+  ],
+  visee_maintenue: [
+    '🎯 Visée maintenue (Ciblage) : quand un ciblage de la carte est utilisé, X % de chances de le garder pour le coup suivant, encore et encore (valeur dans Réglages > Niveaux)',
+  ],
 };
 
 export const EDITOR_ULTIMATES: { readonly [K in EffectType]?: EditorEntry } = {
@@ -644,6 +659,18 @@ export const EDITOR_ULTIMATES: { readonly [K in EffectType]?: EditorEntry } = {
   ],
   embrasement: [
     "🔥 Embrasement (Feu) : la carte s'enflamme 2 tours : ATQ en plus, chaque coup pose une brûlure I, et elle se calcine à chacun de ses tours (valeurs dans Réglages > Niveaux des statuts)",
+  ],
+  injection_virulente: [
+    "☠️ Injection virulente (Poison) : pas de poison : pose un poison I (3 tours) ; empoisonné : son poison monte d'un niveau ; au poison III : dégâts bruts, X % des dégâts de poison restants (le poison reste)",
+  ],
+  surcharge: [
+    "⚡ Surcharge (Foudre) : s'électrocute (X % de ses PV max), puis 2 tours : ATQ −X %, X % de chances d'enchaîner (jusqu'à 3 coups), chaque coup pose la foudre (valeurs dans Réglages > Niveaux)",
+  ],
+  brisure_volonte: [
+    "💀 Brisure de volonté (Malédiction) : dégâts bruts = X × l'ATQ que l'adversaire a perdue aux malédictions depuis le début du combat (valeur dans Réglages > Niveaux)",
+  ],
+  verrouillage_total: [
+    "🎯 Verrouillage total (Ciblage) : verrouille l'adversaire : les 3 prochains coups du combattant sur lui sont des headshots (sans limite de tours)",
   ],
 };
 
@@ -981,6 +1008,28 @@ export const EDITOR_MAGICS: { readonly [K in EffectType]?: EditorEntry } = {
     'val',
     'u',
     'tours',
+  ],
+  embrasement: [
+    "🔥 Embrasement (Feu) : la carte s'enflamme 2 tours : ATQ en plus, chaque coup pose une brûlure I, et elle se calcine à chacun de ses tours (valeurs dans Réglages > Niveaux des statuts)",
+  ],
+  fureur_incandescente: [
+    "🔥 Fureur incandescente (Feu) : donne la Fureur incandescente à son combattant (chaque perte de PV : +X % d'ATQ ; chaque soin en retire un). Magie : tant qu'elle agit ; piège : jusqu'à la fin du combat",
+  ],
+  sangsue_toxique: [
+    "☠️ Sangsue toxique (Poison) : pendant X tours (2 par défaut), à chaque tic de poison de l'adversaire, son combattant récupère un % des dégâts selon le niveau du poison",
+    'tours',
+  ],
+  injection_virulente: [
+    "☠️ Injection virulente (Poison) : pas de poison : pose un poison I (3 tours) ; empoisonné : son poison monte d'un niveau ; au poison III : dégâts bruts, X % des dégâts de poison restants (le poison reste)",
+  ],
+  surcharge: [
+    "⚡ Surcharge (Foudre) : s'électrocute (X % de ses PV max), puis 2 tours : ATQ −X %, X % de chances d'enchaîner (jusqu'à 3 coups), chaque coup pose la foudre (valeurs dans Réglages > Niveaux)",
+  ],
+  brisure_volonte: [
+    "💀 Brisure de volonté (Malédiction) : dégâts bruts = X × l'ATQ que l'adversaire a perdue aux malédictions depuis le début du combat (valeur dans Réglages > Niveaux)",
+  ],
+  verrouillage_total: [
+    "🎯 Verrouillage total (Ciblage) : verrouille l'adversaire : les 3 prochains coups du combattant sur lui sont des headshots (sans limite de tours)",
   ],
 };
 

@@ -16,6 +16,7 @@ import { applyEffect } from '../combat/effects.ts';
 import type { StrikeFlow } from '../combat/flow.ts';
 import type { Side } from '../combat/state.ts';
 import type { Card, EffectData } from '../model/card.ts';
+import { accumulate } from './overload.ts';
 
 export type LightningMark = { level: number; primed: boolean };
 
@@ -61,6 +62,7 @@ export function markLightning(c: Combat, o: Side, x: Side): void {
   if (m.level < 2) {
     m.primed = true;
     emit(c, { type: 'lightningMarked', side: id(c, x), level: m.level });
+    accumulate(c, o); // an accumulator gains a charge (overload.ts)
     return;
   }
   emit(c, { type: 'lightningMarked', side: id(c, x), level: 2 });
@@ -68,6 +70,7 @@ export function markLightning(c: Combat, o: Side, x: Side): void {
   bounce(c, o, x, 'piege');
   x.status.lightning = null;
   emit(c, { type: 'lightningFaded', side: id(c, x) });
+  accumulate(c, o);
 }
 
 // Each strike, after a critical hit: a primed mark amplifies it, once.

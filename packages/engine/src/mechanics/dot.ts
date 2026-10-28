@@ -24,6 +24,7 @@ import { contaminationExtra, vaporize } from './contamination.ts';
 import { statusDamageMarks } from './execution.ts';
 import { thaw } from './frost.ts';
 import { mistTakes } from './mist.ts';
+import { leechTick } from './venom.ts';
 
 // kind is the legacy label, printed as is in the journal: 'poison' or 'brûlure'.
 export type DamageOverTime = { kind: string; level: number; turns: number };
@@ -100,6 +101,7 @@ export function tickDot(c: Combat, s: Side, dot: DamageOverTime): void {
   });
   if (!isPoison(dot.kind) && n > 0 && s.hp > 0)
     calcinate(c, s, round((n * c.levels.calcination) / 100));
+  if (isPoison(dot.kind)) leechTick(c, s, dot, n); // a toxic leech on the other side (venom.ts)
   statusDamageMarks(c, s, isPoison(dot.kind) ? 'poison' : 'brulure');
   if (!s.status.dots.includes(dot) || s.hp <= 0) return; // purified or dead during the tick: nothing more
   if (--dot.turns > 0) return;

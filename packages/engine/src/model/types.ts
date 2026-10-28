@@ -81,6 +81,12 @@ export const EFFECT_TYPES = [
   'marque_foudre',
   'atk_foudre',
   'embrasement',
+  'fureur_incandescente',
+  'sangsue_toxique',
+  'injection_virulente',
+  'surcharge',
+  'brisure_volonte',
+  'verrouillage_total',
 ] as const;
 export type EffectType = (typeof EFFECT_TYPES)[number];
 
@@ -129,6 +135,11 @@ export const PASSIVE_TYPES = [
   'courant_ascendant',
   'cisaillement',
   'foudre',
+  'fureur_incandescente',
+  'sangsue_toxique',
+  'accumulateur',
+  'etreinte_maudite',
+  'visee_maintenue',
 ] as const;
 export type PassiveType = (typeof PASSIVE_TYPES)[number];
 

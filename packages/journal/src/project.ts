@@ -672,6 +672,24 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
             txt: `${name(c)} se blesse sur ses épines (enracinement) : ${n} dégâts`,
             o: { c, n, k: 'epines' },
           };
+        case 'venom':
+          return {
+            t: 'degats',
+            txt: `Le venin explose dans les veines de ${name(c)} : ${n} dégâts`,
+            o: { c, n, k: 'poison' },
+          };
+        case 'overload':
+          return {
+            t: 'degats',
+            txt: `${name(c)} s'électrocute (surcharge) : ${n} dégâts`,
+            o: { c, n, k: 'surcharge' },
+          };
+        case 'willBreak':
+          return {
+            t: 'degats',
+            txt: `${name(c)} subit ${n} dégâts (brisure de volonté)`,
+            o: { c, n, k: 'brisure' },
+          };
         case 'thermalShock':
           return {
             t: 'degats',
@@ -788,6 +806,12 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
           return { t: 'stat', txt: `${who} +${d} (réaction)`, o: mod };
         case 'molt':
           return { t: 'stat', txt: `${who} −${-d} (mue)`, o: mod };
+        case 'curseEmbrace':
+          return {
+            t: 'stat',
+            txt: `${who} −${-d} (étreinte maudite)`,
+            o: { ...mod, k: 'malediction_tick' },
+          };
       }
       return null;
     }
@@ -1341,6 +1365,98 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
           ? `${name(e.side)} s'embrase de nouveau (${turns(e.turns)}) !`
           : `${name(e.side)} s'embrase : ATQ +${fr(e.atqPct)} %, chaque coup brûle (brûlure ${lvl(e.burnLevel)}, ${turns(e.burnTurns)}), et se calcine (${turns(e.turns)}) !`,
         o: { c: e.side, k: 'embrasement', n: e.turns, v: e.atqPct },
+      };
+    case 'furyGiven':
+      return {
+        t: 'statut',
+        txt: `${name(e.side)} entre en fureur incandescente : chaque PV perdu le rend plus fort !`,
+        o: { c: e.side, k: 'fureur', n: 0 },
+      };
+    case 'furyChanged':
+      return {
+        t: 'statut',
+        txt: e.up
+          ? `La fureur de ${name(e.side)} monte : ATQ +${fr(e.pct)} % !`
+          : e.pct > 0
+            ? `La fureur de ${name(e.side)} retombe : ATQ +${fr(e.pct)} %`
+            : `La fureur de ${name(e.side)} s'apaise`,
+        o: { c: e.side, k: 'fureur', n: e.pct, up: e.up ? 1 : 0 },
+      };
+    case 'leechGiven':
+      return {
+        t: 'statut',
+        txt: `${name(e.side)} devient une sangsue toxique (${turns(e.turns)}) : chaque tic de poison de l'adversaire le soigne !`,
+        o: { c: e.side, k: 'sangsue' },
+      };
+    case 'leechEnded':
+      return {
+        t: 'finstatut',
+        txt: `La sangsue toxique de ${name(e.side)} se détache`,
+        o: { c: e.side, k: 'sangsue' },
+      };
+    case 'poisonLeeched':
+      return {
+        t: 'statut',
+        txt: `Sangsue toxique : ${name(e.side)} aspire ${fr(e.pct)} % du poison de ${name(e.target)}`,
+        o: { c: e.side, k: 'sangsue_soin', cible: e.target, n: e.amount },
+      };
+    case 'venomInjected':
+      return {
+        t: 'statut',
+        txt:
+          e.result === 'burst'
+            ? `INJECTION VIRULENTE ! ${name(e.side)} injecte son venin à ${name(e.target)}, déjà au poison III : le venin explose !`
+            : `INJECTION VIRULENTE ! ${name(e.side)} injecte son venin à ${name(e.target)}`,
+        o: { c: e.target, k: 'injection', by: e.side, r: e.result },
+      };
+    case 'overloaded':
+      return {
+        t: 'statut',
+        txt: e.again
+          ? `${name(e.side)} se surcharge de nouveau (${turns(e.turns)}) !`
+          : `SURCHARGE ! ${name(e.side)} s'électrocute : ATQ −${fr(e.atqPct)} %, ${fr(e.chainPct)} % de chances d'enchaîner (jusqu'à ${e.strikes} coups), chaque coup pose la foudre (${turns(e.turns)})`,
+        o: { c: e.side, k: 'surcharge', n: e.turns },
+      };
+    case 'overloadEnded':
+      return {
+        t: 'finstatut',
+        txt: `La surcharge de ${name(e.side)} retombe`,
+        o: { c: e.side, k: 'surcharge' },
+      };
+    case 'voltCharged':
+      return {
+        t: 'statut',
+        txt: e.full
+          ? `L'accumulateur de ${name(e.side)} est plein (${e.charges}/${e.need}) : sa prochaine attaque est chargée !`
+          : `${name(e.side)} accumule une charge (${e.charges}/${e.need})`,
+        o: { c: e.side, k: 'charge', n: e.charges, plein: e.full ? 1 : 0 },
+      };
+    case 'discharged':
+      return {
+        t: 'statut',
+        txt: `DÉCHARGE ! L'attaque de ${name(e.side)} fait +${fr(e.pct)} % de dégâts`,
+        o: { c: e.side, k: 'decharge' },
+      };
+    case 'willBroken':
+      return {
+        t: 'statut',
+        txt:
+          e.lost > 0
+            ? `BRISURE DE VOLONTÉ ! ${name(e.target)} a perdu ${e.lost} ATQ aux malédictions : ${name(e.side)} le brise (${e.amount} dégâts)`
+            : `Brisure de volonté : ${name(e.target)} n'a rien perdu aux malédictions, rien à briser`,
+        o: { c: e.target, k: 'brisure', by: e.side },
+      };
+    case 'targetLocked':
+      return {
+        t: 'statut',
+        txt: `VERROUILLAGE TOTAL ! ${name(e.side)} est verrouillé : les ${e.uses} prochains coups de ${name(e.by)} sont des headshots`,
+        o: { c: e.side, k: 'cible', by: e.by, n: e.uses },
+      };
+    case 'targetKept':
+      return {
+        t: 'statut',
+        txt: `Visée maintenue : ${name(e.by)} garde ${name(e.side)} dans son viseur !`,
+        o: { c: e.side, k: 'visee', by: e.by },
       };
     case 'blazeEnded':
       return {

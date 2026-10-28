@@ -107,6 +107,12 @@ const EFFECT_LABELS: Record<EffectType, (e: Fx) => string> = {
   marque_foudre: () => 'Marque de foudre',
   atk_foudre: () => 'Coup foudroyant',
   embrasement: () => 'Embrasement',
+  fureur_incandescente: () => 'Fureur incandescente',
+  sangsue_toxique: () => 'Sangsue toxique',
+  injection_virulente: () => 'Injection virulente',
+  surcharge: () => 'Surcharge',
+  brisure_volonte: () => 'Brisure de volonté',
+  verrouillage_total: () => 'Verrouillage total',
 };
 
 const PASSIVE_LABELS: Record<PassiveType, (p: Fx) => string> = {
@@ -153,6 +159,11 @@ const PASSIVE_LABELS: Record<PassiveType, (p: Fx) => string> = {
   courant_ascendant: () => 'Courant ascendant',
   cisaillement: () => 'Cisaillement',
   foudre: () => 'Marque de foudre',
+  fureur_incandescente: () => 'Fureur incandescente',
+  sangsue_toxique: () => 'Sangsue toxique',
+  accumulateur: () => 'Accumulateur',
+  etreinte_maudite: () => 'Étreinte maudite',
+  visee_maintenue: () => 'Visée maintenue',
 };
 
 const REACTION_LABELS: Record<string, string> = {

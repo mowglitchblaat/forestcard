@@ -94,6 +94,11 @@ const shearTxt = (e: Fx) => {
 // Lightning mark (engine mechanics/lightning.ts).
 const lightningTxt = `poser un niveau de marque de foudre sur l'adversaire (niveau I : son prochain coup reçu fait +${L.foudre} % · niveau II : l'éclair rebondit sur sa magie puis son piège, les charge, et détruit une carte déjà chargée ; puis la marque revient à zéro)`;
 const blazeTxt = `Embrasement : la carte s'enflamme pendant 2 de ses tours : ATQ +${L.embrasementAtq} %, chaque coup pose une brûlure I (2 tours), et elle se calcine (−${L.embrasementCalcination} % de ses PV max) à chacun de ses tours`;
+const furyTxt = `Fureur incandescente : chaque perte de PV donne +${L.fureurPct} % d'ATQ à ses coups (jusqu'à +${L.fureurMax} %) ; chaque soin en retire un`;
+const leechTxt = `Sangsue toxique : à chaque tic de poison de l'adversaire, récupère ${L.sangsue[0]} / ${L.sangsue[1]} / ${L.sangsue[2]} % de ses dégâts (poison I / II / III)`;
+const injectionTxt = `Injection virulente : sans poison, pose un poison I (3 tours) ; empoisonné, son poison monte d'un niveau ; au poison III, dégâts bruts : ${L.injection} % des dégâts de poison restants (le poison reste)`;
+const overloadTxt = `Surcharge : s'électrocute (${L.surchargeAuto} % de ses PV max), puis pendant 2 tours : ATQ −${L.surchargeAtq} %, ${L.surchargeEnchainement} % de chances d'enchaîner (jusqu'à 3 coups), chaque coup pose la foudre`;
+const willBreakTxt = `Brisure de volonté : dégâts bruts égaux à ${L.brisure} × l'ATQ que l'adversaire a perdue aux malédictions depuis le début du combat`;
 const contaminationTxt = `contamination : ses statuts négatifs (ceux déjà là et ceux qui arrivent) durent un tour de plus ; avec une brûlure, VAPORISATION : la brûlure part en vapeur et la carte est affaiblie (dégâts reçus +${L.faiblesse} % pendant ${L.faiblesseTours} tours)`;
 // Editor label of a type, looked up as the legacy page did (plain property access on its tables).
 const label = (table: object, t: unknown) =>
@@ -264,6 +269,14 @@ const PASSIVE_TEXT: Record<PassiveType, (p: Fx, x: PassiveContext) => string> = 
     `Courant ascendant : à chaque coup critique, ce coup fait +${isEmpty(p.val) ? 20 : nz(p.val)} % de dégâts et sa puissance critique monte de ${isEmpty(p.pctcrit) ? 10 : nz(p.pctcrit)} points pendant ${trs(isEmpty(p.tours) ? 2 : nz(p.tours))} (cumulable ${isEmpty(p.max) ? 3 : nz(p.max)} fois)`,
   cisaillement: (p, { c }) => `${c} % de chances, à chaque coup, de ${shearTxt(p)}`,
   foudre: (_, { c }) => `${c} % de chances, à chaque coup, de ${lightningTxt}`,
+  fureur_incandescente: () => furyTxt,
+  sangsue_toxique: () => leechTxt,
+  accumulateur: () =>
+    `Accumulateur : chaque marque de foudre posée lui donne une charge ; à ${L.accumulateurCharges} charges, sa prochaine attaque fait +${L.accumulateurBonus} %`,
+  etreinte_maudite: () =>
+    `Étreinte maudite : à chaque attaque de l'adversaire, chacune de ses malédictions lui retire ${L.etreinte} ATQ de plus (rendue avec la malédiction)`,
+  visee_maintenue: () =>
+    `Visée maintenue : quand un de ses ciblages est utilisé, ${L.visee} % de chances de le garder pour le coup suivant`,
   replique: (p) =>
     `Réplique sismique : chaque coup reçu (hors esquive) lui donne une charge ; à 3 charges, la terre frappe l'attaquant (${isEmpty(p.pctatq) ? 50 : nz(p.pctatq)} % de son ATQ, esquivable ; ce n'est pas une attaque)`,
 };
@@ -518,6 +531,14 @@ const EFFECT_TEXT: Record<EffectType, (e: Fx, x: EffectContext) => string[]> = {
   marque_foudre: () => [lightningTxt.replace(/^p/, 'P')],
   atk_foudre: attackEffect,
   embrasement: () => [blazeTxt],
+  fureur_incandescente: () => [`Donne à son combattant la ${furyTxt.replace(/^F/, 'f')}`],
+  sangsue_toxique: (e) => [`${leechTxt}, ${trs(nz(e.tours) || 2)}`],
+  injection_virulente: () => [injectionTxt],
+  surcharge: () => [overloadTxt],
+  brisure_volonte: () => [willBreakTxt],
+  verrouillage_total: () => [
+    "Verrouillage total : les 3 prochains coups de son combattant sur l'adversaire sont des headshots",
+  ],
 };
 
 // One described item: its (normalized) type, for pages that colour by category, and its text.

@@ -7,8 +7,16 @@
 // purification gives the lost ATQ back and lifts every curse.
 //
 // Laid by: an effect (malediction), an attack (passive or attack effect malediction).
+//
+// Curse skills (October 2026):
+//   - Cursed embrace (étreinte maudite, passive): each time the cursed opponent attacks, each of its
+//     curses takes `etreinte` more ATQ (level table, 1 by default), given back with the curse.
+//   - Will break (brisure de volonté, effect): raw damage to the opponent, `brisure` (level table, 2 by
+//     default) × all the ATQ it lost to curses since the start of the combat.
 
-import { emit, id, over, roll, type Combat } from '../combat/combat.ts';
+import type { Attack } from '../combat/attack.ts';
+import { emit, id, over, roll, round, type Combat } from '../combat/combat.ts';
+import { damage } from '../combat/damage.ts';
 import type { EffectContext, EffectRules } from '../combat/effect-context.ts';
 import type { Flow } from '../combat/flow.ts';
 import type { Side } from '../combat/state.ts';
@@ -19,11 +27,12 @@ import { mistTakes } from './mist.ts';
 // pending: laid, its loss comes at the start of the card's next turn; lost: ATQ it took.
 export type Curse = { lost: number; turns: number; pending: boolean };
 
-// Its part of a card's status (combat/state.ts).
+// Its part of a card's status (combat/state.ts); curseLostTotal: all the ATQ curses took from it.
 export type CurseState = {
   curses: Curse[];
+  curseLostTotal: number;
 };
-export const curseState = (): CurseState => ({ curses: [] });
+export const curseState = (): CurseState => ({ curses: [], curseLostTotal: 0 });
 
 // ATQ the curses hold right now (given back on purification).
 export const atqLostToCurses = (s: Side): number => s.status.curses.reduce((q, z) => q + z.lost, 0);
@@ -70,6 +79,7 @@ export function curseTicks(c: Combat, s: Side): Flow {
     const loss = Math.min(c.levels.malediction, Math.max(0, s.atq));
     z.lost = loss;
     s.atq -= loss;
+    s.status.curseLostTotal += loss;
     if (loss > 0)
       emit(c, {
         type: 'statChanged',
@@ -93,7 +103,36 @@ export function curseOnHit(c: Combat, q: EffectData, d: Side): void {
   if (roll(c, q.chance)) curse(c, d, turnsOf(q));
 }
 
+// Once the attack is announced: the opponent's cursed embrace tightens each curse of the attacker.
+export function cursedEmbrace(c: Combat, { a, d, ia }: Attack): Flow {
+  if (!d.passives.some((p) => p.type === 'etreinte_maudite')) return undefined;
+  let taken = 0;
+  for (const z of a.status.curses) {
+    if (z.pending) continue;
+    const more = Math.min(Math.max(0, c.levels.etreinte), Math.max(0, a.atq));
+    if (more <= 0) continue;
+    z.lost += more;
+    a.atq -= more;
+    a.status.curseLostTotal += more;
+    taken += more;
+  }
+  if (taken > 0)
+    emit(c, { type: 'statChanged', side: ia, stat: 'atq', delta: -taken, cause: 'curseEmbrace' });
+  return undefined;
+}
+
+export function willBreakEffect({ c, o, x }: EffectContext): void {
+  if (x.hp <= 0) return;
+  const lost = x.status.curseLostTotal;
+  const raw = Math.max(0, round(lost * c.levels.brisure));
+  emit(c, { type: 'willBroken', side: id(c, o), target: id(c, x), lost, amount: raw });
+  if (raw <= 0) return;
+  const n = damage(c, o, x, raw);
+  emit(c, { type: 'damaged', side: id(c, x), amount: n, cause: 'willBreak' });
+}
+
 // Its effects (the registry of effects.ts).
 export const effects = {
   malediction: { run: curseEffect, undoesStatuses: 'target' },
+  brisure_volonte: { run: willBreakEffect, withoutTarget: true },
 } satisfies EffectRules;

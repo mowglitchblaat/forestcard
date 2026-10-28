@@ -31,7 +31,7 @@ import { doubleDamageEnd } from '../mechanics/double-damage.ts';
 import { lifeStealOnHit } from '../mechanics/life-steal.ts';
 import { reflected, reflectsEnd } from '../mechanics/reflect.ts';
 import { chain, multiStrike } from '../mechanics/strikes.ts';
-import { curseFading, curseTicks } from '../mechanics/curse.ts';
+import { curseFading, cursedEmbrace, curseTicks } from '../mechanics/curse.ts';
 import { dotTicks } from '../mechanics/dot.ts';
 import { fatiguesEnd } from '../mechanics/fatigue.ts';
 import { fracturesEnd, selfFracture } from '../mechanics/fracture.ts';
@@ -75,6 +75,8 @@ import { criticalStrike, updraftEnd } from '../mechanics/critical.ts';
 import { bladesTick } from '../mechanics/blades.ts';
 import { lightningStrike } from '../mechanics/lightning.ts';
 import { blazeEnd } from '../mechanics/blaze.ts';
+import { leechEnd } from '../mechanics/venom.ts';
+import { discharge, dischargeStrike, overloadEnd } from '../mechanics/overload.ts';
 
 type TurnStep = Step<Side>;
 
@@ -109,7 +111,11 @@ const CAN_ATTACK: AttackStep[] = [
 const STRIKE_COUNT: AttackStep[] = [multiStrike, chain];
 
 // Once the attack is announced, before the first strike.
-const BEFORE_STRIKES: AttackStep[] = [selfFracture];
+const BEFORE_STRIKES: AttackStep[] = [
+  cursedEmbrace, // the opponent's cursed embrace tightens the attacker's curses (its ATQ drops now)
+  discharge, // a charged accumulator: this attack is the charged one
+  selfFracture,
+];
 
 // Each strike.
 const STRIKE: StrikeStep[] = [
@@ -117,6 +123,7 @@ const STRIKE: StrikeStep[] = [
   dodge, // a dodge cancels the strike and its effects
   swallowAttempt, // third successful attack: swallowing replaces the damage
   strikePower,
+  dischargeStrike, // the charged attack of an accumulator
   headshotStrike, // a headshot (a critical hit) comes before the block and the reductions
   criticalStrike, // else the critical chance; the updraft
   lightningStrike, // a lightning mark (level I) amplifies the next strike taken
@@ -166,6 +173,8 @@ const END_OF_TURN: TurnStep[] = [
   contaminationEnd, // the contamination and the weakness
   updraftEnd,
   blazeEnd, // a blaze burns its card (calcination), then counts down
+  overloadEnd, // the overload counts down; a charged attack is spent
+  leechEnd, // a toxic leech given by an effect
   fatiguesEnd, // before the rage: the fatigue following a rage starts on the next turn
   ragesEnd,
   doubleDamageEnd,

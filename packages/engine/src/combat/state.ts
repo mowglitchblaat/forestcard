@@ -42,6 +42,9 @@ import { type BladesState, bladesState } from '../mechanics/blades.ts';
 import { type LightningState, lightningState } from '../mechanics/lightning.ts';
 import { type ContaminationState, contaminationState } from '../mechanics/contamination.ts';
 import { type BlazeState, blazeState } from '../mechanics/blaze.ts';
+import { type FuryState, furyState } from '../mechanics/fury.ts';
+import { type VenomState, venomState } from '../mechanics/venom.ts';
+import { type OverloadState, overloadState } from '../mechanics/overload.ts';
 import type { Card, EffectData, Num } from '../model/card.ts';
 
 // An ultimate held by a card: its own, or one stolen or copied from the opponent.
@@ -100,7 +103,10 @@ export type Status = { turnsPlayed: number } & RageState &
   CriticalState &
   BladesState &
   LightningState &
-  BlazeState;
+  BlazeState &
+  FuryState &
+  VenomState &
+  OverloadState;
 
 export type Side = {
   pseudo: string;
@@ -200,4 +206,7 @@ export const newStatus = (passives: EffectData[]): Status => ({
   ...bladesState(),
   ...lightningState(),
   ...blazeState(),
+  ...furyState(),
+  ...venomState(),
+  ...overloadState(),
 });

@@ -9,6 +9,10 @@
 //     that marked it. While the mark holds, each strike of that card on it is a headshot.
 //     `consomme` 'non': the mark stays until its turns run out; otherwise (default) the first
 //     headshot destroys it. A molt removes it.
+//   - Total lock (verrouillage total, effect, October 2026): a targeting mark good for the 3 next
+//     strikes of the card (each one a headshot), with no turn limit.
+//   - Held aim (visée maintenue, passive, October 2026): when a mark of the card is used up, a fixed
+//     chance (level table: visee, 50 %) to keep it for one more strike; again each time.
 
 import type { Attack, Strike } from '../combat/attack.ts';
 import { emit, id, opponent, roll, type Combat } from '../combat/combat.ts';
@@ -19,7 +23,11 @@ import type { Side } from '../combat/state.ts';
 import type { EffectData, Num } from '../model/card.ts';
 import { critical } from './critical.ts';
 
-export type Targeting = { by: Side; turns: number; pct: number; consume: boolean };
+// uses: strikes left before a consumed mark goes (1, or 3 for a total lock).
+export type Targeting = { by: Side; turns: number; pct: number; consume: boolean; uses: number };
+
+export const LOCK_USES = 3;
+const LOCK_TURNS = 99; // no turn limit: only its strikes use it
 
 // Its part of a card's status (combat/state.ts): the mark on the targeted card.
 export type HeadshotState = {
@@ -38,8 +46,17 @@ export function headshotStrike(c: Combat, at: Attack, st: Strike): StrikeFlow {
   if (st.blocked || d.hp <= 0) return undefined;
   const g = attackSources(a, (q) => q.type === 'headshot')[0];
   const mark = d.status.targeted && d.status.targeted.by === a ? d.status.targeted : null;
+  let used = false;
   if (mark) {
-    if (mark.consume) d.status.targeted = null;
+    if (mark.consume && --mark.uses <= 0) {
+      if (a.passives.some((p) => p.type === 'visee_maintenue') && roll(c, c.levels.visee)) {
+        mark.uses = 1;
+        emit(c, { type: 'targetKept', side: idd, by: at.ia });
+      } else {
+        d.status.targeted = null;
+        used = true;
+      }
+    }
   } else {
     if (!g) return undefined;
     const first = g[0] as EffectData;
@@ -52,7 +69,7 @@ export function headshotStrike(c: Combat, at: Attack, st: Strike): StrikeFlow {
     if (!q) return undefined;
   }
   critical(c, at, st, true, !!mark);
-  if (mark && mark.consume) emit(c, { type: 'targetEnded', side: idd });
+  if (used) emit(c, { type: 'targetEnded', side: idd });
   return undefined;
 }
 
@@ -65,8 +82,20 @@ export function targetingEffect({ c, e, o, x }: EffectContext): void {
   }
   const turns = Math.max(1, parseInt(String(e.tours), 10) || 1);
   const consume = e.consomme !== 'non';
-  x.status.targeted = { by: o, turns, pct: critPct(e.pctcrit), consume };
+  x.status.targeted = { by: o, turns, pct: critPct(e.pctcrit), consume, uses: 1 };
   emit(c, { type: 'targeted', side: id(c, x), by: id(c, o), turns, consume });
+}
+
+// Effect verrouillage_total: a mark good for the 3 next strikes.
+export function lockEffect({ c, e, o, x }: EffectContext): void {
+  x.status.targeted = {
+    by: o,
+    turns: LOCK_TURNS,
+    pct: critPct(e.pctcrit),
+    consume: true,
+    uses: LOCK_USES,
+  };
+  emit(c, { type: 'targetLocked', side: id(c, x), by: id(c, o), uses: LOCK_USES });
 }
 
 // End of the marking card's turn: its mark on the opponent counts down.
@@ -83,4 +112,5 @@ export function targetingEnd(c: Combat, s: Side): Flow {
 // Its effects (the registry of effects.ts). atk_headshot: attack-effects.ts.
 export const effects = {
   ciblage: { run: targetingEffect, withoutTarget: true },
+  verrouillage_total: { run: lockEffect, withoutTarget: true },
 } satisfies EffectRules;

@@ -17,6 +17,7 @@ import type { EffectContext, EffectRules } from '../combat/effect-context.ts';
 import type { Flow } from '../combat/flow.ts';
 import type { Side } from '../combat/state.ts';
 import type { EffectData } from '../model/card.ts';
+import { vaporize } from './contamination.ts';
 import { calcinate } from './dot.ts';
 
 export const BLAZE_TURNS = 2;
@@ -63,6 +64,7 @@ export function blazeEffect({ c, o, onUndo }: EffectContext): void {
     burnTurns: +(BLAZE_BURN.tours as number),
   });
   onUndo(() => putOutBlaze(c, o, 'time'));
+  vaporize(c, o); // already contaminated: the water puts it out at once
 }
 
 // End of its turn: it burns itself, then counts down.

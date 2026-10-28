@@ -1,7 +1,8 @@
 // The statuses a card carries, as the overlay shows them (one badge each, under the card): a key and
 // a number. For a status with levels the number is its level (I to III); for the others, what tells
 // its strength (curses: how many; blades: how many will strike; shield: its HP left; updraft: its
-// stacks). 0 when there is nothing to count (a stun, a contamination, a weakness, a rooting).
+// stacks; fury: its gains; accumulator: its charges, 0 once charged; target mark: strikes left).
+// 0 when there is nothing to count (a stun, a contamination, a weakness, a rooting).
 // Read by the view (events.ts, SideView.statuses); keys follow the legacy journal keys.
 
 import type { Side } from './state.ts';
@@ -24,7 +25,12 @@ export type BadgeKey =
   | 'brume'
   | 'courant'
   | 'bouclier'
-  | 'embrasement';
+  | 'embrasement'
+  | 'fureur'
+  | 'sangsue'
+  | 'surcharge'
+  | 'charge'
+  | 'cible';
 
 export type StatusBadge = { readonly key: BadgeKey; readonly n: number };
 
@@ -57,5 +63,10 @@ export function statusBadges(s: Side): StatusBadge[] {
   add('courant', st.updraft && st.updraft.turns > 0 ? st.updraft.stacks : 0);
   add('bouclier', st.shield);
   add('embrasement', 0, !!st.blaze);
+  add('fureur', st.fury);
+  add('sangsue', 0, st.leechTurns > 0 || s.passives.some((p) => p.type === 'sangsue_toxique'));
+  add('surcharge', 0, !!st.overload);
+  add('charge', st.voltCharges, st.voltCharges > 0 || st.charged);
+  add('cible', st.targeted ? st.targeted.uses : 0, !!st.targeted);
   return out;
 }

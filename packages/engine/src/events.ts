@@ -95,7 +95,8 @@ export type StatCause =
   | 'statusesLeft' // statuses moved to the swallower
   | 'mutation' // insect mutation, level I
   | 'molt' // a molt: ATQ and max HP lost
-  | 'reaction'; // reaction passive: a stat grows when the card takes damage or a status
+  | 'reaction' // reaction passive: a stat grows when the card takes damage or a status
+  | 'curseEmbrace'; // cursed embrace: the attacker's curses take more ATQ (mechanics/curse.ts)
 
 export type DamageCause =
   | 'direct'
@@ -119,6 +120,9 @@ export type DamageCause =
   | 'thorns' // a thorny rooting: the rooted card's own strike hurts it
   | 'seismic' // a seismic counter-strike (mechanics/earth.ts)
   | 'blades' // air blades striking (mechanics/blades.ts)
+  | 'venom' // a virulent injection on a level III poison (mechanics/venom.ts)
+  | 'overload' // an overload: the card electrocutes itself (mechanics/overload.ts)
+  | 'willBreak' // a will break (mechanics/curse.ts)
   | 'knell'; // the knell takes the card
 
 export type CannotAttackReason =
@@ -432,6 +436,37 @@ export type DomainEvent =
     }
   // by: its turns ran out, or the ice or the water (a contamination: vaporisation) put it out
   | { type: 'blazeEnded'; side: SideIndex; by: 'time' | 'ice' | 'water' }
+  // incandescent fury (mechanics/fury.ts): pct, the % of ATQ its strikes gain now; up: it rose
+  | { type: 'furyGiven'; side: SideIndex }
+  | { type: 'furyChanged'; side: SideIndex; pct: number; up: boolean }
+  // toxic leech and virulent injection (mechanics/venom.ts): side is the card holding the skill
+  | { type: 'leechGiven'; side: SideIndex; turns: number }
+  | { type: 'leechEnded'; side: SideIndex }
+  | { type: 'poisonLeeched'; side: SideIndex; target: SideIndex; pct: number; amount: number }
+  | {
+      type: 'venomInjected';
+      side: SideIndex;
+      target: SideIndex;
+      result: 'laid' | 'raised' | 'burst'; // no poison: one laid; else one level up; level III: damage
+    }
+  // overload and accumulator (mechanics/overload.ts)
+  | {
+      type: 'overloaded';
+      side: SideIndex;
+      again: boolean;
+      turns: number;
+      atqPct: number;
+      chainPct: number;
+      strikes: number;
+    }
+  | { type: 'overloadEnded'; side: SideIndex }
+  | { type: 'voltCharged'; side: SideIndex; charges: number; need: number; full: boolean }
+  | { type: 'discharged'; side: SideIndex; pct: number }
+  // will break (mechanics/curse.ts): lost, the ATQ the target lost to curses in the whole combat
+  | { type: 'willBroken'; side: SideIndex; target: SideIndex; lost: number; amount: number }
+  // total lock and held aim (mechanics/headshot.ts): side is the targeted card
+  | { type: 'targetLocked'; side: SideIndex; by: SideIndex; uses: number }
+  | { type: 'targetKept'; side: SideIndex; by: SideIndex }
   | { type: 'weakened'; side: SideIndex; stacked: boolean; pct: number; turns: number }
   // fracture: at its level, the chance to get hurt when attacking and the damage, % of its own ATQ
   | {

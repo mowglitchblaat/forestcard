@@ -127,6 +127,15 @@ const CATEGORY_OF: Record<string, string> = {
   foudre: 'foudre',
   marque_foudre: 'foudre',
   embrasement: 'feu',
+  fureur_incandescente: 'feu',
+  sangsue_toxique: 'poison',
+  injection_virulente: 'poison',
+  surcharge: 'foudre',
+  accumulateur: 'foudre',
+  brisure_volonte: 'mal',
+  etreinte_maudite: 'mal',
+  verrouillage_total: 'headshot',
+  visee_maintenue: 'headshot',
 };
 export const categoryOf = (t: unknown): string =>
   CATEGORY_OF[String(t).replace(/^atk_/, '')] || 'autre';

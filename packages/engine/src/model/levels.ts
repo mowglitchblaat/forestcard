@@ -40,6 +40,19 @@ export type StatusLevels = {
   foudre: number; // lightning mark level I: % more on the next strike taken (mechanics/lightning.ts)
   embrasementAtq: number; // blaze: % of the ATQ its strikes deal in more (mechanics/blaze.ts)
   embrasementCalcination: number; // blaze: % of its max HP burnt off at the end of each turn
+  // Skills of October 2026 (mechanics/skills.ts): fixed values, the same for every card.
+  fureurPct: number; // incandescent fury: % of ATQ gained per HP loss
+  fureurMax: number; // incandescent fury: % of ATQ at most
+  sangsue: Levels3; // toxic leech: % of a poison tick healed, by the poison's level
+  injection: number; // virulent injection on a level III poison: % of the poison left, as raw damage
+  surchargeAuto: number; // overload: % of its max HP it takes (self electrocution)
+  surchargeAtq: number; // overload: % of ATQ its strikes lose
+  surchargeEnchainement: number; // overload: % of chances to chain (up to 3 strikes)
+  accumulateurCharges: number; // accumulator: lightning marks to lay before a charged attack
+  accumulateurBonus: number; // accumulator: % more damage on the charged attack
+  brisure: number; // will break: damage = this × the ATQ the opponent lost to curses
+  etreinte: number; // cursed embrace: ATQ each curse takes more at each attack of the cursed card
+  visee: number; // held aim: % of chances to keep a targeting once it is used
 };
 
 export const DEFAULT_LEVELS: StatusLevels = {
@@ -59,6 +72,18 @@ export const DEFAULT_LEVELS: StatusLevels = {
   foudre: 40,
   embrasementAtq: 30,
   embrasementCalcination: 10,
+  fureurPct: 5,
+  fureurMax: 50,
+  sangsue: [20, 35, 50],
+  injection: 50,
+  surchargeAuto: 10,
+  surchargeAtq: 40,
+  surchargeEnchainement: 60,
+  accumulateurCharges: 3,
+  accumulateurBonus: 50,
+  brisure: 2,
+  etreinte: 1,
+  visee: 50,
 };
 
 export const MAX_LEVEL = 3;
@@ -75,6 +100,7 @@ export function levelTable(given: Partial<StatusLevels> | null | undefined): Sta
     fractureChance: [...DEFAULT_LEVELS.fractureChance],
     fractureAtq: [...DEFAULT_LEVELS.fractureAtq],
     glas: [...DEFAULT_LEVELS.glas],
+    sangsue: [...DEFAULT_LEVELS.sangsue],
   };
   if (!given || typeof given !== 'object') return t;
   for (const key of Object.keys(DEFAULT_LEVELS) as (keyof StatusLevels)[]) {
