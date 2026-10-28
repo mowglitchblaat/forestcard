@@ -24,9 +24,10 @@ export type SideView = {
   readonly maxHp: number;
   readonly atq: number;
   // Temporary damage boosts of the card's strikes, for the live ATQ shown during a combat:
-  // rage bonus (sum of its rages, 0 without) and double damage (double_degats) still running.
+  // rage bonus (sum of its rages, 0 without) and double damages (double_degats) still running (they
+  // stack: strikes × 2 ** doublings).
   readonly rage: number;
-  readonly doubled: boolean;
+  readonly doublings: number;
   // The statuses it carries, one badge each (combat/badges.ts), for the overlay.
   readonly statuses: readonly StatusBadge[];
 };
@@ -273,7 +274,8 @@ export type DomainEvent =
   | { type: 'nextAttackBlocked'; side: SideIndex }
   | { type: 'attackBlocked'; side: SideIndex; defender: SideIndex } // the attack lands at 0 damage
   | { type: 'blockRiposte'; side: SideIndex; target: SideIndex; kind: 'renvoi' | 'statut' } // side: the blocker, once per block
-  | { type: 'damageDoubled'; side: SideIndex }
+  // factor: the multiplier of its strikes now (2, then 4, 8… when double damages stack)
+  | { type: 'damageDoubled'; side: SideIndex; factor: number }
   | { type: 'counterPrepared'; side: SideIndex }
   // Damage, healing, death
   | {

@@ -1228,8 +1228,8 @@ function aureole(c,o={}){const K=rc(c),W=K.w,cx=K.cx;
 function statut(c,k,on){if(k==='fracture')return;const key=c+k;st[key]=Math.max(0,(st[key]||0)+(on?1:-1));const card=$('#p'+c+' .card'),f=card.querySelector('canvas.fx.'+k);
  if(st[key]>0&&!f)fxStart(card,k);else if(!st[key]&&f){f._stop();f.remove()}}
 function maj(e){[0,1].forEach(i=>{const p=$('#p'+i);p.querySelector('.bar i').style.width=Math.max(0,e.pv[i]/e.max[i]*100)+'%';
- // ATQ boostée (rage, ATQ ×2) : la valeur finale d'un coup est affichée tant que l'effet dure (champ `boost` du journal)
- const b=e.boost&&e.boost[i],rg=b?+b[0]||0:0,x2=!!(b&&b[1]),atq=rg||x2?Math.max(0,e.atq[i]*(x2?2:1)+rg):e.atq[i];
+ // ATQ boostée (rage, ATQ ×2, ×4…) : la valeur finale d'un coup est affichée tant que l'effet dure (champ `boost` du journal)
+ const b=e.boost&&e.boost[i],rg=b?+b[0]||0:0,nx=b?+b[1]||0:0,x2=nx>0,atq=rg||x2?Math.max(0,e.atq[i]*2**nx+rg):e.atq[i];   // b[1] : dégâts doublés en cours (ils se cumulent : ×2, ×4…)
  p.querySelector('.pv').textContent=`${Math.max(0,e.pv[i])} / ${e.max[i]} PV · ATQ ${atq}`;
  const sa=p.querySelector('.sva');if(sa){sa.classList.toggle('b-rage',rg>0);sa.classList.toggle('b-x2',x2&&!(rg>0))}
  [['.sva',atq],['.svp',Math.max(0,e.pv[i])]].forEach(([k,v])=>{const n=p.querySelector(k);if(!n)return;const t=String(v);if(n.dataset.v!==t){const nv=n.dataset.v!=='';n.dataset.v=t;if(nv){n.classList.remove('pls');void n.offsetWidth;n.classList.add('pls')}}})});etats(e)}

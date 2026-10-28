@@ -10,7 +10,7 @@ import type { CombatView, DomainEvent, OnEvent, SideView } from '../events.ts';
 import type { Card, EffectData, Num, Player } from '../model/card.ts';
 import { levelTable, type StatusLevels } from '../model/levels.ts';
 import type { Rules } from '../model/rules.ts';
-import { damageFactor } from '../mechanics/double-damage.ts';
+import { doublingsOf } from '../mechanics/double-damage.ts';
 import { flushRevives, type TrapRevive } from '../mechanics/revive.ts';
 import { noticeTrigger, type Triggers } from '../mechanics/triggers.ts';
 import { reactToEvent } from '../mechanics/reaction.ts';
@@ -133,7 +133,6 @@ export function disableEmptySlots(s: Side): void {
 // (turns at 0, its end line being emitted) no longer counts, so the shown ATQ drops with that line.
 const rageOf = (s: Side): number =>
   s.status.rages.reduce((q, g) => q + (g.turns > 0 ? g.bonus : 0), 0);
-const doubledOf = (s: Side): boolean => damageFactor(s) > 1;
 
 export function createCombat(rules: Rules, seed: number, onEvent: OnEvent): Combat {
   const sides: Side[] = [];
@@ -170,8 +169,8 @@ export function createCombat(rules: Rules, seed: number, onEvent: OnEvent): Comb
         get rage() {
           return rageOf(s);
         },
-        get doubled() {
-          return doubledOf(s);
+        get doublings() {
+          return doublingsOf(s);
         },
         get statuses() {
           return statusBadges(s);
@@ -229,7 +228,7 @@ const frozenView = (c: Combat): CombatView => ({
     maxHp: s.maxHp,
     atq: s.atq,
     rage: rageOf(s),
-    doubled: doubledOf(s),
+    doublings: doublingsOf(s),
     statuses: statusBadges(s),
   })),
 });
@@ -276,7 +275,7 @@ export const releaseNow = (c: Combat, events: HeldEvent[]) =>
         maxHp: now[i]?.maxHp ?? s.maxHp,
         atq: now[i]?.atq ?? s.atq,
         rage: now[i]?.rage ?? s.rage,
-        doubled: now[i]?.doubled ?? s.doubled,
+        doublings: now[i]?.doublings ?? s.doublings,
         statuses: now[i]?.statuses ?? s.statuses,
       })),
     };

@@ -253,11 +253,11 @@ Noms des statuts dans l'état du moteur (`Status`, `packages/engine/src/combat/s
 | lames d'air (sur la cible) | `blades` (une vague par pose : `blades`, `damage`, `turns`) | `bladesStruck` |
 | marque de foudre (sur la cible), cartes chargées | `lightning` (`level`, `primed`), `chargedCards` (du côté qui les a chargées) | `lightningFaded` |
 | rage | `rages` | `statusEnded: 'rage'` |
-| dégâts doublés | `doubleDamageTurns` | aucun : le compteur baisse en fin de tour de la carte |
+| dégâts doublés | `doublings` (un par dégâts doublés en cours, avec ses tours ; ils se cumulent : ×2, ×4, ×8…) | aucun : chaque compteur baisse en fin de tour de la carte |
 
 Pastilles de statut (affichage) : une pastille par statut porté, sur la carte, en combat, avec son niveau en chiffre romain (ou son nombre : malédictions, lames, courant, PV du bouclier). Vue : `SideView.statuses` (`combat/badges.ts`) ; journal : champ `etats` (`docs/legacy/moteur.md`).
 
-ATQ boostée (affichage) : l'ATQ finale d'un coup montrée en direct sur la carte pendant une rage ou des dégâts doublés. Vue : `SideView.rage`, `SideView.doubled` ; journal : champ `boost` (`docs/legacy/moteur.md`).
+ATQ boostée (affichage) : l'ATQ finale d'un coup montrée en direct sur la carte pendant une rage ou des dégâts doublés. Vue : `SideView.rage`, `SideView.doublings` ; journal : champ `boost` (`docs/legacy/moteur.md`).
 | étourdissement | `stunTurns` | `statusEnded: 'stun'` |
 | attaque bloquée | `nextAttackBlocked` (legacy : `blk`) | consommée par la prochaine attaque, souffle ou missile ; retirée par une purification |
 | solidification | `solidTurns` | `statusEnded: 'solid'` |

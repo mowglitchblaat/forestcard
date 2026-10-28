@@ -230,10 +230,10 @@ export function project(event: DomainEvent, view: CombatView): JournalLine | nul
     pv: sides.map((s) => s.hp),
     max: sides.map((s) => s.maxHp),
     atq: sides.map((s) => s.atq),
-    // Only while a card has a rage or double damage running: [rage bonus, 1 if doubled else 0]
-    // per card, for the live ATQ of the overlay (atq × 2 if doubled, + rage).
-    ...(sides.some((s) => s.rage || s.doubled)
-      ? { boost: sides.map((s) => [s.rage, s.doubled ? 1 : 0]) }
+    // Only while a card has a rage or double damage running: [rage bonus, double damages running]
+    // per card, for the live ATQ of the overlay (atq × 2 per double damage, + rage).
+    ...(sides.some((s) => s.rage || s.doublings)
+      ? { boost: sides.map((s) => [s.rage, s.doublings]) }
       : {}),
     // Only while a card carries a status: per card, [key, number] for each status (the level for
     // the statuses with levels), for the badges of the overlay.
@@ -564,7 +564,14 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
         o: { c: e.side, k: 'riposte', cible: e.target, quoi: e.kind },
       };
     case 'damageDoubled':
-      return { t: 'statut', txt: `${name(e.side)} double ses dégâts`, o: { c: e.side } };
+      return {
+        t: 'statut',
+        txt:
+          e.factor > 2
+            ? `${name(e.side)} double encore ses dégâts (×${e.factor})`
+            : `${name(e.side)} double ses dégâts`,
+        o: { c: e.side, n: e.factor },
+      };
     case 'counterPrepared':
       return {
         t: 'statut',

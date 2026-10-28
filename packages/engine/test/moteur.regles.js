@@ -1348,3 +1348,11 @@ test('marque de foudre : la purification la retire', () => {
   assert.ok(r.journal.some(e => e.k === 'foudre' && e.n === 1), 'posée');
   assert.ok(r.journal.some(e => /marque de foudre dissipé/.test(e.txt || '')), 'purifiée');
 });
+
+test('dégâts doublés : ils se cumulent (×2, puis ×4), chacun avec sa durée', () => {
+  const r = combat([C('A', 10, SOLIDE), MAG('Rituel', { briques: [{ type: 'double_degats', tours: 3 }, { type: 'double_degats', tours: 1 }] })], [C('B', 1, SOLIDE)], { regles: { maxTours: 5, maxProlong: 0 } });
+  assert.ok(r.journal.some(e => e.txt === 'A double ses dégâts'), '×2');
+  assert.ok(r.journal.some(e => e.txt === 'A double encore ses dégâts (×4)'), '×4');
+  const coups = lignes(r, e => e.t === 'degats' && e.c === 1 && /^B subit \d+ dégâts$/.test(e.txt || '')).map(e => e.n);
+  assert.deepEqual(coups.slice(0, 4), [40, 20, 20, 10], '×4 un tour, puis ×2 jusqu\'au 3e, puis normal');
+});

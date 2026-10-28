@@ -15,7 +15,7 @@ Le calcul est synchrone. Sans seed, la fonction en tire une avec `Math.random()`
 
 Chaque événement vaut `{ t, txt, ...champs, tour, pv: [a, b], max: [a, b], atq: [a, b] }`. Les trois tableaux sont un instantané pris au moment de l'émission.
 
-Ajout du moteur TS (absent du legacy) : tant qu'une carte est en rage ou a ses dégâts doublés, chaque ligne porte aussi `boost: [[rage, x2], [rage, x2]]` (bonus de rage en cours, `1` si les dégâts sont doublés, sinon `0`). L'overlay affiche alors l'ATQ finale d'un coup (`atq × 2` si doublé, `+ rage`) avec un effet. Une rage cesse de compter dès sa ligne « La rage de … retombe ».
+Ajout du moteur TS (absent du legacy) : tant qu'une carte est en rage ou a ses dégâts doublés, chaque ligne porte aussi `boost: [[rage, x2], [rage, x2]]` (bonus de rage en cours, nombre de dégâts doublés en cours : `0`, `1`, `2`… depuis le 28 octobre 2026 ils se cumulent). L'overlay affiche alors l'ATQ finale d'un coup (`atq × 2` par dégâts doublés, `+ rage`) avec un effet. Une rage cesse de compter dès sa ligne « La rage de … retombe ».
 
 Ajout du rework d'octobre 2026 : tant qu'une carte porte un statut, chaque ligne porte aussi `etats: [[[statut, nombre], …], […]]`, par carte. Le nombre est le niveau (1 à 3) pour les statuts à niveaux (poison, brûlure, saignement, fatigue, fracture, glas, gel, marque de foudre, brume) ; le nombre de malédictions, de lames du cisaillement ou de cumuls du courant ascendant ; les PV du bouclier de sédimentation ; `0` pour un statut sans nombre (étourdissement, contamination, faiblesse, enracinement). L'overlay en fait une pastille par statut sur la carte, et règle l'aura d'après le niveau. Calculé par `packages/engine/src/combat/badges.ts` (`SideView.statuses`).
 
@@ -102,7 +102,7 @@ Pour lire `legacy/moteur-combat.js` et `packages/engine/src/` côte à côte. Le
 | `st.cl`, `st.cret` | `atqLostToCurses`, `curseReturns` | `Status` |
 | `st.fat`, `st.rage`, `st.hots` | `fatigues`, `rages`, `regens` | `Status` |
 | `st.frost`, `st.fract`, `st.dots`, `st.bleeds`, `st.curses` | `frosts`, `fractures`, `dots`, `bleeds`, `curses` | `Status` |
-| `st.stun`, `st.skip`, `st.dbl`, `st.solide` | `stunTurns`, `nextAttackCancelled`, `doubleDamageTurns`, `solidTurns` | `Status` |
+| `st.stun`, `st.skip`, `st.dbl`, `st.solide` | `stunTurns`, `nextAttackCancelled`, `doublings` (un par dégâts doublés en cours : ils se cumulent depuis le 28 octobre 2026), `solidTurns` | `Status` |
 | `st.marques`, `st.mseuil` | `executionMarks`, `executionThreshold` | `Status` |
 | `st.joues`, `st.trA`, `st.transc` | `turnsPlayed`, `transcendence`, `transcendenceLevel` | `Status` |
 | `st.atkfx`, `st.esqb`, `st.ren`, `st.insens`, `st.prog` | `attackEffects`, `dodgeBonus`, `reflects`, `trapImmunityTurns`, `delayedDamages` | `Status` |

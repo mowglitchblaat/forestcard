@@ -28,7 +28,8 @@
         "titre": "Équilibrage",
         "points": [
           "Les cartes à malédiction et Sweety perdent en puissance avec les nouvelles règles ; les cartes les plus résistantes en gagnent un peu.",
-          "Les valeurs de chaque niveau se règlent depuis l’admin : elles bougeront au fil de vos retours et de vos votes."
+          "Les valeurs de chaque niveau se règlent depuis l’admin : elles bougeront au fil de vos retours et de vos votes.",
+          "Dégâts doublés : ils se cumulent désormais. Un deuxième « double ses dégâts » pendant le premier fait frapper à ×4 (chacun garde sa durée). Avant, le deuxième ne faisait que relancer le compteur."
         ]
       }
     ]
