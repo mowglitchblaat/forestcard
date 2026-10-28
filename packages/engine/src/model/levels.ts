@@ -9,6 +9,7 @@
 //   fracture     chance to get hurt when attacking, damage in % of its own ATQ
 //   glas         speed of the shadow, % of max HP per turn
 //   malediction  no level: a fixed ATQ loss for its turns
+//   faiblesse    no level: the weakness a vaporisation leaves (damage taken +X % for X turns)
 //
 // Levels add up: a level II laid on a level I gives a level III; level III at most.
 //
@@ -31,6 +32,8 @@ export type StatusLevels = {
   fractureAtq: Levels3; // damage, % of its own ATQ
   glas: Levels3; // % of max HP per turn
   malediction: number; // ATQ lost by each curse
+  faiblesse: number; // weakness: % of damage taken in more
+  faiblesseTours: number; // weakness: its turns
 };
 
 export const DEFAULT_LEVELS: StatusLevels = {
@@ -44,6 +47,8 @@ export const DEFAULT_LEVELS: StatusLevels = {
   fractureAtq: [10, 20, 30],
   glas: [5, 8, 12],
   malediction: 3,
+  faiblesse: 25,
+  faiblesseTours: 2,
 };
 
 export const MAX_LEVEL = 3;

@@ -38,6 +38,8 @@ export const CATEGORY_LABELS: Record<string, string> = {
   parasite: 'Lien parasitaire',
   insecte: 'Mutation / mue',
   reaction: 'Réaction',
+  racine: 'Enracinement',
+  eau: 'Contamination / vaporisation',
   autre: 'Autres',
 };
 // Category (legend colour) of each effect and passive type.
@@ -112,6 +114,8 @@ const CATEGORY_OF: Record<string, string> = {
   mue: 'insecte',
   mue_forcee: 'insecte',
   reaction: 'reaction',
+  enracinement: 'racine',
+  contamination: 'eau',
 };
 export const categoryOf = (t: unknown): string =>
   CATEGORY_OF[String(t).replace(/^atk_/, '')] || 'autre';
@@ -157,5 +161,7 @@ export const CATEGORY_STYLES: Record<
   parasite: { background: '#4a0d1c', color: '#fda4af', border: '1px solid #a3203f' },
   insecte: { background: '#3f6212', color: '#ecfccb', border: '1px solid #9be15d' },
   reaction: { background: '#0f766e', color: '#ccfbf1' },
+  racine: { background: '#3f2a14', color: '#d9f99d', border: '1px solid #65a30d' },
+  eau: { background: '#0c4a6e', color: '#bae6fd', border: '1px solid #0ea5e9' },
   autre: { background: '#6b7280', color: '#fff' },
 };

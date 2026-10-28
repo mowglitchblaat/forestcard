@@ -19,6 +19,7 @@ import type { EffectContext, EffectRules } from '../combat/effect-context.ts';
 import type { Flow } from '../combat/flow.ts';
 import type { Side } from '../combat/state.ts';
 import type { EffectData, Num } from '../model/card.ts';
+import { contaminationExtra } from './contamination.ts';
 import { mistTakes } from './mist.ts';
 
 // Shatter damage when a frost does not say (breaths, missiles, the random effect, older cards).
@@ -72,7 +73,7 @@ export function freeze(
   f.level = held ? Math.max(f.level, 2) : wanted;
   f.cancelChance = Math.max(f.cancelChance, Math.max(0, cancelChance));
   f.shatter = Math.max(f.shatter, Math.max(0, shatter));
-  f.turns = Math.max(f.turns, Math.max(1, turns));
+  f.turns = Math.max(f.turns, Math.max(1, turns) + contaminationExtra(d));
   if (!now) d.status.frosts = [f];
   emit(c, {
     type: 'frozen',

@@ -40,7 +40,9 @@ export type StatusKind =
   | 'stun'
   | 'rage'
   | 'fatigue'
-  | 'solid';
+  | 'solid'
+  | 'contamination'
+  | 'weakness';
 
 // A negative status a mist takes (mechanics/mist.ts).
 export type MistedStatus =
@@ -53,7 +55,9 @@ export type MistedStatus =
   | 'fracture'
   | 'stun'
   | 'fatigue'
-  | 'parasite';
+  | 'parasite'
+  | 'rooting'
+  | 'contamination';
 
 // A status removed by a purification, or moved away by a swallow (legacy keys, shown as such).
 export type DispelledStatus =
@@ -65,6 +69,8 @@ export type DispelledStatus =
   | 'glas'
   | 'fatigue'
   | 'fracture'
+  | 'enracinement'
+  | 'contamination'
   | 'annule';
 
 // Why an attack, max HP or ATQ changed.
@@ -105,6 +111,7 @@ export type DamageCause =
   | 'missileReturned' // a reflected missile exploding on its shooter
   | 'shatter' // the ice of a frost shattering (glaciation, or a fracture)
   | 'thermalShock' // fire on ice: a burn laid on a frozen card
+  | 'thorns' // a thorny rooting: the rooted card's own strike hurts it
   | 'knell'; // the knell takes the card
 
 export type CannotAttackReason =
@@ -352,6 +359,23 @@ export type DomainEvent =
   | { type: 'knellRose'; side: SideIndex; threshold: number }
   | { type: 'knellReceded'; side: SideIndex; threshold: number; skulls: number }
   | { type: 'knelled'; side: SideIndex }
+  // rooting (mechanics/rooting.ts): its variant, and its values (val: thorns damage, level: the
+  // poison it lays)
+  | {
+      type: 'rooted';
+      side: SideIndex;
+      variant: 'epineux' | 'empoisonne' | 'inhibiteur';
+      stacked: boolean;
+      turns: number;
+      val: number;
+      level: number;
+    }
+  | { type: 'rootEnded'; side: SideIndex; variant: 'epineux' | 'empoisonne' | 'inhibiteur' }
+  | { type: 'ultimateHeld'; side: SideIndex } // an inhibiting rooting holds its ultimate
+  // contamination (mechanics/contamination.ts): prolonged, how many statuses gained a turn
+  | { type: 'contaminated'; side: SideIndex; stacked: boolean; turns: number; prolonged: number }
+  | { type: 'vaporized'; side: SideIndex } // burn + contamination: the burn is spent
+  | { type: 'weakened'; side: SideIndex; stacked: boolean; pct: number; turns: number }
   // fracture: at its level, the chance to get hurt when attacking and the damage, % of its own ATQ
   | {
       type: 'fractured';

@@ -95,6 +95,8 @@ const ATTACK_EFFECT_VERBS: Record<string, string> = {
   fracture: 'fracturer',
   gel: 'geler',
   headshot: 'faire un headshot',
+  enracinement: 'enraciner',
+  contamination: 'contaminer',
 };
 
 // The statuses a mist takes, with their article.
@@ -109,6 +111,8 @@ const MISTED_ART: Record<MistedStatus, string> = {
   stun: "l'étourdissement",
   fatigue: 'la fatigue',
   parasite: 'le lien parasitaire',
+  rooting: "l'enracinement",
+  contamination: 'la contamination',
 };
 
 // Explosion mark, written as an escape: the source stays emoji-free.
@@ -167,6 +171,15 @@ const STATUS_ENDED: Record<StatusKind, [string, (name: string) => string]> = {
   rage: ['rage', (n) => `La rage de ${n} retombe`],
   fatigue: ['fatigue', (n) => `La fatigue de ${n} se dissipe`],
   solid: ['solide', (n) => `${n} n'est plus solidifié`],
+  contamination: ['contamination', (n) => `La contamination de ${n} se dissipe`],
+  weakness: ['faiblesse', (n) => `${n} n'est plus affaibli`],
+};
+
+// Rooting variants (mechanics/rooting.ts in the engine).
+const ROOT_NAMES: Record<'epineux' | 'empoisonne' | 'inhibiteur', string> = {
+  epineux: 'épineux',
+  empoisonne: 'empoisonné',
+  inhibiteur: 'inhibiteur',
 };
 
 const DISPELLED_LABELS: Record<string, string> = {
@@ -174,6 +187,7 @@ const DISPELLED_LABELS: Record<string, string> = {
   brulure: 'brûlure',
   malediction: 'malédiction',
   glas: 'Glas',
+  enracinement: 'enracinement',
 };
 
 // A number written the French way (decimal comma).
@@ -624,6 +638,12 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
             txt: `${name(c)} subit ${n} dégâts (le Glas)`,
             o: { c, n, k: 'glas' },
           };
+        case 'thorns':
+          return {
+            t: 'degats',
+            txt: `${name(c)} se blesse sur ses épines (enracinement) : ${n} dégâts`,
+            o: { c, n, k: 'epines' },
+          };
         case 'thermalShock':
           return {
             t: 'degats',
@@ -898,6 +918,47 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
             : `La glace de ${name(e.side)} éclate !`,
         o: { c: e.side, k: 'eclat_glace' },
       };
+    case 'rooted':
+      return {
+        t: 'statut',
+        txt:
+          e.variant === 'epineux'
+            ? `${name(e.side)} est enraciné${e.stacked ? ' plus longtemps' : ''} (enracinement épineux : ${e.val} dégâts à chaque frappe qu'il porte, ${turns(e.turns)}) !`
+            : e.variant === 'empoisonne'
+              ? `${name(e.side)} est enraciné${e.stacked ? ' plus longtemps' : ''} (enracinement empoisonné : chaque frappe qu'il porte l'empoisonne, poison ${lvl(e.level)}, ${turns(e.turns)}) !`
+              : `${name(e.side)} est enraciné${e.stacked ? ' plus longtemps' : ''} (enracinement inhibiteur : pas d'ultime, ${turns(e.turns)}) !`,
+        o: { c: e.side, k: 'enracinement', s: e.variant },
+      };
+    case 'rootEnded':
+      return {
+        t: 'finstatut',
+        txt: `L'enracinement ${ROOT_NAMES[e.variant]} de ${name(e.side)} se défait`,
+        o: { c: e.side, k: 'enracinement', s: e.variant },
+      };
+    case 'ultimateHeld':
+      return {
+        t: 'statut',
+        txt: `Les racines retiennent ${name(e.side)} : son ultime attend`,
+        o: { c: e.side, k: 'ultime_retenu' },
+      };
+    case 'contaminated':
+      return {
+        t: 'statut',
+        txt: `${name(e.side)} est contaminé${e.stacked ? ' à nouveau' : ''} (ses statuts négatifs durent un tour de plus, ${turns(e.turns)})${e.prolonged ? ` : ${e.prolonged} statut${e.prolonged > 1 ? 's' : ''} prolongé${e.prolonged > 1 ? 's' : ''}` : ''} !`,
+        o: { c: e.side, k: 'contamination', n: e.prolonged },
+      };
+    case 'vaporized':
+      return {
+        t: 'statut',
+        txt: `VAPORISATION ! L'eau et le feu se rencontrent sur ${name(e.side)} : la brûlure part en vapeur`,
+        o: { c: e.side, k: 'vaporisation' },
+      };
+    case 'weakened':
+      return {
+        t: 'statut',
+        txt: `${name(e.side)} est affaibli${e.stacked ? ' plus longtemps' : ''} (dégâts reçus +${fr(e.pct)} %, ${turns(e.turns)}) !`,
+        o: { c: e.side, k: 'faiblesse' },
+      };
     case 'fractured':
       return {
         t: 'statut',
@@ -1079,7 +1140,7 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
     case 'statusesTransferred':
       return {
         t: 'statut',
-        txt: `Les statuts de ${name(e.from)} passent à ${name(e.side)}, plus forts (×1,5) !`,
+        txt: `Les statuts de ${name(e.from)} passent à ${name(e.side)}, plus forts (un niveau de plus) !`,
         o: { c: e.side, k: 'av_transfert', from: e.from, ks: e.kinds },
       };
     case 'statusLostToSwallower':

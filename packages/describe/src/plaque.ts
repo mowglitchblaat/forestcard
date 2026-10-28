@@ -3,13 +3,23 @@
 // (categories.ts). One short wording per effect and passive type: a type added to the engine
 // without its label does not compile. The admin can replace each line by its own text.
 
-import type { EffectType, PassiveType } from '@forestcard/engine';
+import { levelOf, type EffectType, type LeveledStatus, type PassiveType } from '@forestcard/engine';
 import { categoryOf } from './categories.ts';
 
 type Fx = Record<string, unknown>;
 
 const foe = (e: Fx) => e.cible === 'adversaire' || e.ciblem === 'adversaire';
 const down = (e: Fx) => +(e.val as number) < 0;
+// A leveled status shows its level (rework of October 2026): « Poison II ».
+const ROMAN = ['I', 'II', 'III'];
+const lv = (name: string, kind: LeveledStatus) => (e: Fx) =>
+  `${name} ${ROMAN[levelOf(kind, e) - 1] as string}`;
+const ROOTS: Record<string, string> = {
+  epineux: 'Enracinement épineux',
+  empoisonne: 'Enracinement empoisonné',
+  inhibiteur: 'Enracinement inhibiteur',
+};
+const rootLabel = (e: Fx) => ROOTS[String(e.variante)] ?? 'Enracinement';
 
 const BREATHS: Record<string, string> = {
   brulure: 'Souffle de feu',
@@ -27,7 +37,7 @@ const EFFECT_LABELS: Record<EffectType, (e: Fx) => string> = {
   soin: () => 'Soin',
   reanimation: () => 'Réanimation',
   rage: () => 'Rage',
-  fatigue: () => 'Fatigue',
+  fatigue: lv('Fatigue', 'fatigue'),
   aleatoire: () => 'Effet aléatoire',
   soin_tours: () => 'Régénération',
   purification: () => 'Purification',
@@ -44,7 +54,7 @@ const EFFECT_LABELS: Record<EffectType, (e: Fx) => string> = {
   echange_pv: () => 'Échange de PV',
   echange_tout: () => 'Échange total',
   malediction: () => 'Malédiction',
-  saignement: () => 'Saignement',
+  saignement: lv('Saignement', 'saignement'),
   souffle: (e) => BREATHS[String(e.statut)] || 'Souffle',
   execution: () => 'Exécution',
   atk_avalage: () => 'Avalage',
@@ -53,11 +63,11 @@ const EFFECT_LABELS: Record<EffectType, (e: Fx) => string> = {
   transcendance: () => 'Transcendance',
   solidification: () => 'Solidification',
   gel: () => 'Gel',
-  fracture: () => 'Fracture',
+  fracture: lv('Fracture', 'fracture'),
   copie_ultime: () => 'Copie l’ultime',
   vol_ultime: () => 'Vole l’ultime',
-  poison_effet: () => 'Poison',
-  brulure_effet: () => 'Brûlure',
+  poison_effet: lv('Poison', 'poison'),
+  brulure_effet: lv('Brûlure', 'brulure'),
   etourdir_effet: () => 'Étourdissement',
   atk_fatigue: () => 'Coup épuisant',
   atk_enchainement: () => 'Enchaînement',
@@ -68,7 +78,7 @@ const EFFECT_LABELS: Record<EffectType, (e: Fx) => string> = {
   atk_malediction: () => 'Coup maudit',
   atk_fracture: () => 'Coup brise-os',
   atk_gel: () => 'Coup glacial',
-  glas_effet: () => 'Glas',
+  glas_effet: lv('Glas', 'glas'),
   atk_glas: () => 'Coup funèbre',
   esquive_mod: (e) => (down(e) ? 'Baisse l’esquive' : 'Esquive accrue'),
   reset_ultime: () => 'Relance l’ultime',
@@ -87,6 +97,10 @@ const EFFECT_LABELS: Record<EffectType, (e: Fx) => string> = {
   lien_parasite: () => 'Lien parasitaire',
   mue_forcee: () => 'Mue forcée',
   reduc_degats: () => 'Protection',
+  enracinement: rootLabel,
+  atk_enracinement: () => 'Coup enracinant',
+  contamination: () => 'Contamination',
+  atk_contamination: () => 'Coup contaminant',
 };
 
 const PASSIVE_LABELS: Record<PassiveType, (p: Fx) => string> = {
@@ -99,13 +113,13 @@ const PASSIVE_LABELS: Record<PassiveType, (p: Fx) => string> = {
   renvoi: () => 'Renvoi des dégâts',
   vol_pct_atq: () => 'Vol de vie',
   etourdir: () => 'Étourdissement',
-  brulure: () => 'Brûlure',
-  poison: () => 'Poison',
-  saignement: () => 'Saignement',
+  brulure: lv('Brûlure', 'brulure'),
+  poison: lv('Poison', 'poison'),
+  saignement: lv('Saignement', 'saignement'),
   malediction: () => 'Malédiction',
-  fracture: () => 'Fracture',
+  fracture: lv('Fracture', 'fracture'),
   gel: () => 'Gel',
-  fatigue: () => 'Fatigue',
+  fatigue: lv('Fatigue', 'fatigue'),
   execution: () => 'Marque d’exécution',
   avalage: () => 'Avalage',
   solidification: () => 'Solidification',
@@ -119,12 +133,14 @@ const PASSIVE_LABELS: Record<PassiveType, (p: Fx) => string> = {
   purification: () => 'Purification',
   programmation: () => 'Programmation',
   detonation: () => 'Détonation',
-  glas: () => 'Glas',
+  glas: lv('Glas', 'glas'),
   headshot: () => 'Headshot',
   lien_parasite: () => 'Lien parasitaire',
   mutation: () => 'Mutation insecte',
   mue: () => 'Mue',
   reaction: (p) => REACTION_LABELS[String(p.stat)] ?? 'Réaction',
+  enracinement: rootLabel,
+  contamination: () => 'Contamination',
 };
 
 const REACTION_LABELS: Record<string, string> = {

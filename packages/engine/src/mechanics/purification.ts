@@ -1,5 +1,5 @@
-// Purification: removes the negative statuses (except stun) and gives back the attack lost to curses
-// and fatigue. Stun is NEVER removed: it always skips the next attack.
+// Purification: removes the negative statuses (except stun and weakness) and gives back the attack
+// lost to curses and fatigue. Stun is NEVER removed: it always skips the next attack.
 //
 // Comes from: an effect (purification: now, then "fois - 1" more, one every "every" turns), a
 // passive (every X turns, X times at most, only when there is something to remove), a
@@ -34,6 +34,8 @@ export const hasPurifiableStatus = (z: Status) =>
   !!z.knell ||
   z.fractures.length ||
   z.fatigues.length ||
+  z.rootings.length ||
+  !!z.contamination ||
   z.nextAttackCancelled > 0 ||
   z.nextAttackBlocked > 0;
 
@@ -47,6 +49,8 @@ export function purify(c: Combat, t: Side, silent?: boolean): void {
   z.frosts.forEach(() => removed.push('gel'));
   z.fatigues.forEach(() => removed.push('fatigue'));
   z.fractures.forEach(() => removed.push('fracture'));
+  z.rootings.forEach(() => removed.push('enracinement'));
+  if (z.contamination) removed.push('contamination');
   if (knellPurified(c, t)) removed.push('glas');
   const attackWasCancelled = z.nextAttackCancelled > 0 || z.nextAttackBlocked > 0;
   const curseBack = atqLostToCurses(t);
@@ -58,6 +62,8 @@ export function purify(c: Combat, t: Side, silent?: boolean): void {
   z.frosts = [];
   z.fractures = [];
   z.fatigues = [];
+  z.rootings = [];
+  z.contamination = null;
   z.nextAttackCancelled = 0;
   z.nextAttackBlocked = 0;
   if (!silent)

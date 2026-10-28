@@ -8,6 +8,7 @@
 //     stops the burn, not the scars).
 // Fire on ice: a burn laid on a frozen card melts the ice one level down (mechanics/frost.ts) with a
 // thermal shock (one tick at once), and the burn is spent doing it: no burn is laid.
+// Fire and water: a burn on a contaminated card vaporises (mechanics/contamination.ts).
 //
 // Laid by: an effect (poison_effet, brulure_effet), an attack (passive or attack effect brulure,
 // poison).
@@ -19,6 +20,7 @@ import type { Flow } from '../combat/flow.ts';
 import type { Side } from '../combat/state.ts';
 import type { EffectData } from '../model/card.ts';
 import { addLevels, at, levelOf } from '../model/levels.ts';
+import { contaminationExtra, vaporize } from './contamination.ts';
 import { statusDamageMarks } from './execution.ts';
 import { thaw } from './frost.ts';
 import { mistTakes } from './mist.ts';
@@ -66,6 +68,7 @@ export function damageOverTime(
     emit(c, { type: 'damaged', side: id(c, M), amount: n, cause: 'thermalShock' });
     return;
   }
+  turns += contaminationExtra(M);
   let current = M.status.dots.find((z) => z.kind === kind);
   const stacked = !!current;
   if (current) {
@@ -84,6 +87,7 @@ export function damageOverTime(
     value: dotValue(c, kind, current.level),
     turns: current.turns,
   });
+  if (!isPoison(kind)) vaporize(c, M); // a burn on a contaminated card: vaporisation
 }
 
 export function tickDot(c: Combat, s: Side, dot: DamageOverTime): void {

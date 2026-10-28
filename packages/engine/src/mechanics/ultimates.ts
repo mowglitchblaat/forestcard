@@ -1,6 +1,6 @@
 // Ultimates: the card's own, and those it stole or copied. One fires after X rounds (apres_tours),
 // when a card activates (sur_carte), on an event or under X % of HP (udecl: mechanics/triggers.ts), with a delay between two uses (delai_tours) and a number of
-// uses (utilisations). Effects: steal the opponent's (vol_ultime), copy it (copie_ultime: the
+// uses (utilisations). An inhibiting rooting holds them until it ends (mechanics/rooting.ts). Effects: steal the opponent's (vol_ultime), copy it (copie_ultime: the
 // opponent keeps its own), reset a card's (reset_ultime).
 
 import { emit, id, opponent, over, raw, type Combat } from '../combat/combat.ts';
@@ -9,6 +9,7 @@ import { applyEffect } from '../combat/effects.ts';
 import type { Flow } from '../combat/flow.ts';
 import type { Side } from '../combat/state.ts';
 import { scan } from '../combat/traps.ts';
+import { inhibited } from './rooting.ts';
 
 // 2. The ultimates that can fire do, in the order the card holds them.
 export function ultimate(c: Combat, s: Side): Flow {
@@ -36,6 +37,11 @@ export function ultimate(c: Combat, s: Side): Flow {
       )
     )
       continue;
+    // an inhibiting rooting holds it: it waits, its conditions still met, and fires once free
+    if (inhibited(s)) {
+      emit(c, { type: 'ultimateHeld', side: id(c, s) });
+      continue;
+    }
     slot.uses++;
     slot.lastRound = c.round;
     s.cardActivated = 0;

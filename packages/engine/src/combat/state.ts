@@ -35,6 +35,8 @@ import { type InsectState, insectState } from '../mechanics/insect.ts';
 import { type MistState, mistState } from '../mechanics/mist.ts';
 import { type ParasiteState, parasiteState } from '../mechanics/parasite.ts';
 import { type ReactionState, reactionState } from '../mechanics/reaction.ts';
+import { type RootingState, rootingState } from '../mechanics/rooting.ts';
+import { type ContaminationState, contaminationState } from '../mechanics/contamination.ts';
 import type { Card, EffectData, Num } from '../model/card.ts';
 
 // An ultimate held by a card: its own, or one stolen or copied from the opponent.
@@ -86,7 +88,9 @@ export type Status = { turnsPlayed: number } & RageState &
   MistState &
   ParasiteState &
   InsectState &
-  ReactionState;
+  ReactionState &
+  RootingState &
+  ContaminationState;
 
 export type Side = {
   pseudo: string;
@@ -179,4 +183,6 @@ export const newStatus = (passives: EffectData[]): Status => ({
   ...parasiteState(),
   ...insectState(),
   ...reactionState(passives),
+  ...rootingState(),
+  ...contaminationState(),
 });

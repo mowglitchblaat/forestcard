@@ -11,6 +11,7 @@
 import { avoidDeath, breakAvoidDeath } from '../mechanics/avoid-death.ts';
 import { healReduction } from '../mechanics/bleed.ts';
 import { knellCheck } from '../mechanics/knell.ts';
+import { weakened } from '../mechanics/contamination.ts';
 import { shareHeal, sharedParts } from '../mechanics/parasite.ts';
 import { reviveOnLethal, reviveTrapOnLethal, type TrapRevive } from '../mechanics/revive.ts';
 import { emit, id, round, type Combat } from './combat.ts';
@@ -35,7 +36,7 @@ export function heal(c: Combat, s: Side, n: number): void {
 // Applies n damage from src to dst and returns the damage actually dealt. The caller emits the
 // `damaged` event, whose flush plays what this function deferred.
 export function damage(c: Combat, src: Side, dst: Side, n: number): number {
-  n = Math.max(0, round(n));
+  n = Math.max(0, round(weakened(dst, n))); // a weak card takes more (mechanics/contamination.ts)
   if (dst.hp <= 0) return 0; // already down: no new damage, no avoid-death replayed
   let after: (() => void) | null = null;
   let trapRevive: TrapRevive | null = null;

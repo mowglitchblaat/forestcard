@@ -13,6 +13,7 @@ import type { EffectContext, EffectRules } from '../combat/effect-context.ts';
 import type { Flow } from '../combat/flow.ts';
 import type { Side } from '../combat/state.ts';
 import type { EffectData } from '../model/card.ts';
+import { contaminationExtra } from './contamination.ts';
 import { mistTakes } from './mist.ts';
 
 // pending: laid, its loss comes at the start of the card's next turn; lost: ATQ it took.
@@ -30,14 +31,15 @@ export const atqLostToCurses = (s: Side): number => s.status.curses.reduce((q, z
 export function curse(c: Combat, dst: Side, turns: number): void {
   if (mistTakes(c, dst, 'curse', (t) => curse(c, t, turns))) return;
   const stacked = dst.status.curses.length > 0;
-  dst.status.curses.push({ lost: 0, turns: Math.max(1, turns), pending: true });
+  turns = Math.max(1, turns) + contaminationExtra(dst);
+  dst.status.curses.push({ lost: 0, turns, pending: true });
   emit(c, {
     type: 'curseApplied',
     side: id(c, dst),
     stacked,
     amount: c.levels.malediction,
     count: dst.status.curses.length,
-    turns: Math.max(1, turns),
+    turns,
   });
 }
 

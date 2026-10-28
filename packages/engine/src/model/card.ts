@@ -42,6 +42,8 @@ export type EffectData = {
   // only its level (`niveau`, 1 to 3: model/levels.ts), its duration and its chance; the old value
   // fields below give the level of cards saved before.
   niveau?: Num;
+  variante?: string; // rooting: 'epineux', 'empoisonne' or 'inhibiteur' (mechanics/rooting.ts)
+  ptours?: Num; // rooting empoisonne: turns of the poison it lays (2 when empty)
   pctpv?: Num;
   calcine?: Num; // burn: % of each tick's damage taken off max HP (100 when empty)
   reducsoin?: Num;

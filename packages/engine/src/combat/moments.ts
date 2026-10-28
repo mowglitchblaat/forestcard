@@ -68,6 +68,8 @@ import { parasiteEnd } from '../mechanics/parasite.ts';
 import { gainedDefenses } from '../mechanics/reaction.ts';
 import { guardsEnd } from '../mechanics/guard.ts';
 import { delayedMagicAtStart, magicDurationEnd } from '../mechanics/magic-timing.ts';
+import { rootedStrike, rootingsEnd } from '../mechanics/rooting.ts';
+import { contaminationEnd } from '../mechanics/contamination.ts';
 
 type TurnStep = Step<Side>;
 
@@ -106,6 +108,7 @@ const BEFORE_STRIKES: AttackStep[] = [selfFracture];
 
 // Each strike.
 const STRIKE: StrikeStep[] = [
+  rootedStrike, // a rooted card pays for each strike it makes, landed or dodged
   dodge, // a dodge cancels the strike and its effects
   swallowAttempt, // third successful attack: swallowing replaces the damage
   strikePower,
@@ -149,6 +152,8 @@ const END_OF_TURN: TurnStep[] = [
   opponentSolidification,
   frostsEnd,
   fracturesEnd,
+  rootingsEnd,
+  contaminationEnd, // the contamination and the weakness
   fatiguesEnd, // before the rage: the fatigue following a rage starts on the next turn
   ragesEnd,
   doubleDamageEnd,

@@ -1190,3 +1190,62 @@ test('magie : elle peut attendre son tour N avant d\'agir, et ne durer que X tou
   assert.deepEqual(coups.slice(0, 5), [10, 10, 20, 20, 10], 'ATQ +10 aux tours 3 et 4 seulement');
   assert.equal(lignes(r, e => e.k === 'magie_annulee').length, 1);
 });
+
+// ================= Rework d'octobre 2026 : Enracinement, Contamination, Vaporisation =================
+const RACINE = (variante, x = {}) => ({ type: 'enracinement', ciblem: 'adversaire', variante, tours: 3, ...x });
+
+test('enracinement épineux : chaque frappe que porte la carte enracinée la blesse (dégâts fixes de la carte)', () => {
+  const r = combat([C('A', 1, SOLIDE), MAG('Ronces', RACINE('epineux', { val: 5 }))], [C('B', 10, SOLIDE, { passif: { type: 'multi_frappe', chance: 100, frappes: 3 } })], { regles: { maxTours: 2, maxProlong: 0 } });
+  const epines = lignes(r, e => e.k === 'epines' && e.c === 1);
+  assert.ok(epines.length >= 3, 'une blessure par frappe (3 frappes) : ' + epines.length);
+  assert.ok(epines.every(e => e.n === 5), '5 dégâts chacune');
+  assert.ok(r.journal.some(e => /enracinement épineux : 5 dégâts à chaque frappe/.test(e.txt || '')));
+});
+
+test('enracinement empoisonné : chaque frappe empoisonne la carte enracinée (niveau du poison de la carte)', () => {
+  const r = combat([C('A', 1, SOLIDE), MAG('Lierre', RACINE('empoisonne', { niveau: 1 }))], [C('B', 10, SOLIDE, { passif: { type: 'multi_frappe', chance: 100, frappes: 2 } })], { regles: { maxTours: 2, maxProlong: 0 } });
+  assert.ok(r.journal.some(e => /^B est empoisonné encore plus fort \(poison II/.test(e.txt || '')), '2 frappes : poison I puis II');
+});
+
+test('enracinement inhibiteur : l\'ultime attend la fin de l\'enracinement, puis se lance', () => {
+  const r = combat([C('A', 1, SOLIDE), MAG('Racines', RACINE('inhibiteur', { tours: 2 }))], [C('B', 1, SOLIDE, { ultime: { type: 'degats', val: 1, apres_tours: 1, utilisations: 1 } })], { regles: { maxTours: 5, maxProlong: 0 } });
+  const iRetenu = r.journal.findIndex(e => e.k === 'ultime_retenu');
+  const iFin = r.journal.findIndex(e => /L'enracinement inhibiteur de B se défait/.test(e.txt || ''));
+  const iUlt = r.journal.findIndex(e => e.t === 'ultime' && e.c === 1);
+  assert.ok(iRetenu > 0, 'retenu');
+  assert.ok(iFin > iRetenu && iUlt > iFin, `lancé après la fin des racines (${iRetenu}, ${iFin}, ${iUlt})`);
+});
+
+test('enracinement : deux variantes différentes cohabitent ; la purification les retire', () => {
+  const r = combat([C('A', 1, SOLIDE), MAG('Forêt', { briques: [RACINE('epineux'), RACINE('inhibiteur')] })], [C('B', 1, SOLIDE), MAG('Prière', { type: 'purification', cible: 'soi', fois: 2, every: 1 })], { regles: { maxTours: 3, maxProlong: 0 } });
+  assert.equal(lignes(r, e => e.k === 'enracinement' && e.t === 'statut').length, 2, 'deux enracinements posés');
+  assert.ok(r.journal.some(e => /enracinement dissipé/.test(e.txt || '')), 'purifiés');
+});
+
+test('contamination : les statuts déjà là et ceux qui arrivent durent un tour de plus', () => {
+  const ticks = (briques) => lignes(combat([C('A', 1, SOLIDE), MAG('Eau', { briques })], [C('B', 1, SOLIDE)], { regles: { maxTours: 6, maxProlong: 0 } }), e => e.t === 'degats' && e.k === 'poison').length;
+  const poison = { type: 'poison_effet', ciblem: 'adversaire', niveau: 1, tours: 2 };
+  const conta = { type: 'contamination', ciblem: 'adversaire', tours: 6 };
+  assert.equal(ticks([poison]), 2, 'sans contamination : 2 tours');
+  assert.equal(ticks([poison, conta]), 3, 'poison déjà là : prolongé d\'un tour');
+  assert.equal(ticks([conta, poison]), 3, 'poison qui arrive : un tour de plus');
+  assert.equal(ticks([poison, conta, { ...conta }]), 4, 'chaque nouvelle contamination prolonge encore');
+});
+
+test('vaporisation : brûlure + contamination = la brûlure part en vapeur, la carte est affaiblie (+25 % de dégâts reçus)', () => {
+  const r = combat([C('A', 20, SOLIDE), MAG('Vapeur', { briques: [{ type: 'contamination', ciblem: 'adversaire', tours: 5 }, { type: 'brulure_effet', ciblem: 'adversaire', niveau: 3, tours: 3 }] })], [C('B', 1, SOLIDE)], { regles: { maxTours: 2, maxProlong: 0 } });
+  assert.ok(r.journal.some(e => e.k === 'vaporisation'), 'vaporisation');
+  assert.ok(!r.journal.some(e => e.t === 'degats' && e.k === 'brulure'), 'plus de brûlure');
+  assert.ok(r.journal.some(e => /B est affaibli \(dégâts reçus \+25 %/.test(e.txt || '')));
+  const coups = lignes(r, e => e.t === 'degats' && e.c === 1 && /^B subit \d+ dégâts$/.test(e.txt || '')).map(e => e.n);
+  assert.equal(coups[0], 25, 'ATQ 20 → 25 dégâts sur une carte affaiblie (' + coups + ')');
+  // la contamination reste après la vaporisation, la faiblesse ne se purifie pas
+  const p = combat([C('A', 20, SOLIDE), MAG('Vapeur', { briques: [{ type: 'contamination', ciblem: 'adversaire', tours: 5 }, { type: 'brulure_effet', ciblem: 'adversaire', niveau: 1, tours: 3 }] })], [C('B', 1, SOLIDE), MAG('Prière', { type: 'purification', cible: 'soi' })], { seed: 3, regles: { maxTours: 2, maxProlong: 0 } });
+  assert.ok(!p.journal.some(e => /faiblesse dissipé/.test(e.txt || '')), 'la faiblesse ne se purifie pas');
+});
+
+test('vaporisation : pas sur une carte gelée (la glace fond, la brûlure part avec elle)', () => {
+  const r = combat([C('A', 1, SOLIDE), MAG('Mélange', { briques: [{ type: 'gel', ciblem: 'adversaire', annul: 10, tours: 5 }, { type: 'contamination', ciblem: 'adversaire', tours: 5 }, { type: 'brulure_effet', ciblem: 'adversaire', niveau: 1, tours: 3 }] })], [C('B', 1, SOLIDE)], { regles: { maxTours: 1, maxProlong: 0 } });
+  assert.ok(r.journal.some(e => e.k === 'degel'), 'la glace fond');
+  assert.ok(!r.journal.some(e => e.k === 'vaporisation'), 'pas de vaporisation');
+});

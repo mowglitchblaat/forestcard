@@ -9,6 +9,9 @@
 import {
   canonEffect,
   canonPassive,
+  DEFAULT_LEVELS,
+  levelOf,
+  rageFatigueLevel,
   type EffectData,
   type EffectType,
   type PassiveType,
@@ -36,18 +39,51 @@ const FORK = '\u{1F374}';
 const KNIFE = '\u{1F52A}';
 
 export const nz = (v: unknown): number => +(v as number) || 0;
-// Burn calcination (calcine: % of the damage taken off max HP; 100 when empty).
-const calcTxt = (v: unknown): string => {
-  const p = v === undefined || v === null || v === '' ? 100 : nz(v);
-  if (p === 100) return 'chaque dégât calcine autant de PV max';
-  return p > 0 ? `chaque dégât calcine ${p} % de sa valeur en PV max` : 'sans calciner les PV max';
-};
 const trs = (t: number) => `${t} tour${t > 1 ? 's' : ''}`;
 const sgn = (v: number) => (v > 0 ? '+' : '') + v;
 const upc = (u: unknown) => (u === 'pct' ? ' %' : '');
 const tousT = (t: number) => (t > 1 ? `tous les ${t} tours` : 'à chaque tour');
 const ciblT = (e: Fx) => ((e.ciblem || e.cible) === 'soi' ? 'sa propre carte' : "l'adversaire");
 const isEmpty = (v: unknown) => v == null || v === '';
+
+// Status levels (rework of October 2026, engine model/levels.ts): the text gives the level and what
+// it does with the default values of the level table.
+const ROMAN = ['I', 'II', 'III'] as const;
+const roman = (n: number) => ROMAN[Math.min(3, Math.max(1, n)) - 1] as string;
+const L = DEFAULT_LEVELS;
+const of = (row: readonly number[], n: number) => row[Math.min(3, Math.max(1, n)) - 1] as number;
+const poisonTxt = (e: Fx) => {
+  const n = levelOf('poison', e);
+  return `poison ${roman(n)} : ${of(L.poison, n)} dégâts par tour`;
+};
+const bleedTxt = (e: Fx) => {
+  const n = levelOf('saignement', e);
+  return `saignement ${roman(n)} : ${of(L.saignement, n)} % des PV max par tour, soins −${of(L.saignementSoin, n)} %`;
+};
+const burnTxt = (e: Fx) => {
+  const n = levelOf('brulure', e);
+  return `brûlure ${roman(n)} : ${of(L.brulure, n)} % des PV max par tour, qui calcine les PV max`;
+};
+const fatigueLevelTxt = (n: number) => `fatigue ${roman(n)} : ATQ −${of(L.fatigue, n)} %`;
+const fatigueTxt = (e: Fx) => fatigueLevelTxt(levelOf('fatigue', e));
+const fractureTxt = (e: Fx) => {
+  const n = levelOf('fracture', e);
+  return `fracture ${roman(n)} : ${of(L.fractureChance, n)} % de se blesser en attaquant, ${of(L.fractureAtq, n)} % de son ATQ`;
+};
+const knellTxt = (e: Fx) => {
+  const n = levelOf('glas', e);
+  return `Glas ${roman(n)} : une ombre avance sur sa vie de ${of(L.glas, n)} % de ses PV max par tour`;
+};
+const curseTxt = `ATQ −${L.malediction}`;
+// Rooting (engine mechanics/rooting.ts): its variant and values.
+const rootTxt = (e: Fx) => {
+  if (e.variante === 'inhibiteur')
+    return "enracinement inhibiteur : pas d'ultime tant qu'il dure (l'ultime attend, puis se lance)";
+  if (e.variante === 'empoisonne')
+    return `enracinement empoisonné : chaque frappe qu'elle porte l'empoisonne (poison ${roman(nz(e.niveau) || 1)}, ${trs(nz(e.ptours) || 2)})`;
+  return `enracinement épineux : chaque frappe qu'elle porte lui inflige ${isEmpty(e.val) ? 5 : nz(e.val)} dégâts`;
+};
+const contaminationTxt = `contamination : ses statuts négatifs (ceux déjà là et ceux qui arrivent) durent un tour de plus ; avec une brûlure, VAPORISATION : la brûlure part en vapeur et la carte est affaiblie (dégâts reçus +${L.faiblesse} % pendant ${L.faiblesseTours} tours)`;
 // Editor label of a type, looked up as the legacy page did (plain property access on its tables).
 const label = (table: object, t: unknown) =>
   (table as Record<string, readonly string[] | undefined>)[t as string];
@@ -73,7 +109,7 @@ const avTxt = (q: Fx) => {
   const m = isEmpty(q.pctmache) ? 10 : n(q.pctmache);
   const t = n(q.tours) || 3;
   const rp = n(q.repos);
-  return `${c < 100 ? `À chaque attaque réussie, ${c} % de chances de poser` : 'Chaque attaque réussie pose'} ${FORK} puis ${KNIFE} ; la 3e attaque réussie ne fait pas de dégâts : elle avale la cible si ses PV actuels valent au moins ${r} × l'ATQ de la cible (sinon les marques tombent et le coup porte normalement). La carte avalée est mâchée ${t} fois (${m} % de ses PV ${q.machebase === 'actuels' ? 'actuels' : 'max'} à chaque tour) puis recrachée${rp ? `, et la carte digère ${rp} tour${rp > 1 ? 's' : ''} sans attaquer` : ''}. Pendant l'avalage, personne n'attaque et tout ce qui visait la carte avalée la touche. Si la cible a des statuts négatifs, ils lui passent ×1,5 : une seule mâche, puis recrachée`;
+  return `${c < 100 ? `À chaque attaque réussie, ${c} % de chances de poser` : 'Chaque attaque réussie pose'} ${FORK} puis ${KNIFE} ; la 3e attaque réussie ne fait pas de dégâts : elle avale la cible si ses PV actuels valent au moins ${r} × l'ATQ de la cible (sinon les marques tombent et le coup porte normalement). La carte avalée est mâchée ${t} fois (${m} % de ses PV ${q.machebase === 'actuels' ? 'actuels' : 'max'} à chaque tour) puis recrachée${rp ? `, et la carte digère ${rp} tour${rp > 1 ? 's' : ''} sans attaquer` : ''}. Pendant l'avalage, personne n'attaque et tout ce qui visait la carte avalée la touche. Si la cible a des statuts négatifs, ils lui passent plus forts (un niveau de plus, ×1,5 pour le gel) et ×1,5 plus longs : une seule mâche, puis recrachée`;
 };
 
 // The execution effect or passive itself (the page read an undefined `X` here until upstream
@@ -100,16 +136,17 @@ const transcendenceText = (e: Fx) =>
 const ROCKET = '\u{1F680}';
 const ELEMENTS = ['brulure', 'gel', 'malediction', 'poison', 'saignement', 'fatigue'];
 // The status a breath or a missile lays, in words (undefined for an unknown one, as on the page).
+// A leveled status takes the effect's level (`niveau`), else the level of its old value (`sval`).
 const elementText = (el: string, v: number, e: Fx): string | undefined =>
   (
-    {
-      brulure: `brûlure ${v} % des PV max par tour, qui calcine les PV max`,
+    ({
+      brulure: burnTxt({ niveau: e.niveau, pctpv: v }),
       gel: `gel ${v} % d'attaque annulée`,
-      malediction: `malédiction ATQ −${v} par tour`,
-      poison: `poison ${v} dégâts par tour`,
-      saignement: `saignement ${v} % des PV max par tour${nz(e.reducsoin) ? `, soins −${nz(e.reducsoin)} %` : ''}`,
-      fatigue: `fatigue ATQ −${v} %`,
-    } as Record<string, string>
+      malediction: `malédiction ${curseTxt}`,
+      poison: poisonTxt({ niveau: e.niveau, degtour: v }),
+      saignement: bleedTxt({ niveau: e.niveau, pctpv: v }),
+      fatigue: fatigueTxt({ niveau: e.niveau, fatval: v }),
+    }) as Record<string, string>
   )[el];
 
 // The riposte of a block (bloque_attaque), once, on the first strike it blocks.
@@ -159,7 +196,7 @@ const PASSIVE_TEXT: Record<PassiveType, (p: Fx, x: PassiveContext) => string> = 
   reanimation: (p) => `Réanimation : revient avec ${nz(p.pctrev)} % de ses PV max (une fois)`,
   esquive: (_, { c }) => `${c} % de chances d'esquiver chaque attaque`,
   fatigue: (p, { c }) =>
-    `${c} % de chances de fatiguer la cible à chaque coup (ATQ −${nz(p.fatval)}${upc(p.u)} pendant ${trs(nz(p.fattours) || 1)})`,
+    `${c} % de chances de fatiguer la cible à chaque coup (${fatigueTxt(p)}, ${trs(nz(p.fattours) || 1)})`,
   aleatoire: (p, { c }) =>
     `Effet aléatoire ${tousT(nz(p.every))}${c < 100 ? ` (${c} % de chances)` : ''}`,
   purification: (p) =>
@@ -179,15 +216,14 @@ const PASSIVE_TEXT: Record<PassiveType, (p: Fx, x: PassiveContext) => string> = 
   vol_pct_atq: (p, { c }) =>
     `${c} % de chances de se soigner de ${nz(p.pctatq)} % des dégâts infligés`,
   brulure: (p, { c, T }) =>
-    `${c} % de chances de brûler la cible (${nz(p.pctpv)} % de ses PV max par tour, ${trs(T)} ; ${calcTxt(p.calcine)} ; fait fondre la glace d'un niveau)`,
-  poison: (p, { c, T }) =>
-    `${c} % de chances d'empoisonner la cible (${nz(p.degtour)} dégâts par tour, ${trs(T)})`,
-  malediction: (_, { c, v, T }) =>
-    `${c} % de chances de maudire la cible (ATQ −${v} par tour, ${trs(T)}, puis l'ATQ revient petit à petit)`,
+    `${c} % de chances de brûler la cible (${burnTxt(p)}, ${trs(T)} ; fait fondre la glace d'un niveau)`,
+  poison: (p, { c, T }) => `${c} % de chances d'empoisonner la cible (${poisonTxt(p)}, ${trs(T)})`,
+  malediction: (_, { c, T }) =>
+    `${c} % de chances de maudire la cible (${curseTxt} pendant ${trs(T)}, puis l'ATQ revient ; chaque malédiction ajoute la sienne)`,
   enchainement: (p, { c }) =>
     `${c} % de chances de frapper une fois de plus, puis retente${nz(p.max) > 0 ? ` (${p.max} frappes en plus au maximum)` : ''}`,
   saignement: (p, { c, T }) =>
-    `${c} % de chances de faire saigner la cible (${nz(p.pctpv)} % des PV max par tour, soins −${nz(p.reducsoin)} %, ${trs(T)})`,
+    `${c} % de chances de faire saigner la cible (${bleedTxt(p)}, ${trs(T)})`,
   gel: (p, { c, T }) => `${c} % de chances de geler la cible : ${frostLevels(p, T)}`,
   execution: (p) => executionText(p),
   avalage: (p) => avTxt(p),
@@ -195,7 +231,7 @@ const PASSIVE_TEXT: Record<PassiveType, (p: Fx, x: PassiveContext) => string> = 
   solidification: (_, { c, T }) =>
     `À chacun de ses tours, ${c < 100 ? c + ' % de chances de se solidifier' : 'se solidifie'} pendant ${trs(T)} de l'adversaire (insensible à l'étourdissement, ne se purge pas, brisée par une fracture ; détonations et missiles ne lui font que la moitié des dégâts de statuts)`,
   fracture: (p, { c, T }) =>
-    `${c} % de chances de fracturer la cible (${nz(p.fchance)} % de se blesser de ${nz(p.degfrac)} PV en attaquant, ${trs(T)})`,
+    `${c} % de chances de fracturer la cible (${fractureTxt(p)}, ${trs(T)})`,
   headshot: (p, { c }) => headshotText(p, c),
   lien_parasite: (p, { c }) =>
     `${c} % de chances, à chaque coup, de poser ${linksTxt(p)} sur la cible pendant ${trs(nz(p.tours) || 3)} : ${linkPct(p)} % de ses soins ${linkEach(p)}lui reviennent, et elle partage les siens de la même façon (les liens se cumulent, 100 % au plus)`,
@@ -204,7 +240,11 @@ const PASSIVE_TEXT: Record<PassiveType, (p: Fx, x: PassiveContext) => string> = 
     `Mue : après 2 tours de suite avec un statut négatif, la carte entre en mue ; 2 tours plus tard, au début de son tour, elle mue : statuts négatifs (étourdissement compris), marques d'exécution, ciblage et lien parasitaire retirés, mais ${moltLoss(p)}`,
   reaction: (p) => reactionText(p),
   glas: (p, { c }) =>
-    `${c} % de chances de faire sonner le Glas : une ombre avance sur la vie de la cible de ${nz(p.glasv)} % de ses PV max par tour ; quand ses PV passent dessous, la mort l'emporte (pas d'évite la mort ni de réanimation ; 3 purifications pour l'effacer)`,
+    `${c} % de chances de faire sonner le Glas (${knellTxt(p)}) ; quand ses PV passent dessous, la mort l'emporte (pas d'évite la mort ni de réanimation ; 3 purifications pour l'effacer)`,
+  enracinement: (p, { c }) =>
+    `${c} % de chances, à chaque coup, d'enraciner la cible (${rootTxt(p)}, ${trs(nz(p.tours) || 2)})`,
+  contamination: (p, { c }) =>
+    `${c} % de chances, à chaque coup, de contaminer la cible (${contaminationTxt}, ${trs(nz(p.tours) || 2)})`,
 };
 
 // Headshot, mist, parasitic link, mutation, molt, reaction (engine: mechanics/headshot.ts, mist.ts,
@@ -223,8 +263,8 @@ const moltLoss = (e: Fx) =>
 const mutationText = (p: Fx) => {
   const L2 = [
     nz(p.mreduc) ? `dégâts subis −${nz(p.mreduc)} %` : '',
-    nz(p.msaignpct)
-      ? `son attaque fait saigner (${isEmpty(p.msaignch) ? 100 : nz(p.msaignch)} % de chances, ${nz(p.msaignpct)} % des PV max par tour, ${trs(nz(p.msaigntours) || 2)})`
+    nz(p.msaignpct) || nz(p.msaignniv)
+      ? `son attaque fait saigner (${isEmpty(p.msaignch) ? 100 : nz(p.msaignch)} % de chances, ${bleedTxt({ niveau: p.msaignniv, pctpv: p.msaignpct })}, ${trs(nz(p.msaigntours) || 2)})`
       : '',
   ].filter(Boolean);
   const own = !isEmpty(p.mueatq) || !isEmpty(p.muepv);
@@ -286,10 +326,10 @@ const EFFECT_TEXT: Record<EffectType, (e: Fx, x: EffectContext) => string[]> = {
   soin: (_, { v, pct }) => [`Se soigne de ${v}${pct ? ' % des PV max' : ' PV'}`],
   reanimation: (e) => [`Réanimation : revient avec ${nz(e.pctrev)} % de ses PV max (une fois)`],
   rage: (e) => [
-    `Rage : +${nz(e.ragev)}${upc(e.u)} de dégâts par coup pendant ${trs(nz(e.ragetours) || 1)}, puis fatigue (ATQ −${nz(e.fatval)}${upc(e.u)} pendant ${trs(nz(e.fattours) || 1)})`,
+    `Rage : +${nz(e.ragev)}${upc(e.u)} de dégâts par coup pendant ${trs(nz(e.ragetours) || 1)}, puis ${fatigueLevelTxt(rageFatigueLevel(e))} pendant ${trs(nz(e.fattours) || 1)}`,
   ],
   fatigue: (e, { ci }) => [
-    `Fatigue ${ci} : ATQ −${nz(e.fatval)}${upc(e.u)} pendant ${trs(nz(e.fattours) || 1)}`,
+    `Fatigue ${ci} : ${fatigueTxt(e)} pendant ${trs(nz(e.fattours) || 1)} (les niveaux s'additionnent)`,
   ],
   aleatoire: (e) => {
     const n = Math.max(1, nz(e.nbalea) || nz(e.fois) || 1);
@@ -346,12 +386,10 @@ const EFFECT_TEXT: Record<EffectType, (e: Fx, x: EffectContext) => string[]> = {
   ],
   echange_pv: () => ["Échange ses PV avec ceux de l'adversaire"],
   echange_tout: () => ["Échange ATQ et PV avec l'adversaire"],
-  malediction: (_, { v, T, ci }) => [
-    `Maudit ${ci} : ATQ −${v} par tour pendant ${trs(T)}, puis l'ATQ revient petit à petit`,
+  malediction: (_, { T, ci }) => [
+    `Maudit ${ci} : ${curseTxt} pendant ${trs(T)}, puis l'ATQ revient (chaque malédiction ajoute la sienne)`,
   ],
-  saignement: (e, { T, ci }) => [
-    `Fait saigner ${ci} : ${nz(e.pctpv)} % des PV max par tour, soins −${nz(e.reducsoin)} %, ${trs(T)}`,
-  ],
+  saignement: (e, { T, ci }) => [`Fait saigner ${ci} : ${bleedTxt(e)}, ${trs(T)}`],
   gel: (e, { T, ci }) => [`Gèle ${ci} : ${frostLevels(e, T)}`],
   souffle: (e) => {
     const al = e.statut === 'aleatoire';
@@ -386,18 +424,14 @@ const EFFECT_TEXT: Record<EffectType, (e: Fx, x: EffectContext) => string[]> = {
       `${ch < 100 ? ch + ' % de chances de se solidifier' : 'Se solidifie'} pendant ${trs(T)} de l'adversaire (insensible à l'étourdissement, ne se purge pas, brisée par une fracture ; détonations et missiles ne lui font que la moitié des dégâts de statuts)`,
     ];
   },
-  fracture: (e, { T, ci }) => [
-    `Fracture ${ci} (${nz(e.fchance)} % de se blesser de ${nz(e.degfrac)} PV en attaquant, ${trs(T)})`,
-  ],
+  fracture: (e, { T, ci }) => [`Fracture ${ci} (${fractureTxt(e)}, ${trs(T)})`],
   vol_ultime: () => ["Vole l'ultime de l'adversaire"],
   copie_ultime: () => [
     "Copie l'ultime de l'adversaire : il le garde, et cette carte peut aussi le lancer",
   ],
-  poison_effet: (e, { T, ci }) => [
-    `Empoisonne ${ci} : ${nz(e.degtour)} dégâts par tour pendant ${trs(T)}`,
-  ],
+  poison_effet: (e, { T, ci }) => [`Empoisonne ${ci} : ${poisonTxt(e)} pendant ${trs(T)}`],
   brulure_effet: (e, { T, ci }) => [
-    `Brûle ${ci} : ${nz(e.pctpv)} % des PV max par tour pendant ${trs(T)} (${calcTxt(e.calcine)} ; fait fondre la glace d'un niveau)`,
+    `Brûle ${ci} : ${burnTxt(e)} pendant ${trs(T)} (fait fondre la glace d'un niveau)`,
   ],
   etourdir_effet: (e, { T }) => {
     const ch = isEmpty(e.chance) ? 100 : nz(e.chance);
@@ -450,8 +484,12 @@ const EFFECT_TEXT: Record<EffectType, (e: Fx, x: EffectContext) => string[]> = {
     `${isEmpty(e.chance) || nz(e.chance) >= 100 ? 'Force' : nz(e.chance) + ' % de chances de forcer'} la mue ${e.cible === 'adversaire' ? "de l'adversaire" : 'de sa carte'}, tout de suite : statuts négatifs (étourdissement compris), marques d'exécution, ciblage et liens parasitaires retirés, mais la carte ${isEmpty(e.mueatq) && isEmpty(e.muepv) ? "perd les valeurs de son passif Mue (10 % d'ATQ et de PV max sans passif)" : moltLoss(e)}`,
   ],
   glas_effet: (e, { ci }) => [
-    `Fait sonner le Glas pour ${ci} : une ombre avance sur sa vie de ${nz(e.glasv)} % de ses PV max par tour ; quand ses PV passent dessous, la mort l'emporte (pas d'évite la mort ni de réanimation ; 3 purifications pour l'effacer)`,
+    `Fait sonner le Glas pour ${ci} (${knellTxt(e)}) ; quand ses PV passent dessous, la mort l'emporte (pas d'évite la mort ni de réanimation ; 3 purifications pour l'effacer)`,
   ],
+  enracinement: (e, { ci }) => [`Enracine ${ci} : ${rootTxt(e)}, ${trs(nz(e.tours) || 2)}`],
+  atk_enracinement: attackEffect,
+  contamination: (e, { ci }) => [`Contamine ${ci} : ${contaminationTxt}, ${trs(nz(e.tours) || 2)}`],
+  atk_contamination: attackEffect,
 };
 
 // One described item: its (normalized) type, for pages that colour by category, and its text.

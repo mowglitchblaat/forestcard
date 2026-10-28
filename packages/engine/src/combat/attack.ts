@@ -20,6 +20,8 @@ import { damage } from './damage.ts';
 import type { Flow, StrikeFlow } from './flow.ts';
 import type { Side } from './state.ts';
 import { knellOnHit } from '../mechanics/knell.ts';
+import { contaminationOnHit } from '../mechanics/contamination.ts';
+import { rootingOnHit } from '../mechanics/rooting.ts';
 import { parasiteOnHit } from '../mechanics/parasite.ts';
 
 // What an attack carries from one step to the next (the legacy engine's local variables).
@@ -91,6 +93,8 @@ export const LAID_ON_HIT: Record<string, (c: Combat, q: EffectData, d: Side) => 
   glas: knellOnHit,
   fatigue: fatigueOnHit,
   lien_parasite: parasiteOnHit,
+  enracinement: rootingOnHit,
+  contamination: contaminationOnHit,
 };
 
 // A strike that landed: the statuses given by passives and by basic attack effects, in the order the

@@ -11,6 +11,7 @@ import type { Flow } from '../combat/flow.ts';
 import type { Side } from '../combat/state.ts';
 import type { EffectData, Num } from '../model/card.ts';
 import { addLevels, at, levelOf } from '../model/levels.ts';
+import { contaminationExtra } from './contamination.ts';
 import { mistTakes } from './mist.ts';
 
 // lost: attack actually removed, given back when the fatigue ends or is purified.
@@ -33,7 +34,7 @@ export function fatigue(
 ): void {
   // the fatigue after a rage is the card's own cost: no mist for it
   if (!afterRage && mistTakes(c, d, 'fatigue', (t) => fatigue(c, t, level, turnsIn))) return;
-  const turns = Math.max(1, parseInt(String(turnsIn), 10) || 1);
+  const turns = Math.max(1, parseInt(String(turnsIn), 10) || 1) + contaminationExtra(d);
   let current = d.status.fatigues[0];
   const stacked = !!current;
   if (current) {

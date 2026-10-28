@@ -45,7 +45,10 @@ const mutationOf = (s: Side): EffectData | undefined =>
 const moltOf = (s: Side): EffectData | undefined => s.passives.find((p) => p.type === 'mue');
 
 const negative = (s: Side): boolean =>
-  !!hasPurifiableStatus(s.status) || s.status.stunTurns > 0 || s.status.parasites.length > 0;
+  !!hasPurifiableStatus(s.status) ||
+  s.status.stunTurns > 0 ||
+  s.status.parasites.length > 0 ||
+  !!s.status.weakness;
 
 const filled = (v: Num | undefined): boolean => v != null && v !== '';
 const loss = (v: Num | undefined, unit: string | undefined, base: number): number =>
@@ -70,6 +73,10 @@ export function molt(c: Combat, s: Side, values: EffectData | undefined, instant
   if (s.status.stunTurns > 0) {
     s.status.stunTurns = 0;
     emit(c, { type: 'statusEnded', side: id(c, s), status: 'stun' });
+  }
+  if (s.status.weakness) {
+    s.status.weakness = null;
+    emit(c, { type: 'statusEnded', side: id(c, s), status: 'weakness' });
   }
   const marks = s.status.executionMarks;
   if (marks > 0) {

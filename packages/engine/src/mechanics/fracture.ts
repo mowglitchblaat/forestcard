@@ -13,6 +13,7 @@ import type { Flow } from '../combat/flow.ts';
 import type { Side } from '../combat/state.ts';
 import type { EffectData } from '../model/card.ts';
 import { addLevels, at, levelOf } from '../model/levels.ts';
+import { contaminationExtra } from './contamination.ts';
 import { shatter } from './frost.ts';
 import { mistTakes } from './mist.ts';
 
@@ -34,6 +35,7 @@ export function fracture(c: Combat, d: Side, level: number, turns: number): void
     d.status.solidTurns = 0;
     emit(c, { type: 'solidBroken', side: id(c, d) });
   }
+  turns += contaminationExtra(d);
   let current = d.status.fractures[0];
   const stacked = !!current;
   if (current) {

@@ -71,6 +71,10 @@ export const EFFECT_TYPES = [
   'lien_parasite',
   'mue_forcee',
   'reduc_degats',
+  'enracinement',
+  'atk_enracinement',
+  'contamination',
+  'atk_contamination',
 ] as const;
 export type EffectType = (typeof EFFECT_TYPES)[number];
 
@@ -111,6 +115,8 @@ export const PASSIVE_TYPES = [
   'mutation',
   'mue',
   'reaction',
+  'enracinement',
+  'contamination',
 ] as const;
 export type PassiveType = (typeof PASSIVE_TYPES)[number];
 

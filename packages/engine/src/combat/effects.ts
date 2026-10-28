@@ -43,6 +43,8 @@ import { effects as guard } from '../mechanics/guard.ts';
 import { effects as insect } from '../mechanics/insect.ts';
 import { effects as mist } from '../mechanics/mist.ts';
 import { effects as parasite } from '../mechanics/parasite.ts';
+import { effects as rooting } from '../mechanics/rooting.ts';
+import { effects as contamination } from '../mechanics/contamination.ts';
 import { effects as ultimates } from '../mechanics/ultimates.ts';
 import type { EffectData } from '../model/card.ts';
 import type { EffectType } from '../model/types.ts';
@@ -82,6 +84,8 @@ export const rules = (): Record<EffectType, EffectRule> =>
     ...magicCancel,
     ...mist,
     ...parasite,
+    ...rooting,
+    ...contamination,
     ...programming,
     ...purification,
     ...rage,
@@ -169,6 +173,8 @@ function undoStatusesLater(
     frost: M.status.frosts[0] && { ...M.status.frosts[0] },
     knell: M.status.knell && { ...M.status.knell },
     fracture: M.status.fractures[0] && { ...M.status.fractures[0] },
+    rootings: M.status.rootings.slice(),
+    contamination: M.status.contamination,
     stunTurns: M.status.stunTurns,
     nextAttackCancelled: M.status.nextAttackCancelled,
     nextAttackBlocked: M.status.nextAttackBlocked,
@@ -204,6 +210,14 @@ function undoStatusesLater(
         : null;
     M.status.fractures =
       before.fracture && M.status.fractures.length ? [{ ...before.fracture }] : [];
+    M.status.rootings
+      .filter((z) => !before.rootings.includes(z))
+      .forEach((z) => emit(c, { type: 'rootEnded', side: id(c, M), variant: z.variant }));
+    M.status.rootings = M.status.rootings.filter((z) => before.rootings.includes(z));
+    if (M.status.contamination && !before.contamination) {
+      M.status.contamination = null;
+      statusEnds(M, 'contamination');
+    }
     M.status.stunTurns = Math.min(M.status.stunTurns, before.stunTurns);
     M.status.nextAttackCancelled = Math.min(
       M.status.nextAttackCancelled,
