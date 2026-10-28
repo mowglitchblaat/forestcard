@@ -36,6 +36,7 @@ export type StatusLevels = {
   faiblesse: number; // weakness: % of damage taken in more
   faiblesseTours: number; // weakness: its turns
   critique: number; // critical power: % of the ATQ a critical hit adds (mechanics/critical.ts)
+  foudre: number; // lightning mark level I: % more on the next strike taken (mechanics/lightning.ts)
 };
 
 export const DEFAULT_LEVELS: StatusLevels = {
@@ -52,6 +53,7 @@ export const DEFAULT_LEVELS: StatusLevels = {
   faiblesse: 25,
   faiblesseTours: 2,
   critique: 50,
+  foudre: 40,
 };
 
 export const MAX_LEVEL = 3;

@@ -325,6 +325,10 @@ export const EDITOR_PASSIVES: Record<PassiveType, EditorEntry> = {
     'tours',
     'max',
   ],
+  foudre: [
+    "Foudre : à X % de chances, chaque coup pose un niveau de marque de foudre (I : le prochain coup reçu est amplifié · II : l'éclair rebondit sur la magie puis le piège adverses, les charge, détruit une carte déjà chargée, puis la marque revient à zéro)",
+    'chance',
+  ],
   cisaillement: [
     "Cisaillement (Vent) : à X % de chances, chaque coup pose X lames d'air sur la cible (X dégâts chacune, 10 par défaut) qui frappent ensemble après X tours (2 par défaut ; esquivable)",
     'chance',
@@ -933,6 +937,13 @@ export const EDITOR_MAGICS: { readonly [K in EffectType]?: EditorEntry } = {
     'lames',
     'val',
     'tours',
+  ],
+  marque_foudre: [
+    "Marque de foudre : pose un niveau de marque sur l'adversaire (I : son prochain coup reçu est amplifié · II : rebonds sur sa magie et son piège)",
+  ],
+  atk_foudre: [
+    'Attaque de base : X % de chances, à chaque coup, de poser un niveau de marque de foudre',
+    'chance',
   ],
   atk_cisaillement: [
     "Attaque de base : X % de chances de poser X lames d'air (X dégâts chacune) qui frappent après X tours",

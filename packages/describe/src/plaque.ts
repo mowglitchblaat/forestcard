@@ -104,6 +104,8 @@ const EFFECT_LABELS: Record<EffectType, (e: Fx) => string> = {
   cisaillement: () => 'Cisaillement',
   atk_cisaillement: () => 'Coup tranchant',
   atk_critique: () => 'Coups critiques',
+  marque_foudre: () => 'Marque de foudre',
+  atk_foudre: () => 'Coup foudroyant',
 };
 
 const PASSIVE_LABELS: Record<PassiveType, (p: Fx) => string> = {
@@ -149,6 +151,7 @@ const PASSIVE_LABELS: Record<PassiveType, (p: Fx) => string> = {
   critique: () => 'Coup critique',
   courant_ascendant: () => 'Courant ascendant',
   cisaillement: () => 'Cisaillement',
+  foudre: () => 'Marque de foudre',
 };
 
 const REACTION_LABELS: Record<string, string> = {

@@ -1325,3 +1325,26 @@ test('cisaillement : les lames frappent ensemble après X tours de la cible, cha
   const r2 = combat([C('A', 1, SOLIDE), MAG('Vent', { briques: [{ type: 'contamination', ciblem: 'adversaire', tours: 5 }, { type: 'cisaillement', lames: 2, val: 10, tours: 2 }] })], [C('B', 1, SOLIDE), MAG('Prière', { type: 'purification', cible: 'soi' })], { regles: { maxTours: 4, maxProlong: 0 } });
   assert.deepEqual(lignes(r2, e => e.k === 'lames' && e.t === 'degats').map(e => e.n), [20]);
 });
+
+// ================= Foudre : marque de foudre =================
+test('marque de foudre : niveau I amplifie le prochain coup reçu (+40 %), une fois', () => {
+  const r = combat([C('A', 1, SOLIDE), MAG('Éclair', { type: 'marque_foudre' })], [C('B', 1, SOLIDE)], { regles: { maxTours: 1, maxProlong: 0 } });
+  assert.ok(r.journal.some(e => e.k === 'foudre' && e.n === 1), 'niveau I');
+  const r2 = combat([C('A', 50, SOLIDE), MAG('Éclair', { type: 'marque_foudre' })], [C('B', 1, SOLIDE)], { regles: { maxTours: 3, maxProlong: 0 } });
+  const coups = lignes(r2, e => e.t === 'degats' && e.c === 1 && /^B subit \d+ dégâts$/.test(e.txt || '')).map(e => e.n);
+  assert.deepEqual(coups.slice(0, 2), [70, 50], '50 +40 % = 70, puis normal');
+});
+
+test('marque de foudre : niveau II, l\'éclair charge la magie puis le piège, détruit une carte déjà chargée, puis la marque revient à zéro', () => {
+  const foudre = { type: 'foudre', chance: 100 };
+  const r = combat([C('Orage', 1, SOLIDE, { passif: foudre })], [C('B', 1, SOLIDE), MAG('Bouclier', { type: 'atq_mod', cible: 'soi', val: 1 }), PIE('Fosse', { type: 'tour_n', ntour: 99 }, { type: 'degats', val: 1 })], { regles: { maxTours: 6, maxProlong: 0 } });
+  const rebonds = lignes(r, e => e.k === 'foudre_rebond').map(e => `${e.s}:${e.r}`);
+  assert.deepEqual(rebonds.slice(0, 4), ['magie:charged', 'piege:charged', 'magie:destroyed', 'piege:destroyed'], JSON.stringify(rebonds));
+  assert.ok(r.journal.some(e => e.k === 'foudre' && e.t === 'finstatut'), 'la marque revient à zéro');
+});
+
+test('marque de foudre : la purification la retire', () => {
+  const r = combat([C('A', 1, SOLIDE, { ultime: { type: 'marque_foudre', apres_tours: 1, utilisations: 1 } })], [C('B', 1, SOLIDE, { passif: { type: 'purification', every: 1 } })], { regles: { maxTours: 3, maxProlong: 0 } });
+  assert.ok(r.journal.some(e => e.k === 'foudre' && e.n === 1), 'posée');
+  assert.ok(r.journal.some(e => /marque de foudre dissipé/.test(e.txt || '')), 'purifiée');
+});

@@ -78,6 +78,8 @@ export const EFFECT_TYPES = [
   'cisaillement',
   'atk_cisaillement',
   'atk_critique',
+  'marque_foudre',
+  'atk_foudre',
 ] as const;
 export type EffectType = (typeof EFFECT_TYPES)[number];
 
@@ -125,6 +127,7 @@ export const PASSIVE_TYPES = [
   'critique',
   'courant_ascendant',
   'cisaillement',
+  'foudre',
 ] as const;
 export type PassiveType = (typeof PASSIVE_TYPES)[number];
 

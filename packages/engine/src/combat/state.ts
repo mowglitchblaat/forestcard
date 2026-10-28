@@ -39,6 +39,7 @@ import { type RootingState, rootingState } from '../mechanics/rooting.ts';
 import { type EarthState, earthState } from '../mechanics/earth.ts';
 import { type CriticalState, criticalState } from '../mechanics/critical.ts';
 import { type BladesState, bladesState } from '../mechanics/blades.ts';
+import { type LightningState, lightningState } from '../mechanics/lightning.ts';
 import { type ContaminationState, contaminationState } from '../mechanics/contamination.ts';
 import type { Card, EffectData, Num } from '../model/card.ts';
 
@@ -96,7 +97,8 @@ export type Status = { turnsPlayed: number } & RageState &
   ContaminationState &
   EarthState &
   CriticalState &
-  BladesState;
+  BladesState &
+  LightningState;
 
 export type Side = {
   pseudo: string;
@@ -194,4 +196,5 @@ export const newStatus = (passives: EffectData[]): Status => ({
   ...earthState(),
   ...criticalState(),
   ...bladesState(),
+  ...lightningState(),
 });

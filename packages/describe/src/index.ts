@@ -89,6 +89,8 @@ const shearTxt = (e: Fx) => {
   const d = isEmpty(e.val) ? 10 : nz(e.val);
   return `poser ${n} lame${n > 1 ? 's' : ''} d'air sur l'adversaire, qui frappe${n > 1 ? 'nt' : ''} ensemble dans ${trs(isEmpty(e.tours) ? 2 : nz(e.tours))} : ${n} × ${d} = ${n * d} dégâts (esquivable ; ni purifiée, ni prolongée)`;
 };
+// Lightning mark (engine mechanics/lightning.ts).
+const lightningTxt = `poser un niveau de marque de foudre sur l'adversaire (niveau I : son prochain coup reçu fait +${L.foudre} % · niveau II : l'éclair rebondit sur sa magie puis son piège, les charge, et détruit une carte déjà chargée ; puis la marque revient à zéro)`;
 const contaminationTxt = `contamination : ses statuts négatifs (ceux déjà là et ceux qui arrivent) durent un tour de plus ; avec une brûlure, VAPORISATION : la brûlure part en vapeur et la carte est affaiblie (dégâts reçus +${L.faiblesse} % pendant ${L.faiblesseTours} tours)`;
 // Editor label of a type, looked up as the legacy page did (plain property access on its tables).
 const label = (table: object, t: unknown) =>
@@ -258,6 +260,7 @@ const PASSIVE_TEXT: Record<PassiveType, (p: Fx, x: PassiveContext) => string> = 
   courant_ascendant: (p) =>
     `Courant ascendant : à chaque coup critique, ce coup fait +${isEmpty(p.val) ? 20 : nz(p.val)} % de dégâts et sa puissance critique monte de ${isEmpty(p.pctcrit) ? 10 : nz(p.pctcrit)} points pendant ${trs(isEmpty(p.tours) ? 2 : nz(p.tours))} (cumulable ${isEmpty(p.max) ? 3 : nz(p.max)} fois)`,
   cisaillement: (p, { c }) => `${c} % de chances, à chaque coup, de ${shearTxt(p)}`,
+  foudre: (_, { c }) => `${c} % de chances, à chaque coup, de ${lightningTxt}`,
   replique: (p) =>
     `Réplique sismique : chaque coup reçu (hors esquive) lui donne une charge ; à 3 charges, la terre frappe l'attaquant (${isEmpty(p.pctatq) ? 50 : nz(p.pctatq)} % de son ATQ, esquivable ; ce n'est pas une attaque)`,
 };
@@ -509,6 +512,8 @@ const EFFECT_TEXT: Record<EffectType, (e: Fx, x: EffectContext) => string[]> = {
   cisaillement: (e) => [shearTxt(e).replace(/^p/, 'P')],
   atk_cisaillement: attackEffect,
   atk_critique: attackEffect,
+  marque_foudre: () => [lightningTxt.replace(/^p/, 'P')],
+  atk_foudre: attackEffect,
 };
 
 // One described item: its (normalized) type, for pages that colour by category, and its text.

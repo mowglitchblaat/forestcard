@@ -42,6 +42,7 @@ export const CATEGORY_LABELS: Record<string, string> = {
   eau: 'Contamination / vaporisation',
   terre: 'Sédimentation / réplique sismique',
   vent: 'Cisaillement / coups critiques',
+  foudre: 'Marque de foudre',
   autre: 'Autres',
 };
 // Category (legend colour) of each effect and passive type.
@@ -123,6 +124,8 @@ const CATEGORY_OF: Record<string, string> = {
   cisaillement: 'vent',
   critique: 'vent',
   courant_ascendant: 'vent',
+  foudre: 'foudre',
+  marque_foudre: 'foudre',
 };
 export const categoryOf = (t: unknown): string =>
   CATEGORY_OF[String(t).replace(/^atk_/, '')] || 'autre';
@@ -172,5 +175,6 @@ export const CATEGORY_STYLES: Record<
   eau: { background: '#0c4a6e', color: '#bae6fd', border: '1px solid #0ea5e9' },
   terre: { background: '#57534e', color: '#fde68a', border: '1px solid #a16207' },
   vent: { background: '#e0f2fe', color: '#075985', border: '1px solid #38bdf8' },
+  foudre: { background: '#1e1b4b', color: '#fde047', border: '1px solid #facc15' },
   autre: { background: '#6b7280', color: '#fff' },
 };

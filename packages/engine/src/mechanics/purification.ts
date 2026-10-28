@@ -12,6 +12,7 @@ import type { Side, Status } from '../combat/state.ts';
 import type { DispelledStatus } from '../events.ts';
 import { atqLostToCurses } from './curse.ts';
 import { knellPurified } from './knell.ts';
+import { liftLightning } from './lightning.ts';
 
 export type ScheduledPurification = { target: Side; every: number; left: number; counter: number };
 
@@ -36,6 +37,7 @@ export const hasPurifiableStatus = (z: Status) =>
   z.fatigues.length ||
   z.rootings.length ||
   !!z.contamination ||
+  !!z.lightning ||
   z.nextAttackCancelled > 0 ||
   z.nextAttackBlocked > 0;
 
@@ -51,6 +53,7 @@ export function purify(c: Combat, t: Side, silent?: boolean): void {
   z.fractures.forEach(() => removed.push('fracture'));
   z.rootings.forEach(() => removed.push('enracinement'));
   if (z.contamination) removed.push('contamination');
+  if (liftLightning(t)) removed.push('foudre');
   if (knellPurified(c, t)) removed.push('glas');
   const attackWasCancelled = z.nextAttackCancelled > 0 || z.nextAttackBlocked > 0;
   const curseBack = atqLostToCurses(t);

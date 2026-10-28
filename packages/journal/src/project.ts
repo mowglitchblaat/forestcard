@@ -97,6 +97,9 @@ const ATTACK_EFFECT_VERBS: Record<string, string> = {
   headshot: 'faire un headshot',
   enracinement: 'enraciner',
   contamination: 'contaminer',
+  cisaillement: "poser des lames d'air",
+  critique: 'faire un coup critique',
+  foudre: 'poser la marque de foudre',
 };
 
 // The statuses a mist takes, with their article.
@@ -188,6 +191,7 @@ const DISPELLED_LABELS: Record<string, string> = {
   malediction: 'malédiction',
   glas: 'Glas',
   enracinement: 'enracinement',
+  foudre: 'marque de foudre',
 };
 
 // A number written the French way (decimal comma).
@@ -1285,6 +1289,38 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
           ? `${name(e.side)} esquive les lames d'air !`
           : `CISAILLEMENT ! ${e.blades} lame${e.blades > 1 ? 's' : ''} d'air frappe${e.blades > 1 ? 'nt' : ''} ${name(e.side)}`,
         o: { c: e.side, k: e.dodged ? 'lames_esquivees' : 'cisaillement', n: e.total },
+      };
+    case 'lightningMarked':
+      return {
+        t: 'statut',
+        txt:
+          e.level >= 2
+            ? `La marque de foudre de ${name(e.side)} passe au niveau II : l'éclair rebondit !`
+            : `${name(e.side)} porte la marque de foudre (niveau I : son prochain coup reçu est amplifié)`,
+        o: { c: e.side, k: 'foudre', n: e.level },
+      };
+    case 'lightningStruck':
+      return {
+        t: 'statut',
+        txt: `La foudre frappe ${name(e.target)} : +${e.bonus} dégâts !`,
+        o: { c: e.side, k: 'foudre_coup', cible: e.target, n: e.bonus },
+      };
+    case 'lightningBounced':
+      return {
+        t: 'statut',
+        txt:
+          e.result === 'empty'
+            ? `L'éclair rebondit vers ${e.slot === 'magie' ? 'la magie' : 'le piège'} de ${name(e.side)}, mais il n'y a rien à frapper`
+            : e.result === 'charged'
+              ? `L'éclair charge ${e.slot === 'magie' ? 'la magie' : 'le piège'} de ${name(e.side)}`
+              : `L'éclair frappe ${e.slot === 'magie' ? 'la magie' : 'le piège'} déjà chargé${e.slot === 'magie' ? 'e' : ''} de ${name(e.side)} : détruit${e.slot === 'magie' ? 'e' : ''} !`,
+        o: { c: e.side, k: 'foudre_rebond', s: e.slot, r: e.result },
+      };
+    case 'lightningFaded':
+      return {
+        t: 'finstatut',
+        txt: `La marque de foudre de ${name(e.side)} s'éteint`,
+        o: { c: e.side, k: 'foudre' },
       };
     case 'targeted':
       return {

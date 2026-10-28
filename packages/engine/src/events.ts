@@ -71,6 +71,7 @@ export type DispelledStatus =
   | 'fracture'
   | 'enracinement'
   | 'contamination'
+  | 'foudre'
   | 'annule';
 
 // Why an attack, max HP or ATQ changed.
@@ -404,6 +405,16 @@ export type DomainEvent =
       packets: number;
     }
   | { type: 'bladesStruck'; side: SideIndex; blades: number; total: number; dodged: boolean }
+  // lightning mark (mechanics/lightning.ts): side is the marked card; struck: side is the attacker
+  | { type: 'lightningMarked'; side: SideIndex; level: number }
+  | { type: 'lightningStruck'; side: SideIndex; target: SideIndex; bonus: number }
+  | {
+      type: 'lightningBounced';
+      side: SideIndex;
+      slot: 'magie' | 'piege';
+      result: 'charged' | 'destroyed' | 'empty';
+    }
+  | { type: 'lightningFaded'; side: SideIndex }
   | { type: 'weakened'; side: SideIndex; stacked: boolean; pct: number; turns: number }
   // fracture: at its level, the chance to get hurt when attacking and the damage, % of its own ATQ
   | {

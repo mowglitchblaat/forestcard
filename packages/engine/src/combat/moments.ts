@@ -73,6 +73,7 @@ import { contaminationEnd } from '../mechanics/contamination.ts';
 import { earthCounters, shieldStrike } from '../mechanics/earth.ts';
 import { criticalStrike, updraftEnd } from '../mechanics/critical.ts';
 import { bladesTick } from '../mechanics/blades.ts';
+import { lightningStrike } from '../mechanics/lightning.ts';
 
 type TurnStep = Step<Side>;
 
@@ -117,6 +118,7 @@ const STRIKE: StrikeStep[] = [
   strikePower,
   headshotStrike, // a headshot (a critical hit) comes before the block and the reductions
   criticalStrike, // else the critical chance; the updraft
+  lightningStrike, // a lightning mark (level I) amplifies the next strike taken
   shieldStrike, // a sedimentation shield takes the strike first, before the block and the reductions
   blockOrReduce,
   gainedDefenses, // block chance and reduction gained (mutation, reaction passive)

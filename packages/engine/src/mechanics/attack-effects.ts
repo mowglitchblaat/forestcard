@@ -57,5 +57,6 @@ export const effects = {
   atk_contamination: { run: attackEffectGrant },
   atk_cisaillement: { run: attackEffectGrant },
   atk_critique: { run: attackEffectGrant },
+  atk_foudre: { run: attackEffectGrant },
   atk_headshot: { run: attackEffectGrant },
 } satisfies EffectRules;
