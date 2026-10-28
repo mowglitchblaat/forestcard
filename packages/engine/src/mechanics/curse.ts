@@ -9,8 +9,9 @@
 // Laid by: an effect (malediction), an attack (passive or attack effect malediction).
 //
 // Curse skills (October 2026):
-//   - Cursed embrace (étreinte maudite, passive): each time the cursed opponent attacks, each of its
-//     curses takes `etreinte` more ATQ (level table, 1 by default), given back with the curse.
+//   - Cursed embrace (étreinte maudite, passive, or effect: magic while it acts, trap until the end of
+//     the combat): each time the cursed opponent attacks, each of its curses takes `etreinte` more
+//     ATQ (level table, 1 by default), given back with the curse.
 //   - Will break (brisure de volonté, effect): raw damage to the opponent, `brisure` (level table, 2 by
 //     default) × all the ATQ it lost to curses since the start of the combat.
 
@@ -27,12 +28,14 @@ import { mistTakes } from './mist.ts';
 // pending: laid, its loss comes at the start of the card's next turn; lost: ATQ it took.
 export type Curse = { lost: number; turns: number; pending: boolean };
 
-// Its part of a card's status (combat/state.ts); curseLostTotal: all the ATQ curses took from it.
+// Its part of a card's status (combat/state.ts); curseLostTotal: all the ATQ curses took from it;
+// embraceGiven: effects giving it the cursed embrace.
 export type CurseState = {
   curses: Curse[];
   curseLostTotal: number;
+  embraceGiven: number;
 };
-export const curseState = (): CurseState => ({ curses: [], curseLostTotal: 0 });
+export const curseState = (): CurseState => ({ curses: [], curseLostTotal: 0, embraceGiven: 0 });
 
 // ATQ the curses hold right now (given back on purification).
 export const atqLostToCurses = (s: Side): number => s.status.curses.reduce((q, z) => q + z.lost, 0);
@@ -105,7 +108,8 @@ export function curseOnHit(c: Combat, q: EffectData, d: Side): void {
 
 // Once the attack is announced: the opponent's cursed embrace tightens each curse of the attacker.
 export function cursedEmbrace(c: Combat, { a, d, ia }: Attack): Flow {
-  if (!d.passives.some((p) => p.type === 'etreinte_maudite')) return undefined;
+  if (d.status.embraceGiven <= 0 && !d.passives.some((p) => p.type === 'etreinte_maudite'))
+    return undefined;
   let taken = 0;
   for (const z of a.status.curses) {
     if (z.pending) continue;
@@ -119,6 +123,14 @@ export function cursedEmbrace(c: Combat, { a, d, ia }: Attack): Flow {
   if (taken > 0)
     emit(c, { type: 'statChanged', side: ia, stat: 'atq', delta: -taken, cause: 'curseEmbrace' });
   return undefined;
+}
+
+export function embraceEffect({ c, o, onUndo }: EffectContext): void {
+  o.status.embraceGiven++;
+  emit(c, { type: 'embraceGiven', side: id(c, o) });
+  onUndo(() => {
+    o.status.embraceGiven = Math.max(0, o.status.embraceGiven - 1);
+  });
 }
 
 export function willBreakEffect({ c, o, x }: EffectContext): void {
@@ -135,4 +147,5 @@ export function willBreakEffect({ c, o, x }: EffectContext): void {
 export const effects = {
   malediction: { run: curseEffect, undoesStatuses: 'target' },
   brisure_volonte: { run: willBreakEffect, withoutTarget: true },
+  etreinte_maudite: { run: embraceEffect },
 } satisfies EffectRules;

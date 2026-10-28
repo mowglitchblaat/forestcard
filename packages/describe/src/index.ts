@@ -536,6 +536,9 @@ const EFFECT_TEXT: Record<EffectType, (e: Fx, x: EffectContext) => string[]> = {
   injection_virulente: () => [injectionTxt],
   surcharge: () => [overloadTxt],
   brisure_volonte: () => [willBreakTxt],
+  etreinte_maudite: () => [
+    `Donne à son combattant l'étreinte maudite : à chaque attaque de l'adversaire, chacune de ses malédictions lui retire ${L.etreinte} ATQ de plus (rendue avec la malédiction)`,
+  ],
   verrouillage_total: () => [
     "Verrouillage total : les 3 prochains coups de son combattant sur l'adversaire sont des headshots",
   ],

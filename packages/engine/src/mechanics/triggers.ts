@@ -185,6 +185,7 @@ export const TRIGGER_FACT: { [K in EventType]: Classify<K> | null } = {
   voltCharged: null,
   discharged: null,
   willBroken: null,
+  embraceGiven: null,
   targetLocked: null,
   targetKept: null,
   weakened: fact('status'),

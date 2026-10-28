@@ -113,6 +113,7 @@ const EFFECT_LABELS: Record<EffectType, (e: Fx) => string> = {
   surcharge: () => 'Surcharge',
   brisure_volonte: () => 'Brisure de volonté',
   verrouillage_total: () => 'Verrouillage total',
+  etreinte_maudite: () => 'Étreinte maudite',
 };
 
 const PASSIVE_LABELS: Record<PassiveType, (p: Fx) => string> = {

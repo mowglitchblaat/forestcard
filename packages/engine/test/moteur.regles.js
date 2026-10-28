@@ -1453,3 +1453,9 @@ test('verrouillage total : les 3 prochains coups sont des headshots ; visée mai
   }
   assert.ok(gardee, 'au moins une fois gardée');
 });
+
+test('étreinte maudite donnée par une magie : agit comme le passif', () => {
+  const r = combat([C('A', 1, 1000, { passif: { type: 'malediction', chance: 100, tours: 3 } }), MAG('Étreinte', { type: 'etreinte_maudite' })], [C('B', 20, SOLIDE)], { regles: { maxTours: 6, maxProlong: 0 } });
+  assert.ok(r.journal.some(e => e.k === 'etreinte'), 'donnée');
+  assert.deepEqual(lignes(r, e => /étreinte maudite\)/.test(e.txt || '')).map(e => e.d).slice(0, 2), [-1, -2]);
+});

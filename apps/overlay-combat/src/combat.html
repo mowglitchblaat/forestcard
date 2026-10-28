@@ -1384,7 +1384,7 @@ const NK={
  'statut:injection':e=>flot(e.c,e.r==='burst'?'LE VENIN EXPLOSE !':'Injection virulente','#4ade80',e.r==='burst'?'big':''),
  'statut:surcharge':e=>flot(e.c,'SURCHARGE !','#facc15','big'),'finstatut:surcharge':()=>{},
  'statut:charge':e=>flot(e.c,e.plein?'CHARGÉ !':'Charge '+e.n,'#fde047',e.plein?'big':''),'statut:decharge':e=>flot(e.c,'DÉCHARGE !','#facc15','big'),
- 'statut:brisure':e=>flot(e.c,'BRISURE DE VOLONTÉ','#c084fc','big')};
+ 'statut:brisure':e=>flot(e.c,'BRISURE DE VOLONTÉ','#c084fc','big'),'statut:etreinte':e=>flot(e.c,'Étreinte maudite','#c084fc')};
 async function jouer(res){
  file.push(res);if(enCours)return;enCours=true;
  while(file.length){const R=file.shift();await verrouPrendre('combat');await chargerMiroir();   // liste des images copiées sur GitHub, relue à chaque combat : OBS ouvert longtemps ne repasse jamais par Supabase pour une image copiée

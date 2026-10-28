@@ -1437,6 +1437,12 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
         txt: `DÉCHARGE ! L'attaque de ${name(e.side)} fait +${fr(e.pct)} % de dégâts`,
         o: { c: e.side, k: 'decharge' },
       };
+    case 'embraceGiven':
+      return {
+        t: 'statut',
+        txt: `${name(e.side)} resserre son étreinte maudite : chaque attaque de l'adversaire maudit lui coûte de l'ATQ !`,
+        o: { c: e.side, k: 'etreinte' },
+      };
     case 'willBroken':
       return {
         t: 'statut',

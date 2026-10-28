@@ -87,6 +87,7 @@ export const EFFECT_TYPES = [
   'surcharge',
   'brisure_volonte',
   'verrouillage_total',
+  'etreinte_maudite',
 ] as const;
 export type EffectType = (typeof EFFECT_TYPES)[number];
 

@@ -463,6 +463,7 @@ export type DomainEvent =
   | { type: 'voltCharged'; side: SideIndex; charges: number; need: number; full: boolean }
   | { type: 'discharged'; side: SideIndex; pct: number }
   // will break (mechanics/curse.ts): lost, the ATQ the target lost to curses in the whole combat
+  | { type: 'embraceGiven'; side: SideIndex } // the cursed embrace given by a magic or a trap
   | { type: 'willBroken'; side: SideIndex; target: SideIndex; lost: number; amount: number }
   // total lock and held aim (mechanics/headshot.ts): side is the targeted card
   | { type: 'targetLocked'; side: SideIndex; by: SideIndex; uses: number }

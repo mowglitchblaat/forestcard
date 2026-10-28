@@ -1031,6 +1031,9 @@ export const EDITOR_MAGICS: { readonly [K in EffectType]?: EditorEntry } = {
   verrouillage_total: [
     "🎯 Verrouillage total (Ciblage) : verrouille l'adversaire : les 3 prochains coups du combattant sur lui sont des headshots (sans limite de tours)",
   ],
+  etreinte_maudite: [
+    "💀 Étreinte maudite (Malédiction) : donne l'étreinte maudite à son combattant (à chaque attaque de l'adversaire, chacune de ses malédictions lui retire X ATQ de plus). Magie : tant qu'elle agit ; piège : jusqu'à la fin du combat",
+  ],
 };
 
 export const EDITOR_CONDITIONS: Record<TrapConditionType, EditorEntry> = {
