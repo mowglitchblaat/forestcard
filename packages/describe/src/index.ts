@@ -93,6 +93,7 @@ const shearTxt = (e: Fx) => {
 };
 // Lightning mark (engine mechanics/lightning.ts).
 const lightningTxt = `poser un niveau de marque de foudre sur l'adversaire (niveau I : son prochain coup reçu fait +${L.foudre} % · niveau II : l'éclair rebondit sur sa magie puis son piège, les charge, et détruit une carte déjà chargée ; puis la marque revient à zéro)`;
+const blazeTxt = `Embrasement : la carte s'enflamme pendant 2 de ses tours : ATQ +${L.embrasementAtq} %, chaque coup pose une brûlure I (2 tours), et elle se calcine (−${L.embrasementCalcination} % de ses PV max) à chacun de ses tours`;
 const contaminationTxt = `contamination : ses statuts négatifs (ceux déjà là et ceux qui arrivent) durent un tour de plus ; avec une brûlure, VAPORISATION : la brûlure part en vapeur et la carte est affaiblie (dégâts reçus +${L.faiblesse} % pendant ${L.faiblesseTours} tours)`;
 // Editor label of a type, looked up as the legacy page did (plain property access on its tables).
 const label = (table: object, t: unknown) =>
@@ -516,6 +517,7 @@ const EFFECT_TEXT: Record<EffectType, (e: Fx, x: EffectContext) => string[]> = {
   atk_critique: attackEffect,
   marque_foudre: () => [lightningTxt.replace(/^p/, 'P')],
   atk_foudre: attackEffect,
+  embrasement: () => [blazeTxt],
 };
 
 // One described item: its (normalized) type, for pages that colour by category, and its text.

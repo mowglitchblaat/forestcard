@@ -74,6 +74,7 @@ import { earthCounters, shieldStrike } from '../mechanics/earth.ts';
 import { criticalStrike, updraftEnd } from '../mechanics/critical.ts';
 import { bladesTick } from '../mechanics/blades.ts';
 import { lightningStrike } from '../mechanics/lightning.ts';
+import { blazeEnd } from '../mechanics/blaze.ts';
 
 type TurnStep = Step<Side>;
 
@@ -164,6 +165,7 @@ const END_OF_TURN: TurnStep[] = [
   rootingsEnd,
   contaminationEnd, // the contamination and the weakness
   updraftEnd,
+  blazeEnd, // a blaze burns its card (calcination), then counts down
   fatiguesEnd, // before the rage: the fatigue following a rage starts on the next turn
   ragesEnd,
   doubleDamageEnd,

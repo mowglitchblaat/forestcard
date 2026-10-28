@@ -126,6 +126,7 @@ const CATEGORY_OF: Record<string, string> = {
   courant_ascendant: 'vent',
   foudre: 'foudre',
   marque_foudre: 'foudre',
+  embrasement: 'feu',
 };
 export const categoryOf = (t: unknown): string =>
   CATEGORY_OF[String(t).replace(/^atk_/, '')] || 'autre';

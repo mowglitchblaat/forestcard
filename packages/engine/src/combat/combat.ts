@@ -11,6 +11,7 @@ import type { Card, EffectData, Num, Player } from '../model/card.ts';
 import { levelTable, type StatusLevels } from '../model/levels.ts';
 import type { Rules } from '../model/rules.ts';
 import { doublingsOf } from '../mechanics/double-damage.ts';
+import { blazeBonus } from '../mechanics/blaze.ts';
 import { flushRevives, type TrapRevive } from '../mechanics/revive.ts';
 import { noticeTrigger, type Triggers } from '../mechanics/triggers.ts';
 import { reactToEvent } from '../mechanics/reaction.ts';
@@ -167,7 +168,7 @@ export function createCombat(rules: Rules, seed: number, onEvent: OnEvent): Comb
           return s.atq;
         },
         get rage() {
-          return rageOf(s);
+          return rageOf(s) + blazeBonus(combat, s);
         },
         get doublings() {
           return doublingsOf(s);
@@ -227,7 +228,7 @@ const frozenView = (c: Combat): CombatView => ({
     hp: s.hp,
     maxHp: s.maxHp,
     atq: s.atq,
-    rage: rageOf(s),
+    rage: rageOf(s) + blazeBonus(c, s),
     doublings: doublingsOf(s),
     statuses: statusBadges(s),
   })),

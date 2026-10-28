@@ -1356,3 +1356,15 @@ test('dégâts doublés : ils se cumulent (×2, puis ×4), chacun avec sa durée
   const coups = lignes(r, e => e.t === 'degats' && e.c === 1 && /^B subit \d+ dégâts$/.test(e.txt || '')).map(e => e.n);
   assert.deepEqual(coups.slice(0, 4), [40, 20, 20, 10], '×4 un tour, puis ×2 jusqu\'au 3e, puis normal');
 });
+
+test('embrasement : 2 tours, ATQ +30 %, chaque coup brûle (niveau I qui se cumule), la carte se calcine de 10 % de ses PV max par tour', () => {
+  const r = combat([C('A', 10, 1000, { ultime: { type: 'embrasement', apres_tours: 1, utilisations: 1 } })], [C('B', 1, SOLIDE)], { regles: { maxTours: 4, maxProlong: 0 } });
+  assert.ok(r.journal.some(e => e.k === 'embrasement' && /^A s'embrase : ATQ \+30 %/.test(e.txt || '')), 'embrasé');
+  const coups = lignes(r, e => e.t === 'degats' && e.c === 1 && /^B subit \d+ dégâts$/.test(e.txt || '')).map(e => e.n);
+  assert.deepEqual(coups.slice(0, 3), [13, 13, 10], '10 + 30 % pendant 2 tours, puis normal');
+  const brulures = lignes(r, e => e.k === 'brulure' && e.c === 1).map(e => e.n);
+  assert.deepEqual(brulures.slice(0, 2), [1, 2], 'brûlure I à chaque coup, qui se cumule');
+  const calc = lignes(r, e => e.t === 'stat' && e.c === 0 && /calcination/.test(e.txt || '')).map(e => e.txt);
+  assert.deepEqual(calc, ['PV max de A −100 (calcination)', 'PV max de A −90 (calcination)'], '10 % des PV max à chacun de ses 2 tours');
+  assert.ok(r.journal.some(e => e.txt === "L'embrasement de A s'éteint"), 'éteint');
+});

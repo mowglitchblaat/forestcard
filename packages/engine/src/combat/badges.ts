@@ -23,7 +23,8 @@ export type BadgeKey =
   | 'enracinement'
   | 'brume'
   | 'courant'
-  | 'bouclier';
+  | 'bouclier'
+  | 'embrasement';
 
 export type StatusBadge = { readonly key: BadgeKey; readonly n: number };
 
@@ -55,5 +56,6 @@ export function statusBadges(s: Side): StatusBadge[] {
   add('brume', st.mist && st.mist.turns > 0 ? st.mist.level : 0);
   add('courant', st.updraft && st.updraft.turns > 0 ? st.updraft.stacks : 0);
   add('bouclier', st.shield);
+  add('embrasement', 0, !!st.blaze);
   return out;
 }

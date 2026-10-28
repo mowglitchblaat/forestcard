@@ -7,6 +7,7 @@ import { countHit, useCounterBonus } from '../mechanics/counter.ts';
 import { curseOnHit } from '../mechanics/curse.ts';
 import { burnOnHit, poisonOnHit } from '../mechanics/dot.ts';
 import { damageFactor } from '../mechanics/double-damage.ts';
+import { blazeBonus } from '../mechanics/blaze.ts';
 import { execute, executesNow } from '../mechanics/execution.ts';
 import { fatigueOnHit } from '../mechanics/fatigue.ts';
 import { fractureOnHit } from '../mechanics/fracture.ts';
@@ -60,13 +61,16 @@ export type StrikeStep = (c: Combat, at: Attack, st: Strike) => StrikeFlow;
 
 // ── Each strike ──
 
-// double damage, counter bonus, rage; fatigue: less damage (already taken off the attack)
+// double damage, counter bonus, rage, blaze; fatigue: less damage (already taken off the attack)
 export function strikePower(
-  _c: Combat,
+  c: Combat,
   { a, blocked, blockStrikes }: Attack,
   st: Strike,
 ): StrikeFlow {
-  st.n = Math.max(0, a.atq * damageFactor(a) + useCounterBonus(a) + rageBonus(a));
+  st.n = Math.max(
+    0,
+    a.atq * damageFactor(a) + useCounterBonus(a) + rageBonus(a) + blazeBonus(c, a),
+  );
   st.blocked = blocked && st.k < blockStrikes;
   return undefined;
 }

@@ -1236,7 +1236,7 @@ function maj(e){[0,1].forEach(i=>{const p=$('#p'+i);p.querySelector('.bar i').st
 // STATUTS PORTÉS (champ `etats` du journal : [statut, nombre] par carte) : une pastille par statut, son niveau en chiffre romain
 // (ou son nombre : malédictions, lames, courant, PV du bouclier) ; la pastille grossit quand le niveau monte ; l'aura suit le niveau
 const ROM=['','I','II','III'],ET={poison:['☠️','#22c55e',1],brulure:['🔥','#f97316',1],saignement:['🩸','#ef4444',1],fatigue:['💤','#94a3b8',1],fracture:['🦴','#fde68a',1],glas:['🔔','#a78bfa',1],gel:['❄️','#7dd3fc',1],foudre:['⚡','#facc15',1],brume:['🌫️','#e2e8f0',1],
- malediction:['💀','#c084fc',2],lames:['🌪️','#a5f3fc',2],courant:['🌬️','#bae6fd',2],bouclier:['🪨','#d6b88a',3],etourdi:['💫','#facc15',0],contamination:['🧪','#a3e635',0],faiblesse:['💧','#60a5fa',0],enracinement:['🌿','#4ade80',0]};
+ malediction:['💀','#c084fc',2],lames:['🌪️','#a5f3fc',2],courant:['🌬️','#bae6fd',2],bouclier:['🪨','#d6b88a',3],embrasement:['🌋','#fb923c',0],etourdi:['💫','#facc15',0],contamination:['🧪','#a3e635',0],faiblesse:['💧','#60a5fa',0],enracinement:['🌿','#4ade80',0]};
 function etats(e){[0,1].forEach(i=>{const box=$('#p'+i+' .etats'),card=$('#p'+i+' .card');if(!box)return;const L=(e.etats&&e.etats[i])||[],prev=box._v||{},now={};
  const html=L.filter(([k])=>ET[k]).map(([k,n])=>{now[k]=n;const [ic,col,m]=ET[k],v=m===1?ROM[n]||'':m===2?'×'+n:m===3?String(n):'',cl=['et'];if(m===1&&n>=2)cl.push('n'+Math.min(3,n));
   if(!(k in prev))cl.push('new');else if(n>prev[k])cl.push('up');return `<div class="${cl.join(' ')}" style="--ec:${col}">${ic}${v?`<b>${v}</b>`:''}</div>`}).join(''),sig=JSON.stringify(now);
@@ -1403,6 +1403,8 @@ async function jouer(res){
    else if(e.t==='reanim_mort'){document.querySelectorAll('#p'+e.c+' .card canvas.fx').forEach(k=>k.remove());Object.keys(st).filter(k=>k.startsWith(String(e.c))).forEach(k=>st[k]=0);{const k=$('#p'+e.c+' .cw .card');if(k)k.dataset.brisee='1'}if(coupee(e.c))await wait(900);else{briser(e.c);await wait(3100)}}   // brisee : si son piège de réanimation est contré, elle reste brisée (pas de 2e destruction à la fin)   // exécutée : déjà coupée en deux, pas de 2e destruction
    else if(e.t==='reanim'){{const k=$('#p'+e.c+' .cw .card');if(k)delete k.dataset.brisee}reforme(e.c);flot(e.c,'+'+e.n,'#4ade80');await wait(2100)}
    else if(e.t==='statut'&&e.k==='rage'){statut(e.c,'rage',true);colere(e.c);flot(e.c,'RAGE !','#ef4444','big');await wait(1000)}
+   else if(e.t==='statut'&&e.k==='embrasement'){if(!st[e.c+'rage_emb']){st[e.c+'rage_emb']=1;statut(e.c,'rage',true)}flot(e.c,'EMBRASEMENT !','#fb923c','big');await wait(1000)}   // embrasement : l'aura de feu de la rage, tant qu'il dure
+   else if(e.t==='finstatut'&&e.k==='embrasement'){if(st[e.c+'rage_emb']){delete st[e.c+'rage_emb'];statut(e.c,'rage',false)}}
    else if(e.t==='statut'&&e.k==='fatigue'){statut(e.c,'fatigue',true);flot(e.c,'Fatigue…','#94a3b8');await wait(700)}
    else if(e.t==='statut'&&e.k==='epuise'){flot(e.c,'ÉPUISÉ !','#94a3b8','big');await wait(900)}   // relais : 60 rounds sans KO, le plus entamé tombe
    else if(e.t==='statut'&&e.k==='riposte'){bouclier(e.c,{partiel:1});flot(e.c,'RIPOSTE !','#fcd34d','big');await wait(800)}   // blocage avec riposte : le renvoi (miroir) ou le statut suit

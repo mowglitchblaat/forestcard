@@ -1334,6 +1334,20 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
         txt: `La marque de foudre de ${name(e.side)} s'éteint`,
         o: { c: e.side, k: 'foudre' },
       };
+    case 'blazeStarted':
+      return {
+        t: 'statut',
+        txt: e.again
+          ? `${name(e.side)} s'embrase de nouveau (${turns(e.turns)}) !`
+          : `${name(e.side)} s'embrase : ATQ +${fr(e.atqPct)} %, chaque coup brûle (brûlure ${lvl(e.burnLevel)}, ${turns(e.burnTurns)}), et se calcine (${turns(e.turns)}) !`,
+        o: { c: e.side, k: 'embrasement', n: e.turns, v: e.atqPct },
+      };
+    case 'blazeEnded':
+      return {
+        t: 'finstatut',
+        txt: `L'embrasement de ${name(e.side)} s'éteint`,
+        o: { c: e.side, k: 'embrasement' },
+      };
     case 'targeted':
       return {
         t: 'statut',

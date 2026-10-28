@@ -80,6 +80,7 @@ export const EFFECT_TYPES = [
   'atk_critique',
   'marque_foudre',
   'atk_foudre',
+  'embrasement',
 ] as const;
 export type EffectType = (typeof EFFECT_TYPES)[number];
 

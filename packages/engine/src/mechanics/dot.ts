@@ -111,8 +111,8 @@ export function tickDot(c: Combat, s: Side, dot: DamageOverTime): void {
   });
 }
 
-// A burn tick takes n max HP (1 at least left).
-function calcinate(c: Combat, s: Side, n: number): void {
+// A burn tick (or a blaze, mechanics/blaze.ts) takes n max HP (1 at least left).
+export function calcinate(c: Combat, s: Side, n: number): void {
   const lost = Math.min(n, s.maxHp - 1);
   if (lost <= 0) return;
   s.maxHp -= lost;

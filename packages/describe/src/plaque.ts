@@ -106,6 +106,7 @@ const EFFECT_LABELS: Record<EffectType, (e: Fx) => string> = {
   atk_critique: () => 'Coups critiques',
   marque_foudre: () => 'Marque de foudre',
   atk_foudre: () => 'Coup foudroyant',
+  embrasement: () => 'Embrasement',
 };
 
 const PASSIVE_LABELS: Record<PassiveType, (p: Fx) => string> = {

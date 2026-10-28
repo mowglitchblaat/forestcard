@@ -642,6 +642,9 @@ export const EDITOR_ULTIMATES: { readonly [K in EffectType]?: EditorEntry } = {
     'u',
     'tours',
   ],
+  embrasement: [
+    "🔥 Embrasement (Feu) : la carte s'enflamme 2 tours : ATQ en plus, chaque coup pose une brûlure I, et elle se calcine à chacun de ses tours (valeurs dans Réglages > Niveaux des statuts)",
+  ],
 };
 
 export const EDITOR_MAGICS: { readonly [K in EffectType]?: EditorEntry } = {

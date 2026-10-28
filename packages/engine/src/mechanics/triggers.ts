@@ -172,6 +172,8 @@ export const TRIGGER_FACT: { [K in EventType]: Classify<K> | null } = {
   lightningStruck: null,
   lightningBounced: null,
   lightningFaded: null,
+  blazeStarted: null,
+  blazeEnded: null,
   weakened: fact('status'),
   solidified: null,
   solidBroken: null,

@@ -24,7 +24,7 @@ export type SideView = {
   readonly maxHp: number;
   readonly atq: number;
   // Temporary damage boosts of the card's strikes, for the live ATQ shown during a combat:
-  // rage bonus (sum of its rages, 0 without) and double damages (double_degats) still running (they
+  // bonus of its strikes (sum of its rages, and its blaze; 0 without) and double damages (double_degats) still running (they
   // stack: strikes × 2 ** doublings).
   readonly rage: number;
   readonly doublings: number;
@@ -420,6 +420,17 @@ export type DomainEvent =
       result: 'charged' | 'destroyed' | 'empty';
     }
   | { type: 'lightningFaded'; side: SideIndex }
+  // blaze (mechanics/blaze.ts): side is the card ablaze; again: it was already, its turns start again
+  | {
+      type: 'blazeStarted';
+      side: SideIndex;
+      again: boolean;
+      turns: number;
+      atqPct: number;
+      burnLevel: number;
+      burnTurns: number;
+    }
+  | { type: 'blazeEnded'; side: SideIndex }
   | { type: 'weakened'; side: SideIndex; stacked: boolean; pct: number; turns: number }
   // fracture: at its level, the chance to get hurt when attacking and the damage, % of its own ATQ
   | {

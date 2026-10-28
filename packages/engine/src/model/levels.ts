@@ -11,6 +11,7 @@
 //   malediction  no level: a fixed ATQ loss for its turns
 //   faiblesse    no level: the weakness a vaporisation leaves (damage taken +X % for X turns)
 //   critique     the critical power, the same for every card (only a boost raises it)
+//   embrasement  the blaze skill: ATQ bonus and self calcination (mechanics/blaze.ts)
 //
 // Levels add up: a level II laid on a level I gives a level III; level III at most.
 //
@@ -37,6 +38,8 @@ export type StatusLevels = {
   faiblesseTours: number; // weakness: its turns
   critique: number; // critical power: % of the ATQ a critical hit adds (mechanics/critical.ts)
   foudre: number; // lightning mark level I: % more on the next strike taken (mechanics/lightning.ts)
+  embrasementAtq: number; // blaze: % of the ATQ its strikes deal in more (mechanics/blaze.ts)
+  embrasementCalcination: number; // blaze: % of its max HP burnt off at the end of each turn
 };
 
 export const DEFAULT_LEVELS: StatusLevels = {
@@ -54,6 +57,8 @@ export const DEFAULT_LEVELS: StatusLevels = {
   faiblesseTours: 2,
   critique: 50,
   foudre: 40,
+  embrasementAtq: 30,
+  embrasementCalcination: 10,
 };
 
 export const MAX_LEVEL = 3;
