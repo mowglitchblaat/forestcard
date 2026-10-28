@@ -24,6 +24,7 @@ import type { EffectData, Num } from '../model/card.ts';
 import { grantAttackEffect } from './attack-effects.ts';
 import { linkCount, links, parasiteTurns, sharePct, unlink } from './parasite.ts';
 import { hasPurifiableStatus, purify } from './purification.ts';
+import { bladesMolt } from './blades.ts';
 import { earthMolt } from './earth.ts';
 import { gainOf, grow } from './reaction.ts';
 
@@ -76,6 +77,7 @@ export function molt(c: Combat, s: Side, values: EffectData | undefined, instant
     emit(c, { type: 'statusEnded', side: id(c, s), status: 'stun' });
   }
   earthMolt(s);
+  bladesMolt(s);
   if (s.status.weakness) {
     s.status.weakness = null;
     emit(c, { type: 'statusEnded', side: id(c, s), status: 'weakness' });

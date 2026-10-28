@@ -22,6 +22,7 @@ import type { Side } from './state.ts';
 import { knellOnHit } from '../mechanics/knell.ts';
 import { contaminationOnHit } from '../mechanics/contamination.ts';
 import { rootingOnHit } from '../mechanics/rooting.ts';
+import { shearOnHit } from '../mechanics/blades.ts';
 import { parasiteOnHit } from '../mechanics/parasite.ts';
 
 // What an attack carries from one step to the next (the legacy engine's local variables).
@@ -44,6 +45,7 @@ export type Strike = {
   n: number; // damage of the strike
   blocked: boolean; // all its damage absorbed: counts as blocked, its statuses still apply
   shielded?: boolean; // all its damage taken by a shield (mechanics/earth.ts): a block does not riposte
+  crit?: boolean; // a critical hit (mechanics/critical.ts)
 };
 
 export type AttackStep = (c: Combat, at: Attack) => Flow;
@@ -96,6 +98,7 @@ export const LAID_ON_HIT: Record<string, (c: Combat, q: EffectData, d: Side) => 
   lien_parasite: parasiteOnHit,
   enracinement: rootingOnHit,
   contamination: contaminationOnHit,
+  cisaillement: shearOnHit,
 };
 
 // A strike that landed: the statuses given by passives and by basic attack effects, in the order the

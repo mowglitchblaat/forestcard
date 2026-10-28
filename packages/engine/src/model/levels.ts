@@ -10,6 +10,7 @@
 //   glas         speed of the shadow, % of max HP per turn
 //   malediction  no level: a fixed ATQ loss for its turns
 //   faiblesse    no level: the weakness a vaporisation leaves (damage taken +X % for X turns)
+//   critique     the critical power, the same for every card (only a boost raises it)
 //
 // Levels add up: a level II laid on a level I gives a level III; level III at most.
 //
@@ -34,6 +35,7 @@ export type StatusLevels = {
   malediction: number; // ATQ lost by each curse
   faiblesse: number; // weakness: % of damage taken in more
   faiblesseTours: number; // weakness: its turns
+  critique: number; // critical power: % of the ATQ a critical hit adds (mechanics/critical.ts)
 };
 
 export const DEFAULT_LEVELS: StatusLevels = {
@@ -49,6 +51,7 @@ export const DEFAULT_LEVELS: StatusLevels = {
   malediction: 3,
   faiblesse: 25,
   faiblesseTours: 2,
+  critique: 50,
 };
 
 export const MAX_LEVEL = 3;

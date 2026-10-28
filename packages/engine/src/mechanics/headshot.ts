@@ -1,20 +1,23 @@
 // Headshot and targeting: two mechanics that work apart or together.
-//   - Headshot (critical hit): X % of chances, on each strike, to add X % of the attacker's ATQ to
-//     the strike (pctcrit, 50 when empty). It comes first: right after the strike's power, before
-//     a block or a reduction. Comes from a passive (headshot) or an effect given to the basic attack
-//     (atk_headshot: magic, trap); several sources add their chances (one draw).
+//   - Headshot: a special critical hit (mechanics/critical.ts). It does not draw the critical chance:
+//     X % of chances, on each strike, of its own, then the strike is critical (the common critical
+//     power, and the updraft). It comes first: right after the strike's power, before a block or a
+//     reduction. Comes from a passive (headshot) or an effect given to the basic attack
+//     (atk_headshot: magic, trap); several sources add their chances (one draw). Since the rework,
+//     the card's own power (`pctcrit`) no longer counts.
 //   - Targeting (ciblage, ultimate): X % of chances to mark the opponent for X turns of the card
-//     that marked it. While the mark holds, each strike of that card on it is a headshot (its pctcrit,
-//     or the largest of the card's headshot sources). `consomme` 'non': the mark stays until its
-//     turns run out; otherwise (default) the first headshot destroys it. A molt removes it.
+//     that marked it. While the mark holds, each strike of that card on it is a headshot.
+//     `consomme` 'non': the mark stays until its turns run out; otherwise (default) the first
+//     headshot destroys it. A molt removes it.
 
 import type { Attack, Strike } from '../combat/attack.ts';
-import { emit, id, opponent, roll, round, type Combat } from '../combat/combat.ts';
+import { emit, id, opponent, roll, type Combat } from '../combat/combat.ts';
 import type { EffectContext, EffectRules } from '../combat/effect-context.ts';
 import type { Flow, StrikeFlow } from '../combat/flow.ts';
 import { attackSources, mergedSource } from '../combat/sources.ts';
 import type { Side } from '../combat/state.ts';
 import type { EffectData, Num } from '../model/card.ts';
+import { critical } from './critical.ts';
 
 export type Targeting = { by: Side; turns: number; pct: number; consume: boolean };
 
@@ -29,14 +32,13 @@ export const critPct = (v: Num): number => {
   return Number.isFinite(n) && n > 0 ? n : 50;
 };
 
-// Each strike, after its power: a headshot adds X % of the ATQ.
-export function headshotStrike(c: Combat, { a, d, ia, idd }: Attack, st: Strike): StrikeFlow {
+// Each strike, after its power: a headshot makes it critical.
+export function headshotStrike(c: Combat, at: Attack, st: Strike): StrikeFlow {
+  const { a, d, idd } = at;
   if (st.blocked || d.hp <= 0) return undefined;
   const g = attackSources(a, (q) => q.type === 'headshot')[0];
   const mark = d.status.targeted && d.status.targeted.by === a ? d.status.targeted : null;
-  let pct: number;
   if (mark) {
-    pct = Math.max(mark.pct, ...(g ?? []).map((q) => critPct(q.pctcrit)));
     if (mark.consume) d.status.targeted = null;
   } else {
     if (!g) return undefined;
@@ -48,11 +50,8 @@ export function headshotStrike(c: Combat, { a, d, ia, idd }: Attack, st: Strike)
           : undefined
         : mergedSource(c, g, 100);
     if (!q) return undefined;
-    pct = critPct(q.pctcrit);
   }
-  const bonus = Math.max(0, round((a.atq * pct) / 100));
-  st.n += bonus;
-  emit(c, { type: 'headshot', side: ia, target: idd, bonus, forced: !!mark });
+  critical(c, at, st, true, !!mark);
   if (mark && mark.consume) emit(c, { type: 'targetEnded', side: idd });
   return undefined;
 }

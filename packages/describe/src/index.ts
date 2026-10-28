@@ -83,6 +83,12 @@ const rootTxt = (e: Fx) => {
     return `enracinement empoisonné : chaque frappe qu'elle porte l'empoisonne (poison ${roman(nz(e.niveau) || 1)}, ${trs(nz(e.ptours) || 2)})`;
   return `enracinement épineux : chaque frappe qu'elle porte lui inflige ${isEmpty(e.val) ? 5 : nz(e.val)} dégâts`;
 };
+// Shear (engine mechanics/blades.ts): a packet of air blades on the opponent.
+const shearTxt = (e: Fx) => {
+  const n = Math.max(1, Math.floor(nz(e.lames) || 1));
+  const d = isEmpty(e.val) ? 10 : nz(e.val);
+  return `poser ${n} lame${n > 1 ? 's' : ''} d'air sur l'adversaire, qui frappe${n > 1 ? 'nt' : ''} ensemble dans ${trs(isEmpty(e.tours) ? 2 : nz(e.tours))} : ${n} × ${d} = ${n * d} dégâts (esquivable ; ni purifiée, ni prolongée)`;
+};
 const contaminationTxt = `contamination : ses statuts négatifs (ceux déjà là et ceux qui arrivent) durent un tour de plus ; avec une brûlure, VAPORISATION : la brûlure part en vapeur et la carte est affaiblie (dégâts reçus +${L.faiblesse} % pendant ${L.faiblesseTours} tours)`;
 // Editor label of a type, looked up as the legacy page did (plain property access on its tables).
 const label = (table: object, t: unknown) =>
@@ -247,20 +253,26 @@ const PASSIVE_TEXT: Record<PassiveType, (p: Fx, x: PassiveContext) => string> = 
     `${c} % de chances, à chaque coup, de contaminer la cible (${contaminationTxt}, ${trs(nz(p.tours) || 2)})`,
   sedimentation: (p) =>
     `Sédimentation : chaque coup reçu (hors esquive) lui donne une couche de roche ; à 3 couches, un bouclier de ${isEmpty(p.val) ? '20 % de ses PV max' : `${nz(p.val)}${p.u === 'pct' ? ' % de ses PV max' : ''}`} se lève (il encaisse les coups avant le blocage et les réductions ; les boucliers s'additionnent)`,
+  critique: (_, { c }) =>
+    `${c} % de chances, à chaque coup, de faire un COUP CRITIQUE (${critTxt}, avant blocage et réductions)`,
+  courant_ascendant: (p) =>
+    `Courant ascendant : à chaque coup critique, ce coup fait +${isEmpty(p.val) ? 20 : nz(p.val)} % de dégâts et sa puissance critique monte de ${isEmpty(p.pctcrit) ? 10 : nz(p.pctcrit)} points pendant ${trs(isEmpty(p.tours) ? 2 : nz(p.tours))} (cumulable ${isEmpty(p.max) ? 3 : nz(p.max)} fois)`,
+  cisaillement: (p, { c }) => `${c} % de chances, à chaque coup, de ${shearTxt(p)}`,
   replique: (p) =>
     `Réplique sismique : chaque coup reçu (hors esquive) lui donne une charge ; à 3 charges, la terre frappe l'attaquant (${isEmpty(p.pctatq) ? 50 : nz(p.pctatq)} % de son ATQ, esquivable ; ce n'est pas une attaque)`,
 };
 
 // Headshot, mist, parasitic link, mutation, molt, reaction (engine: mechanics/headshot.ts, mist.ts,
 // parasite.ts, insect.ts, reaction.ts).
-const critOf = (e: Fx) => (isEmpty(e.pctcrit) ? 50 : nz(e.pctcrit));
+// Critical hits (engine mechanics/critical.ts): the common power, a % of the ATQ.
+const critTxt = `+${L.critique} % de son ATQ en dégâts`;
 const linkPct = (e: Fx) => (isEmpty(e.pctlien) ? 50 : Math.min(100, nz(e.pctlien)));
 const linkN = (e: Fx) => Math.max(1, Math.floor(nz(e.nbliens)) || 1);
 const linksTxt = (e: Fx) =>
   linkN(e) > 1 ? `${linkN(e)} liens parasitaires` : 'un lien parasitaire';
 const linkEach = (e: Fx) => (linkN(e) > 1 ? 'par lien ' : '');
-const headshotText = (e: Fx, c: number) =>
-  `${c < 100 ? c + ' % de chances, à chaque coup, de faire' : 'Chaque coup fait'} un HEADSHOT : +${critOf(e)} % de son ATQ en dégâts, avant blocage et réductions`;
+const headshotText = (_e: Fx, c: number) =>
+  `${c < 100 ? c + ' % de chances, à chaque coup, de faire' : 'Chaque coup fait'} un HEADSHOT, un coup critique sans tirer la chance de critique : ${critTxt}, avant blocage et réductions`;
 const lossAmt = (v: unknown, u: unknown) => (isEmpty(v) ? '10 %' : `${nz(v)}${upc(u)}`);
 const moltLoss = (e: Fx) =>
   `perd ${lossAmt(e.mueatq, e.uatq)} d'ATQ et ${lossAmt(e.muepv, e.upv)} de PV max`;
@@ -473,7 +485,7 @@ const EFFECT_TEXT: Record<EffectType, (e: Fx, x: EffectContext) => string[]> = {
     'Attaque de base : ' + headshotText(e, isEmpty(e.chance) ? 100 : nz(e.chance)),
   ],
   ciblage: (e, { T }) => [
-    `${isEmpty(e.chance) || nz(e.chance) >= 100 ? 'Prend' : nz(e.chance) + ' % de chances de prendre'} l'adversaire pour cible pendant ${trs(T)} : chacun de ses coups sur lui est un HEADSHOT (+${critOf(e)} % de son ATQ)${e.consomme === 'non' ? '' : ' ; la marque saute au premier headshot'}`,
+    `${isEmpty(e.chance) || nz(e.chance) >= 100 ? 'Prend' : nz(e.chance) + ' % de chances de prendre'} l'adversaire pour cible pendant ${trs(T)} : chacun de ses coups sur lui est un HEADSHOT (coup critique : ${critTxt})${e.consomme === 'non' ? '' : ' ; la marque saute au premier headshot'}`,
   ],
   brume: (e, { T }) => [
     `${isEmpty(e.chance) || nz(e.chance) >= 100 ? "S'entoure" : nz(e.chance) + " % de chances de s'entourer"} de brume pendant ${trs(T)} : les statuts négatifs reçus se dissipent. Brume relancée sur une carte déjà embrumée : vent tourné, le prochain statut est renvoyé à l'adversaire puis la brume se dissipe`,
@@ -494,6 +506,9 @@ const EFFECT_TEXT: Record<EffectType, (e: Fx, x: EffectContext) => string[]> = {
   atk_enracinement: attackEffect,
   contamination: (e, { ci }) => [`Contamine ${ci} : ${contaminationTxt}, ${trs(nz(e.tours) || 2)}`],
   atk_contamination: attackEffect,
+  cisaillement: (e) => [shearTxt(e).replace(/^p/, 'P')],
+  atk_cisaillement: attackEffect,
+  atk_critique: attackEffect,
 };
 
 // One described item: its (normalized) type, for pages that colour by category, and its text.

@@ -71,6 +71,8 @@ import { delayedMagicAtStart, magicDurationEnd } from '../mechanics/magic-timing
 import { rootedStrike, rootingsEnd } from '../mechanics/rooting.ts';
 import { contaminationEnd } from '../mechanics/contamination.ts';
 import { earthCounters, shieldStrike } from '../mechanics/earth.ts';
+import { criticalStrike, updraftEnd } from '../mechanics/critical.ts';
+import { bladesTick } from '../mechanics/blades.ts';
 
 type TurnStep = Step<Side>;
 
@@ -113,7 +115,8 @@ const STRIKE: StrikeStep[] = [
   dodge, // a dodge cancels the strike and its effects
   swallowAttempt, // third successful attack: swallowing replaces the damage
   strikePower,
-  headshotStrike, // a critical hit comes before the block and the reductions
+  headshotStrike, // a headshot (a critical hit) comes before the block and the reductions
+  criticalStrike, // else the critical chance; the updraft
   shieldStrike, // a sedimentation shield takes the strike first, before the block and the reductions
   blockOrReduce,
   gainedDefenses, // block chance and reduction gained (mutation, reaction passive)
@@ -144,6 +147,7 @@ const END_OF_TURN_EFFECTS: TurnStep[] = [
   aliveAtEnd,
   dotTicks, // burn and poison, in application order
   bleedTicks,
+  bladesTick, // the air blades due strike, after the damage over time
   scheduledPurifications,
   purificationPassives,
   delayedDamages,
@@ -157,6 +161,7 @@ const END_OF_TURN: TurnStep[] = [
   fracturesEnd,
   rootingsEnd,
   contaminationEnd, // the contamination and the weakness
+  updraftEnd,
   fatiguesEnd, // before the rage: the fatigue following a rage starts on the next turn
   ragesEnd,
   doubleDamageEnd,

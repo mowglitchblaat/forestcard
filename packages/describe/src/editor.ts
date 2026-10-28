@@ -131,7 +131,14 @@ export const EDITOR_FIELDS = {
   msaignniv: ['Mutation niveau II : niveau du saignement (vide ou 0 = pas de saignement)', 'n'],
   fchance: ['Chance de se blesser en attaquant (%)', 'n'],
   degfrac: ['Dégâts subis en attaquant', 'n'],
-  pctcrit: ["Headshot : % de l'ATQ ajouté au coup (50 par défaut)", 'n'],
+  pctcrit: [
+    'Courant ascendant : points de puissance critique gagnés à chaque critique (10 par défaut) — le headshot, lui, prend la puissance critique commune',
+    'n',
+  ],
+  lames: [
+    "Cisaillement : nombre de lames d'air posées (1 par défaut ; dégâts de chaque lame = Valeur)",
+    'n',
+  ],
   consomme: ['Ciblage : la marque saute au premier headshot', ['oui', 'non']],
   nbliens: [
     'Lien parasitaire : nombre de liens posés (1 par défaut ; chaque lien est indépendant)',
@@ -304,9 +311,26 @@ export const EDITOR_PASSIVES: Record<PassiveType, EditorEntry> = {
     'niveau',
   ],
   headshot: [
-    'Headshot : à X % de chances, chaque coup ajoute X % de son ATQ en dégâts (coup critique, avant blocage et réductions)',
+    'Headshot : à X % de chances, chaque coup est un coup critique (puissance critique commune), sans tirer la chance de critique',
     'chance',
+  ],
+  critique: [
+    'Coup critique : X % de chances, à chaque coup, de faire un critique (+ la puissance critique commune, un % de son ATQ)',
+    'chance',
+  ],
+  courant_ascendant: [
+    'Courant ascendant (Vent) : à chaque critique, ce coup fait +X % de dégâts (20 par défaut) et sa puissance critique monte de X points (10 par défaut) pendant X tours (2 par défaut), cumulable X fois (3 par défaut)',
+    'val',
     'pctcrit',
+    'tours',
+    'max',
+  ],
+  cisaillement: [
+    "Cisaillement (Vent) : à X % de chances, chaque coup pose X lames d'air sur la cible (X dégâts chacune, 10 par défaut) qui frappent ensemble après X tours (2 par défaut ; esquivable)",
+    'chance',
+    'lames',
+    'val',
+    'tours',
   ],
   lien_parasite: [
     'Lien parasitaire : à X % de chances, chaque coup pose X liens pendant X tours (X % des soins de la cible par lien lui reviennent, et elle partage les siens ; les liens se cumulent)',
@@ -585,7 +609,6 @@ export const EDITOR_ULTIMATES: { readonly [K in EffectType]?: EditorEntry } = {
     "Ciblage : X % de chances de prendre l'adversaire pour cible pendant X tours (chaque coup sur lui est un headshot)",
     'chance',
     'tours',
-    'pctcrit',
     'consomme',
   ],
   brume: [
@@ -898,9 +921,25 @@ export const EDITOR_MAGICS: { readonly [K in EffectType]?: EditorEntry } = {
     'niveau',
   ],
   atk_headshot: [
-    "Attaque de base : X % de chances de faire un headshot (+X % de l'ATQ en dégâts, avant blocage et réductions)",
+    'Attaque de base : X % de chances de faire un headshot (coup critique, puissance critique commune)',
     'chance',
-    'pctcrit',
+  ],
+  atk_critique: [
+    'Attaque de base : X % de chances de faire un coup critique (puissance critique commune)',
+    'chance',
+  ],
+  cisaillement: [
+    "Cisaillement : pose X lames d'air sur l'adversaire (X dégâts chacune, 10 par défaut), qui frappent ensemble après X tours (2 par défaut ; esquivable)",
+    'lames',
+    'val',
+    'tours',
+  ],
+  atk_cisaillement: [
+    "Attaque de base : X % de chances de poser X lames d'air (X dégâts chacune) qui frappent après X tours",
+    'chance',
+    'lames',
+    'val',
+    'tours',
   ],
   brume: [
     "Brume : X % de chances de s'entourer de brume X tours (statuts négatifs dissipés ; relancée : vent tourné, renvoie le prochain statut)",

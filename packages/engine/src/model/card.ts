@@ -44,6 +44,7 @@ export type EffectData = {
   niveau?: Num;
   variante?: string; // rooting: 'epineux', 'empoisonne' or 'inhibiteur' (mechanics/rooting.ts)
   ptours?: Num; // rooting empoisonne: turns of the poison it lays (2 when empty)
+  lames?: Num; // shear: blades laid at once (1 when empty), each `val` damage, striking after `tours`
   pctpv?: Num;
   calcine?: Num; // burn: % of each tick's damage taken off max HP (100 when empty)
   reducsoin?: Num;

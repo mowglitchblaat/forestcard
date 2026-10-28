@@ -101,6 +101,9 @@ const EFFECT_LABELS: Record<EffectType, (e: Fx) => string> = {
   atk_enracinement: () => 'Coup enracinant',
   contamination: () => 'Contamination',
   atk_contamination: () => 'Coup contaminant',
+  cisaillement: () => 'Cisaillement',
+  atk_cisaillement: () => 'Coup tranchant',
+  atk_critique: () => 'Coups critiques',
 };
 
 const PASSIVE_LABELS: Record<PassiveType, (p: Fx) => string> = {
@@ -143,6 +146,9 @@ const PASSIVE_LABELS: Record<PassiveType, (p: Fx) => string> = {
   contamination: () => 'Contamination',
   sedimentation: () => 'Sédimentation',
   replique: () => 'Réplique sismique',
+  critique: () => 'Coup critique',
+  courant_ascendant: () => 'Courant ascendant',
+  cisaillement: () => 'Cisaillement',
 };
 
 const REACTION_LABELS: Record<string, string> = {

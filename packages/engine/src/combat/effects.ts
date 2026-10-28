@@ -45,6 +45,7 @@ import { effects as mist } from '../mechanics/mist.ts';
 import { effects as parasite } from '../mechanics/parasite.ts';
 import { effects as rooting } from '../mechanics/rooting.ts';
 import { effects as contamination } from '../mechanics/contamination.ts';
+import { effects as blades } from '../mechanics/blades.ts';
 import { effects as ultimates } from '../mechanics/ultimates.ts';
 import type { EffectData } from '../model/card.ts';
 import type { EffectType } from '../model/types.ts';
@@ -86,6 +87,7 @@ export const rules = (): Record<EffectType, EffectRule> =>
     ...parasite,
     ...rooting,
     ...contamination,
+    ...blades,
     ...programming,
     ...purification,
     ...rage,

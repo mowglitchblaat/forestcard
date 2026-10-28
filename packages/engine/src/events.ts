@@ -113,6 +113,7 @@ export type DamageCause =
   | 'thermalShock' // fire on ice: a burn laid on a frozen card
   | 'thorns' // a thorny rooting: the rooted card's own strike hurts it
   | 'seismic' // a seismic counter-strike (mechanics/earth.ts)
+  | 'blades' // air blades striking (mechanics/blades.ts)
   | 'knell'; // the knell takes the card
 
 export type CannotAttackReason =
@@ -382,6 +383,27 @@ export type DomainEvent =
   | { type: 'shieldAbsorbed'; side: SideIndex; amount: number; left: number }
   | { type: 'chargeGained'; side: SideIndex; charges: number }
   | { type: 'seismicStrike'; side: SideIndex; target: SideIndex; dodged: boolean }
+  // critical hits (mechanics/critical.ts): side is the attacker; the updraft that follows
+  | { type: 'criticalHit'; side: SideIndex; target: SideIndex; bonus: number }
+  | {
+      type: 'updraft';
+      side: SideIndex;
+      amplified: number;
+      stacks: number;
+      power: number;
+      turns: number;
+    }
+  | { type: 'updraftEnded'; side: SideIndex }
+  // shear (mechanics/blades.ts): a packet of air blades laid on side; packets: how many it carries
+  | {
+      type: 'bladesLaid';
+      side: SideIndex;
+      blades: number;
+      damage: number;
+      turns: number;
+      packets: number;
+    }
+  | { type: 'bladesStruck'; side: SideIndex; blades: number; total: number; dodged: boolean }
   | { type: 'weakened'; side: SideIndex; stacked: boolean; pct: number; turns: number }
   // fracture: at its level, the chance to get hurt when attacking and the damage, % of its own ATQ
   | {

@@ -638,6 +638,12 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
             txt: `${name(c)} subit ${n} dégâts (le Glas)`,
             o: { c, n, k: 'glas' },
           };
+        case 'blades':
+          return {
+            t: 'degats',
+            txt: `Les lames d'air tranchent ${name(c)} : ${n} dégâts`,
+            o: { c, n, k: 'lames' },
+          };
         case 'seismic':
           return {
             t: 'degats',
@@ -1247,6 +1253,38 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
         t: 'statut',
         txt: `HEADSHOT de ${name(e.side)} : +${e.bonus} dégâts${e.forced ? ' (cible verrouillée)' : ''} !`,
         o: { c: e.side, k: 'headshot', cible: e.target, n: e.bonus },
+      };
+    case 'criticalHit':
+      return {
+        t: 'statut',
+        txt: `COUP CRITIQUE de ${name(e.side)} : +${e.bonus} dégâts !`,
+        o: { c: e.side, k: 'critique', cible: e.target, n: e.bonus },
+      };
+    case 'updraft':
+      return {
+        t: 'statut',
+        txt: `Courant ascendant : le critique de ${name(e.side)} s'envole (+${e.amplified} dégâts), puissance critique ${fr(e.power)} % (×${e.stacks}, ${turns(e.turns)})`,
+        o: { c: e.side, k: 'courant', n: e.amplified, s: e.stacks, v: e.power },
+      };
+    case 'updraftEnded':
+      return {
+        t: 'finstatut',
+        txt: `Le courant ascendant de ${name(e.side)} retombe`,
+        o: { c: e.side, k: 'courant' },
+      };
+    case 'bladesLaid':
+      return {
+        t: 'statut',
+        txt: `${e.blades} lame${e.blades > 1 ? 's' : ''} d'air tourne${e.blades > 1 ? 'nt' : ''} autour de ${name(e.side)} (${e.blades} × ${fr(e.damage)} dégâts dans ${turns(e.turns)})${e.packets > 1 ? ` : ${e.packets} vagues en attente` : ''}`,
+        o: { c: e.side, k: 'lames', n: e.blades, v: e.damage, s: e.turns },
+      };
+    case 'bladesStruck':
+      return {
+        t: e.dodged ? 'esquive' : 'statut',
+        txt: e.dodged
+          ? `${name(e.side)} esquive les lames d'air !`
+          : `CISAILLEMENT ! ${e.blades} lame${e.blades > 1 ? 's' : ''} d'air frappe${e.blades > 1 ? 'nt' : ''} ${name(e.side)}`,
+        o: { c: e.side, k: e.dodged ? 'lames_esquivees' : 'cisaillement', n: e.total },
       };
     case 'targeted':
       return {

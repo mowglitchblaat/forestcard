@@ -1050,7 +1050,7 @@ test('ciblage : la cible verrouillée prend un headshot à chaque coup, et la ma
   assert.equal(lignes(r, e => e.k === 'cible' && e.t === 'statut').length, 1);
   const hs = lignes(r, e => e.k === 'headshot');
   assert.equal(hs.length, 1, 'la marque saute au premier headshot');
-  assert.equal(hs[0].n, 10);
+  assert.equal(hs[0].n, 5, 'puissance critique commune : 50 % de 10 (la vieille puissance de la carte ne compte plus)');
   const r2 = combat([C('Chasseur', 10, SOLIDE, { ultime: ult({ consomme: 'non' }) })], [C('Proie', 0, SOLIDE)], { regles: { maxTours: 6, maxProlong: 0 } });
   assert.equal(lignes(r2, e => e.k === 'headshot').length, 3, 'consomme non : un headshot par tour de ciblage');
   assert.ok(lignes(r2, e => e.t === 'finstatut' && e.k === 'cible').length === 1);
@@ -1288,4 +1288,40 @@ test('réplique sismique : à 3 charges, la terre frappe l\'attaquant (% de l\'A
   // deux cartes à réplique : pas de boucle sans fin
   const r2 = combat([C('A', 5, SOLIDE, { passif: { briques: [{ type: 'replique' }, { type: 'multi_frappe', chance: 100, frappes: 3 }] } })], [C('B', 5, SOLIDE, { passif: { briques: [{ type: 'replique' }, { type: 'multi_frappe', chance: 100, frappes: 3 }] } })], { regles: { maxTours: 3, maxProlong: 0 } });
   assert.ok(r2.journal.length < 400, 'pas de boucle');
+});
+
+// ================= Vent : coups critiques, Courant ascendant, Cisaillement =================
+test('coup critique : X % de chances par coup, puissance commune (50 % de l\'ATQ par défaut, réglable)', () => {
+  const r = combat([C('A', 20, SOLIDE, { passif: { type: 'critique', chance: 100 } })], [C('B', 1, SOLIDE)], { regles: { maxTours: 2, maxProlong: 0 } });
+  assert.ok(r.journal.some(e => e.k === 'critique' && e.n === 10), '+10 (50 % de 20)');
+  assert.ok(lignes(r, e => e.t === 'degats' && e.c === 1 && e.n === 30).length > 0, '20 + 10 = 30');
+  const r2 = combat([C('A', 20, SOLIDE, { passif: { type: 'critique', chance: 100 } })], [C('B', 1, SOLIDE)], { regles: { maxTours: 2, maxProlong: 0, niveaux: { critique: 100 } } });
+  assert.ok(r2.journal.some(e => e.k === 'critique' && e.n === 20), 'puissance réglée à 100 %');
+  const r3 = combat([C('A', 20, SOLIDE, { passif: { type: 'critique', chance: 0 } })], [C('B', 1, SOLIDE)], { regles: { maxTours: 4, maxProlong: 0 } });
+  assert.ok(!r3.journal.some(e => e.k === 'critique'), '0 % : jamais');
+});
+
+test('headshot : un critique sans tirer la chance de critique (puissance commune)', () => {
+  const r = combat([C('A', 20, SOLIDE, { passif: { type: 'headshot', chance: 100, pctcrit: 300 } })], [C('B', 1, SOLIDE)], { regles: { maxTours: 2, maxProlong: 0 } });
+  assert.ok(r.journal.some(e => e.k === 'headshot' && e.n === 10), 'headshot : +50 % de 20, la vieille puissance de la carte ne compte plus');
+  assert.ok(!r.journal.some(e => e.k === 'critique'), 'pas de second critique sur le même coup');
+});
+
+test('courant ascendant : le critique fait +X %, et la puissance critique monte (cumul plafonné)', () => {
+  const r = combat([C('A', 20, SOLIDE, { passif: { briques: [{ type: 'critique', chance: 100 }, { type: 'courant_ascendant', val: 20, pctcrit: 10, tours: 2, max: 2 }] } })], [C('B', 1, SOLIDE)], { regles: { maxTours: 4, maxProlong: 0 } });
+  const crits = lignes(r, e => e.k === 'critique').map(e => e.n);
+  assert.deepEqual(crits.slice(0, 3), [10, 12, 14], '50 %, puis 60 %, puis 70 % (plafond 2 cumuls)');
+  const cour = lignes(r, e => e.k === 'courant' && e.t === 'statut').map(e => e.s);
+  assert.deepEqual(cour.slice(0, 3), [1, 2, 2], 'cumul plafonné à 2');
+  const coups = lignes(r, e => e.t === 'degats' && e.c === 1 && /^B subit \d+ dégâts$/.test(e.txt || '')).map(e => e.n);
+  assert.equal(coups[0], 36, '(20 + 10) × 1,2 = 36');
+});
+
+test('cisaillement : les lames frappent ensemble après X tours de la cible, chaque pose garde sa durée', () => {
+  const r = combat([C('A', 1, SOLIDE), MAG('Vent', { briques: [{ type: 'cisaillement', lames: 3, val: 20, tours: 2 }, { type: 'cisaillement', lames: 1, val: 5, tours: 1 }] })], [C('B', 1, SOLIDE)], { regles: { maxTours: 4, maxProlong: 0 } });
+  const coups = lignes(r, e => e.k === 'lames' && e.t === 'degats').map(e => e.n);
+  assert.deepEqual(coups, [5, 60], '1 × 5 après 1 tour, puis 3 × 20 après 2 tours');
+  // ni purifié, ni prolongé
+  const r2 = combat([C('A', 1, SOLIDE), MAG('Vent', { briques: [{ type: 'contamination', ciblem: 'adversaire', tours: 5 }, { type: 'cisaillement', lames: 2, val: 10, tours: 2 }] })], [C('B', 1, SOLIDE), MAG('Prière', { type: 'purification', cible: 'soi' })], { regles: { maxTours: 4, maxProlong: 0 } });
+  assert.deepEqual(lignes(r2, e => e.k === 'lames' && e.t === 'degats').map(e => e.n), [20]);
 });

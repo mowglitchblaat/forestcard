@@ -75,6 +75,9 @@ export const EFFECT_TYPES = [
   'atk_enracinement',
   'contamination',
   'atk_contamination',
+  'cisaillement',
+  'atk_cisaillement',
+  'atk_critique',
 ] as const;
 export type EffectType = (typeof EFFECT_TYPES)[number];
 
@@ -119,6 +122,9 @@ export const PASSIVE_TYPES = [
   'contamination',
   'sedimentation',
   'replique',
+  'critique',
+  'courant_ascendant',
+  'cisaillement',
 ] as const;
 export type PassiveType = (typeof PASSIVE_TYPES)[number];
 

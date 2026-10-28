@@ -55,5 +55,7 @@ export const effects = {
   atk_glas: { run: attackEffectGrant },
   atk_enracinement: { run: attackEffectGrant },
   atk_contamination: { run: attackEffectGrant },
+  atk_cisaillement: { run: attackEffectGrant },
+  atk_critique: { run: attackEffectGrant },
   atk_headshot: { run: attackEffectGrant },
 } satisfies EffectRules;
