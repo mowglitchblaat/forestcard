@@ -1453,6 +1453,3 @@ test('verrouillage total : les 3 prochains coups sont des headshots ; visée mai
   }
   assert.ok(gardee, 'au moins une fois gardée');
 });
-  const coups = lignes(r, e => e.t === 'degats' && e.c === 1 && /^B subit \d+ dégâts$/.test(e.txt || '')).map(e => e.n);
-  assert.deepEqual(coups.slice(0, 3), [15, 15, 15], '10 + 50 % de critique à chaque coup');
-});
