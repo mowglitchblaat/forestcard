@@ -21,6 +21,7 @@ import type { EffectContext, EffectRules } from '../combat/effect-context.ts';
 import type { Flow } from '../combat/flow.ts';
 import type { Side } from '../combat/state.ts';
 import type { EffectData } from '../model/card.ts';
+import { putOutBlaze } from './blaze.ts';
 import { mistTakes } from './mist.ts';
 
 export type Contamination = { turns: number };
@@ -77,10 +78,18 @@ export function contaminate(c: Combat, d: Side, turnsIn: number): void {
 // A burn and a contamination on the same card: the burn is spent, the card is left weak.
 export function vaporize(c: Combat, s: Side): void {
   if (!s.status.contamination || s.hp <= 0) return;
-  if (!s.status.dots.some((z) => z.kind === 'brûlure')) return;
-  s.status.dots = s.status.dots.filter((z) => z.kind !== 'brûlure');
-  emit(c, { type: 'vaporized', side: id(c, s) });
-  emit(c, { type: 'statusEnded', side: id(c, s), status: 'burn' });
+  // a blaze (mechanics/blaze.ts) is put out by the water, and vaporises as a burn does
+  const blazed = !!s.status.blaze;
+  const burnt = s.status.dots.some((z) => z.kind === 'brûlure');
+  if (!blazed && !burnt) return;
+  if (blazed) putOutBlaze(c, s, 'water');
+  if (burnt) s.status.dots = s.status.dots.filter((z) => z.kind !== 'brûlure');
+  emit(c, {
+    type: 'vaporized',
+    side: id(c, s),
+    what: blazed && burnt ? 'both' : blazed ? 'blaze' : 'burn',
+  });
+  if (burnt) emit(c, { type: 'statusEnded', side: id(c, s), status: 'burn' });
   weaken(c, s);
 }
 

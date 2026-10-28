@@ -382,7 +382,7 @@ export type DomainEvent =
   | { type: 'ultimateHeld'; side: SideIndex } // an inhibiting rooting holds its ultimate
   // contamination (mechanics/contamination.ts): prolonged, how many statuses gained a turn
   | { type: 'contaminated'; side: SideIndex; stacked: boolean; turns: number; prolonged: number }
-  | { type: 'vaporized'; side: SideIndex } // burn + contamination: the burn is spent
+  | { type: 'vaporized'; side: SideIndex; what: 'burn' | 'blaze' | 'both' } // water on fire: what went up in steam
   // earth skills (mechanics/earth.ts): layers and shield, charges and counter-strike
   | { type: 'layerGained'; side: SideIndex; layers: number }
   | { type: 'shieldRaised'; side: SideIndex; amount: number; total: number }
@@ -430,7 +430,8 @@ export type DomainEvent =
       burnLevel: number;
       burnTurns: number;
     }
-  | { type: 'blazeEnded'; side: SideIndex }
+  // by: its turns ran out, or the ice or the water (a contamination: vaporisation) put it out
+  | { type: 'blazeEnded'; side: SideIndex; by: 'time' | 'ice' | 'water' }
   | { type: 'weakened'; side: SideIndex; stacked: boolean; pct: number; turns: number }
   // fracture: at its level, the chance to get hurt when attacking and the damage, % of its own ATQ
   | {

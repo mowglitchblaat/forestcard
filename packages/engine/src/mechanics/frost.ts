@@ -20,6 +20,7 @@ import type { Flow } from '../combat/flow.ts';
 import type { Side } from '../combat/state.ts';
 import type { EffectData, Num } from '../model/card.ts';
 import { contaminationExtra } from './contamination.ts';
+import { putOutBlaze } from './blaze.ts';
 import { mistTakes } from './mist.ts';
 
 // Shatter damage when a frost does not say (breaths, missiles, the random effect, older cards).
@@ -59,6 +60,8 @@ export function freeze(
   levels = 1,
 ): void {
   if (mistTakes(c, d, 'frost', (t) => freeze(c, t, cancelChance, shatter, turns, levels))) return;
+  // ice on a blaze: the blaze is put out, the ice is spent doing it (mechanics/blaze.ts)
+  if (putOutBlaze(c, d, 'ice')) return;
   // ice on fire: the burn is put out, the ice is spent doing it
   if (d.status.dots.some((z) => z.kind === 'brûlure')) {
     d.status.dots = d.status.dots.filter((z) => z.kind !== 'brûlure');

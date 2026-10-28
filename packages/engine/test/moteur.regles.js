@@ -1368,3 +1368,13 @@ test('embrasement : 2 tours, ATQ +30 %, chaque coup brûle (niveau I qui se cumu
   assert.deepEqual(calc, ['PV max de A −100 (calcination)', 'PV max de A −90 (calcination)'], '10 % des PV max à chacun de ses 2 tours');
   assert.ok(r.journal.some(e => e.txt === "L'embrasement de A s'éteint"), 'éteint');
 });
+
+test("embrasement : la glace l'éteint (et s'use), l'eau l'éteint avec une vaporisation (faiblesse)", () => {
+  const A = () => C('A', 10, 1000, { ultime: { type: 'embrasement', apres_tours: 1, utilisations: 1 } });
+  const glace = combat([A()], [C('B', 1, SOLIDE, { passif: { type: 'gel', chance: 100, tours: 2 } })], { regles: { maxTours: 4, maxProlong: 0 } });
+  assert.ok(glace.journal.some(e => e.txt === "La glace éteint l'embrasement de A !"), 'glace');
+  const eau = combat([A()], [C('B', 1, SOLIDE, { passif: { type: 'contamination', chance: 100, tours: 2 } })], { regles: { maxTours: 4, maxProlong: 0 } });
+  assert.ok(eau.journal.some(e => e.txt === "L'eau éteint l'embrasement de A !"), 'eau');
+  assert.ok(eau.journal.some(e => /VAPORISATION .*l'embrasement part en vapeur/.test(e.txt || '')), 'vaporisation');
+  assert.ok(eau.journal.some(e => e.k === 'faiblesse' && e.c === 0), 'faiblesse');
+});

@@ -978,7 +978,7 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
     case 'vaporized':
       return {
         t: 'statut',
-        txt: `VAPORISATION ! L'eau et le feu se rencontrent sur ${name(e.side)} : la brûlure part en vapeur`,
+        txt: `VAPORISATION ! L'eau et le feu se rencontrent sur ${name(e.side)} : ${{ burn: 'la brûlure part', blaze: "l'embrasement part", both: "l'embrasement et la brûlure partent" }[e.what]} en vapeur`,
         o: { c: e.side, k: 'vaporisation' },
       };
     case 'layerGained':
@@ -1345,8 +1345,13 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
     case 'blazeEnded':
       return {
         t: 'finstatut',
-        txt: `L'embrasement de ${name(e.side)} s'éteint`,
-        o: { c: e.side, k: 'embrasement' },
+        txt:
+          e.by === 'ice'
+            ? `La glace éteint l'embrasement de ${name(e.side)} !`
+            : e.by === 'water'
+              ? `L'eau éteint l'embrasement de ${name(e.side)} !`
+              : `L'embrasement de ${name(e.side)} s'éteint`,
+        o: { c: e.side, k: 'embrasement', s: e.by },
       };
     case 'targeted':
       return {

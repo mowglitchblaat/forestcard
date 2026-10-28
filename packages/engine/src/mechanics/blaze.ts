@@ -7,7 +7,9 @@
 //     ablaze, a % of its max HP (level table: embrasementCalcination, 10 by default; 1 max HP at
 //     least is left).
 // Played again while ablaze: its turns start again (no stacking). Its own skill, not a status: neither
-// purified, nor prolonged by a contamination, nor taken by a mist or put out by the ice.
+// purified, nor prolonged by a contamination, nor taken by a mist. Water and ice put it out:
+//   - a contamination (Eau) puts it out and leaves the card weak (vaporisation, contamination.ts);
+//   - a frost (glace) puts it out, and is spent doing it (as on a burn, mechanics/frost.ts).
 // An effect, offered to ultimates: how many times and how often come from the ultimate's own fields.
 
 import { emit, id, round, type Combat } from '../combat/combat.ts';
@@ -32,12 +34,14 @@ export const blazeState = (): BlazeState => ({ blaze: null });
 export const blazeBonus = (c: Combat, a: Side): number =>
   a.status.blaze ? Math.max(0, round((a.atq * c.levels.embrasementAtq) / 100)) : 0;
 
-function putOut(c: Combat, s: Side): void {
+// by: its turns ran out, or the ice or the water put it out. Returns whether there was one.
+export function putOutBlaze(c: Combat, s: Side, by: 'time' | 'ice' | 'water'): boolean {
   const b = s.status.blaze;
-  if (!b) return;
+  if (!b) return false;
   s.status.blaze = null;
   s.status.attackEffects = s.status.attackEffects.filter((q) => q !== b.burn);
-  emit(c, { type: 'blazeEnded', side: id(c, s) });
+  emit(c, { type: 'blazeEnded', side: id(c, s), by });
+  return true;
 }
 
 export function blazeEffect({ c, o, onUndo }: EffectContext): void {
@@ -58,7 +62,7 @@ export function blazeEffect({ c, o, onUndo }: EffectContext): void {
     burnLevel: +(BLAZE_BURN.niveau as number),
     burnTurns: +(BLAZE_BURN.tours as number),
   });
-  onUndo(() => putOut(c, o));
+  onUndo(() => putOutBlaze(c, o, 'time'));
 }
 
 // End of its turn: it burns itself, then counts down.
@@ -66,7 +70,7 @@ export function blazeEnd(c: Combat, s: Side): Flow {
   const b = s.status.blaze;
   if (!b) return undefined;
   if (s.hp > 0) calcinate(c, s, round((s.maxHp * c.levels.embrasementCalcination) / 100));
-  if (--b.turns <= 0) putOut(c, s);
+  if (--b.turns <= 0) putOutBlaze(c, s, 'time');
   return undefined;
 }
 
