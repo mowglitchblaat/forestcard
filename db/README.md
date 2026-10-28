@@ -2,7 +2,7 @@
 
 ## `migrations/`
 
-Les scripts SQL de la base, numérotés dans l'ordre où ils ont été appliqués (`10-equilibrage.sql` … `42-primes-verrou.sql`). Ils ne sont pas exécutés par un outil : l'auteur les colle à la main dans l'éditeur SQL du dashboard Supabase, une fois, dans l'ordre.
+Les scripts SQL de la base, numérotés dans l'ordre où ils ont été appliqués (`10-equilibrage.sql` … `43-niveaux-statuts.sql`). Ils ne sont pas exécutés par un outil : l'auteur les colle à la main dans l'éditeur SQL du dashboard Supabase, une fois, dans l'ordre.
 
 - **Pas de 01 à 09** : l'auteur ne les a plus. Le schéma complet viendra de ses exports (fonctions, tables, RLS, triggers), voir `docs/legacy/reference.md`.
 - **Le nom du dossier n'est pas `supabase/migrations/`** : le CLI Supabase y attend des noms horodatés (`20261017120000_nom.sql`). Un `supabase db push` lancé par erreur ne comprendrait pas ces fichiers.
