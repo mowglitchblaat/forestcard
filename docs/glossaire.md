@@ -254,6 +254,8 @@ Noms des statuts dans l'état du moteur (`Status`, `packages/engine/src/combat/s
 | rage | `rages` | `statusEnded: 'rage'` |
 | dégâts doublés | `doubleDamageTurns` | aucun : le compteur baisse en fin de tour de la carte |
 
+Pastilles de statut (affichage) : une pastille par statut porté, sur la carte, en combat, avec son niveau en chiffre romain (ou son nombre : malédictions, lames, courant, PV du bouclier). Vue : `SideView.statuses` (`combat/badges.ts`) ; journal : champ `etats` (`docs/legacy/moteur.md`).
+
 ATQ boostée (affichage) : l'ATQ finale d'un coup montrée en direct sur la carte pendant une rage ou des dégâts doublés. Vue : `SideView.rage`, `SideView.doubled` ; journal : champ `boost` (`docs/legacy/moteur.md`).
 | étourdissement | `stunTurns` | `statusEnded: 'stun'` |
 | attaque bloquée | `nextAttackBlocked` (legacy : `blk`) | consommée par la prochaine attaque, souffle ou missile ; retirée par une purification |

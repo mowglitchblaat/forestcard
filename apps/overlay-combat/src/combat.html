@@ -93,6 +93,18 @@ canvas.fx.poison{box-shadow:inset 0 0 40px 12px rgba(34,197,94,.75);animation:pg
 .card.tremble{animation:tremble .52s linear forwards}
 canvas.fx.etourdi{box-shadow:inset 0 0 25px 6px rgba(250,204,21,.5)}
 canvas.fx.saignement{box-shadow:inset 0 0 38px 10px rgba(170,10,20,.75);animation:sg 1.4s infinite alternate}
+/* statuts portés : une pastille par statut sur la carte (champ `etats` du journal), avec son niveau (I, II, III) ou son nombre */
+.etats{position:absolute;left:4%;top:5%;z-index:6;display:flex;flex-direction:column;align-items:flex-start;gap:.3vw;pointer-events:none}
+.et{display:flex;align-items:center;gap:.25vw;padding:.12vw .5vw .12vw .32vw;border-radius:1vw;background:rgba(10,8,20,.84);border:.12vw solid var(--ec);box-shadow:0 0 .6vw var(--ec);font:800 1.1vw/1.3 system-ui,sans-serif;color:#fff;white-space:nowrap}
+.et b{color:var(--ec);font-weight:900;letter-spacing:.04em;text-shadow:0 0 .4vw var(--ec)}
+.et.n2{border-width:.16vw}.et.n3{border-width:.2vw;box-shadow:0 0 .6vw var(--ec),0 0 1.6vw var(--ec);animation:etN3 1.2s ease-in-out infinite alternate}
+.et.new{animation:etIn .4s ease-out}.et.up{animation:etUp .8s ease-out}.et.n3.up{animation:etUp .8s ease-out,etN3 1.2s ease-in-out .8s infinite alternate}
+@keyframes etIn{from{transform:translateX(-1.2vw);opacity:0}}
+@keyframes etUp{0%{transform:scale(1)}30%{transform:scale(1.5);filter:brightness(1.8)}100%{transform:scale(1)}}
+@keyframes etN3{to{box-shadow:0 0 .9vw var(--ec),0 0 2.2vw var(--ec)}}
+/* l'aura d'un statut suit son niveau : discrète au I, normale au II, vive au III */
+.card[data-npoison="1"] canvas.fx.poison,.card[data-nbrulure="1"] canvas.fx.brulure,.card[data-nsaignement="1"] canvas.fx.saignement,.card[data-nfatigue="1"] canvas.fx.fatigue{opacity:.6}
+.card[data-npoison="3"] canvas.fx.poison,.card[data-nbrulure="3"] canvas.fx.brulure,.card[data-nsaignement="3"] canvas.fx.saignement,.card[data-nfatigue="3"] canvas.fx.fatigue{filter:saturate(1.6) brightness(1.3)}
 @keyframes sg{to{box-shadow:inset 0 0 55px 16px rgba(200,15,25,.85)}}
 /* ligne de l'écriteau qui s'allume quand son effet agit */
 .zl{position:absolute;z-index:4;pointer-events:none;border-radius:1.2vw;border:.18vw solid var(--zc);box-shadow:0 0 1vw .3vw var(--zc),inset 0 0 1.4vw .2vw var(--zc);background:color-mix(in srgb,var(--zc) 16%,transparent);mix-blend-mode:screen}
@@ -322,7 +334,7 @@ function ceintureFin(g){titreFin(g);if(!TITRE||g==null)return;const d=TITRE.divi
  if(TITRE.cote===g){beltsMaj(g,d);return}
  BELTS=BELTS.map(L=>L.filter(x=>x!==d));BELTS[g].unshift(d);TITRE.cote=g;ceintureMilieu(false);beltsMaj(0,null);beltsMaj(1,null);beltsMaj(g,d)}
 function panneau(i,j){const im=j.imageCombat||j.image,t=tierRar(j.rar),col=(j.rar&&j.rar.couleur)||'#888',magV=/^Aucun/.test(j.magie);JOUEURS[i]=j;
- $('#p'+i).innerHTML=`<div class="pj">${String(j.pseudo).replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div>${EQUIPE[i]?`<div class="eq">${Array.from({length:EQUIPE[i].of},(_,k)=>`<b class="${k<EQUIPE[i].n-1?'off':''}"></b>`).join('')}</div>`:''}<div class="cw${t!=='co'?' rr rr-'+t:''}" style="--g:${col}"><div class="card" ${im?`style="background-image:url('${urlImg(im)}')"`:''}>${im?'':j.carte}<div class="dosf" style="${dosCSS(j)}">${j.dos?'':'🌲'}</div>${t==='ep'||t==='lg'||t==='ul'?'<span class="shn"></span>':''}${j.imageCombat?'<span class="sv sva" data-v=""></span><span class="sv svp" data-v=""></span>':''}</div>${beltsHtml(i)}</div>
+ $('#p'+i).innerHTML=`<div class="pj">${String(j.pseudo).replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div>${EQUIPE[i]?`<div class="eq">${Array.from({length:EQUIPE[i].of},(_,k)=>`<b class="${k<EQUIPE[i].n-1?'off':''}"></b>`).join('')}</div>`:''}<div class="cw${t!=='co'?' rr rr-'+t:''}" style="--g:${col}"><div class="card" ${im?`style="background-image:url('${urlImg(im)}')"`:''}>${im?'':j.carte}<div class="dosf" style="${dosCSS(j)}">${j.dos?'':'🌲'}</div>${t==='ep'||t==='lg'||t==='ul'?'<span class="shn"></span>':''}${j.imageCombat?'<span class="sv sva" data-v=""></span><span class="sv svp" data-v=""></span>':''}</div>${beltsHtml(i)}<div class="etats"></div></div>
  <div class="nm">${j.carte}</div><div class="bar"><i></i></div><div class="pv"></div>
  <div class="mp"><div class="mw"><div class="mini${magV?' vide':' back dos mag'}" id="m${i}" ${magV?mini(j.magieImg):`style="${dosCSS(j)}"`}>${magV?(j.magieImg?'':j.magie):(j.dos?'':'?')}</div><small>Magie</small></div>
  <div class="mw"><div class="mini back${/^Aucun/.test(j.piege)?' vide':''}${j.dos?' dos':''}" id="g${i}" ${j.dos?`style="background-image:url('${urlImg(j.dos)}')"`:''}>${j.dos?'':'?'}</div><small>Piège</small></div></div>`}
@@ -1220,7 +1232,16 @@ function maj(e){[0,1].forEach(i=>{const p=$('#p'+i);p.querySelector('.bar i').st
  const b=e.boost&&e.boost[i],rg=b?+b[0]||0:0,x2=!!(b&&b[1]),atq=rg||x2?Math.max(0,e.atq[i]*(x2?2:1)+rg):e.atq[i];
  p.querySelector('.pv').textContent=`${Math.max(0,e.pv[i])} / ${e.max[i]} PV · ATQ ${atq}`;
  const sa=p.querySelector('.sva');if(sa){sa.classList.toggle('b-rage',rg>0);sa.classList.toggle('b-x2',x2&&!(rg>0))}
- [['.sva',atq],['.svp',Math.max(0,e.pv[i])]].forEach(([k,v])=>{const n=p.querySelector(k);if(!n)return;const t=String(v);if(n.dataset.v!==t){const nv=n.dataset.v!=='';n.dataset.v=t;if(nv){n.classList.remove('pls');void n.offsetWidth;n.classList.add('pls')}}})})}
+ [['.sva',atq],['.svp',Math.max(0,e.pv[i])]].forEach(([k,v])=>{const n=p.querySelector(k);if(!n)return;const t=String(v);if(n.dataset.v!==t){const nv=n.dataset.v!=='';n.dataset.v=t;if(nv){n.classList.remove('pls');void n.offsetWidth;n.classList.add('pls')}}})});etats(e)}
+// STATUTS PORTÉS (champ `etats` du journal : [statut, nombre] par carte) : une pastille par statut, son niveau en chiffre romain
+// (ou son nombre : malédictions, lames, courant, PV du bouclier) ; la pastille grossit quand le niveau monte ; l'aura suit le niveau
+const ROM=['','I','II','III'],ET={poison:['☠️','#22c55e',1],brulure:['🔥','#f97316',1],saignement:['🩸','#ef4444',1],fatigue:['💤','#94a3b8',1],fracture:['🦴','#fde68a',1],glas:['🔔','#a78bfa',1],gel:['❄️','#7dd3fc',1],foudre:['⚡','#facc15',1],brume:['🌫️','#e2e8f0',1],
+ malediction:['💀','#c084fc',2],lames:['🌪️','#a5f3fc',2],courant:['🌬️','#bae6fd',2],bouclier:['🪨','#d6b88a',3],etourdi:['💫','#facc15',0],contamination:['🧪','#a3e635',0],faiblesse:['💧','#60a5fa',0],enracinement:['🌿','#4ade80',0]};
+function etats(e){[0,1].forEach(i=>{const box=$('#p'+i+' .etats'),card=$('#p'+i+' .card');if(!box)return;const L=(e.etats&&e.etats[i])||[],prev=box._v||{},now={};
+ const html=L.filter(([k])=>ET[k]).map(([k,n])=>{now[k]=n;const [ic,col,m]=ET[k],v=m===1?ROM[n]||'':m===2?'×'+n:m===3?String(n):'',cl=['et'];if(m===1&&n>=2)cl.push('n'+Math.min(3,n));
+  if(!(k in prev))cl.push('new');else if(n>prev[k])cl.push('up');return `<div class="${cl.join(' ')}" style="--ec:${col}">${ic}${v?`<b>${v}</b>`:''}</div>`}).join(''),sig=JSON.stringify(now);
+ if(box._s!==sig){box.innerHTML=html;box._s=sig}box._v=now;
+ if(card)['poison','brulure','saignement','fatigue'].forEach(k=>{if(now[k])card.dataset['n'+k]=now[k];else delete card.dataset['n'+k]})})}
 // BOUNTY : une bourse tombe au milieu de l'écran puis lance des pièces vers chaque joueur,
 // plus de pièces du côté qui reçoit le plus ; aucune pièce pour celui qui ne touche rien (« le gagnant rafle tout »)
 function bourseBounty(parts){const tot=(parts[0]||0)+(parts[1]||0);if(!tot)return;

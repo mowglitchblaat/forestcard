@@ -14,6 +14,7 @@ import { damageFactor } from '../mechanics/double-damage.ts';
 import { flushRevives, type TrapRevive } from '../mechanics/revive.ts';
 import { noticeTrigger, type Triggers } from '../mechanics/triggers.ts';
 import { reactToEvent } from '../mechanics/reaction.ts';
+import { statusBadges } from './badges.ts';
 import { NO_MAGIC, NO_TRAP, newStatus, normalizePassives, type Side } from './state.ts';
 
 // trap: a revive trap ("owner dies") still to reveal; it may be countered before the card reforms
@@ -172,6 +173,9 @@ export function createCombat(rules: Rules, seed: number, onEvent: OnEvent): Comb
         get doubled() {
           return doubledOf(s);
         },
+        get statuses() {
+          return statusBadges(s);
+        },
       };
       views.set(s, view);
     }
@@ -226,6 +230,7 @@ const frozenView = (c: Combat): CombatView => ({
     atq: s.atq,
     rage: rageOf(s),
     doubled: doubledOf(s),
+    statuses: statusBadges(s),
   })),
 });
 
@@ -272,6 +277,7 @@ export const releaseNow = (c: Combat, events: HeldEvent[]) =>
         atq: now[i]?.atq ?? s.atq,
         rage: now[i]?.rage ?? s.rage,
         doubled: now[i]?.doubled ?? s.doubled,
+        statuses: now[i]?.statuses ?? s.statuses,
       })),
     };
     deliver(c, h.event, view);

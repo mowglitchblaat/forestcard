@@ -17,6 +17,8 @@ Chaque événement vaut `{ t, txt, ...champs, tour, pv: [a, b], max: [a, b], atq
 
 Ajout du moteur TS (absent du legacy) : tant qu'une carte est en rage ou a ses dégâts doublés, chaque ligne porte aussi `boost: [[rage, x2], [rage, x2]]` (bonus de rage en cours, `1` si les dégâts sont doublés, sinon `0`). L'overlay affiche alors l'ATQ finale d'un coup (`atq × 2` si doublé, `+ rage`) avec un effet. Une rage cesse de compter dès sa ligne « La rage de … retombe ».
 
+Ajout du rework d'octobre 2026 : tant qu'une carte porte un statut, chaque ligne porte aussi `etats: [[[statut, nombre], …], […]]`, par carte. Le nombre est le niveau (1 à 3) pour les statuts à niveaux (poison, brûlure, saignement, fatigue, fracture, glas, gel, marque de foudre, brume) ; le nombre de malédictions, de lames du cisaillement ou de cumuls du courant ascendant ; les PV du bouclier de sédimentation ; `0` pour un statut sans nombre (étourdissement, contamination, faiblesse, enracinement). L'overlay en fait une pastille par statut sur la carte, et règle l'aura d'après le niveau. Calculé par `packages/engine/src/combat/badges.ts` (`SideView.statuses`).
+
 - `t` : catégorie (`debut`, `tour`, `attaque`, `frappe`, `degats`, `soin`, `statut`, `finstatut`, `stat`, `magie`, `piege`, `ultime`, `vol`, `esquive`, `bloque`, `protege`, `reanim_mort`, `reanim`, `souffle`, `prolongation`, `fin`, `inconnu`).
 - `k` : sous-type, lu par l'overlay pour choisir l'animation.
 - `c` : index de la carte concernée (0 ou 1). On trouve aussi `n` (montant), `d` (delta de stat), `from`, `to`, `cs`, `el`, etc.

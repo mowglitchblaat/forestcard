@@ -235,6 +235,11 @@ export function project(event: DomainEvent, view: CombatView): JournalLine | nul
     ...(sides.some((s) => s.rage || s.doubled)
       ? { boost: sides.map((s) => [s.rage, s.doubled ? 1 : 0]) }
       : {}),
+    // Only while a card carries a status: per card, [key, number] for each status (the level for
+    // the statuses with levels), for the badges of the overlay.
+    ...(sides.some((s) => s.statuses.length)
+      ? { etats: sides.map((s) => s.statuses.map((b) => [b.key, b.n])) }
+      : {}),
   };
 }
 

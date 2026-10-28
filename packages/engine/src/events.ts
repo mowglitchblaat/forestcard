@@ -8,6 +8,7 @@
 // `side` is the index (0 or 1) of the card the event is about. Amounts that come straight from card
 // data keep their raw value (`Num`): the journal prints them as the legacy engine did.
 
+import type { StatusBadge } from './combat/badges.ts';
 import type { Card, Num } from './model/card.ts';
 
 export type SideIndex = number;
@@ -26,6 +27,8 @@ export type SideView = {
   // rage bonus (sum of its rages, 0 without) and double damage (double_degats) still running.
   readonly rage: number;
   readonly doubled: boolean;
+  // The statuses it carries, one badge each (combat/badges.ts), for the overlay.
+  readonly statuses: readonly StatusBadge[];
 };
 export type CombatView = { readonly round: number; readonly sides: readonly SideView[] };
 
