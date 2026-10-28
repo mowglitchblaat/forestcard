@@ -10,7 +10,8 @@
 // purified, nor prolonged by a contamination, nor taken by a mist. Water and ice put it out:
 //   - a contamination (Eau) puts it out and leaves the card weak (vaporisation, contamination.ts);
 //   - a frost (glace) puts it out, and is spent doing it (as on a burn, mechanics/frost.ts).
-// An effect, offered to ultimates: how many times and how often come from the ultimate's own fields.
+// An effect, offered to ultimates (how many times and how often: the ultimate's own fields), magics
+// and traps. A card already contaminated is put out at once.
 
 import { emit, id, round, type Combat } from '../combat/combat.ts';
 import type { EffectContext, EffectRules } from '../combat/effect-context.ts';

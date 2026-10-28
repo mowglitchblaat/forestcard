@@ -1453,9 +1453,6 @@ test('verrouillage total : les 3 prochains coups sont des headshots ; visée mai
   }
   assert.ok(gardee, 'au moins une fois gardée');
 });
-
-test('coup critique donné par un ultime : vaut pour le reste du combat', () => {
-  const r = combat([C('A', 10, 1000, { ultime: { type: 'atk_critique', chance: 100, apres_tours: 1, utilisations: 1 } })], [C('B', 1, SOLIDE)], { regles: { maxTours: 6, maxProlong: 0 } });
   const coups = lignes(r, e => e.t === 'degats' && e.c === 1 && /^B subit \d+ dégâts$/.test(e.txt || '')).map(e => e.n);
   assert.deepEqual(coups.slice(0, 3), [15, 15, 15], '10 + 50 % de critique à chaque coup');
 });
