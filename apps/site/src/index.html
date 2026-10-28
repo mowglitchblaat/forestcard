@@ -42,6 +42,7 @@ table{border-collapse:collapse;width:100%}td,th{padding:6px;border-bottom:1px so
 .stat.card2{display:flex;gap:12px;align-items:center;grid-column:span 2}
 .stat.card2 img{width:80px;border-radius:4px;filter:drop-shadow(0 0 3px var(--g)) drop-shadow(0 0 10px var(--g))}
 .mk{min-width:0}.mk>select{width:100%;max-width:100%;text-overflow:ellipsis}
+.mk .mkd{display:block;margin:4px 0 6px;opacity:.75;line-height:1.35}.mk .mkd:empty{display:none}
 .mk .row{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end}.mk .row label{flex:1 1 130px;min-width:0}.mk .row input,.mk .row select{width:100%;min-width:0;max-width:100%}
 form.f select{max-width:100%;min-width:0}form.f>*{min-width:0}
 .pn{background:#1d1d27;border:1px solid #2c2c38;border-radius:10px;padding:12px 16px;margin:12px 0}.pn h4{margin:0 0 6px}.pn h5{margin:10px 0 4px;color:#c4b5fd;font-size:13px;text-transform:uppercase;letter-spacing:.04em}.pn ul{margin:0;padding-left:20px}.pn li{margin:3px 0;line-height:1.45}
@@ -1662,10 +1663,12 @@ const avTxt=q=>{const n=x=>+x||0,c=q.chance==null||q.chance===''?100:n(q.chance)
 /*@@EDITOR@@*/
 let editId=null,editOld=null;
 const OL={aucun:'Aucun',max:'PV max de la carte avalée',actuels:'PV actuels de la carte avalée',brulure:'🔥 Brûlure',gel:'❄️ Gel',malediction:'💀 Malédiction',poison:'🧪 Poison',saignement:'🩸 Saignement',fatigue:'💤 Fatigue',aleatoire:'🎲 Aléatoire (un statut au hasard à chaque souffle)',pct:'%',pts:'points (unités)',aucune:'Aucune condition : évite la mort une fois',pv_max:'Ses PV max sont au moins égaux au seuil',degats_infliges:'Il a déjà infligé au moins le seuil en dégâts (total)'};
+// une ligne de la liste : le début du texte (la liste reste à la largeur de l'écran) ; le texte entier s'affiche sous la liste, une fois choisi
+const mkCourt=t=>{t=String(t);if(t.length<=78)return t;const c=t.slice(0,76),i=c.lastIndexOf(' ');return (i>50?c.slice(0,i):c).replace(/[ ,;:(·—-]+$/,'')+'…'};
 function mk(el,cat){
-  el.classList.add('mk');el.innerHTML=`<select><option value="">— Aucun —</option>${Object.entries(cat).map(([k,v])=>`<option value="${k}">${v[0]}</option>`).join('')}</select><div class="row"></div>`;
-  const s=el.querySelector('select'),d=el.querySelector('.row');
-  s.onchange=()=>{d.innerHTML=s.value?cat[s.value].slice(1).map(k=>{const [l,t]=P[k];
+  el.classList.add('mk');el.innerHTML=`<select><option value="">— Aucun —</option>${Object.entries(cat).map(([k,v])=>`<option value="${k}" title="${esc(v[0])}">${esc(mkCourt(v[0]))}</option>`).join('')}</select><small class="mkd"></small><div class="row"></div>`;
+  const s=el.querySelector('select'),d=el.querySelector('.row'),txt=el.querySelector('.mkd');
+  s.onchange=()=>{txt.textContent=s.value&&cat[s.value][0].length>78?cat[s.value][0]:'';d.innerHTML=s.value?cat[s.value].slice(1).map(k=>{const [l,t]=P[k];
     return `<label><small>${l}</small><br>${t=='n'?`<input data-k="${k}" type="number" step="any">`:`<select data-k="${k}">${t.map(o=>`<option value="${o}">${OL[o]||o}</option>`).join('')}</select>`}</label>`}).join(''):''};
   return {get(){if(!s.value)return null;const o={type:s.value};
     d.querySelectorAll('[data-k]').forEach(i=>o[i.dataset.k]=i.tagName=='INPUT'?(i.value===''?null:+i.value):i.value);return o},
