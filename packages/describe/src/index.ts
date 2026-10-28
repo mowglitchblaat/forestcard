@@ -23,6 +23,8 @@ import { EDITOR_CONDITIONS, EDITOR_MAGICS, EDITOR_PASSIVES, EDITOR_ULTIMATES } f
 import { plaqueLines } from './plaque.ts';
 
 export * from './categories.ts';
+// The default status levels (engine model/levels.ts), for the admin's level table.
+export { DEFAULT_LEVELS } from '@forestcard/engine';
 export * from './editor.ts';
 export * from './plaque.ts';
 

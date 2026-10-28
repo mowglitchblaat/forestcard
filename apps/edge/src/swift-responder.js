@@ -64,8 +64,9 @@ async function championnat(b) {
   try {
     const dos = await dosDe([a.id, adv.id]);
     await ajouterRaretes([...(a.deck || []), ...(adv.deck || [])]);
+    const niveaux = await reglesNiveaux();
     res = simulerRelais({ pseudo: a.pseudo, deck: a.deck, dos: dos[a.id] }, { pseudo: adv.pseudo, deck: adv.deck, dos: dos[adv.id] },
-      { seed: Math.floor(Math.random() * 1e9), regles: { ...REGLES, gain, perte, nul: perte, equipe: 3 } });
+      { seed: Math.floor(Math.random() * 1e9), regles: { ...REGLES, gain, perte, nul: perte, equipe: 3, niveaux } });
     res.ceintures = await ceinturesDe([a.id, adv.id]);   // avant le combat (titre_conclure n'a pas encore eu lieu)
   } catch (e) {
     console.error('titre :', String(e));
@@ -145,6 +146,15 @@ function debutJourParis() {
   const h = parseInt(midi.toLocaleString('en-GB', { timeZone: 'Europe/Paris', hour: '2-digit', hour12: false }), 10);
   const dec = h - 12;
   return `${j}T00:00:00${dec >= 0 ? '+' : '-'}${String(Math.abs(dec)).padStart(2, '0')}:00`;
+}
+// Niveaux des statuts (Admin > Réglages, rework d'octobre 2026) : ce que fait chaque niveau I, II, III. Absents ou illisibles : valeurs par défaut du moteur.
+async function reglesNiveaux() {
+  try {
+    const r = await rest('reglages_jeu?cle=eq.niveaux_statuts&select=valeur');
+    const v = r.ok && Array.isArray(r.data) && r.data[0] ? r.data[0].valeur : '';
+    const o = v ? JSON.parse(v) : null;
+    return o && typeof o === 'object' ? o : undefined;
+  } catch { return undefined; }
 }
 // Gains des combats (Admin > Réglages) : gold par victoire / défaite / nul, multiplicateur des soirées spéciales (×2…) avec heure de fin facultative
 async function reglesGains() {
@@ -404,9 +414,10 @@ async function traiter(req) {
   try {
     const dos = await dosDe([a.id, adv.id]);
     G = await reglesGains();
+    const niveaux = await reglesNiveaux();
     await ajouterRaretes([...(a.deck || []), ...(adv.deck || [])]);
     res = simuler({ pseudo: a.pseudo, deck: a.deck, dos: dos[a.id] }, { pseudo: adv.pseudo, deck: adv.deck, dos: dos[adv.id] },
-      { seed: Math.floor(Math.random() * 1e9), regles: { ...REGLES, gain: G.gain, perte: G.perte, nul: G.nul } });
+      { seed: Math.floor(Math.random() * 1e9), regles: { ...REGLES, gain: G.gain, perte: G.perte, nul: G.nul, niveaux } });
     res.ceintures = await ceinturesDe([a.id, adv.id]);
   } catch (e) {
     if (mode === 'quotidien') await rpc('rendre_combat_quotidien', { p_joueur: a.id });

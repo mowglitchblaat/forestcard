@@ -22,6 +22,7 @@ const EXPORTED = [
   'lignesEcriteau',
   'COULEURS_CAT',
   'LIBELLES_CAT',
+  'NIVEAUX_DEFAUT',
 ];
 // Names of the admin editor's lists in the legacy page.
 const EDITOR = ['P', 'PAS', 'ULT', 'MAG', 'CON'];

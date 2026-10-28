@@ -3,6 +3,7 @@
 <title>Jeu de cartes</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
+.tniv td,.tniv th{padding:2px 6px;text-align:left}
 *{box-sizing:border-box}body{margin:0;font-family:system-ui,sans-serif;background:#14141a;color:#eee}
 header{display:flex;justify-content:space-between;align-items:center;padding:12px 20px;background:#1d1d27}
 h1{margin:0;font-size:20px}nav{display:flex;gap:6px;padding:10px 20px;flex-wrap:wrap}
@@ -2096,6 +2097,16 @@ function etatBounty(v){const f=v.bounty_fin?new Date(v.bounty_fin):null,fini=f&&
  if(String(v.bounty_actif)!=='1'||fini)return'Bounty inactif.';const pg=+(v.bounty_part_gagnant??70);
  return`🎯 Bounty actif${f&&!isNaN(f)?' jusqu\'au '+f.toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'}):' (sans heure de fin)'} : prime de ${v.bounty_min??5} à ${v.bounty_max??90} gold dans ${v.bounty_chance??30} % des combats, ${pg} % gagnant / ${100-pg} % perdant, et ${v.bounty_tout??10} % de chances que le gagnant rafle tout.`}
 async function sauverGains(o){await q(sb.from('reglages_jeu').upsert(Object.entries(o).map(([cle,val])=>({cle,valeur:String(val)}))))}
+// Tableau des niveaux des statuts (rework d'octobre 2026) : reglages_jeu « niveaux_statuts » (JSON), lu par swift-responder. Vide = valeurs par défaut du moteur.
+const NIV_LIGNES=[['poison','Poison : dégâts par tour'],['saignement','Saignement : % des PV max par tour'],['saignementSoin','Saignement : % de soins en moins'],['brulure','Brûlure : % des PV max par tour'],['fatigue',"Fatigue : % d'ATQ en moins"],['fractureChance','Fracture : % de chances de se blesser'],['fractureAtq',"Fracture : dégâts, % de sa propre ATQ"],['glas','Glas : % des PV max par tour (vitesse de l\'ombre)']];
+const NIV_SEULS=[['calcination','Brûlure : % des dégâts retirés aux PV max (calcination)'],['malediction',"Malédiction : ATQ en moins (sans niveau)"],['faiblesse','Faiblesse (vaporisation) : % de dégâts reçus en plus'],['faiblesseTours','Faiblesse : nombre de tours'],['critique',"Coup critique : puissance, % de l'ATQ (commune à toutes les cartes)"],['foudre','Marque de foudre niveau I : % de dégâts en plus sur le prochain coup']];
+function nivLus(raw){let o={};try{o=raw?JSON.parse(raw):{}}catch{o={}}return o&&typeof o==='object'?o:{}}
+function nivForm(raw){const o=nivLus(raw),d=NIVEAUX_DEFAUT,val=(k,i)=>{const x=i==null?o[k]:(Array.isArray(o[k])?o[k][i]:undefined);return x==null||x===''?(i==null?d[k]:d[k][i]):x};
+ return`<form class="f" id="fniv" style="flex-direction:column;align-items:flex-start"><b>📊 Niveaux des statuts</b>
+  <small>Ce que fait chaque niveau (I, II, III) : la carte ne garde que son niveau, sa durée et sa chance. Posés l'un sur l'autre, les niveaux s'additionnent (I + II = III, III au plus). Pris en compte dès le combat suivant. ${raw?'':'(Valeurs par défaut du moteur pour l\'instant.)'}</small>
+  <table class="tniv"><tr><th></th><th>I</th><th>II</th><th>III</th></tr>${NIV_LIGNES.map(([k,l])=>`<tr><td><small>${esc(l)}</small></td>${[0,1,2].map(i=>`<td><input name="${k}_${i}" type="number" min="0" max="1000" step="0.5" value="${esc(val(k,i))}" style="width:70px"></td>`).join('')}</tr>`).join('')}</table>
+  <div class="row">${NIV_SEULS.map(([k,l])=>`<label><small>${esc(l)}</small><br><input name="${k}" type="number" min="0" max="1000" step="0.5" value="${esc(val(k))}" style="width:80px"></label>`).join('')}</div>
+  <div class="row"><button>Enregistrer</button><button type="button" class="sec" id="nivdef">↩ Valeurs par défaut</button></div></form>`}
 async function aReglages(){
   const r=await sb.from('reglages_jeu').select('cle,valeur');
   if(r.error){$('#sub').innerHTML='<p class="ko">Les réglages ne sont pas encore disponibles côté Supabase (07-dos-et-reglages.sql). Message de Supabase : <b>'+esc(r.error.message)+'</b></p>';return}
@@ -2122,6 +2133,7 @@ async function aReglages(){
    <form class="f" id="fma"><label><b>Combats contre le même adversaire par jour</b> (anti-farm, !combat et duels)<br>
     <small>Nombre maximum de combats entre deux mêmes joueurs par jour, dans les deux sens (A contre B + B contre A). 0 = pas de limite. Repart de zéro à minuit, heure de Paris.</small><br>
     <input name="n" type="number" min="0" max="50" value="${esc(v.combats_meme_adversaire_par_jour??3)}" style="width:90px"></label><button>Enregistrer</button></form>
+   ${nivForm(v.niveaux_statuts)}
    <form class="f" id="fgain" style="flex-direction:column;align-items:flex-start"><b>💰 Gains des combats</b>
     <small>Gold gagné à chaque combat (!combat et duels), pour les deux joueurs. Le multiplicateur sert aux soirées spéciales : ×2 = soirée double gains. Avec une heure de fin, il revient tout seul à ×1 ensuite (vide = jusqu'à ce que tu le changes).</small>
     <div class="row"><label><small>Victoire</small><br><input name="gv" type="number" min="0" max="10000" value="${esc(v.gain_victoire??50)}" style="width:80px"></label>
@@ -2187,6 +2199,11 @@ async function aReglages(){
     await q(sb.from('reglages_jeu').upsert({cle:'vitesse_combat',valeur:v}));uiAlert('Vitesse des combats enregistrée : '+e.target.v.selectedOptions[0].textContent+'. (Si rien ne change en live, lance 27-vitesse-combat.sql dans Supabase.)');aReglages()};
   $('#fr').onsubmit=async e=>{e.preventDefault();const n=Math.max(0,Math.min(50,parseInt(e.target.n.value,10)||0));
     await q(sb.from('reglages_jeu').upsert({cle:'combats_gratuits_par_jour',valeur:String(n)}));uiAlert('Enregistré : '+n+' combat'+(n>1?'s':'')+' gratuit'+(n>1?'s':'')+' par jour.');aReglages()};
+  $('#fniv').onsubmit=async e=>{e.preventDefault();const f=e.target,n=x=>Math.max(0,Math.min(1000,+x||0)),o={};
+    NIV_LIGNES.forEach(([k])=>{o[k]=[0,1,2].map(i=>n(f[k+'_'+i].value))});NIV_SEULS.forEach(([k])=>{o[k]=n(f[k].value)});
+    await q(sb.from('reglages_jeu').upsert({cle:'niveaux_statuts',valeur:JSON.stringify(o)}));uiAlert('Niveaux des statuts enregistrés : ils comptent dès le combat suivant.');aReglages()};
+  $('#nivdef').onclick=async()=>{if(!await uiConfirm('Revenir aux valeurs par défaut du moteur pour tous les niveaux ?'))return;
+    await q(sb.from('reglages_jeu').upsert({cle:'niveaux_statuts',valeur:''}));uiAlert('Niveaux remis aux valeurs par défaut.');aReglages()};
   $('#fgain').onsubmit=async e=>{e.preventDefault();const f=e.target,n=(x,max)=>Math.max(0,Math.min(max,+x||0));
     const fin=f.fin.value?new Date(f.fin.value):null;if(fin&&isNaN(fin))return uiAlert('Heure de fin invalide.');
     await sauverGains({gain_victoire:Math.round(n(f.gv.value,10000)),gain_defaite:Math.round(n(f.gd.value,10000)),gain_nul:Math.round(n(f.gn.value,10000)),multiplicateur_gains:n(f.mul.value,10),multiplicateur_fin:fin?fin.toISOString():''});

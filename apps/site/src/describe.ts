@@ -12,6 +12,8 @@ export {
   CATEGORY_STYLES as COULEURS_CAT,
   CATEGORY_LABELS as LIBELLES_CAT,
 } from '@forestcard/describe';
+// The default status levels, for the admin's level table (Réglages).
+export { DEFAULT_LEVELS as NIVEAUX_DEFAUT } from '@forestcard/describe';
 // The admin editor's lists, under the names the page uses.
 export {
   EDITOR_FIELDS as P,
