@@ -10,6 +10,7 @@ import type { EffectContext, EffectRules } from '../combat/effect-context.ts';
 import type { Flow } from '../combat/flow.ts';
 import type { Side, Status } from '../combat/state.ts';
 import type { DispelledStatus } from '../events.ts';
+import { atqLostToCurses } from './curse.ts';
 import { knellPurified } from './knell.ts';
 
 export type ScheduledPurification = { target: Side; every: number; left: number; counter: number };
@@ -34,8 +35,7 @@ export const hasPurifiableStatus = (z: Status) =>
   z.fractures.length ||
   z.fatigues.length ||
   z.nextAttackCancelled > 0 ||
-  z.nextAttackBlocked > 0 ||
-  z.atqLostToCurses > 0;
+  z.nextAttackBlocked > 0;
 
 // silent: a revive purifies without announcing it.
 export function purify(c: Combat, t: Side, silent?: boolean): void {
@@ -49,7 +49,7 @@ export function purify(c: Combat, t: Side, silent?: boolean): void {
   z.fractures.forEach(() => removed.push('fracture'));
   if (knellPurified(c, t)) removed.push('glas');
   const attackWasCancelled = z.nextAttackCancelled > 0 || z.nextAttackBlocked > 0;
-  const curseBack = z.atqLostToCurses;
+  const curseBack = atqLostToCurses(t);
   const fatigueBack = z.fatigues.reduce((q, f) => q + (f.lost || 0), 0);
   if (attackWasCancelled) removed.push('annule');
   z.dots = [];
@@ -60,8 +60,6 @@ export function purify(c: Combat, t: Side, silent?: boolean): void {
   z.fatigues = [];
   z.nextAttackCancelled = 0;
   z.nextAttackBlocked = 0;
-  z.atqLostToCurses = 0;
-  z.curseReturns = [];
   if (!silent)
     emit(c, {
       type: 'purified',

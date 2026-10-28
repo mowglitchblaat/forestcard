@@ -81,15 +81,15 @@ Clés de `EFFECT_TYPES`, exécutées par `applyEffect` (`packages/engine/src/com
 | `echange_pv` | échange les PV (et PV max) des deux cartes | `stats.ts` |
 | `echange_tout` | échange ATQ et PV | `stats.ts` |
 | `echange_atq_def` | échange l'ATQ et les PV d'une même carte (l'adversaire par défaut) ; ses PV max deviennent ses nouveaux PV (5 ATQ → 5/5 PV) | `stats.ts` |
-| `malediction` | l'ATQ baisse à chaque début de tour, puis revient petit à petit | `curse.ts` |
-| `saignement` | X % des PV max perdus en fin de tour, soins réduits | `bleed.ts` |
-| `poison_effet` | dégâts fixes en fin de tour | `dot.ts` |
-| `brulure_effet` | X % des PV max en fin de tour ; chaque dégât de brûlure **calcine** des PV max, pour de bon (la purification arrête la brûlure, pas la calcination) : autant que ses dégâts, ou la part réglée par la carte (`calcine`, % des dégâts ; vide = 100 %, 0 = aucune) ; des brûlures cumulées additionnent aussi leur calcination | `dot.ts` |
-| `glas_effet` | **le Glas**, la mécanique anti-survie : une ombre avance sur la barre de vie de la cible depuis la gauche, de `glasv` % de ses PV max à chaque début de son tour ; dès que ses PV passent sous l'ombre, elle meurt, sans évite la mort ni réanimation. Relancé, il accélère de moins en moins (+1/2, +1/4…). Une purification brise un de ses 3 crânes et fait reculer l'ombre d'un tiers, la 3e l'efface | `knell.ts` |
+| `malediction` | sans niveau : −3 d'ATQ (tableau des niveaux, `malediction`) au début du tour de la carte maudite, pendant `tours` de ses tours, puis l'ATQ revient. Elle ne s'aggrave pas d'elle-même ; une autre malédiction ajoute ses −3, avec sa propre durée | `curse.ts` |
+| `saignement` | **à niveaux** : % des PV max perdus en fin de tour et soins réduits, selon le niveau | `bleed.ts` |
+| `poison_effet` | **à niveaux** : dégâts fixes en fin de tour, selon le niveau | `dot.ts` |
+| `brulure_effet` | **à niveaux** : % des PV max en fin de tour, selon le niveau ; chaque dégât de brûlure **calcine** des PV max, pour de bon (la purification arrête la brûlure, pas la calcination) : une part de ses dégâts, la même pour toutes les cartes (tableau des niveaux, `calcination`, 100 % par défaut ; l'ancien réglage par carte `calcine` ne compte plus). Posée sur une carte gelée, elle fait fondre la glace d'un niveau avec un choc thermique (un tick tout de suite), et la brûlure part avec la glace | `dot.ts` |
+| `glas_effet` | **le Glas**, la mécanique anti-survie : une ombre avance sur la barre de vie de la cible depuis la gauche, d'un % de ses PV max à chaque début de son tour, selon le niveau ; dès que ses PV passent sous l'ombre, elle meurt, sans évite la mort ni réanimation. Relancé, il monte de niveau (III au plus). Une purification brise un de ses 3 crânes et fait reculer l'ombre d'un tiers, la 3e l'efface | `knell.ts` |
 | `gel` | +1 niveau de gel (3 au plus) : 1 **givre** (`annul` % d'attaque annulée, et autant de points d'esquive en moins), 2 **gelée** (×2,5 pour les deux, 100 % au plus), 3 **glaciation** (n'attaque pas à son tour suivant, puis la glace éclate : `eclat` dégâts, 10 par défaut, et le gel est fini). Chaque gel garde les plus fortes valeurs et relance la durée (`tours`). Une carte solidifiée ne dépasse pas le niveau 2 ; une fracture sur une carte gelée fait éclater la glace ; la purification retire le gel. **Feu contre glace** : geler une carte qui brûle éteint le feu (la brûlure part, aucun gel n'est posé) ; brûler une carte gelée fait fondre la glace d'un niveau et inflige un tick de brûlure tout de suite (choc thermique) | `frost.ts`, `dot.ts` |
-| `fracture` | chance de se blesser en attaquant ; brise la solidification | `fracture.ts` |
-| `fatigue` | ATQ baissée pendant X tours, rendue ensuite | `fatigue.ts` |
-| `rage` | dégâts en plus par coup pendant X tours, puis fatigue | `rage.ts` |
+| `fracture` | **à niveaux** : chance de se blesser en attaquant et dégâts en % de sa propre ATQ, selon le niveau ; brise la solidification | `fracture.ts` |
+| `fatigue` | **à niveaux** : un % de l'ATQ en moins pendant `fattours` tours, rendu ensuite | `fatigue.ts` |
+| `rage` | dégâts en plus par coup pendant X tours, puis une fatigue dont le niveau suit l'intensité de la rage (bonus jusqu'à 5 : I ; jusqu'à 12 : II ; plus : III), ou le niveau réglé sur la carte (`fatniv`) | `rage.ts` |
 | `etourdir_effet` | étourdit la cible pendant X tours ; `essais` jets de chance, le premier succès suffit ; sans effet sur une carte solidifiée | `stun.ts` |
 | `souffle` | dégâts, puis chance de poser un statut élémentaire (`statut` ; `aleatoire` : tiré à chaque souffle) ; `rechance` % de souffler encore, jusqu'au premier échec, `remax` souffles en plus au maximum (3 par défaut). Esquivable, blocable et réductible ; le renvoi ne renvoie que les dégâts | `breath.ts` |
 | `purification` | retire les statuts négatifs (sauf l'étourdissement), rend l'ATQ perdue ; éventuellement répétée | `purification.ts` |
@@ -212,18 +212,28 @@ Clés de `ULTIMATE_TRIGGER_TYPES`, dans le champ `udecl` de l'ultime, avec leur 
 
 Un déclencheur d'événement pose un drapeau sur l'emplacement d'ultime (`triggered`) ; l'ultime part au prochain passage de `ultimate`, au tour de sa carte, et le drapeau retombe. Un ultime volé ou copié arrive sans drapeau. Les faits `purify`, `avoidDeath`, `revive`, `atqDown` et `maxDown` ne servent qu'aux ultimes : aucune condition de piège ne les lit, et ils ne lancent pas de scan de piège.
 
+## Niveaux de statut
+
+Depuis le rework d'octobre 2026, poison, saignement, brûlure, fatigue, fracture et Glas ont un **niveau**, I à III. Ce que fait chaque niveau vit dans un seul tableau (`packages/engine/src/model/levels.ts`, `DEFAULT_LEVELS`), réglable par la règle `niveaux` (`Rules`) ; la carte ne garde que son niveau, sa durée et sa chance.
+
+| Terme du jeu | Clé en base / règle | Identifiant TS | Sens |
+|---|---|---|---|
+| niveau | `niveau` (1 à 3) sur l'effet, le passif ou l'effet d'attaque ; `msaignniv` (saignement de la mutation), `fatniv` (fatigue de fin de rage) | `levelOf()`, `explicitLevel()` | I, II ou III. Posé sur un statut déjà là, les niveaux s'additionnent (I + II = III), III au plus, et la plus longue durée reste |
+| tableau des niveaux | règle `niveaux` : `poison`, `saignement`, `saignementSoin`, `brulure`, `calcination`, `fatigue`, `fractureChance`, `fractureAtq`, `glas`, `malediction` | `StatusLevels`, `levelTable()`, `Combat.levels` | les valeurs de chaque niveau ; une valeur absente garde sa valeur par défaut (poison 4/8/14, saignement 3/5/8 % et −25/−50/−75 % de soins, brûlure 2/4/7 %, calcination 100 %, fatigue 15/30/50 %, fracture 15/30/50 % de chances et 10/20/30 % de l'ATQ, Glas 5/8/12 %, malédiction 3) |
+| niveau d'une ancienne carte | anciennes valeurs (`degtour`, `pctpv`, `fatval`, `fchance`, `glasv`, `sval`, `msaignpct`) | `legacyLevel()` | une carte sans `niveau` prend le niveau dont la valeur par défaut est la plus proche de son ancienne valeur (à égalité, le plus bas). Même règle que la conversion des cartes en base |
+
 ## Statuts (état interne)
 
 Noms des statuts dans l'état du moteur (`Status`, `packages/engine/src/combat/state.ts`) ; la correspondance avec les noms abrégés du legacy est dans `docs/legacy/moteur.md`.
 
 | Statut | Identifiant TS | Événement de fin |
 |---|---|---|
-| malédiction | `curses`, `curseReturns`, `atqLostToCurses` | `statusEnded: 'curse'` |
-| saignement | `bleeds` | `statusEnded: 'bleed'` |
-| brûlure, poison | `dots` (`kind: 'brûlure' \| 'poison'`) | `statusEnded: 'burn' \| 'poison'` |
+| malédiction | `curses` (une entrée par malédiction : `lost`, `turns`, `pending`) | `statusEnded: 'curse'` (à la fin de la dernière) |
+| saignement | `bleeds` (`level`, `turns`) | `statusEnded: 'bleed'` |
+| brûlure, poison | `dots` (`kind: 'brûlure' \| 'poison'`, `level`, `turns`) | `statusEnded: 'burn' \| 'poison'` |
 | gel | `frosts` | `statusEnded: 'frost'` |
-| fracture | `fractures` | `statusEnded: 'fracture'` |
-| fatigue | `fatigues` | `statusEnded: 'fatigue'` |
+| fracture | `fractures` (une au plus : `level`, `turns`) | `statusEnded: 'fracture'` |
+| fatigue | `fatigues` (`level`, `lost`, `turns`) | `statusEnded: 'fatigue'` |
 | rage | `rages` | `statusEnded: 'rage'` |
 | dégâts doublés | `doubleDamageTurns` | aucun : le compteur baisse en fin de tour de la carte |
 

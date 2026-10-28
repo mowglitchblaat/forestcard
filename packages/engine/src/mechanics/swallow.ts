@@ -3,8 +3,9 @@
 // drop. Once swallowed, the target is chewed on each of the swallower's turns (X % of its max or
 // current HP), X times (3), then spat out; the swallower then digests X turns without attacking.
 // Meanwhile neither attacks, and whatever targeted the swallowed card hits the swallower. If the
-// target carries negative statuses, they move to the swallower right away (x1.5 intensity and
-// duration): one bite, then the target is spat out.
+// target carries negative statuses, they move to the swallower right away, stronger (one level more
+// for a leveled status, x1.5 for the frost; a curse stays a curse) and x1.5 longer: one bite, then
+// the target is spat out.
 
 import type { Attack } from '../combat/attack.ts';
 import { emit, id, opponent, over, roll, round, type Combat } from '../combat/combat.ts';
@@ -16,7 +17,7 @@ import type { DispelledStatus } from '../events.ts';
 import { grantAttackEffect } from './attack-effects.ts';
 import type { EffectData } from '../model/card.ts';
 import { bleed } from './bleed.ts';
-import { curse } from './curse.ts';
+import { atqLostToCurses, curse } from './curse.ts';
 import { damageOverTime } from './dot.ts';
 import { fatigue } from './fatigue.ts';
 import { freeze } from './frost.ts';
@@ -93,7 +94,7 @@ function transferStatuses(c: Combat, a: Side, d: Side): void {
   const curses = z.curses.slice();
   const bleeds = z.bleeds.slice();
   const fatigues = z.fatigues.slice();
-  const atqBack = z.atqLostToCurses + fatigues.reduce((q, f) => q + (f.lost || 0), 0);
+  const atqBack = atqLostToCurses(d) + fatigues.reduce((q, f) => q + (f.lost || 0), 0);
   const kinds = [
     ...new Set<DispelledStatus>([
       ...dots.map((x): DispelledStatus => (x.kind === 'poison' ? 'poison' : 'brulure')),
@@ -106,8 +107,6 @@ function transferStatuses(c: Combat, a: Side, d: Side): void {
   z.dots = [];
   z.frosts = [];
   z.curses = [];
-  z.atqLostToCurses = 0;
-  z.curseReturns = [];
   z.bleeds = [];
   z.fatigues = [];
   emit(c, { type: 'statusesTransferred', side: id(c, a), from: id(c, d), kinds });
@@ -122,16 +121,8 @@ function transferStatuses(c: Combat, a: Side, d: Side): void {
       cause: 'statusesLeft',
     });
   }
-  dots.forEach((x) =>
-    damageOverTime(
-      c,
-      a,
-      x.kind,
-      round(x.amount * 1.5),
-      longer(x.turns),
-      x.amount > 0 ? (x.calc * 100) / x.amount : 100,
-    ),
-  );
+  // stronger in the swallower: one level more (III at most), half as long again
+  dots.forEach((x) => damageOverTime(c, a, x.kind, x.level + 1, longer(x.turns)));
   frosts.forEach((f) =>
     freeze(
       c,
@@ -142,11 +133,9 @@ function transferStatuses(c: Combat, a: Side, d: Side): void {
       f.level,
     ),
   );
-  curses.forEach((x) => curse(c, a, round(x.amount * 1.5), longer(x.turns)));
-  bleeds.forEach((b) =>
-    bleed(c, a, round(b.pct * 1.5), Math.min(100, round(b.healReduction * 1.5)), longer(b.turns)),
-  );
-  fatigues.forEach((f) => fatigue(c, a, round(f.amount * 1.5), 'pts', longer(f.turns)));
+  curses.forEach((x) => curse(c, a, longer(x.turns)));
+  bleeds.forEach((b) => bleed(c, a, b.level + 1, longer(b.turns)));
+  fatigues.forEach((f) => fatigue(c, a, f.level + 1, longer(f.turns)));
 }
 
 // Played after the swallower's attack.

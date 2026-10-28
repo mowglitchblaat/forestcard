@@ -80,6 +80,7 @@ export type StatCause =
   | 'curseTick' // loss on a curse tick
   | 'curseFading' // a curse loss coming back
   | 'curseLifted' // by a purification
+  | 'curseRemoved' // the magic that laid it is gone
   | 'statusesLeft' // statuses moved to the swallower
   | 'mutation' // insect mutation, level I
   | 'molt' // a molt: ATQ and max HP lost
@@ -293,21 +294,43 @@ export type DomainEvent =
   | { type: 'rageStarted'; side: SideIndex; bonus: number; turns: number }
   | { type: 'regenStarted'; side: SideIndex; amount: number; turns: number }
   | { type: 'regenEnded'; side: SideIndex }
-  | { type: 'curseApplied'; side: SideIndex; stacked: boolean; amount: number; turns: number }
+  // curse: no level; amount: ATQ this curse takes, count: curses on the card now
+  | {
+      type: 'curseApplied';
+      side: SideIndex;
+      stacked: boolean;
+      amount: number;
+      count: number;
+      turns: number;
+    }
+  // leveled statuses (model/levels.ts): level after this one is laid (levels add up, III at most), and
+  // what that level does
   | {
       type: 'bleedApplied';
       side: SideIndex;
       stacked: boolean;
+      level: number;
       pct: number;
       healReduction: number;
       turns: number;
     }
-  | { type: 'dotApplied'; side: SideIndex; kind: 'poison' | 'burn'; stacked: boolean }
+  // value: poison damage per tick, or burn % of max HP per tick
+  | {
+      type: 'dotApplied';
+      side: SideIndex;
+      kind: 'poison' | 'burn';
+      stacked: boolean;
+      level: number;
+      value: number;
+      turns: number;
+    }
   | {
       type: 'fatigueApplied';
       side: SideIndex;
       stacked: boolean;
-      amount: number;
+      level: number;
+      pct: number; // % of ATQ at that level
+      amount: number; // ATQ the fatigue holds in all
       turns: number;
       afterRage: boolean;
     }
@@ -325,11 +348,20 @@ export type DomainEvent =
   | { type: 'thawed'; side: SideIndex; level: number } // fire melts the ice: frost one level down
   | { type: 'fireExtinguished'; side: SideIndex } // ice puts the fire out: burn gone, no frost laid
   // the knell: laid (speed, % of max HP per turn), its shadow rising, pushed back, and taking the card
-  | { type: 'knellLaid'; side: SideIndex; speed: number; stacked: boolean }
+  | { type: 'knellLaid'; side: SideIndex; level: number; speed: number; stacked: boolean }
   | { type: 'knellRose'; side: SideIndex; threshold: number }
   | { type: 'knellReceded'; side: SideIndex; threshold: number; skulls: number }
   | { type: 'knelled'; side: SideIndex }
-  | { type: 'fractured'; side: SideIndex; chance: number; damage: number; turns: number }
+  // fracture: at its level, the chance to get hurt when attacking and the damage, % of its own ATQ
+  | {
+      type: 'fractured';
+      side: SideIndex;
+      stacked: boolean;
+      level: number;
+      chance: number;
+      atqPct: number;
+      turns: number;
+    }
   | { type: 'solidified'; side: SideIndex; turns: number }
   | { type: 'solidBroken'; side: SideIndex }
   | { type: 'stunned'; side: SideIndex; turns: number; by: 'effect' | 'attack' }

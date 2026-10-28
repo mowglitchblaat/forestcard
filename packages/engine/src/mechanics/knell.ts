@@ -1,10 +1,10 @@
-// The Knell (le Glas): the ultimate anti-survival status. An ominous shadow rises on the HP bar of
-// the card it tolls for, from the left: at the start of each of the card's turns it grows by its
-// speed (`glasv`, % of max HP per turn). As soon as the card's HP are under the shadow, the knell
-// tolls: the card dies, with no avoid-death and no revive.
-//   - Laid again, it speeds up, less and less: +1/2 of the new speed, then +1/4, +1/8…
+// The Knell (le Glas): the ultimate anti-survival status, in levels I to III (model/levels.ts). An
+// ominous shadow rises on the HP bar of the card it tolls for, from the left: at the start of each of
+// the card's turns it grows by its speed (% of max HP per turn, by level). As soon as the card's HP
+// are under the shadow, the knell tolls: the card dies, with no avoid-death and no revive.
+//   - Laid again, the levels add up (III at most): it speeds up. Its skulls are back to 3.
 //   - A purification breaks one of its 3 skulls and pushes the shadow back by a third; the 3rd
-//     purification lifts it. Laid again, its skulls are back to 3.
+//     purification lifts it.
 //   - Checked when the shadow grows and after every damage the card takes.
 //
 // Laid by: a passive or a basic attack effect (glas: `chance` % on each hit), an effect (glas_effet:
@@ -15,10 +15,11 @@ import { damage } from '../combat/damage.ts';
 import type { EffectContext, EffectRules } from '../combat/effect-context.ts';
 import type { Flow } from '../combat/flow.ts';
 import type { Side } from '../combat/state.ts';
-import type { EffectData, Num } from '../model/card.ts';
+import type { EffectData } from '../model/card.ts';
+import { addLevels, at, levelOf } from '../model/levels.ts';
 import { mistTakes } from './mist.ts';
 
-export type Knell = { threshold: number; speed: number; tolls: number; skulls: number };
+export type Knell = { threshold: number; level: number; skulls: number };
 
 // Its part of a card's status (combat/state.ts).
 export type KnellState = {
@@ -26,25 +27,29 @@ export type KnellState = {
 };
 export const knellState = (): KnellState => ({ knell: null });
 
-const pct = (v: Num | undefined): number => {
-  const n = parseFloat(String(v));
-  return Number.isFinite(n) && n > 0 ? n : 0;
-};
 const round1 = (n: number): number => Math.round(n * 10) / 10;
 
+// The speed of its shadow, % of max HP per turn.
+export const knellSpeed = (c: Combat, k: Knell): number => at(c.levels.glas, k.level);
+
 // The knell tolls for d (or tolls again, faster).
-export function toll(c: Combat, d: Side, speed: number): void {
-  if (d.hp <= 0 || speed <= 0) return;
-  if (mistTakes(c, d, 'knell', (t) => toll(c, t, speed))) return;
+export function toll(c: Combat, d: Side, level: number): void {
+  if (d.hp <= 0 || level <= 0) return;
+  if (mistTakes(c, d, 'knell', (t) => toll(c, t, level))) return;
   const k = d.status.knell;
-  if (!k) d.status.knell = { threshold: 0, speed: round1(speed), tolls: 1, skulls: 3 };
+  if (!k) d.status.knell = { threshold: 0, level: addLevels(0, level), skulls: 3 };
   else {
-    k.speed = round1(k.speed + speed * 0.5 ** k.tolls);
-    k.tolls++;
+    k.level = addLevels(k.level, level);
     k.skulls = 3;
   }
   const now = d.status.knell as Knell;
-  emit(c, { type: 'knellLaid', side: id(c, d), speed: now.speed, stacked: !!k });
+  emit(c, {
+    type: 'knellLaid',
+    side: id(c, d),
+    level: now.level,
+    speed: knellSpeed(c, now),
+    stacked: !!k,
+  });
 }
 
 // HP under the shadow: the card is taken.
@@ -68,7 +73,7 @@ export function knellCheck(c: Combat, s: Side): void {
 export function knellRises(c: Combat, s: Side): Flow {
   const k = s.status.knell;
   if (!k || s.hp <= 0) return undefined;
-  k.threshold = Math.min(100, round1(k.threshold + k.speed));
+  k.threshold = Math.min(100, round1(k.threshold + knellSpeed(c, k)));
   emit(c, { type: 'knellRose', side: id(c, s), threshold: k.threshold });
   knellCheck(c, s);
   return s.hp <= 0 ? 'stop' : undefined;
@@ -90,11 +95,11 @@ export function knellPurified(c: Combat, s: Side): boolean {
 }
 
 export function knellEffect({ c, e, statusTarget }: EffectContext): void {
-  toll(c, statusTarget(), pct(e.glasv));
+  toll(c, statusTarget(), levelOf('glas', e));
 }
 
 export function knellOnHit(c: Combat, q: EffectData, d: Side): void {
-  if (roll(c, q.chance)) toll(c, d, pct(q.glasv));
+  if (roll(c, q.chance)) toll(c, d, levelOf('glas', q));
 }
 
 // Its effects (the registry of effects.ts).

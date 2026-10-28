@@ -5,7 +5,7 @@
 // negative status on it. What each level brings, on top of the previous ones:
 //   I   ATQ +matq and HP +mpv (unit `u`: points or % of its ATQ / max HP);
 //   II  damage taken −mreduc %, and its attack can make the target bleed (msaignch % of chances,
-//       msaignpct % of max HP per turn, msaigntours turns);
+//       its level msaignniv, from msaignpct % of max HP when empty, msaigntours turns);
 //   III an instant molt (the molt values of the mutation, or of the card's mue passive), dodge
 //       +mesq %, and a parasitic link on the opponent for lientours turns (its heals feed the card).
 //
@@ -15,6 +15,7 @@
 // marks, a targeting mark and a parasitic link on it are removed; it loses mueatq ATQ (unit uatq)
 // and muepv max HP (unit upv; 10 % each when empty). It can molt again later.
 
+import { explicitLevel, legacyLevel } from '../model/levels.ts';
 import { emit, id, opponent, roll, round, type Combat } from '../combat/combat.ts';
 import type { EffectContext, EffectRules } from '../combat/effect-context.ts';
 import type { Flow } from '../combat/flow.ts';
@@ -123,15 +124,15 @@ function mutate(c: Combat, s: Side, p: EffectData): void {
       emit(c, { type: 'defenseChanged', side: id(c, s), kind: 'reduce', delta: reduce });
     }
     const pct = +(p.msaignpct as number) || 0;
-    if (pct > 0) {
+    const set = explicitLevel(p.msaignniv);
+    if (pct > 0 || set) {
       const chance = filled(p.msaignch) ? +(p.msaignch as number) || 0 : 100;
       grantAttackEffect(
         s,
         {
           type: 'saignement',
           chance,
-          pctpv: pct,
-          reducsoin: 0,
+          niveau: set || legacyLevel('saignement', { pctpv: pct }),
           tours: Math.max(1, parseInt(String(p.msaigntours), 10) || 2),
         },
         false,

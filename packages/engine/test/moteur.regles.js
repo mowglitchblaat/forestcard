@@ -226,9 +226,9 @@ test('« évite la mort » passe avant la réanimation, et les dégâts s\'affic
   assert.ok(r.journal.findIndex(e => e.t === 'reanim_mort') === -1 || r.journal.findIndex(e => e.t === 'reanim_mort') > i, 'pas de réanimation avant');
 });
 
-test('valeurs en % : calculées sur la stat de la carte (7 % de 300 ATQ = 21)', () => {
-  const r1 = combat([C('a', 1, SOLIDE), MAG('Lourdeur', { type: 'fatigue', ciblem: 'adversaire', fatval: 7, u: 'pct', fattours: 2 })], [C('b', 300, SOLIDE)]);
-  assert.ok(lignes(r1, e => /ATQ de b −21 \(fatigue\)/.test(e.txt || '')).length > 0, 'fatigue 7 % de 300 = −21');
+test('valeurs en % : calculées sur la stat de la carte (fatigue I : 15 % de 300 ATQ = 45)', () => {
+  const r1 = combat([C('a', 1, SOLIDE), MAG('Lourdeur', { type: 'fatigue', ciblem: 'adversaire', niveau: 1, fattours: 2 })], [C('b', 300, SOLIDE)]);
+  assert.ok(lignes(r1, e => /ATQ de b −45 \(fatigue\)/.test(e.txt || '')).length > 0, 'fatigue I : 15 % de 300 = −45');
   const r2 = combat([C('a', 200, SOLIDE), MAG('Force', { type: 'atq_mod', cible: 'soi', val: 10, u: 'pct' })], [C('b', 1, SOLIDE)]);
   assert.ok(lignes(r2, e => /ATQ de a \+20/.test(e.txt || '')).length > 0, '+10 % de 200 = +20');
   const r3 = combat([C('a', 1, SOLIDE, { passif: { type: 'renvoi', val: 10, u: 'pct' } })], [C('b', 300, SOLIDE)]);
@@ -270,32 +270,36 @@ test('gel : la carte gelée perd autant de points d\'esquive que sa chance d\'at
 });
 
 test('brûlure : chaque dégât de brûlure calcine autant de PV max, pour de bon', () => {
-  const r = combat([C('Feu', 5, SOLIDE, { passif: { type: 'brulure', chance: 100, pctpv: 5, tours: 2 } })], [C('b', 5, 200)], { regles: { maxTours: 3, maxProlong: 0 } });
-  const iB = r.journal.findIndex(e => e.txt === 'b subit 10 (brûlure)');
-  assert.ok(iB > 0, 'tick de brûlure : 5 % de 200');
-  assert.equal(r.journal[iB + 1].txt, 'PV max de b −10 (calcination)');
+  const r = combat([C('Feu', 5, SOLIDE, { passif: { type: 'brulure', chance: 100, niveau: 2, tours: 2 } })], [C('b', 5, 200)], { regles: { maxTours: 3, maxProlong: 0 } });
+  const iB = r.journal.findIndex(e => e.txt === 'b subit 8 (brûlure)');
+  assert.ok(iB > 0, 'tick de brûlure II : 4 % de 200');
+  assert.equal(r.journal[iB + 1].txt, 'PV max de b −8 (calcination)');
   assert.equal(r.journal[iB + 1].k, 'calcine');
   const fin = r.journal.at(-1);
   assert.ok(fin.max[1] < 200, 'les PV max restent brûlés');
 });
 
-test('brûlure : la part calcinée se règle par carte (calcine, % des dégâts ; vide = 100 %, 0 = aucune)', () => {
-  const moitie = combat([C('Feu', 5, SOLIDE, { passif: { type: 'brulure', chance: 100, pctpv: 5, tours: 2, calcine: 50 } })], [C('b', 5, 200)], { regles: { maxTours: 3, maxProlong: 0 } });
-  const iB = moitie.journal.findIndex(e => e.txt === 'b subit 10 (brûlure)');
-  assert.ok(iB > 0, 'tick de brûlure : 5 % de 200');
-  assert.equal(moitie.journal[iB + 1].txt, 'PV max de b −5 (calcination)', '50 % des 10 dégâts');
-  const sans = combat([C('Feu', 5, SOLIDE, { passif: { type: 'brulure', chance: 100, pctpv: 5, tours: 2, calcine: 0 } })], [C('b', 5, 200)], { regles: { maxTours: 3, maxProlong: 0 } });
-  assert.ok(sans.journal.some(e => e.txt === 'b subit 10 (brûlure)'), 'la brûlure brûle toujours');
+test('brûlure : la part calcinée est la même pour toutes les cartes (tableau des niveaux, 100 % par défaut)', () => {
+  const brule = (x, niveaux) => combat([C('Feu', 5, SOLIDE, { passif: { type: 'brulure', chance: 100, niveau: 2, tours: 2, ...x } })], [C('b', 5, 200)], { regles: { maxTours: 3, maxProlong: 0, niveaux } });
+  const moitie = brule({}, { calcination: 50 });
+  const iB = moitie.journal.findIndex(e => e.txt === 'b subit 8 (brûlure)');
+  assert.ok(iB > 0, 'tick de brûlure II : 4 % de 200');
+  assert.equal(moitie.journal[iB + 1].txt, 'PV max de b −4 (calcination)', '50 % des 8 dégâts');
+  const sans = brule({}, { calcination: 0 });
+  assert.ok(sans.journal.some(e => e.txt === 'b subit 8 (brûlure)'), 'la brûlure brûle toujours');
   assert.ok(!sans.journal.some(e => e.k === 'calcine'), 'mais ne calcine rien');
+  const ancien = brule({ calcine: 0 });
+  assert.ok(ancien.journal.some(e => e.k === 'calcine'), 'le vieux réglage par carte (calcine) ne compte plus');
 });
 
-test('feu contre glace : brûler une carte gelée fait fondre la glace d\'un niveau, avec un choc thermique', () => {
-  const r = combat([C('Feu', 5, SOLIDE, { passif: { type: 'brulure', chance: 100, pctpv: 5, tours: 2 } }), MAG('Givre', { type: 'gel', ciblem: 'adversaire', annul: 20, tours: 5 })], [C('b', 5, 200)], { regles: { maxTours: 2, maxProlong: 0 } });
+test('feu contre glace : brûler une carte gelée fait fondre la glace d\'un niveau, avec un choc thermique, et la brûlure ne reste pas', () => {
+  const r = combat([C('Feu', 5, SOLIDE, { passif: { type: 'brulure', chance: 100, niveau: 2, tours: 2 } }), MAG('Givre', { type: 'gel', ciblem: 'adversaire', annul: 20, tours: 5 })], [C('b', 5, 200)], { regles: { maxTours: 2, maxProlong: 0 } });
   const iD = r.journal.findIndex(e => e.k === 'degel');
   assert.ok(iD > 0, 'la glace fond');
   assert.equal(r.journal[iD].n, 0, 'gel 1 → 0');
-  assert.ok(r.journal.slice(iD, iD + 4).some(e => e.txt === 'b subit 10 dégâts (choc thermique)'), 'choc thermique');
-  assert.ok(r.journal.slice(iD).some(e => /b brûle/.test(e.txt || '')), 'la brûlure prend quand même');
+  assert.ok(r.journal.slice(iD, iD + 4).some(e => e.txt === 'b subit 8 dégâts (choc thermique)'), 'choc thermique : un tick de brûlure II');
+  const iSuivant = r.journal.findIndex((e, i) => i > iD && e.t === 'attaque' && e.c === 0);
+  assert.ok(!r.journal.slice(iD, iSuivant > 0 ? iSuivant : undefined).some(e => /b brûle/.test(e.txt || '')), 'la brûlure part avec la glace');
 });
 
 test('feu contre glace : geler une carte qui brûle éteint le feu, sans poser de gel', () => {
@@ -323,10 +327,10 @@ test('Glas : l\'ombre avance au début de chaque tour de la carte ; ses PV sous 
   assert.equal(r.gagnant, 0);
 });
 
-test('Glas : relancé, il accélère de moins en moins (+1/2, +1/4…)', () => {
-  const r = combat([C('Faucheur', 8, SOLIDE, { passif: GLAS() })], [C('b', 8, SOLIDE)], { regles: { maxTours: 4, maxProlong: 0 } });
+test('Glas : relancé, il monte d\'un niveau (I, II, III : 5, 8 puis 12 % par tour), III au plus', () => {
+  const r = combat([C('Faucheur', 8, SOLIDE, { passif: GLAS({ niveau: 1 }) })], [C('b', 8, SOLIDE)], { regles: { maxTours: 4, maxProlong: 0 } });
   const v = r.journal.filter(e => e.k === 'glas').map(e => e.v);
-  assert.deepEqual(v.slice(0, 3), [8, 12, 14]);
+  assert.deepEqual(v.slice(0, 4), [5, 8, 12, 12]);
 });
 
 test('Glas : il faut 3 purifications pour l\'effacer ; chacune fait reculer l\'ombre d\'un tiers', () => {
@@ -372,9 +376,9 @@ test('gel : la purification retire le gel', () => {
 });
 
 test('souffle élémentaire : dégâts puis le statut choisi (chaque élément)', () => {
-  const att = { brulure: /brûle/, gel: /se couvre de givre \(gel 1\/3 : 12 %/, malediction: /maudit \(ATQ −12/, poison: /empoisonné/, saignement: /saigne \(12 %/, fatigue: /fatigué \(ATQ −\d+/ };
+  const att = { brulure: /brûle \(brûlure II : 4 %/, gel: /se couvre de givre \(gel 1\/3 : 12 %/, malediction: /maudit \(ATQ −3 pendant 2 tours/, poison: /empoisonné \(poison II : 8 dégâts/, saignement: /saigne \(saignement II : 5 %/, fatigue: /fatigué \(fatigue II : ATQ −\d+, soit 30 %/ };
   for (const [el, re] of Object.entries(att)) {
-    const r = combat([C('a', 10, SOLIDE), MAG('Souffle', { type: 'souffle', val: 50, statut: el, chance: 100, sval: 12, tours: 2 })], [C('b', 300, SOLIDE)], { regles: { maxTours: 2, maxProlong: 0 } });
+    const r = combat([C('a', 10, SOLIDE), MAG('Souffle', { type: 'souffle', val: 50, statut: el, chance: 100, niveau: 2, sval: 12, tours: 2 })], [C('b', 300, SOLIDE)], { regles: { maxTours: 2, maxProlong: 0 } });
     const i = r.journal.findIndex(e => e.t === 'souffle');
     assert.ok(i > 0 && r.journal[i].el === el, el + ' : souffle');
     assert.equal(r.journal[i + 1].txt, 'b subit 50 dégâts (souffle)');
@@ -548,33 +552,33 @@ test('programmation : N passives d\'abord, puis l\'activation réveille les pass
 });
 
 test('détonation : consume brûlure, poison et saignement (dégâts restants + bonus), moitié si solidifié, dégâts de zone', () => {
-  const pose = MAG('Pose', { briques: [{ type: 'poison_effet', ciblem: 'adversaire', degtour: 10, tours: 3 }, { type: 'brulure_effet', ciblem: 'adversaire', pctpv: 1, tours: 2 }] });
+  const pose = MAG('Pose', { briques: [{ type: 'poison_effet', ciblem: 'adversaire', niveau: 2, tours: 3 }, { type: 'brulure_effet', ciblem: 'adversaire', niveau: 1, tours: 2 }] });
   const ult = { type: 'detonation', bonus: 50, val: 0, recul: 20, apres_tours: 1, utilisations: 1 };
   const r = combat([C('a', 0, 5000, { ultime: ult }), pose], [C('b', 0, 1000)], { regles: { maxTours: 1, maxProlong: 0 } });
   const i = r.journal.findIndex(e => e.t === 'detonation');
   assert.ok(i > 0, 'détonation');
   assert.deepEqual([...r.journal[i].parts].sort(), ['brulure', 'poison']);
-  // b joue en premier : 1 TIK déjà passé → reste poison 10 × 2 + brûlure 10 × 1 = 30, +50 % = 45
-  assert.ok(r.journal.some(e => e.txt === 'b subit 45 dégâts (détonation)'), JSON.stringify(r.journal.filter(e => e.k === 'detonation').map(e => e.txt)));
-  assert.ok(r.journal.some(e => e.txt === "a subit 9 dégâts (souffle de l'explosion)"), 'dégâts de zone 20 %');
+  // b joue en premier : 1 TIK déjà passé → reste poison II 8 × 2 + brûlure I (2 % de 980 PV max, après calcination) 20 × 1 = 36, +50 % = 54
+  assert.ok(r.journal.some(e => e.txt === 'b subit 54 dégâts (détonation)'), JSON.stringify(r.journal.filter(e => e.k === 'detonation').map(e => e.txt)));
+  assert.ok(r.journal.some(e => e.txt === "a subit 11 dégâts (souffle de l'explosion)"), 'dégâts de zone 20 %');
   assert.ok(!r.journal.slice(i).some(e => /\((poison|brûlure)\)/.test(e.txt || '')), 'plus aucun TIK ensuite');
   // solidifié : moitié
   const r2 = combat([C('a', 0, 5000, { ultime: ult }), pose], [C('b', 0, 1000, { passif: { type: 'solidification', chance: 100, tours: 9 } })], { regles: { maxTours: 1, maxProlong: 0 } });
-  assert.ok(r2.journal.some(e => /b subit 2[23] dégâts \(détonation\)/.test(e.txt || '')), JSON.stringify(r2.journal.filter(e => e.k === 'detonation').map(e => e.txt)));
+  assert.ok(r2.journal.some(e => /b subit 27 dégâts \(détonation\)/.test(e.txt || '')), JSON.stringify(r2.journal.filter(e => e.k === 'detonation').map(e => e.txt)));
 });
 
 test('détonation partielle : X % des dégâts restants, statuts purgés quand même + dégâts bruts jamais réduits', () => {
-  const pose = MAG('Pose', { briques: [{ type: 'poison_effet', ciblem: 'adversaire', degtour: 10, tours: 3 }, { type: 'brulure_effet', ciblem: 'adversaire', pctpv: 1, tours: 2 }] });
+  const pose = MAG('Pose', { briques: [{ type: 'poison_effet', ciblem: 'adversaire', niveau: 2, tours: 3 }, { type: 'brulure_effet', ciblem: 'adversaire', niveau: 1, tours: 2 }] });
   const ult = { type: 'detonation', bonus: 50, val: 100, conso: 50, apres_tours: 1, utilisations: 1 };
   const r = combat([C('a', 0, 5000, { ultime: ult }), pose], [C('b', 0, 1000)], { regles: { maxTours: 3, maxProlong: 0 } });
   const i = r.journal.findIndex(e => e.t === 'detonation');
   assert.ok(i > 0, 'détonation');
-  // reste poison 10 × 2 + brûlure 10 × 1 → moitié consumée : 5 × 2 + 5 × 1 = 15, +50 % = 22,5 → 22 ou 23, + 100 bruts
-  assert.ok(r.journal.some(e => /^b subit 12[23] dégâts \(détonation\)$/.test(e.txt || '')), JSON.stringify(r.journal.filter(e => e.k === 'detonation').map(e => e.txt)));
+  // reste poison II 8 × 2 + brûlure I 20 × 1 = 36 → moitié consumée : 18, +50 % = 27, + 100 bruts
+  assert.ok(r.journal.some(e => /^b subit 127 dégâts \(détonation\)$/.test(e.txt || '')), JSON.stringify(r.journal.filter(e => e.k === 'detonation').map(e => e.txt)));
   assert.ok(!r.journal.slice(i).some(e => /\((poison|brûlure)\)/.test(e.txt || '')), 'les statuts sont purgés quand même');
   // solidifié : seuls les dégâts des statuts sont divisés par deux, pas les dégâts bruts
   const r2 = combat([C('a', 0, 5000, { ultime: ult }), pose], [C('b', 0, 1000, { passif: { type: 'solidification', chance: 100, tours: 9 } })], { regles: { maxTours: 1, maxProlong: 0 } });
-  assert.ok(r2.journal.some(e => /^b subit 11[12] dégâts \(détonation\)$/.test(e.txt || '')), JSON.stringify(r2.journal.filter(e => e.k === 'detonation').map(e => e.txt)));
+  assert.ok(r2.journal.some(e => /^b subit 11[34] dégâts \(détonation\)$/.test(e.txt || '')), JSON.stringify(r2.journal.filter(e => e.k === 'detonation').map(e => e.txt)));
 });
 
 test('détonation : une carte tuée par l\'explosion ne se réanime pas (passif, magie ou piège)', () => {
@@ -589,11 +593,11 @@ test('détonation : une carte tuée par l\'explosion ne se réanime pas (passif,
 });
 
 test('missiles : chaque missile explose (dégâts bruts + détonation des statuts), puis pose son statut pour le suivant', () => {
-  const ult = { type: 'missiles', frappes: 3, val: 20, bonus: 50, mstatut: 'brulure', sval: 1, tours: 2, apres_tours: 1, utilisations: 1 };
+  const ult = { type: 'missiles', frappes: 3, val: 20, bonus: 50, mstatut: 'brulure', niveau: 1, tours: 2, apres_tours: 1, utilisations: 1 };
   const r = combat([C('a', 0, 5000, { ultime: ult })], [C('b', 0, 1000)], { regles: { maxTours: 2, maxProlong: 0 } });
   assert.equal(lignes(r, e => e.t === 'missile').length, 3);
-  // n°1 : 20 bruts · n°2 et n°3 : brûlure 10 × 2 = 20, +50 % = 30, + 20 bruts = 50
-  assert.deepEqual(lignes(r, e => /\(missile\)$/.test(e.txt || '')).map(e => e.n), [20, 50, 50]);
+  // n°1 : 20 bruts · n°2 et n°3 : brûlure I (2 % de 1000) 20 × 2 = 40, +50 % = 60, + 20 bruts = 80
+  assert.deepEqual(lignes(r, e => /\(missile\)$/.test(e.txt || '')).map(e => e.n), [20, 80, 80]);
   assert.ok(r.journal.filter(e => e.t === 'detonation').every(e => e.mis === 1));
   // la cible meurt : la volée s'arrête, et pas de réanimation
   const r2 = combat([C('a', 0, 5000, { ultime: { ...ult, val: 200 } })], [C('b', 0, 300, { passif: { type: 'reanimation', pctrev: 50 } })], { regles: { maxTours: 2, maxProlong: 0 } });
@@ -657,7 +661,7 @@ test('déclencheurs d\'ultime côté adversaire et nouveaux faits : soin, statut
   assert.ok(part(combat([C('a', 30, SOLIDE, { ultime: ult({ udecl: 'atq_baisse' }) })], [C('b', 5, SOLIDE, { passif: { type: 'malediction', chance: 100, val: 3, tours: 2 } })], R)), 'atq_baisse');
   // l'adversaire le brûle : la calcination baisse ses PV max
   assert.ok(part(combat([C('a', 5, SOLIDE, { ultime: ult({ udecl: 'pvmax_baisse' }) })], [C('b', 5, SOLIDE, { passif: { type: 'brulure', chance: 100, pctpv: 1, tours: 2 } })], R)), 'pvmax_baisse');
-  assert.ok(!part(combat([C('a', 5, SOLIDE, { ultime: ult({ udecl: 'pvmax_baisse' }) })], [C('b', 5, SOLIDE, { passif: { type: 'brulure', chance: 100, pctpv: 1, tours: 2, calcine: 0 } })], R)), 'pvmax_baisse : brûlure sans calcination');
+  assert.ok(!part(combat([C('a', 5, SOLIDE, { ultime: ult({ udecl: 'pvmax_baisse' }) })], [C('b', 5, SOLIDE, { passif: { type: 'brulure', chance: 100, niveau: 1, tours: 2 } })], { regles: { ...R.regles, niveaux: { calcination: 0 } } })), 'pvmax_baisse : brûlure sans calcination');
 });
 
 test('programmation sans liste : tire au hasard parmi tous les passifs et ultimes du jeu', () => {
@@ -721,18 +725,62 @@ test('« évite la mort » de la magie puis du piège : chaque protection sauve 
   assert.equal(r.gagnant, 0);   // la 3e attaque mortelle l'achève
 });
 
-test('malédiction : l\'ATQ baisse à chaque tour puis revient petit à petit', () => {
-  const r = combat([C('Sorcière', 1, SOLIDE), MAG('Malé', { type: 'malediction', ciblem: 'adversaire', val: 3, tours: 3 })], [C('Cible', 20, SOLIDE)], { seed: 2, regles: { maxTours: 7, maxProlong: 0 } });
+test('malédiction : −3 d\'ATQ fixe pendant ses tours (au début du tour de la carte maudite), puis tout revient', () => {
+  const r = combat([C('Sorcière', 1, SOLIDE), MAG('Malé', { type: 'malediction', ciblem: 'adversaire', val: 9, tours: 3 })], [C('Cible', 20, SOLIDE)], { seed: 2, regles: { maxTours: 7, maxProlong: 0 } });
   const atqCible = lignes(r, e => e.c === 1 && e.t === 'stat').map(e => e.atq[1]);
-  assert.deepEqual(atqCible.slice(0, 6), [17, 14, 11, 14, 17, 20]);
+  assert.deepEqual(atqCible, [17, 20], 'elle ne s\'aggrave pas d\'elle-même (la vieille valeur 9 ne compte plus)');
+  // l'ATQ des attaques de la cible : 17 pendant 3 attaques, puis 20
+  const coups = lignes(r, e => e.t === 'degats' && e.k === undefined && e.c === 0).map(e => e.n);
+  assert.deepEqual(coups.slice(0, 4), [17, 17, 17, 20], JSON.stringify(coups));
 });
 
-test('poison : mêmes dégâts à chaque tour, ne s\'additionne que s\'il est réappliqué', () => {
-  let r = combat([C('A', 1, SOLIDE), MAG('Venin', { type: 'poison_effet', ciblem: 'adversaire', degtour: 4, tours: 3 })], [C('B', 1, SOLIDE)], { regles: { maxTours: 6, maxProlong: 0 } });
+test('malédiction : une autre malédiction ajoute ses −3, avec sa propre durée', () => {
+  const malé = { type: 'malediction', chance: 100, tours: 2 };
+  const r = combat([C('Sorcière', 1, SOLIDE, { passif: malé })], [C('Cible', 20, SOLIDE)], { seed: 1, regles: { maxTours: 4, maxProlong: 0 } });
+  const atq = lignes(r, e => e.c === 1 && e.t === 'stat').map(e => e.atq[1]);
+  assert.ok(atq.includes(14), 'deux malédictions en même temps : 20 − 3 − 3 = 14 (' + atq + ')');
+  assert.ok(Math.min(...atq) >= 14, 'jamais plus de deux à la fois avec 2 tours (' + atq + ')');
+});
+
+test('poison : mêmes dégâts à chaque tour, ne monte de niveau que s\'il est réappliqué (I + I = II…, III au plus)', () => {
+  let r = combat([C('A', 1, SOLIDE), MAG('Venin', { type: 'poison_effet', ciblem: 'adversaire', niveau: 1, tours: 3 })], [C('B', 1, SOLIDE)], { regles: { maxTours: 6, maxProlong: 0 } });
   assert.deepEqual(lignes(r, e => e.t === 'degats' && e.k === 'poison').map(e => e.n), [4, 4, 4]);
-  r = combat([C('A', 1, SOLIDE, { passif: { type: 'poison', chance: 100, degtour: 3, tours: 3 } })], [C('B', 1, SOLIDE)], { seed: 2, regles: { maxTours: 4, maxProlong: 0 } });
+  r = combat([C('A', 1, SOLIDE, { passif: { type: 'poison', chance: 100, niveau: 1, tours: 3 } })], [C('B', 1, SOLIDE)], { seed: 2, regles: { maxTours: 4, maxProlong: 0 } });
   const P = lignes(r, e => e.t === 'degats' && e.k === 'poison').map(e => e.n);
-  assert.deepEqual(P.slice(0, 3), [3, 6, 9], 'réappliqué à chaque coup : il se cumule');
+  assert.deepEqual(P.slice(0, 4), [4, 8, 14, 14], 'réappliqué à chaque coup : il monte d\'un niveau, III au plus');
+});
+
+test('niveaux : I + II = III ; les valeurs viennent du tableau des niveaux (réglable), pas de la carte', () => {
+  const pose = (niveaux) => combat([C('A', 1, SOLIDE), MAG('Venins', { briques: [{ type: 'poison_effet', ciblem: 'adversaire', niveau: 1, tours: 3 }, { type: 'poison_effet', ciblem: 'adversaire', niveau: 2, degtour: 99, tours: 3 }] })], [C('B', 1, SOLIDE)], { regles: { maxTours: 3, maxProlong: 0, niveaux } });
+  assert.deepEqual(lignes(pose(), e => e.t === 'degats' && e.k === 'poison').map(e => e.n), [14, 14, 14], 'poison III, la vieille valeur 99 ne compte pas');
+  assert.deepEqual(lignes(pose({ poison: [1, 2, 30] }), e => e.t === 'degats' && e.k === 'poison').map(e => e.n), [30, 30, 30], 'tableau réglé dans l\'admin');
+});
+
+test('niveaux : une carte sans niveau prend le niveau le plus proche de son ancienne valeur', () => {
+  const tick = (passif) => lignes(combat([C('A', 1, SOLIDE, { passif: { chance: 100, tours: 1, ...passif } })], [C('B', 1, 1000)], { regles: { maxTours: 2, maxProlong: 0 } }), e => e.t === 'degats' && /\((poison|saignement|brûlure)\)/.test(e.txt || '')).map(e => e.n)[0];
+  assert.equal(tick({ type: 'poison', degtour: 6 }), 4, 'poison 6 → I (4)');
+  assert.equal(tick({ type: 'poison', degtour: 12 }), 14, 'poison 12 → III (14)');
+  assert.equal(tick({ type: 'saignement', pctpv: 25, reducsoin: 80 }), 80, 'saignement 25 % → III (8 % de 1000)');
+  assert.equal(tick({ type: 'brulure', pctpv: 6 }), 70, 'brûlure 6 % → III (7 % de 1000)');
+});
+
+test('fracture : chance et dégâts (% de sa propre ATQ) selon le niveau', () => {
+  const r = combat([C('A', 1, SOLIDE, { passif: { type: 'fracture', chance: 100, niveau: 3, tours: 9 } })], [C('B', 100, SOLIDE)], { regles: { maxTours: 10, maxProlong: 0 } });
+  const blessures = lignes(r, e => e.k === 'fracture' && e.t === 'degats').map(e => e.n);
+  assert.ok(blessures.length > 0, 'elle se blesse');
+  assert.ok(blessures.every(n => n === 30), 'fracture III : 30 % de 100 ATQ = 30 (' + blessures + ')');
+  assert.ok(r.journal.some(e => /est fracturé \(fracture III : 50 % de se blesser en attaquant, 30 % de son ATQ/.test(e.txt || '')));
+});
+
+test('fatigue : niveaux additionnés, la perte d\'ATQ suit le niveau ; la rage laisse une fatigue selon son intensité', () => {
+  const r = combat([C('A', 1, SOLIDE, { passif: { type: 'fatigue', chance: 100, niveau: 1, fattours: 5 } })], [C('B', 100, SOLIDE)], { regles: { maxTours: 4, maxProlong: 0 } });
+  const atq = lignes(r, e => e.c === 1 && e.t === 'stat' && /fatigue\)$/.test(e.txt || '')).map(e => e.atq[1]);
+  assert.deepEqual(atq.slice(0, 3), [85, 70, 50], 'I : −15 %, II : −30 %, III : −50 % de 100');
+  const rage = (ragev, x = {}) => lignes(combat([C('A', 10, SOLIDE), MAG('Rage', { type: 'rage', u: 'pts', ragev, ragetours: 1, fattours: 2, ...x })], [C('B', 1, SOLIDE)], { regles: { maxTours: 3, maxProlong: 0 } }), e => /fatigué/.test(e.txt || ''))[0]?.txt || '';
+  assert.match(rage(4), /fatigue I/, 'rage +4 → fatigue I');
+  assert.match(rage(10), /fatigue II/, 'rage +10 → fatigue II');
+  assert.match(rage(18), /fatigue III/, 'rage +18 → fatigue III');
+  assert.match(rage(18, { fatniv: 1 }), /fatigue I /, 'niveau réglé sur la carte');
 });
 
 test('poison, brûlure, saignement tombent en fin de tour de la carte touchée, après son attaque', () => {

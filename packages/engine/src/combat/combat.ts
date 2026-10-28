@@ -8,6 +8,7 @@
 
 import type { CombatView, DomainEvent, OnEvent, SideView } from '../events.ts';
 import type { Card, EffectData, Num, Player } from '../model/card.ts';
+import { levelTable, type StatusLevels } from '../model/levels.ts';
 import type { Rules } from '../model/rules.ts';
 import { damageFactor } from '../mechanics/double-damage.ts';
 import { flushRevives, type TrapRevive } from '../mechanics/revive.ts';
@@ -23,6 +24,7 @@ export type HeldEvent = { event: DomainEvent; view: CombatView };
 
 export type Combat = {
   readonly rules: Rules;
+  readonly levels: StatusLevels; // the status levels in use (rules.niveaux over the defaults)
   readonly random: () => number;
   readonly sides: Side[];
   readonly onEvent: OnEvent;
@@ -177,6 +179,7 @@ export function createCombat(rules: Rules, seed: number, onEvent: OnEvent): Comb
   };
   const combat: Combat = {
     rules,
+    levels: levelTable(rules.niveaux),
     random: createRandom(seed),
     sides,
     onEvent,

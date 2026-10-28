@@ -8,6 +8,8 @@
 //
 // (Breaths and missiles are defended like an attack: mechanics/dodge.ts, block.ts, reflect.ts.)
 
+import { bleedAmount } from './bleed.ts';
+import { dotAmount } from './dot.ts';
 import type { Attack } from '../combat/attack.ts';
 import { attackSources, mergedSource } from '../combat/sources.ts';
 import { emit, id, over, raw, roll, round, type Combat } from '../combat/combat.ts';
@@ -49,11 +51,11 @@ export function detonate(
   let total = 0;
   const consumed = q.conso == null || q.conso === '' ? 100 : Math.max(0, +raw(q.conso) || 0);
   z.dots.forEach((d) => {
-    total += (d.amount || 0) * Math.max(0, d.turns);
+    total += dotAmount(c, t, d) * Math.max(0, d.turns);
     parts.push(d.kind === 'poison' ? 'poison' : 'brulure');
   });
   z.bleeds.forEach((b) => {
-    total += round((t.maxHp * (b.pct || 0)) / 100) * Math.max(0, b.turns);
+    total += bleedAmount(c, t, b) * Math.max(0, b.turns);
     parts.push('saignement');
   });
   if (consumed !== 100) total = round((total * consumed) / 100);

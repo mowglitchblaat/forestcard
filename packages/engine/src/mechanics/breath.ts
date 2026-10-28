@@ -14,22 +14,19 @@ import { reflect } from './reflect.ts';
 
 // The statuses a breath or a missile can lay, as the effect that lays it.
 export const ELEMENTS = ['brulure', 'gel', 'malediction', 'poison', 'saignement', 'fatigue'];
+// A leveled status takes the breath's level (`niveau`); a breath saved before the rework gives its
+// value (`sval`), read as the old value of that status (model/levels.ts).
 export const elementStatus = (element: string, e: EffectData): EffectData => {
   const v = +raw(e.sval) || 0;
+  const niveau = e.niveau;
   const turns = Math.max(1, parseInt(String(e.tours), 10) || 2);
   const statuses: Record<string, EffectData> = {
-    brulure: { type: 'brulure_effet', ciblem: 'adversaire', pctpv: v, tours: turns },
+    brulure: { type: 'brulure_effet', ciblem: 'adversaire', niveau, pctpv: v, tours: turns },
     gel: { type: 'gel', ciblem: 'adversaire', annul: v, tours: turns },
-    malediction: { type: 'malediction', ciblem: 'adversaire', val: v, tours: turns },
-    poison: { type: 'poison_effet', ciblem: 'adversaire', degtour: v, tours: turns },
-    saignement: {
-      type: 'saignement',
-      ciblem: 'adversaire',
-      pctpv: v,
-      reducsoin: +raw(e.reducsoin) || 0,
-      tours: turns,
-    },
-    fatigue: { type: 'fatigue', ciblem: 'adversaire', fatval: v, u: 'pct', fattours: turns },
+    malediction: { type: 'malediction', ciblem: 'adversaire', tours: turns },
+    poison: { type: 'poison_effet', ciblem: 'adversaire', niveau, degtour: v, tours: turns },
+    saignement: { type: 'saignement', ciblem: 'adversaire', niveau, pctpv: v, tours: turns },
+    fatigue: { type: 'fatigue', ciblem: 'adversaire', niveau, fatval: v, fattours: turns },
   };
   return statuses[element] as EffectData;
 };

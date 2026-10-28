@@ -33,11 +33,15 @@ export type EffectData = {
   // Revive, rage and fatigue.
   pctrev?: Num;
   ragev?: Num;
+  fatniv?: Num; // rage: level of the fatigue it leaves (from its bonus when empty)
   ragetours?: Num;
   fatval?: Num;
   fattours?: Num;
 
-  // Statuses.
+  // Statuses. Since the rework, a leveled status (poison, bleed, burn, fatigue, fracture, knell) reads
+  // only its level (`niveau`, 1 to 3: model/levels.ts), its duration and its chance; the old value
+  // fields below give the level of cards saved before.
+  niveau?: Num;
   pctpv?: Num;
   calcine?: Num; // burn: % of each tick's damage taken off max HP (100 when empty)
   reducsoin?: Num;
@@ -134,6 +138,7 @@ export type EffectData = {
   mreduc?: Num;
   msaignch?: Num;
   msaignpct?: Num;
+  msaignniv?: Num; // its bleed's level (from msaignpct when empty)
   msaigntours?: Num;
   mesq?: Num;
   lientours?: Num;

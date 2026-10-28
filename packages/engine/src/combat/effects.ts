@@ -11,7 +11,7 @@ import { effects as bleed } from '../mechanics/bleed.ts';
 import { effects as block } from '../mechanics/block.ts';
 import { effects as breath } from '../mechanics/breath.ts';
 import { effects as cards } from '../mechanics/cards.ts';
-import { effects as curse } from '../mechanics/curse.ts';
+import { effects as curse, liftCurse } from '../mechanics/curse.ts';
 import { effects as detonation } from '../mechanics/detonation.ts';
 import { effects as directDamage } from '../mechanics/direct-damage.ts';
 import { effects as dodge } from '../mechanics/dodge.ts';
@@ -134,7 +134,7 @@ export function applyEffect(
     emit(c, { type: 'statusEnded', side: id(c, M), status });
   if (fromMagic && rule?.undoesStatuses) {
     const M = rule.undoesStatuses === 'opponent' ? x : (e.ciblem || e.cible) === 'soi' ? o : x;
-    undoStatusesLater(M, onUndo, statusEnds);
+    undoStatusesLater(c, M, onUndo, statusEnds);
   }
   const statusTarget = () => ((e.ciblem || e.cible) === 'soi' ? o : x);
   const ctx: EffectContext = {
@@ -157,39 +157,33 @@ export function applyEffect(
 // Snapshots card M's statuses now; if the magic goes, removes what it added since (statuses still
 // running).
 function undoStatusesLater(
+  c: Combat,
   M: Side,
   onUndo: (f: () => void) => void,
   statusEnds: (M: Side, status: StatusKind) => void,
 ): void {
   const before = {
-    curse: M.status.curses[0] && { ...M.status.curses[0] },
+    curses: M.status.curses.slice(),
     bleed: M.status.bleeds[0] && { ...M.status.bleeds[0] },
     dots: M.status.dots.map((z) => ({ ...z })),
     frost: M.status.frosts[0] && { ...M.status.frosts[0] },
     knell: M.status.knell && { ...M.status.knell },
-    fractures: M.status.fractures.length,
+    fracture: M.status.fractures[0] && { ...M.status.fractures[0] },
     stunTurns: M.status.stunTurns,
     nextAttackCancelled: M.status.nextAttackCancelled,
     nextAttackBlocked: M.status.nextAttackBlocked,
     blockRiposte: M.status.blockRiposte,
   };
   onUndo(() => {
-    const curseNow = M.status.curses[0];
-    if (curseNow) {
-      if (!before.curse) {
-        M.status.curses = [];
-        statusEnds(M, 'curse');
-      } else curseNow.amount = before.curse.amount;
-    }
+    const added = M.status.curses.filter((z) => !before.curses.includes(z));
+    added.forEach((z) => liftCurse(c, M, z, 'curseRemoved'));
+    if (added.length && !M.status.curses.length) statusEnds(M, 'curse');
     const bleedNow = M.status.bleeds[0];
     if (bleedNow) {
       if (!before.bleed) {
         M.status.bleeds = [];
         statusEnds(M, 'bleed');
-      } else {
-        bleedNow.pct = before.bleed.pct;
-        bleedNow.healReduction = before.bleed.healReduction;
-      }
+      } else bleedNow.level = before.bleed.level;
     }
     M.status.dots
       .filter((z) => !before.dots.some((y) => y.kind === z.kind))
@@ -197,14 +191,10 @@ function undoStatusesLater(
     M.status.dots = M.status.dots.filter((z) => before.dots.some((y) => y.kind === z.kind));
     M.status.dots.forEach((z) => {
       const y = before.dots.find((q) => q.kind === z.kind);
-      if (y) {
-        z.amount = y.amount;
-        z.calc = y.calc;
-      }
+      if (y) z.level = y.level;
     });
     if (M.status.frosts.length && !before.frost) statusEnds(M, 'frost');
-    if (M.status.fractures.length > before.fractures && !before.fractures)
-      statusEnds(M, 'fracture');
+    if (M.status.fractures.length && !before.fracture) statusEnds(M, 'fracture');
     if (M.status.stunTurns > before.stunTurns && !before.stunTurns) statusEnds(M, 'stun');
     M.status.frosts = before.frost && M.status.frosts.length ? [{ ...before.frost }] : [];
     if (M.status.knell && !before.knell) statusEnds(M, 'knell');
@@ -212,7 +202,8 @@ function undoStatusesLater(
       before.knell && M.status.knell
         ? { ...before.knell, threshold: M.status.knell.threshold }
         : null;
-    M.status.fractures = M.status.fractures.slice(0, before.fractures);
+    M.status.fractures =
+      before.fracture && M.status.fractures.length ? [{ ...before.fracture }] : [];
     M.status.stunTurns = Math.min(M.status.stunTurns, before.stunTurns);
     M.status.nextAttackCancelled = Math.min(
       M.status.nextAttackCancelled,

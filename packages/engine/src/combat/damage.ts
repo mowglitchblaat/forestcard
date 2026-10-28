@@ -19,7 +19,7 @@ import { scan } from './traps.ts';
 
 export function heal(c: Combat, s: Side, n: number): void {
   if (s.hp <= 0) return;
-  const reduction = healReduction(s);
+  const reduction = healReduction(c, s);
   if (reduction) n = round((n * (100 - reduction)) / 100);
   // parasitic links, both ways: a share of the heal goes to the other card (mechanics/parasite.ts)
   const parts = sharedParts(c, s, n);

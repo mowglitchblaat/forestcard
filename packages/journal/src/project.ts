@@ -33,6 +33,8 @@ const FORK = '\u{1F374}';
 const KNIFE = '\u{1F52A}';
 
 const turns = (n: number) => `${n} tour${n > 1 ? 's' : ''}`;
+// A status level, in roman numerals (model/levels.ts in the engine).
+const lvl = (n: number) => ['I', 'II', 'III'][Math.min(3, Math.max(1, n)) - 1] as string;
 
 const RANDOM_EFFECT_LABELS: Record<RandomEffectKey, string> = {
   atqUp: 'ATQ en hausse',
@@ -728,6 +730,8 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
           return { t: 'stat', txt: `${who} +${d} (la malédiction s'estompe)`, o: mod };
         case 'curseLifted':
           return { t: 'stat', txt: `${who} +${d} (malédiction levée)`, o: mod };
+        case 'curseRemoved':
+          return { t: 'stat', txt: `${who} +${d} (malédiction retirée)`, o: mod };
         case 'statusesLeft':
           return { t: 'stat', txt: `${who} +${d} (statuts partis)`, o: mod };
         case 'mutation':
@@ -809,26 +813,29 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
     case 'curseApplied':
       return {
         t: 'statut',
-        txt: `${name(e.side)} est maudit${e.stacked ? ' à nouveau' : ''} (ATQ −${e.amount} par tour, ${turns(e.turns)}) !`,
-        o: { c: e.side, k: 'malediction' },
+        txt: `${name(e.side)} est maudit${e.stacked ? ' à nouveau' : ''} (ATQ −${e.amount} pendant ${turns(e.turns)}${e.count > 1 ? `, ${e.count} malédictions` : ''}) !`,
+        o: { c: e.side, k: 'malediction', n: e.count },
       };
     case 'bleedApplied':
       return {
         t: 'statut',
-        txt: `${name(e.side)} saigne${e.stacked ? ' encore plus' : ''} (${e.pct} % des PV max par tour, soins −${e.healReduction} %, ${turns(e.turns)}) !`,
-        o: { c: e.side, k: 'saignement' },
+        txt: `${name(e.side)} saigne${e.stacked ? ' encore plus' : ''} (saignement ${lvl(e.level)} : ${fr(e.pct)} % des PV max par tour, soins −${e.healReduction} %, ${turns(e.turns)}) !`,
+        o: { c: e.side, k: 'saignement', n: e.level },
       };
     case 'dotApplied':
       return {
         t: 'statut',
-        txt: `${name(e.side)} ${e.kind === 'poison' ? 'est empoisonné' : 'brûle'}${e.stacked ? ' encore plus fort' : ''} !`,
-        o: { c: e.side, k: e.kind === 'poison' ? 'poison' : 'brulure' },
+        txt:
+          e.kind === 'poison'
+            ? `${name(e.side)} est empoisonné${e.stacked ? ' encore plus fort' : ''} (poison ${lvl(e.level)} : ${fr(e.value)} dégâts par tour, ${turns(e.turns)}) !`
+            : `${name(e.side)} brûle${e.stacked ? ' encore plus fort' : ''} (brûlure ${lvl(e.level)} : ${fr(e.value)} % des PV max par tour, ${turns(e.turns)}) !`,
+        o: { c: e.side, k: e.kind === 'poison' ? 'poison' : 'brulure', n: e.level },
       };
     case 'fatigueApplied':
       return {
         t: 'statut',
-        txt: `${name(e.side)} est fatigué${e.stacked ? ' plus longtemps' : ''} (ATQ −${e.amount}, ${turns(e.turns)})${e.afterRage ? ' après la rage' : ''} !`,
-        o: { c: e.side, k: 'fatigue' },
+        txt: `${name(e.side)} est fatigué${e.stacked ? ' encore plus' : ''} (fatigue ${lvl(e.level)} : ATQ −${e.amount}, soit ${fr(e.pct)} %, ${turns(e.turns)})${e.afterRage ? ' après la rage' : ''} !`,
+        o: { c: e.side, k: 'fatigue', n: e.level },
       };
     case 'frozen':
       return {
@@ -845,9 +852,9 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
       return {
         t: 'statut',
         txt: e.stacked
-          ? `Le Glas de ${name(e.side)} sonne plus fort : son ombre avance de ${fr(e.speed)} % de ses PV max par tour !`
-          : `Le Glas sonne pour ${name(e.side)} : une ombre avance sur sa vie (${fr(e.speed)} % de ses PV max par tour) !`,
-        o: { c: e.side, k: 'glas', v: e.speed, n: 3 },
+          ? `Le Glas de ${name(e.side)} sonne plus fort (Glas ${lvl(e.level)}) : son ombre avance de ${fr(e.speed)} % de ses PV max par tour !`
+          : `Le Glas sonne pour ${name(e.side)} (Glas ${lvl(e.level)}) : une ombre avance sur sa vie (${fr(e.speed)} % de ses PV max par tour) !`,
+        o: { c: e.side, k: 'glas', v: e.speed, n: 3, s: e.level },
       };
     case 'knellRose':
       return {
@@ -894,8 +901,8 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
     case 'fractured':
       return {
         t: 'statut',
-        txt: `${name(e.side)} est fracturé (${e.chance} % de se blesser en attaquant, −${e.damage} PV, ${turns(e.turns)}) !`,
-        o: { c: e.side, k: 'fracture' },
+        txt: `${name(e.side)} est fracturé${e.stacked ? ' encore plus' : ''} (fracture ${lvl(e.level)} : ${fr(e.chance)} % de se blesser en attaquant, ${fr(e.atqPct)} % de son ATQ, ${turns(e.turns)}) !`,
+        o: { c: e.side, k: 'fracture', n: e.level },
       };
     case 'solidified':
       return {

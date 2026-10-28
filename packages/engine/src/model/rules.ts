@@ -1,6 +1,8 @@
 // Combat rules. Keys stay in French: the edge function passes them and the result echoes them
 // (`regles`), so they are part of the contract.
 
+import type { StatusLevels } from './levels.ts';
+
 export type Rules = {
   maxTours: number; // rounds per period (docs/glossaire.md: a round is each card playing once)
   gain: number; // reward for a win
@@ -9,6 +11,7 @@ export type Rules = {
   plafondEsquive: number; // dodge chance cap, in percent
   maxProlong: number; // overtimes after the first period
   equipe?: number; // relay combat (relay.ts): fighters per player (3)
+  niveaux?: Partial<StatusLevels>; // what each status level does (model/levels.ts); defaults when absent
 };
 
 export const DEFAULT_RULES: Rules = {
