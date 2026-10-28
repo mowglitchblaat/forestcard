@@ -45,7 +45,8 @@ export async function fetchHistory(limit = 10): Promise<CombatSummary[]> {
 // the line is about, absent on some lines), `t`, `txt` and `tour` (the round). The other fields the
 // engine writes on every line (HP, ATQ, amounts, the players on the start line, the winner on the
 // end line) are not kept by the server: they are optional here, and what needs them only shows when
-// they are present.
+// they are present. Since 2026-10-28, a relay line (`t: 'relais'`, championship) also keeps `trio`:
+// [fighter, magic, trap] of the cards entering.
 export const ReplayLine = z.looseObject({
   t: z.string(),
   txt: z.string(),

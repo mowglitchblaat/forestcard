@@ -1220,7 +1220,7 @@ async function vHistorique(){
     if(!box.dataset.ok){
       b.disabled=true;const d=await sb.rpc('combat_deroule',{p_id:+b.dataset.d});b.disabled=false;
       if(d.error||!d.data){box.innerHTML='<span class="ko">Déroulé indisponible.</span>'}
-      else box.innerHTML=d.data.map(e=>e.t==='tour'?`<h4>${esc(e.txt)}</h4>`:`<div class="${esc(e.t)}">${esc(e.txt)}</div>`).join('');
+      else box.innerHTML=d.data.map(e=>e.t==='tour'?`<h4>${esc(e.txt)}</h4>`:`<div class="${esc(e.t)}">${esc(e.txt)}${e.t==='relais'&&Array.isArray(e.trio)?`<br><small>Magie : ${esc(e.trio[1]||'—')} · Piège : ${esc(e.trio[2]||'—')}</small>`:''}</div>`).join('');   // relais : le trio qui entre (champ trio, enregistré par l'edge)
       box.dataset.ok=1}
     box.style.display='block';b.textContent='Masquer le déroulé'});
 }

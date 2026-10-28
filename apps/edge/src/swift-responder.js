@@ -79,7 +79,9 @@ async function championnat(b) {
   try {
     const J = (res.journal.find((e) => e.t === 'debut') || {}).joueurs || [];
     let tours = 0; for (const e of res.journal) if (e.t === 'tour') tours++;
-    const deroule = res.journal.filter((e) => e.t !== 'debut').map((e) => { const o = { tour: e.tour, t: e.t, txt: e.txt }; if (e.c != null) o.c = e.c; return o; });
+    const deroule = res.journal.filter((e) => e.t !== 'debut').map((e) => { const o = { tour: e.tour, t: e.t, txt: e.txt }; if (e.c != null) o.c = e.c;
+      // relais : le trio qui entre (combattant, magie, piège), pour le revoir dans l'historique même si sa magie ou son piège n'a pas agi
+      const j = e.t === 'relais' && e.joueurs && e.joueurs[e.c]; if (j) o.trio = [j.carte, j.magie, j.piege]; return o; });
     const h = await rest('historique_combats', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({
       mode: 'titre', joueur_a: a.id, joueur_b: adv.id, pseudo_a: a.pseudo, pseudo_b: adv.pseudo,
       carte_a: J[0] ? J[0].carte : null, carte_b: J[1] ? J[1].carte : null, magie_a: J[0] ? J[0].magie : null, magie_b: J[1] ? J[1].magie : null,
