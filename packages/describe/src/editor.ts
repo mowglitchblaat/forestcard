@@ -619,6 +619,10 @@ export const EDITOR_ULTIMATES: { readonly [K in EffectType]?: EditorEntry } = {
     'chance',
     'tours',
   ],
+  atk_critique: [
+    'Attaque de base : X % de chances de faire un coup critique (puissance critique commune), pour le reste du combat',
+    'chance',
+  ],
   glas_effet: [
     "Glas niveau I, II ou III : une ombre de la mort avance sur sa vie (pas d'évite la mort ni de réanimation)",
     'ciblem',
