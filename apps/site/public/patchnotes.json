@@ -1,5 +1,39 @@
 [
   {
+    "date": "2026-10-28",
+    "intro": "Le grand rework des combats : les statuts passent en niveaux, et quatre éléments arrivent avec leurs mécaniques (Terre, Eau, Vent, Foudre).",
+    "groupes": [
+      {
+        "titre": "Statuts à niveaux",
+        "points": [
+          "Poison, saignement, brûlure, fatigue, fracture et Glas ont maintenant un niveau : I, II ou III. Chaque niveau fait toujours la même chose, quelle que soit la carte.",
+          "Un statut posé sur un statut déjà là monte de niveau : I + II = III (III au maximum), et la plus longue durée reste.",
+          "Malédiction : −3 d’ATQ pendant sa durée, sans s’aggraver toute seule ; une autre malédiction ajoute ses −3.",
+          "Fracture : la blessure fait un pourcentage de l’ATQ de la carte fracturée. La fatigue de fin de rage dépend de la force de la rage.",
+          "Toutes les cartes ont été converties au niveau le plus proche de leur ancienne valeur."
+        ]
+      },
+      {
+        "titre": "Nouvelles mécaniques",
+        "points": [
+          "Enracinement : épineux (chaque frappe portée blesse la carte), empoisonné (chaque frappe l’empoisonne) ou inhibiteur (son ultime attend la fin des racines).",
+          "Eau : la Contamination fait durer chaque statut négatif un tour de plus. Avec une brûlure, VAPORISATION : la brûlure part en vapeur et la carte est affaiblie (+25 % de dégâts reçus).",
+          "Terre : Sédimentation (3 coups reçus = un bouclier qui encaisse) et Réplique sismique (3 coups reçus = la terre frappe l’attaquant).",
+          "Vent : les coups critiques arrivent (une puissance commune à toutes les cartes), le Courant ascendant les fait grimper, et le Cisaillement pose des lames d’air qui frappent quelques tours plus tard.",
+          "Foudre : la marque de foudre amplifie le prochain coup reçu, puis l’éclair rebondit sur la magie et le piège adverses, et détruit une carte déjà chargée.",
+          "Le Headshot devient un coup critique spécial, qui ne dépend pas de la chance de critique."
+        ]
+      },
+      {
+        "titre": "Équilibrage",
+        "points": [
+          "Les cartes à malédiction et Sweety perdent en puissance avec les nouvelles règles ; les cartes les plus résistantes en gagnent un peu.",
+          "Les valeurs de chaque niveau se règlent depuis l’admin : elles bougeront au fil de vos retours et de vos votes."
+        ]
+      }
+    ]
+  },
+  {
     "date": "2026-10-27",
     "intro": "Une petite mise à jour du site pour mieux informer les joueurs dont le compte est suspendu.",
     "groupes": [
