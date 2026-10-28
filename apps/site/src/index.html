@@ -38,7 +38,7 @@ table{border-collapse:collapse;width:100%}td,th{padding:6px;border-bottom:1px so
 .ok{color:#4ade80}.ko{color:#f87171}
 .stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin:8px 0 22px}
 .stat{background:#1d1d27;border:1px solid #2c2c38;border-radius:10px;padding:12px}
-.stat b{display:block;font-size:26px;margin:2px 0}.stat span{color:#aaa;font-size:13px;display:block}
+.stat b{display:block;font-size:26px;margin:2px 0}.pth{background:#1d1d27;border:1px solid #2c2c38;border-radius:12px;padding:12px}.pth span{display:inline}.stat span{color:#aaa;font-size:13px;display:block}
 .stat.card2{display:flex;gap:12px;align-items:center;grid-column:span 2}
 .stat.card2 img{width:80px;border-radius:4px;filter:drop-shadow(0 0 3px var(--g)) drop-shadow(0 0 10px var(--g))}
 .mk{min-width:0}.mk>select{width:100%;max-width:100%;text-overflow:ellipsis}
@@ -675,9 +675,22 @@ function histoireCeintures(E){
     return `<div class="stat"><h4 style="margin:0 0 4px;display:flex;align-items:center;gap:8px"><img src="${vf('cadres/ceinture-'+d+'.webp')}" alt="" style="width:90px">${D.e} ${esc(D.nom)}</h4>${out.reverse().join('')}</div>`};
   return `<div class="stats" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr));align-items:start">${['rare','epique','libre'].map(bloc).join('')}</div>`;
 }
+/* Panthéon : les plus grands règnes de toutes les ceintures, gardés pour toujours (44-pantheon.sql) : par défenses, et par durée */
+function pantheon(P){
+  const med=i=>['🥇','🥈','🥉'][i]||`<span style="opacity:.6;font-weight:700">${i+1}.</span>`,jr=d=>new Date(d).toLocaleDateString('fr-FR',{day:'numeric',month:'short'});
+  const duree=s=>{const h=Math.floor(s/3600),j=Math.floor(h/24);return j?`${j} jour${j>1?'s':''}${h%24?' '+(h%24)+' h':''}`:h?h+' h':Math.max(1,Math.round(s/60))+' min'};
+  const ligne=(x,i,quoi)=>{const nd=x.defenses||0,en=!x.fin;
+    return `<div style="display:flex;gap:10px;align-items:center;padding:7px 9px;margin:5px 0;border-radius:10px;background:${i===0?'linear-gradient(90deg,rgba(251,191,36,.18),transparent)':'rgba(255,255,255,.03)'};border:1px solid ${i===0?'rgba(251,191,36,.55)':'rgba(255,255,255,.06)'}">
+     <span style="font-size:${i<3?22:16}px;min-width:28px;text-align:center">${med(i)}</span><img src="${vf('cadres/ceinture-'+x.division+'.webp')}" alt="" style="width:72px;flex:none">
+     <div style="flex:1;min-width:0"><div><span style="font-weight:800;font-size:${i===0?17:15}px">${esc(x.pseudo||'?')}</span> <small style="opacity:.7">${esc(x.nom||'')}</small></div>
+      <small style="opacity:.75">${quoi==='def'?`<span style="font-weight:700;color:#e5e7eb">${nd} défense${nd>1?'s':''}</span> · ${duree(x.secondes)}`:`<span style="font-weight:700;color:#e5e7eb">${duree(x.secondes)}</span> · ${nd} défense${nd>1?'s':''}`} · ${jr(x.debut)} → ${en?'<span style="font-weight:700;color:#fbbf24">en cours 👑</span>':jr(x.fin)}</small></div></div>`};
+  const col=(t,L,q)=>`<div class="pth"><h4 style="margin:0 0 6px">${t}</h4>${L.length?L.map((x,i)=>ligne(x,i,q)).join(''):'<small>Personne pour l\'instant.</small>'}</div>`;
+  return `<h3>🏛️ Panthéon</h3><p><small>Les plus grands règnes du championnat, toutes ceintures confondues, gardés pour toujours.</small></p>
+   <div class="stats" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr));align-items:start">${col('🛡️ Le plus de défenses',P.defenses||[],'def')}${col('⏳ Les plus longs règnes',P.duree||[],'dur')}</div>`;
+}
 async function vCeintures(){
   main.innerHTML='<p>Chargement…</p>';
-  const [r,m,vr]=await Promise.all([sb.rpc('ceintures_etat'),sb.from('decks_championnat').select('division,cartes').eq('joueur_id',user.id),sb.rpc('titre_verrouille')]);
+  const [r,m,vr,pn]=await Promise.all([sb.rpc('ceintures_etat'),sb.from('decks_championnat').select('division,cartes').eq('joueur_id',user.id),sb.rpc('titre_verrouille'),sb.rpc('pantheon_ceintures',{p_limite:5})]);
   const verrou=!!(vr&&!vr.error&&vr.data);   // primes verrouillées (42-primes-verrou.sql) : pas de live, les champions gardent leur série
   if(r.error){main.innerHTML='<p class="ko">Championnat indisponible pour le moment (l\'admin doit lancer 33-championnat.sql dans Supabase).</p>';return}
   await chargerEtat().catch(()=>{});
@@ -696,6 +709,7 @@ async function vCeintures(){
    <p><small>Trois ceintures, un champion chacune. Le championnat se joue uniquement en live : défie le champion dans le chat (!defi) avec ton deck de championnat (onglet Mon deck : 15 cartes, 5 combattants, 5 magies, 5 pièges) ; il accepte ou refuse dans le chat (!accepter, !refuser). Combat en relais : 3 combattants chacun, un nouveau trio à chaque entrée, jusqu'au KO. Le vainqueur gagne 💰 500, le perdant 💰 150. Chaque jour où il fait un combat pour le titre, le champion touche une prime à minuit : 90 gold par ceinture, +10 % par jour actif consécutif (un jour sans combat pour le titre : pas de prime, la série repart à 90), +15 % par ceinture en plus. Un challenger a droit à un combat pour le titre par jour et par ceinture (un match nul ne compte pas : il peut redéfier) ; le champion, lui, défend sa ceinture autant de fois qu'on le défie, et ses défenses ne comptent pas : s'il perd sa ceinture, il peut la redéfier le jour même. Le champion perd sa ceinture s'il perd, à son 3e refus, ou après 7 jours sans combat pour le titre.</small></p>
    <div class="stats" style="grid-template-columns:repeat(auto-fit,minmax(230px,1fr))">${E.ceintures.map(carte).join('')}</div>
    <h3>Défis en attente</h3>${E.defis.length?`<ul>${E.defis.map(defi).join('')}</ul>`:'<p><small>Aucun défi en attente.</small></p>'}
+   ${pn&&!pn.error&&pn.data?pantheon(pn.data):''}
    <h3>L'histoire des ceintures</h3>${histoireCeintures(E)}
    <p><small>Dans le chat : <b>!defi rare</b> (ou épique, libre ; ajoute le @ du joueur si la ceinture est vacante), <b>!accepter</b>, <b>!refuser</b>, <b>!ceintures</b>.</small></p>`;
   main.querySelectorAll('[data-dk]').forEach(b=>b.onclick=()=>show('deck'));
