@@ -34,6 +34,37 @@
     ]
   },
   {
+    "date": "2026-10-28",
+    "intro": "Le championnat devient plus juste pour les challengers et les champions, et le piège de réanimation peut enfin être contré.",
+    "groupes": [
+      {
+        "titre": "Combat",
+        "points": [
+          "Un match nul ne compte plus comme le combat pour le titre du jour, et un champion qui perd sa ceinture en la défendant peut la redéfier le jour même.",
+          "Les jours sans live, les primes des ceintures sont mises en pause : le champion garde sa série et sa ceinture ne peut pas devenir vacante."
+        ]
+      },
+      {
+        "titre": "Magies et pièges",
+        "points": [
+          "Le piège de réanimation se dévoile avant que la carte se reforme : un contre-piège peut l’annuler, et un piège volé déjà utilisé ne se redéclenche pas."
+        ]
+      },
+      {
+        "titre": "Animations",
+        "points": [
+          "Un combat pour le titre s’annonce par un bandeau doré, et en relais les combattants restants s’affichent sous le pseudo."
+        ]
+      },
+      {
+        "titre": "Collection et deck",
+        "points": [
+          "Les cartes sans collection sont maintenant rangées dans le groupe « Basique »."
+        ]
+      }
+    ]
+  },
+  {
     "date": "2026-10-27",
     "intro": "Une petite mise à jour du site pour mieux informer les joueurs dont le compte est suspendu.",
     "groupes": [
