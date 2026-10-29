@@ -1459,3 +1459,17 @@ test('étreinte maudite donnée par une magie : agit comme le passif', () => {
   assert.ok(r.journal.some(e => e.k === 'etreinte'), 'donnée');
   assert.deepEqual(lignes(r, e => /étreinte maudite\)/.test(e.txt || '')).map(e => e.d).slice(0, 2), [-1, -2]);
 });
+
+test('évite la mort par un piège, contré par une salve de missiles (adv_piege) : les missiles frappent la carte restée à 1 PV', () => {
+  const salve = PIE('Salve', { type: 'adv_piege' }, { type: 'missiles', val: 4, bonus: 5, conso: 100, frappes: 4, mstatut: 'aucun' });
+  const gardien = PIE('Gardien', { type: 'proprio_meurt' }, { type: 'mort_evitee', cond: 'aucune' });
+  for (const seed of [1, 2, 3, 4]) {
+    const r = combat([C('a', 50, SOLIDE), salve], [C('b', 1, 30), gardien], { seed });
+    // la frappe mortelle laisse b à 1 PV le temps que son piège se joue : le 1er missile l'achève
+    assert.equal(r.gagnant, 0, 'b meurt sous les missiles');
+    assert.equal(r.journal.filter(e => e.t === 'protege').length, 0, 'b ne survit pas');
+    assert.equal(r.journal.filter(e => e.t === 'missile').length, 1, 'un seul missile suffit');
+    const coup = r.journal.find(e => e.t === 'degats' && e.c === 1);
+    assert.match(coup.txt, /subit 29 dégâts/, 'la frappe mortelle laisse b à 1 PV');
+  }
+});

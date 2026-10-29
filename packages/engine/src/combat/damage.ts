@@ -1,7 +1,8 @@
 // Damage and healing, and the order of a lethal hit (legacy/docs/workflow-combat.md, schema 3):
 //   1. avoid-death, BEFORE everything (revive included): magic, then passive, then trap; the card
 //      stays at 1 HP, the damage line shows first, the protection right after
-//      (mechanics/avoid-death.ts);
+//      (mechanics/avoid-death.ts). While the trap resolves the card is at 1 HP: a counter-trap that
+//      kills it then (missiles…) wins, the protection saves nothing;
 //   2. no protection: the other "owner dies" traps fire now; a trap holding a revive is kept for the
 //      death: the card shatters, the trap is revealed (a counter-trap may destroy or steal it), then
 //      the card reforms only if the trap still holds (mechanics/revive.ts);
@@ -45,7 +46,19 @@ export function damage(c: Combat, src: Side, dst: Side, n: number): number {
   if (n >= dst.hp) {
     // An execution ignores avoid-death, and breaks it; the knell ignores it.
     if (!c.executing && !c.knelling) {
+      // While its protection resolves, the card hangs on at 1 HP: what answers its avoid-death trap
+      // (a counter-trap, adv_piege) hits the card the lethal hit left, not its HP from before.
+      const before = dst.hp;
+      dst.hp = 1;
       after = avoidDeath(c, dst);
+      if (dst.hp <= 0) {
+        // Finished meanwhile (its death is already played): the lethal hit left it at 1 HP, and
+        // `after` only shows the trap's held announcement after the damage line.
+        src.damageDealt += before - 1;
+        if (after) c.pendingEffects.push(after);
+        return before - 1;
+      }
+      dst.hp = before;
       if (after) n = dst.hp - 1;
     } else if (c.executing) breakAvoidDeath(c, dst);
     if (!after) trapRevive = reviveTrapOnLethal(c, dst);

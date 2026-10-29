@@ -78,6 +78,9 @@ export function avoidDeath(c: Combat, dst: Side): (() => void) | null {
   }
   // Avoid-death trap: its announcement is held back, to appear AFTER the damage line.
   const captured = hold(c, () => scan(c, { kind: 'death', who: id(c, dst), only: 1 }));
+  // Killed while its trap resolved (a counter-trap's missiles): the trap saves nothing, its held
+  // lines still show after the damage line (combat/damage.ts).
+  if (dst.hp <= 0) return () => releaseNow(c, captured);
   if (dst.status.avoidDeathCharges > 0) {
     dst.status.avoidDeathCharges--;
     return () => {
@@ -92,7 +95,7 @@ export function avoidDeath(c: Combat, dst: Side): (() => void) | null {
 
 // As a magic it is read directly on a lethal hit; from an ultimate or a trap it grants a charge.
 export function avoidDeathEffect({ c, o, fromMagic }: EffectContext): void {
-  if (fromMagic) return;
+  if (fromMagic || o.hp <= 0) return; // nothing to protect any more
   o.status.avoidDeathCharges = (o.status.avoidDeathCharges || 0) + 1;
   emit(c, { type: 'avoidDeathGranted', side: id(c, o) });
 }
