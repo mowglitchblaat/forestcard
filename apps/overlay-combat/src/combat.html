@@ -178,6 +178,28 @@ canvas.fx.solide{box-shadow:inset 0 0 30px 8px rgba(120,113,108,.75)}
 @keyframes titrein{0%{opacity:0;transform:translate(-50%,36vh) scale(.5)}18%{opacity:1;transform:translate(-50%,36vh) scale(1.45)}62%{opacity:1;transform:translate(-50%,36vh) scale(1.35)}100%{opacity:1;transform:translateX(-50%) scale(1)}}
 @keyframes titreglow{50%{box-shadow:0 0 3.6vh rgba(252,211,77,.95),0 0 9vh rgba(245,158,11,.5),inset 0 0 2vh rgba(252,211,77,.5)}}
 #beltmid{display:block;width:26vw;margin:0 auto 1.5vh;filter:drop-shadow(0 0 1.5vh rgba(255,215,120,.6));animation:beltlueur 2.6s ease-in-out infinite}
+/* TOURNOI (46-tournois.sql) : bandeau du match en haut (même cadre que le titre, liseré turquoise), tableau plein écran avant chaque match et après la finale */
+#titreban.tn{border-color:#5eead4;box-shadow:0 0 2.4vh rgba(94,234,212,.6),0 0 6vh rgba(20,184,166,.3),inset 0 0 1.6vh rgba(94,234,212,.3)}
+#titreban.tn small{color:#99f6e4}
+#tbracket{position:fixed;inset:0;z-index:60;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2.4vh;padding:4vh 3vw;box-sizing:border-box;background:radial-gradient(ellipse at center,rgba(20,14,4,.94),rgba(0,0,0,.97));opacity:0;transition:opacity .6s;pointer-events:none;font-size:var(--tbs,2.2vh)}
+#tbracket.on{opacity:1}
+#tbracket .tbt{display:flex;flex-direction:column;align-items:center;line-height:1.1;text-shadow:0 0 8px #000}
+#tbracket .tbt small{font-size:1.9vh;font-weight:800;letter-spacing:.35em;color:#99f6e4}
+#tbracket .tbt b{font-size:5vh;font-weight:900;color:#fcd34d;text-shadow:0 0 1.4vh #f59e0b,0 0 3px #000}
+#tbracket .tbg{display:flex;gap:2.2vw;align-items:stretch;height:min(76vh,calc(var(--tbn,4) * 13vh));width:min(94vw,190vh)}
+#tbracket .tbc{flex:1;display:flex;flex-direction:column;min-width:0}
+#tbracket .tbh{text-align:center;font-weight:800;letter-spacing:.12em;color:#fde68a;font-size:1.8vh;text-transform:uppercase;margin-bottom:1vh;white-space:nowrap}
+#tbracket .tbl{flex:1;display:flex;flex-direction:column;justify-content:space-around;gap:.8vh}
+#tbracket .tbm{border:.25vh solid rgba(252,211,77,.35);border-radius:1vh;background:rgba(40,26,4,.88);overflow:hidden}
+#tbracket .tbm.on{border-color:#5eead4;box-shadow:0 0 2vh rgba(94,234,212,.8);animation:tbon 1.6s ease-in-out infinite}
+@keyframes tbon{50%{box-shadow:0 0 3.6vh rgba(94,234,212,1)}}
+#tbracket .tbp{display:flex;justify-content:space-between;gap:1vw;padding:.4em .7em;color:#e5ece7;font-weight:800;white-space:nowrap}
+#tbracket .tbp+.tbp{border-top:.15vh solid rgba(252,211,77,.2)}
+#tbracket .tbp span{overflow:hidden;text-overflow:ellipsis}
+#tbracket .tbp.w{color:#fcd34d;background:rgba(252,211,77,.12)}#tbracket .tbp.l{opacity:.42}
+#tbracket .tbp.ex{opacity:.55;font-style:italic;font-weight:600}
+#tbracket.big .tbp{padding:.2em .6em}#tbracket.big .tbl{gap:.35vh}#tbracket.big .tbh{font-size:1.4vh}
+#tbracket .tbw{font-size:5.4vh;font-weight:900;color:#fcd34d;text-shadow:0 0 2vh #f59e0b,0 0 3px #000;animation:beltpop .9s cubic-bezier(.2,1.4,.4,1)}
 .belt.pop,#beltmid.pop{animation:beltpop .9s cubic-bezier(.2,1.4,.4,1),beltlueur 2.6s ease-in-out .9s infinite}
 .belt.b1,.belt.b2{width:62%;bottom:auto;top:7%}.belt.b1{left:13%;--r:-45deg;transform:translateX(-50%) rotate(var(--r))}.belt.b2{left:87%;--r:45deg;transform:translateX(-50%) rotate(var(--r))}
 @keyframes beltpop{0%{opacity:0;transform:translateX(-50%) rotate(var(--r)) scale(2.2)}100%{opacity:1;transform:translateX(-50%) rotate(var(--r)) scale(1)}}
@@ -333,14 +355,37 @@ function ceintureMilieu(on){const m=$('#beltmid');if(m)m.remove();if(on&&TITRE)$
 // BANDEAU DU TITRE : un combat pour une ceinture s'annonce au centre de l'écran, puis reste en haut tout le combat ; à la fin, il dit qui repart avec
 const NOM_B={rare:'Rare',epique:'Épique',libre:'Libre'};
 function escT(x){return String(x??'').replace(/&/g,'&amp;').replace(/</g,'&lt;')}
-function titreBan(js){const o=$('#titreban');if(o)o.remove();if(!TITRE)return;const ch=TITRE.cote!=null&&js&&js[TITRE.cote];
+function titreBan(js){const o=$('#titreban');if(o)o.remove();if(TOURNOI)return tournoiBan();if(!TITRE)return;const ch=TITRE.cote!=null&&js&&js[TITRE.cote];
  $('#scene').insertAdjacentHTML('beforeend',`<div id="titreban"><img src="cadres/ceinture-${TITRE.division}.webp" alt=""><div class="tx"><small>🏆 COMBAT POUR LE TITRE 🏆</small><b>CEINTURE ${(NOM_B[TITRE.division]||TITRE.division).toUpperCase()}</b><i>${ch?escT(ch.pseudo)+' défend sa ceinture':'Ceinture vacante : le vainqueur la prend'}</i></div><img src="cadres/ceinture-${TITRE.division}.webp" alt=""></div>`)}
-function titreFin(g){const b=$('#titreban');if(!b||!TITRE)return;const i=b.querySelector('i'),nm=k=>escT(JOUEURS[k]&&JOUEURS[k].pseudo);
+function titreFin(g){if(TOURNOI)return tournoiFin(g);const b=$('#titreban');if(!b||!TITRE)return;const i=b.querySelector('i'),nm=k=>escT(JOUEURS[k]&&JOUEURS[k].pseudo);
  if(g==null){b.classList.add('fin');i.innerHTML=TITRE.cote!=null?`Match nul : ${nm(TITRE.cote)} garde sa ceinture`:'Match nul : la ceinture reste vacante';return}
  if(TITRE.cote===g){b.classList.add('fin');i.innerHTML=`${nm(g)} conserve sa ceinture !`}else{b.classList.add('nouveau');i.innerHTML=`👑 NOUVEAU CHAMPION : ${nm(g)} !`}}
 function ceintureFin(g){titreFin(g);if(!TITRE||g==null)return;const d=TITRE.division;
  if(TITRE.cote===g){beltsMaj(g,d);return}
  BELTS=BELTS.map(L=>L.filter(x=>x!==d));BELTS[g].unshift(d);TITRE.cote=g;ceintureMilieu(false);beltsMaj(0,null);beltsMaj(1,null);beltsMaj(g,d)}
+// TOURNOI (46-tournois.sql) : R.tournoi décrit le match (tour, format, score avant et après ce combat, dans l'ordre des côtés du combat).
+// Le bandeau reprend celui du titre ; le tableau s'affiche en plein écran avant le 1er combat de chaque match et après la finale.
+// Après l'animation, si le tournoi continue (R.tournoi.suite), l'overlay lance lui-même le combat suivant (action ACTION_SUITE).
+let TOURNOI=null;
+const ACTION_SUITE=new URLSearchParams(location.search).get('suite')||'Tournoi - Suivant';
+function tournoiBan(){const T=TOURNOI;if(!T)return;const nm=k=>escT(JOUEURS[k]&&JOUEURS[k].pseudo),s=T.avant||[0,0];
+ const i=T.format>1?`BO${T.format} · Combat ${T.num} · ${nm(0)} ${s[0]} - ${s[1]} ${nm(1)}`:T.finale?'Le vainqueur remporte le tournoi':'Élimination directe : le vainqueur passe au tour suivant';
+ $('#scene').insertAdjacentHTML('beforeend',`<div id="titreban" class="tn"><img src="cadres/ceinture-${T.division}.webp" alt=""><div class="tx"><small>🏆 TOURNOI · ${escT(String(T.nom||'').toUpperCase())}</small><b>${escT(String(T.nom_tour||'').toUpperCase())}</b><i>${i}</i></div><img src="cadres/ceinture-${T.division}.webp" alt=""></div>`)}
+function tournoiFin(g){const b=$('#titreban'),T=TOURNOI;if(!b||!T)return;const i=b.querySelector('i'),nm=k=>escT(JOUEURS[k]&&JOUEURS[k].pseudo),a=T.apres||[0,0];
+ if(g==null){b.classList.add('fin');i.innerHTML='Match nul : le combat est rejoué';return}
+ if(T.tournoi_fini){b.classList.add('nouveau');i.innerHTML=`👑 ${nm(g)} REMPORTE LE TOURNOI !`;return}
+ if(T.match_fini){b.classList.add('nouveau');i.innerHTML=`${nm(g)} se qualifie${T.format>1?` (${Math.max(...a)}-${Math.min(...a)})`:''} !`;return}
+ b.classList.add('fin');i.innerHTML=`${nm(g)} gagne le combat · ${nm(0)} ${a[0]} - ${a[1]} ${nm(1)}`}
+function tableauHtml(T,o){const M=T.matchs||[],nt=T.tours||1,n1=M.filter(m=>m.tour===1).length||1;let cols='';
+ const ps=(m,id,p)=>p?escT(p):(m.exempt&&!id?'—':'?');
+ const box=m=>{const fin=!!m.gagnant,cl=id=>fin&&id&&m.gagnant===id?' w':fin&&id?' l':'';
+  return `<div class="tbm${o.actif===m.id?' on':''}"><div class="tbp${cl(m.a)}"><span>${ps(m,m.a,m.pseudo_a)}</span>${m.exempt?'':`<b>${m.score_a}</b>`}</div>${m.exempt?'<div class="tbp ex"><span>qualifié d\'office</span></div>':`<div class="tbp${cl(m.b)}"><span>${ps(m,m.b,m.pseudo_b)}</span><b>${m.score_b}</b></div>`}</div>`};
+ for(let r=1;r<=nt;r++){const L=M.filter(m=>m.tour===r).sort((x,y)=>x.position-y.position);
+  cols+=`<div class="tbc"><div class="tbh">${escT(L[0]?L[0].nom_tour:'')}${L[0]&&L[0].format>1?' · BO'+L[0].format:''}</div><div class="tbl">${L.map(box).join('')}</div></div>`}
+ return `<div class="tbt"><small>🏆 TOURNOI · DECK ${escT(String(T.ceinture||'').toUpperCase())}</small><b>${escT(T.nom)}</b></div><div class="tbg" style="--tbn:${n1}">${cols}</div>${o.champion?`<div class="tbw">👑 ${escT(o.champion)} remporte le tournoi !</div>`:''}`}
+async function tableauTournoi(T,o){if(!T)return;const fs=n=>n<=2?'2.6vh':n<=4?'2.3vh':n<=8?'1.7vh':n<=16?'1.1vh':'.8vh';
+ const el=document.createElement('div');el.id='tbracket';if((T.matchs||[]).filter(m=>m.tour===1).length>8)el.className='big';el.style.setProperty('--tbs',fs((T.matchs||[]).filter(m=>m.tour===1).length));el.innerHTML=tableauHtml(T,o);
+ document.body.appendChild(el);await sleep(60);el.classList.add('on');await sleep(o.ms||6000);el.classList.remove('on');await sleep(650);el.remove()}
 function panneau(i,j){const im=j.imageCombat||j.image,t=tierRar(j.rar),col=(j.rar&&j.rar.couleur)||'#888',magV=/^Aucun/.test(j.magie);JOUEURS[i]=j;
  $('#p'+i).innerHTML=`<div class="pj">${String(j.pseudo).replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div>${EQUIPE[i]?`<div class="eq">${Array.from({length:EQUIPE[i].of},(_,k)=>`<b class="${k<EQUIPE[i].n-1?'off':''}"></b>`).join('')}</div>`:''}<div class="cw${t!=='co'?' rr rr-'+t:''}" style="--g:${col}"><div class="card" ${im?`style="background-image:url('${urlImg(im)}')"`:''}>${im?'':j.carte}<div class="dosf" style="${dosCSS(j)}">${j.dos?'':'🌲'}</div>${t==='ep'||t==='lg'||t==='ul'?'<span class="shn"></span>':''}${j.imageCombat?'<span class="sv sva" data-v=""></span><span class="sv svp" data-v=""></span>':''}</div>${beltsHtml(i)}<div class="etats"></div></div>
  <div class="nm">${j.carte}</div><div class="bar"><i></i></div><div class="pv"></div>
@@ -1517,7 +1562,7 @@ Object.assign(NK,{
 async function jouer(res){
  file.push(res);if(enCours)return;enCours=true;
  while(file.length){const R=file.shift();await verrouPrendre('combat');await chargerMiroir();   // liste des images copiées sur GitHub, relue à chaque combat : OBS ouvert longtemps ne repasse jamais par Supabase pour une image copiée
-  if(!TEST&&!DEMO)await chargerVitesse();journalRecap=R;$('#log').innerHTML='';let detoAvant=-1;
+  if(!TEST&&!DEMO)await chargerVitesse();journalRecap=R;TOURNOI=R.tournoi||null;if(TOURNOI&&TOURNOI.premiere&&TOURNOI.tableau)await tableauTournoi(TOURNOI.tableau,{actif:TOURNOI.match,ms:6500});/* tournoi : le tableau avant le 1er combat du match */$('#log').innerHTML='';let detoAvant=-1;
   for(let ix=0;ix<R.journal.length;ix++){const e=R.journal[ix];
    $('#ban').className=e.t;$('#ban').textContent=e.txt;$('#log').innerHTML+=e.txt+'<br>';$('#log').scrollTop=1e5;
    if(e.t==='debut'||e.t==='prolongation'||e.t==='relais')chargerZones(e.joueurs);
@@ -1619,8 +1664,11 @@ async function jouer(res){
   if(!TEST&&!DEMO&&R.seed!=null)fetch('https://bjsvqikjnvaomyoifiml.supabase.co/rest/v1/rpc/combat_affiche',{method:'POST',headers:{apikey:'sb_publishable_-3cPqDCyE-zhb3z5r6dPhg_DJFKGAI6','Content-Type':'application/json'},body:JSON.stringify({p_seed:String(R.seed)})}).catch(()=>{});   // le combat apparaît dans l'historique du site seulement maintenant (pas de spoil)
   if(!TEST&&!DEMO&&R.annonce&&wsLive&&wsLive.readyState===1)wsLive.send(JSON.stringify({request:'DoAction',id:'fin-combat',action:{name:ACTION_FIN},args:{message:R.annonce}}));   // annonce du résultat dans le chat, une fois l'animation terminée
   if(!TEST){$('#scene').classList.remove('on');await wait(800)}
-  ceintureMilieu(false);{const tb=$('#titreban');if(tb)tb.remove()}TITRE=null;BELTS=[[],[]];
+  if(TOURNOI&&TOURNOI.tournoi_fini&&TOURNOI.tableau_final)await tableauTournoi(TOURNOI.tableau_final,{champion:TOURNOI.champion,ms:11000});   // tournoi terminé : le tableau final et le champion
+  const TS=TOURNOI;ceintureMilieu(false);{const tb=$('#titreban');if(tb)tb.remove()}TITRE=null;TOURNOI=null;BELTS=[[],[]];
   verrouLacher('combat');
+  // tournoi : le combat suivant se lance tout seul après une pause (action Streamer.bot ACTION_SUITE, ?suite= pour changer son nom)
+  if(!TEST&&!DEMO&&!SITE&&TS&&TS.suite&&wsLive&&wsLive.readyState===1)setTimeout(()=>{if(wsLive&&wsLive.readyState===1)wsLive.send(JSON.stringify({request:'DoAction',id:'tournoi-suite',action:{name:ACTION_SUITE},args:{tournoi:String(TS.id)}}))},Math.max(0,(+TS.pause||0)*1000));
   if(SITE)try{parent.postMessage({fc:'combat-fini'},location.origin)}catch(e){}
  }
  enCours=false;
@@ -1978,7 +2026,12 @@ function ouvrirRecap(){const R=journalRecap,box=$('#recap');if(!R){box.innerHTML
  if(f&&f.pv)h+=`<div class="pvs">PV à la fin : ${f.pv[0]} / ${f.max[0]} · ${f.pv[1]} / ${f.max[1]}</div>`;
  box.innerHTML=h;box.style.display='block';$('#rcx').onclick=()=>box.style.display='none'}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')$('#recap').style.display='none'});
-if(TEST||DEMO){const dm=$('#demo');if(dm){const row=document.createElement('div');row.id='outils';row.innerHTML='<button id="brc">📋 Récap du combat</button><button id="bbty">💰 Tester le Bounty</button>Vitesse ';row.appendChild($('#vit'));dm.prepend(row);$('#brc').onclick=ouvrirRecap;
+if(TEST||DEMO){const dm=$('#demo');if(dm){const row=document.createElement('div');row.id='outils';row.innerHTML='<button id="brc">📋 Récap du combat</button><button id="bbty">💰 Tester le Bounty</button><button id="btrn">🏆 Aperçu tournoi</button>Vitesse ';row.appendChild($('#vit'));dm.prepend(row);$('#brc').onclick=ouvrirRecap;
+  // aperçu du tableau d'un tournoi (6 joueurs : deux qualifiés d'office, une demi-finale jouée) puis du tableau final ; rien n'est enregistré
+  $('#btrn').onclick=async()=>{const P=['Mowgli','LoupCerf','Sweety','Ryuukin','Anubis','Moine'],m=(id,tour,pos,nom,format,a,b,sa,sb,g,ex)=>({id,tour,position:pos,nom_tour:nom,format,a,b,pseudo_a:a,pseudo_b:b,score_a:sa,score_b:sb,gagnant:g,exempt:!!ex});
+   const T=(fin)=>({nom:'Coupe du Cerf',ceinture:'Ceinture Libre',tours:3,matchs:[m(1,1,1,'Quart de finale',1,P[0],null,0,0,P[0],1),m(2,1,2,'Quart de finale',1,P[1],P[2],1,0,P[1]),m(3,1,3,'Quart de finale',1,P[3],null,0,0,P[3],1),m(4,1,4,'Quart de finale',1,P[4],P[5],0,1,P[5]),
+    m(5,2,1,'Demi-finale',3,P[0],P[1],2,1,P[0]),m(6,2,2,'Demi-finale',3,P[3],P[5],fin?0:1,fin?2:1,fin?P[5]:null),m(7,3,1,'Finale',5,P[0],fin?P[5]:null,fin?3:0,fin?2:0,fin?P[0]:null)]});
+   await tableauTournoi(T(false),{actif:6,ms:5000});await tableauTournoi(T(true),{champion:P[0],ms:6000})};
   let nb=0;$('#bbty').onclick=()=>{const tout=++nb%3===0,total=5+Math.floor(Math.random()*86),pg=tout?total:Math.round(total*.7),parts=[pg,total-pg];   // aperçu seulement : rien n'est enregistré (1 essai sur 3 : « le gagnant rafle tout »)
    const b=$('#ban');if(b)b.textContent='Aperçu : A remporte le combat ! (+50)'+(tout?` · 💰 Bounty ${total} : le gagnant rafle tout !`:` · 💰 Bounty ${total} !`);
    bourseBounty(parts);[0,1].forEach(i=>{if(parts[i]>0&&$('#p'+i))setTimeout(()=>flot(i,'💰 Bounty +'+parts[i],'#fcd34d'),2100)})}}}

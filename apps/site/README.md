@@ -52,3 +52,7 @@ Le même composeur que l'admin (`src/composeur.js`, inséré par le build dans `
 - le code livré dans la page et le bloc FX legacy (qui lit les listes de l'éditeur de la page), exécutés dans des contextes isolés, donnent le même texte, ou la même erreur, sur environ 4 200 entrées : cartes réelles, synthétiques et `dirty`, effets inconnus, effets perso, clés d'un autre genre (un passif en effet, un effet en passif).
 
 Aucune différence voulue avec le legacy. Celle de la phase 4b (décrire un passif ou un effet `execution` faisait planter la page, `X is not defined`) a disparu : l'amont a fait la même correction, au caractère près (`078e524`).
+
+## Tournois, armoire à trophées et Panthéon
+
+Onglet « 🎖️ Tournois » (`vTournois`, `db/migrations/46-tournois.sql`) : le tournoi ouvert (inscription et retrait par bouton, avec le deck de championnat de la ceinture du thème), sinon le dernier terminé, son tableau sans spoil (`tournoi_etat`) et le palmarès. Admin > Tournois (`aTournois`) : créer un tournoi (nom, thème, maximum de joueurs, gold, image du trophée), retirer un inscrit, tirer le tableau, régler l'enchaînement automatique, changer le trophée, annuler. Le profil affiche l'armoire à trophées du joueur (`trophees_joueur`). L'onglet Ceintures ajoute au Panthéon les doubles et triples champions (`db/migrations/45-pantheon-doubles.sql`).

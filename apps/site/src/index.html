@@ -38,7 +38,19 @@ table{border-collapse:collapse;width:100%}td,th{padding:6px;border-bottom:1px so
 .ok{color:#4ade80}.ko{color:#f87171}
 .stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin:8px 0 22px}
 .stat{background:#1d1d27;border:1px solid #2c2c38;border-radius:10px;padding:12px}
-.stat b{display:block;font-size:26px;margin:2px 0}.pth{background:#1d1d27;border:1px solid #2c2c38;border-radius:12px;padding:12px}.pth span{display:inline}.stat span{color:#aaa;font-size:13px;display:block}
+.stat b{display:block;font-size:26px;margin:2px 0}
+/* Tournois (46-tournois.sql) : tableau, armoire à trophées */
+.tbg{display:flex;gap:14px;overflow-x:auto;padding:6px 2px 12px;-webkit-overflow-scrolling:touch}.tbc{flex:1 0 170px;display:flex;flex-direction:column;min-width:170px}
+.tbh{text-align:center;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#fde68a;margin-bottom:6px;white-space:nowrap}
+.tbl{flex:1;display:flex;flex-direction:column;justify-content:space-around;gap:8px}.tbm{background:#1d1d27;border:1px solid #3a3a48;border-radius:8px;overflow:hidden}
+.tbm.on{border-color:#5eead4;box-shadow:0 0 10px rgba(94,234,212,.5)}.tbm.moi{border-color:#a78bfa}
+.tbp{display:flex;justify-content:space-between;gap:8px;padding:5px 9px;font-size:13px}.tbp+.tbp{border-top:1px solid #2c2c38}.tbp span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tbp.w{color:#fcd34d;font-weight:700;background:rgba(252,211,77,.08)}.tbp.l{opacity:.5}.tbp.ex{opacity:.55;font-style:italic}
+.arm{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:18px 10px;padding:18px 14px 12px;border-radius:12px;background:linear-gradient(180deg,#2a1c10,#1a110a);border:2px solid #4a3220;box-shadow:inset 0 0 30px rgba(0,0,0,.6);margin:8px 0 22px}
+.arm .tr{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;text-align:center;gap:4px;padding-bottom:10px;border-bottom:6px solid #5b3d22;box-shadow:0 6px 0 -2px #2f1f12}
+.arm .tr img,.arm .tr svg{height:86px;max-width:110px;object-fit:contain;filter:drop-shadow(0 4px 6px rgba(0,0,0,.7)) drop-shadow(0 0 8px var(--m))}
+.arm .tr.p2 img,.arm .tr.p2 svg{height:72px}.arm .tr.p3 img,.arm .tr.p3 svg{height:62px}
+.arm .pl{font-size:11px;font-weight:800;padding:2px 8px;border-radius:4px;background:var(--m);color:#1a1205}.arm .nm{font-size:13px;font-weight:700;line-height:1.2}.arm small{opacity:.7;font-size:11px}.pth{background:#1d1d27;border:1px solid #2c2c38;border-radius:12px;padding:12px}.pth span{display:inline}.stat span{color:#aaa;font-size:13px;display:block}
 .stat.card2{display:flex;gap:12px;align-items:center;grid-column:span 2}
 .stat.card2 img{width:80px;border-radius:4px;filter:drop-shadow(0 0 3px var(--g)) drop-shadow(0 0 10px var(--g))}
 .mk{min-width:0}.mk>select{width:100%;max-width:100%;text-overflow:ellipsis}
@@ -342,7 +354,7 @@ function voirActif(el){if(!el)return;const b=el.querySelector('button.on');if(!b
 async function q(p){const r=await p;if(r.error){uiAlert(r.error.message);throw r.error}return r.data}
 let user,joueur,isAdmin,tab='profil',sub='cartes',B={};   // ouverture sur le profil : pas d'images à charger (économise le quota Supabase)
 const opts=(a,l='nom')=>a.map(x=>`<option value="${x.id}">${esc(x[l])}</option>`).join('');
-const TABS={collection:'Ma collection',boutique:'Boutique',jeux:'🎲 Jeux du jour',deck:'Mon deck',echanges:'🔄 Échanges',dos:'Dos de cartes',historique:'Historique',profil:'Profils',classement:'🏆 Classement',ceintures:'🥇 Ceintures',regles:'Comment jouer',propos:'🎨 Propositions',patch:'📜 Patch notes'};
+const TABS={collection:'Ma collection',boutique:'Boutique',jeux:'🎲 Jeux du jour',deck:'Mon deck',echanges:'🔄 Échanges',dos:'Dos de cartes',historique:'Historique',profil:'Profils',classement:'🏆 Classement',ceintures:'🥇 Ceintures',tournois:'🎖️ Tournois',regles:'Comment jouer',propos:'🎨 Propositions',patch:'📜 Patch notes'};
 
 // Erreur renvoyée par Twitch / Supabase après une connexion ratée (dans l'adresse) : on l'affiche au lieu de rien
 function erreurConnexion(){
@@ -384,7 +396,7 @@ function header(){
 }
 async function refreshJoueur(){joueur=await q(sb.from('joueurs').select('*').eq('id',user.id).single());header()}
 // L'onglet ouvert est gardé dans l'adresse (#classement, #admin/joueurs…) : un rafraîchissement reste sur la même page
-const VUES=['jouer','collection','boutique','jeux','deck','echanges','dos','historique','profil','classement','ceintures','regles','propos','patch','admin'];
+const VUES=['jouer','collection','boutique','jeux','deck','echanges','dos','historique','profil','classement','ceintures','tournois','regles','propos','patch','admin'];
 function lireAncre(){const [t,s]=decodeURIComponent(location.hash.slice(1)).split('/');if(VUES.includes(t)&&(t!=='admin'||isAdmin)){tab=t;if(t==='admin'&&s)sub=s}}
 function ecrireAncre(){const a='#'+tab+(tab==='admin'?'/'+sub:'');if(location.hash!==a)history.replaceState(null,'',a)}
 window.addEventListener('hashchange',()=>{if(!user)return;const av=tab+'/'+sub;lireAncre();if(tab+'/'+sub!==av)show(tab)});
@@ -394,7 +406,7 @@ function show(t){
   tab=t;ecrireAncre();const T={...(jouable()||isAdmin?{jouer:'🎮 Jouer'}:{}),...TABS};if(isAdmin)T.admin='⚙️ Admin';
   $('#nav').innerHTML=(JEU.ferme?'<span class="chr ko">🔒 Le jeu est fermé pour le moment</span>':'')+Object.entries(T).map(([k,v])=>`<button class="${k==t?'on':'sec'}" data-t="${k}">${v}</button>`).join('');
   $('#nav').querySelectorAll('button').forEach(b=>b.onclick=()=>show(b.dataset.t));voirActif($('#nav'));
-  ({jouer:vJouer,collection:vCollection,boutique:vBoutique,jeux:vJeux,deck:vDeck,echanges:vEchanges,dos:vDos,historique:vHistorique,profil:vProfil,classement:vClassement,ceintures:vCeintures,regles:vRegles,propos:vPropos,patch:vPatch,admin:vAdmin})[t]();
+  ({jouer:vJouer,collection:vCollection,boutique:vBoutique,jeux:vJeux,deck:vDeck,echanges:vEchanges,dos:vDos,historique:vHistorique,profil:vProfil,classement:vClassement,ceintures:vCeintures,tournois:()=>vTournois(),regles:vRegles,propos:vPropos,patch:vPatch,admin:vAdmin})[t]();
 }
 
 /* ---------- Collection ---------- */
@@ -685,8 +697,17 @@ function pantheon(P){
      <div style="flex:1;min-width:0"><div><span style="font-weight:800;font-size:${i===0?17:15}px">${esc(x.pseudo||'?')}</span> <small style="opacity:.7">${esc(x.nom||'')}</small></div>
       <small style="opacity:.75">${quoi==='def'?`<span style="font-weight:700;color:#e5e7eb">${nd} défense${nd>1?'s':''}</span> · ${duree(x.secondes)}`:`<span style="font-weight:700;color:#e5e7eb">${duree(x.secondes)}</span> · ${nd} défense${nd>1?'s':''}`} · ${jr(x.debut)} → ${en?'<span style="font-weight:700;color:#fbbf24">en cours 👑</span>':jr(x.fin)}</small></div></div>`};
   const col=(t,L,q)=>`<div class="pth"><h4 style="margin:0 0 6px">${t}</h4>${L.length?L.map((x,i)=>ligne(x,i,q)).join(''):'<small>Personne pour l\'instant.</small>'}</div>`;
+  // doubles et triples champions (45-pantheon-doubles.sql) : plusieurs ceintures en même temps, classés au temps total
+  const multi=(x,i,nb)=>{const f=x.fois||0;
+    return `<div style="display:flex;gap:10px;align-items:center;padding:7px 9px;margin:5px 0;border-radius:10px;background:${i===0?'linear-gradient(90deg,rgba(251,191,36,.18),transparent)':'rgba(255,255,255,.03)'};border:1px solid ${i===0?'rgba(251,191,36,.55)':'rgba(255,255,255,.06)'}">
+     <span style="font-size:${i<3?22:16}px;min-width:28px;text-align:center">${med(i)}</span><span style="display:flex;flex-direction:column;flex:none;width:72px">${(nb===3?['libre','epique','rare']:['libre','epique']).map((d,k)=>`<img src="${vf('cadres/ceinture-'+d+'.webp')}" alt="" style="width:72px;margin-top:${k?2:0}px;filter:drop-shadow(0 1px 2px #000)">`).join('')}</span>
+     <div style="flex:1;min-width:0"><div><span style="font-weight:800;font-size:${i===0?17:15}px">${esc(x.pseudo||'?')}</span>${x.en_cours?' <small style="font-weight:700;color:#fbbf24">en cours 👑</small>':''}</div>
+      <small style="opacity:.75"><span style="font-weight:700;color:#e5e7eb">${duree(x.secondes)}</span> au total · ${f} fois${f>1?` · plus longue : ${duree(x.record)}`:''}</small></div></div>`};
+  const colM=(t,L,nb,vide)=>`<div class="pth"><h4 style="margin:0 0 6px">${t}</h4>${L.length?L.map((x,i)=>multi(x,i,nb)).join(''):`<small>${vide}</small>`}</div>`;
   return `<h3>🏛️ Panthéon</h3><p><small>Les plus grands règnes du championnat, toutes ceintures confondues, gardés pour toujours.</small></p>
-   <div class="stats" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr));align-items:start">${col('🛡️ Le plus de défenses',P.defenses||[],'def')}${col('⏳ Les plus longs règnes',P.duree||[],'dur')}</div>`;
+   <div class="stats" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr));align-items:start">${col('🛡️ Le plus de défenses',P.defenses||[],'def')}${col('⏳ Les plus longs règnes',P.duree||[],'dur')}</div>
+   <div class="stats" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr));align-items:start">${colM('👑👑 Doubles champions',P.doubles||[],2,'Personne n\'a encore détenu deux ceintures en même temps.')}${colM('👑👑👑 Triples champions',P.triples||[],3,'Personne n\'a encore détenu les trois ceintures en même temps.')}</div>
+   <p><small>Double champion : au moins deux ceintures en même temps (le temps passé triple compte aussi). Chaque période sans interruption compte pour une fois.</small></p>`;
 }
 async function vCeintures(){
   main.innerHTML='<p>Chargement…</p>';
@@ -715,6 +736,57 @@ async function vCeintures(){
   main.querySelectorAll('[data-dk]').forEach(b=>b.onclick=()=>show('deck'));
   main.querySelectorAll('[data-ref]').forEach(b=>b.onclick=async()=>{if(!(await uiConfirm('Refuser ce défi ?'+(E.ceintures.some(c=>c.division===b.dataset.ref&&c.champion===user.id)?' Au 3e refus, tu perds ta ceinture.':''))))return;
     b.disabled=true;const x=await appelJeu({mode:'refuser',division:b.dataset.ref});if(x)uiAlert(x.txt);vCeintures()});
+}
+
+/* ---------- Tournois (46-tournois.sql) ---------- */
+// Tableau à élimination directe joué en live, combat après combat : BO1 jusqu'aux quarts, BO3 en demi-finale, BO5 en finale.
+// Inscription avec le deck de championnat de la ceinture du thème (figé à l'inscription). Sans spoil : un combat encore à l'écran
+// n'apparaît pas dans le tableau. Trophées gardés pour toujours dans l'armoire du profil.
+const PLACES={1:{l:'🥇 Vainqueur',m:'#fbbf24'},2:{l:'🥈 Finaliste',m:'#cbd5e1'},3:{l:'🥉 Demi-finaliste',m:'#d97706'}};
+const coupe=m=>`<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M18 8h28v10c0 9-6 16-14 16S18 27 18 18z" fill="${m}"/><path d="M18 12H9c0 9 4 13 10 13M46 12h9c0 9-4 13-10 13" fill="none" stroke="${m}" stroke-width="4"/><rect x="28" y="33" width="8" height="10" fill="${m}"/><rect x="20" y="43" width="24" height="6" rx="1" fill="${m}"/><rect x="16" y="50" width="32" height="7" rx="2" fill="#3a2a10" stroke="${m}" stroke-width="2"/></svg>`;
+const tropheeImg=(image,place)=>image?`<img src="${img(image)}" alt="">`:coupe((PLACES[place]||PLACES[1]).m);
+function armoire(L,mine){
+  const n=p=>L.filter(x=>x.place===p).length,jr=d=>new Date(d).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'});
+  return `<h3>🏆 Armoire à trophées</h3>${L.length?`<p><small>${n(1)} tournoi${n(1)>1?'s':''} gagné${n(1)>1?'s':''} · ${n(2)} finale${n(2)>1?'s':''} · ${n(3)} demi-finale${n(3)>1?'s':''}</small></p>
+   <div class="arm">${L.map(x=>{const P=PLACES[x.place]||PLACES[1];return `<div class="tr p${x.place}" style="--m:${P.m}">${tropheeImg(x.image,x.place)}<span class="pl">${P.l}</span><span class="nm">${esc(x.nom)}</span><small>${esc(x.ceinture||'')} · ${jr(x.le)}</small></div>`}).join('')}</div>`
+   :`<p><small>${mine?'Aucun trophée pour l\'instant : inscris-toi au prochain tournoi (onglet 🎖️ Tournois) !':'Aucun trophée pour l\'instant.'}</small></p>`}`}
+function tableauSite(T){
+  const M=T.matchs||[],nt=T.tours||1,ps=(m,id,p)=>p?esc(p):(m.exempt&&!id?'—':'<span style="opacity:.5">?</span>');
+  const box=m=>{const fin=!!m.gagnant,cl=id=>fin&&id&&m.gagnant===id?' w':fin&&id?' l':'',moi=m.a===user.id||m.b===user.id;
+    return `<div class="tbm${m.a_l_ecran?' on':''}${moi?' moi':''}"><div class="tbp${cl(m.a)}"><span>${ps(m,m.a,m.pseudo_a)}</span>${m.exempt?'':`<b>${m.score_a}</b>`}</div>${m.exempt?'<div class="tbp ex"><span>qualifié d\'office</span></div>':`<div class="tbp${cl(m.b)}"><span>${ps(m,m.b,m.pseudo_b)}</span><b>${m.score_b}</b></div>`}</div>`};
+  let h='';for(let r=1;r<=nt;r++){const L=M.filter(m=>m.tour===r).sort((x,y)=>x.position-y.position);
+    h+=`<div class="tbc"><div class="tbh">${esc(L[0]?L[0].nom_tour:'')}${L[0]&&L[0].format>1?' · BO'+L[0].format:''}</div><div class="tbl">${L.map(box).join('')}</div></div>`}
+  return `<div class="tbg">${h}</div>`}
+async function vTournois(id=null){
+  main.innerHTML='<p>Chargement…</p>';
+  const [r,m]=await Promise.all([sb.rpc('tournoi_etat',{p_id:id}),sb.from('decks_championnat').select('division,cartes').eq('joueur_id',user.id)]);
+  if(r.error){main.innerHTML='<p class="ko">Tournois indisponibles pour le moment (l\'admin doit lancer 46-tournois.sql dans Supabase).</p>';return}
+  const E=r.data||{},T=E.tournoi,mes={};((m&&m.data)||[]).forEach(x=>mes[x.division]=(x.cartes||[]).length===15);
+  const jr=d=>d?new Date(d).toLocaleDateString('fr-FR',{day:'numeric',month:'long'}):'';
+  const STAT={inscriptions:'📝 Inscriptions ouvertes',en_cours:'⚔️ En cours',termine:'🏁 Terminé',annule:'Annulé'};
+  let corps='<p><small>Aucun tournoi pour l\'instant : le prochain sera annoncé en live.</small></p>';
+  if(T){const inscrit=(T.inscrits||[]).some(x=>x.id===user.id),D=DIVS[T.division]||{e:'',nom:T.ceinture},g=T.gold||[0,0,0],ecran=(T.matchs||[]).some(x=>x.a_l_ecran);
+    const prix=g.some(x=>x>0)?`<br><small>💰 ${g[0]} gold au vainqueur${g[1]?`, ${g[1]} au finaliste`:''}${g[2]?`, ${g[2]} à chaque demi-finaliste`:''}</small>`:'';
+    let action='';
+    if(T.statut==='inscriptions')action=inscrit?'<button class="sec" id="tquit">Se retirer</button> <b class="ok">Tu es inscrit ✓</b>'
+      :!mes[T.division]?`<button class="sec" id="tdeck">Prépare ton deck ${D.e}</button>`:'<button id="tins">🎖️ S\'inscrire</button>';
+    corps=`<div class="stat" style="display:flex;gap:16px;align-items:center;flex-wrap:wrap"><div class="arm" style="margin:0;padding:12px;display:block;--m:#fbbf24;flex:none"><div class="tr" style="border:0;box-shadow:none;padding:0">${tropheeImg(T.trophee,1)}</div></div>
+      <div style="flex:1;min-width:220px"><div style="font-size:22px;font-weight:900">${esc(T.nom)}</div><small>${STAT[T.statut]||''} · deck de championnat ${D.e} ${esc(T.ceinture)} · ${(T.inscrits||[]).length}${T.statut==='inscriptions'?'/'+T.max_joueurs:''} joueur${(T.inscrits||[]).length>1?'s':''}${T.fini_le&&T.statut==='termine'?' · le '+jr(T.fini_le):''}</small>${prix}
+      ${T.statut==='termine'&&T.pseudo_gagnant?`<div style="font-size:20px;font-weight:800;margin-top:6px;color:#fcd34d">👑 ${esc(T.pseudo_gagnant)} remporte le tournoi !</div>`:''}
+      <div class="row">${action}</div>${T.statut==='inscriptions'?'<small>Ou dans le chat pendant le live : <b>!tournoi</b> (et <b>!tournoi quitter</b> pour te retirer). Ton deck de championnat est figé au moment de l\'inscription.</small>':''}</div></div>
+      ${T.statut==='inscriptions'?`<h3>Inscrits</h3>${(T.inscrits||[]).length?`<p>${T.inscrits.map(x=>`<span class="chr"${x.id===user.id?' style="border-color:#a78bfa"':''}>${esc(x.pseudo||'?')}</span>`).join(' ')}</p>`:'<p><small>Personne pour l\'instant : sois le premier !</small></p>'}`
+      :`<h3>Le tableau</h3>${ecran?'<p><small>⚔️ Combat en cours à l\'écran… le résultat s\'affiche à la fin de l\'animation.</small></p>':''}${tableauSite(T)}`}`}
+  const P=E.passes||[];
+  main.innerHTML=`<h3>🎖️ Tournois</h3>
+   <p><small>Des tournois à élimination directe, joués en live combat après combat, sans avoir besoin d'être là : inscris-toi avec ton deck de championnat (celui de la ceinture du thème), le tableau est tiré au sort au lancement. Combats en relais comme pour le titre : 3 combattants chacun. <b>BO1</b> jusqu'aux quarts, <b>BO3</b> en demi-finale, <b>BO5</b> en finale ; un combat nul est rejoué. Le vainqueur, le finaliste et les demi-finalistes gagnent un trophée, gardé pour toujours dans l'armoire de leur profil.</small></p>
+   ${id&&T&&!['inscriptions','en_cours'].includes(T.statut)?'<p><button class="sec" id="tback">← Tournoi actuel</button></p>':''}
+   ${corps}
+   <h3>🏛️ Palmarès</h3>${P.length?`<table>${P.map(x=>`<tr><td>${(DIVS[x.division]||{}).e||''} <b>${esc(x.nom)}</b><br><small>${jr(x.fini_le)} · ${x.joueurs} joueurs</small></td><td>👑 ${esc(x.pseudo_gagnant||'?')}</td><td><button class="sec" data-tv="${x.id}">Voir</button></td></tr>`).join('')}</table>`:'<p><small>Aucun tournoi terminé pour l\'instant.</small></p>'}`;
+  const on=(s,f)=>{const b=main.querySelector(s);if(b)b.onclick=f};
+  on('#tback',()=>vTournois());on('#tdeck',()=>show('deck'));
+  on('#tins',async()=>{const x=await sb.rpc('tournoi_inscrire_site');if(x.error)return uiAlert(x.error.message);uiAlert(`🎖️ Inscrit au tournoi « ${x.data.tournoi} » ! (${x.data.inscrits}/${x.data.max})`);vTournois(id)});
+  on('#tquit',async()=>{if(!(await uiConfirm('Te retirer du tournoi ?')))return;const x=await sb.rpc('tournoi_quitter_site');if(x.error)return uiAlert(x.error.message);vTournois(id)});
+  main.querySelectorAll('[data-tv]').forEach(b=>b.onclick=()=>{vTournois(+b.dataset.tv);window.scrollTo(0,0)});
 }
 
 /* ---------- Boutique ---------- */
@@ -1026,7 +1098,7 @@ async function dkSauver(){
 /* ---------- Profils (visibles par tous les joueurs connectés) ---------- */
 async function vProfil(id=user.id){
   const mine=id==user.id;
-  const [rl,rp]=await Promise.all([sb.rpc('liste_profils'),sb.rpc('profil_public',{p_joueur:id})]);
+  const [rl,rp,rt]=await Promise.all([sb.rpc('liste_profils'),sb.rpc('profil_public',{p_joueur:id}),sb.rpc('trophees_joueur',{p_joueur:id})]);
   if(rl.error||rp.error){main.innerHTML='<p class="ko">Profils indisponibles pour le moment (l\'admin doit d\'abord lancer 05-profil.sql puis 06-profils-publics.sql dans Supabase).</p>';return}
   if(!rp.data){main.innerHTML='<p>Profil introuvable.</p>';return}
   const D=rp.data,S=D.stats||{},n=k=>S[k]??0,tot=n('victoires')+n('defaites')+n('nuls');
@@ -1058,6 +1130,7 @@ async function vProfil(id=user.id){
    ${st('Combat le plus long',S.combat_long_tours?S.combat_long_tours+' tours':'—')}
    ${st('Dégâts totaux infligés',n('degats_totaux'))}</div>
   <h3>Cartes</h3><div class="stats">${cardTile('Carte la plus jouée',D.plus_jouee,'combats')}${cardTile('Carte la plus victorieuse',D.plus_gagnante,'victoires')}</div>
+  ${rt&&!rt.error?armoire(rt.data||[],mine):''}
   ${coll}
   ${tot?'':`<p><small>${mine?'Aucun combat joué pour l\'instant : tes statistiques de combat apparaîtront après ton premier combat.':'Ce joueur n\'a pas encore combattu.'}</small></p>`}
   <p><button class="sec" data-cl>🏆 Voir le classement</button></p>`;
@@ -1232,7 +1305,7 @@ async function vHistorique(){
   box.innerHTML=`<p><small>Tes ${L.length} derniers combats. Clique sur « Voir le déroulé » pour revoir ce qui s'est passé.</small></p>`+L.map(x=>`
   <div class="hc ${esc(x.resultat)}" data-id="${x.id}">
    <div class="top"><span><b class="${x.resultat=='victoire'?'ok':x.resultat=='defaite'?'ko':''}">${LB_RES[x.resultat]||''}</b> contre <b>${esc(x.adversaire)}</b></span>
-    <small>${date(x.cree_le)} · ${x.mode=='payant'?'Duel':'Combat du jour'} · ${x.tours} tour${x.tours>1?'s':''} · +${x.gain??0} 💰</small></div>
+    <small>${date(x.cree_le)} · ${x.mode=='payant'?'Duel':x.mode=='titre'?'🥇 Combat pour le titre':x.mode=='tournoi'?'🎖️ Tournoi':'Combat du jour'} · ${x.tours} tour${x.tours>1?'s':''} · +${x.gain??0} 💰</small></div>
    <div class="cartes">Toi : ${trio(x.ma_carte,x.ma_magie,x.mon_piege)}<br>Lui : ${trio(x.sa_carte,x.sa_magie,x.son_piege)}</div>
    <button class="sec" data-d="${x.id}">Voir le déroulé</button><div class="dr" style="display:none"></div>
   </div>`).join('');
@@ -1584,6 +1657,13 @@ function vRegles(){
    ${c('La vie de champion',ul(['Chaque jour où il fait un combat pour le titre, le champion touche une prime à minuit : 90 gold par ceinture, +10 % par jour actif d\'affilée, +15 % par ceinture en plus','Il perd sa ceinture s\'il perd un combat pour le titre, à son 3e refus, ou après 7 jours sans combat pour le titre','L\'onglet 🥇 Ceintures montre les champions, les défis en attente et l\'histoire des règnes']))}
   </div>
 
+  ${h('Les tournois','y','Un tableau à élimination directe, joué en live combat après combat.')}
+  <div class="stats">
+   ${c('🎖️ S\'inscrire',ul(['Quand un tournoi est ouvert : <code class="cmd">!tournoi</code> dans le chat, ou le bouton de l\'onglet 🎖️ Tournois','Il te faut le deck de championnat de la ceinture du thème (Rare, Épique ou Libre)','Ton deck est figé au moment de l\'inscription','<code class="cmd">!tournoi quitter</code> pour te retirer avant le début']))}
+   ${c('Le tableau',ul(['Tiré au sort au lancement ; s\'il manque des joueurs, certains sont qualifiés d\'office au premier tour','Combats en relais, 3 combattants chacun, comme pour le titre','<b>BO1</b> jusqu\'aux quarts, <b>BO3</b> en demi-finale, <b>BO5</b> en finale','Un match nul ne compte pour personne : le combat est rejoué','Pas besoin d\'être là : tout se joue tout seul']))}
+   ${c('🏆 Les trophées',ul(['Vainqueur, finaliste et demi-finalistes gagnent un trophée','Il reste pour toujours dans l\'armoire à trophées de ton profil','Certains tournois ont aussi des gold à gagner']))}
+  </div>
+
   ${h('Récompenses & économie','y','Tout le monde gagne quelque chose à chaque combat.')}
   <div class="stats">
    ${c('Gains par combat','<table><tr><td>Victoire</td><td><b>50 gold</b></td></tr><tr><td>Match nul</td><td><b>20 gold</b></td></tr><tr><td>Défaite</td><td><b>10 gold</b></td></tr></table><small>🔥 Lors des soirées spéciales, les gains peuvent être multipliés (×2…) : c\'est annoncé dans le chat après chaque combat. 💰 Parfois, un <b>bounty</b> tombe sur un combat : une prime de gold en plus, partagée entre les deux joueurs, ou raflée en entier par le vainqueur.</small>')}
@@ -1636,11 +1716,11 @@ function vRegles(){
 
 /* ---------- Admin ---------- */
 async function vAdmin(){
-  const S={cartes:'Cartes',collections:'Collections',boosters:'Boosters',effets:'Effets',raretes:'Raretés',cadeaux:'Cadeaux',dos:'Dos de cartes',reglages:'Réglages',joueurs:'Joueurs',votes:'🗳️ Votes',propos:'🎨 Propositions'};
+  const S={cartes:'Cartes',collections:'Collections',boosters:'Boosters',effets:'Effets',raretes:'Raretés',cadeaux:'Cadeaux',dos:'Dos de cartes',reglages:'Réglages',joueurs:'Joueurs',tournois:'🎖️ Tournois',votes:'🗳️ Votes',propos:'🎨 Propositions'};
   if(!(sub in S)){sub='cartes';ecrireAncre()}
   main.innerHTML=`<div class="row chips" id="asub">${Object.entries(S).map(([k,v])=>`<button class="${k==sub?'on':'sec'}" data-s="${k}">${v}</button>`).join('')}</div><div id="sub"></div>`;voirActif($('#asub'));
   main.querySelectorAll('button[data-s]').forEach(b=>b.onclick=()=>{sub=b.dataset.s;ecrireAncre();vAdmin()});
-  ({cartes:aCartes,collections:aCollections,boosters:aBoosters,effets:aEffets,raretes:aRaretes,cadeaux:aCadeaux,dos:aDos,reglages:aReglages,joueurs:aJoueurs,votes:aVotes,propos:aPropos})[sub]();
+  ({cartes:aCartes,collections:aCollections,boosters:aBoosters,effets:aEffets,raretes:aRaretes,cadeaux:aCadeaux,dos:aDos,reglages:aReglages,joueurs:aJoueurs,tournois:aTournois,votes:aVotes,propos:aPropos})[sub]();
 }
 // Images allégées : converties en WebP (transparence conservée) et réduites à 1200 px de haut maximum ; gardées 1 an en cache.
 // Objectif : réduire le volume téléchargé depuis Supabase (quota « egress » du plan gratuit).
@@ -2132,6 +2212,47 @@ function nivForm(raw){const o=nivLus(raw),d=NIVEAUX_DEFAUT,val=(k,i)=>{const x=i
   <table class="tniv"><tr><th></th><th>I</th><th>II</th><th>III</th></tr>${NIV_LIGNES.map(([k,l])=>`<tr><td><small>${esc(l)}</small></td>${[0,1,2].map(i=>`<td><input name="${k}_${i}" type="number" min="0" max="1000" step="0.5" value="${esc(val(k,i))}" style="width:70px"></td>`).join('')}</tr>`).join('')}</table>
   <div class="row">${NIV_SEULS.map(([k,l])=>`<label><small>${esc(l)}</small><br><input name="${k}" type="number" min="0" max="1000" step="0.5" value="${esc(val(k))}" style="width:80px"></label>`).join('')}</div>
   <div class="row"><button>Enregistrer</button><button type="button" class="sec" id="nivdef">↩ Valeurs par défaut</button></div></form>`}
+// Admin > Tournois (46-tournois.sql) : créer le tournoi, suivre les inscriptions, lancer le tirage, régler l'enchaînement, annuler
+async function aTournois(){
+  const box=$('#sub');box.innerHTML='<p>Chargement…</p>';
+  const [r,l]=await Promise.all([sb.rpc('tournoi_etat',{p_id:null}),sb.rpc('tournois_admin')]);
+  if(r.error||l.error){box.innerHTML='<p class="ko">Tournois indisponibles : lance d\'abord 46-tournois.sql dans Supabase. Message : <b>'+esc((r.error||l.error).message)+'</b></p>';return}
+  const T=r.data&&r.data.tournoi,ouvert=T&&['inscriptions','en_cours'].includes(T.statut),L=l.data||[];
+  const STAT={inscriptions:'📝 Inscriptions',en_cours:'⚔️ En cours',termine:'🏁 Terminé',annule:'❌ Annulé'};
+  const aide=`<div class="f" style="display:block"><b>Streamer.bot : 2 actions à créer une fois</b><br><small>
+    1. <b>!tournoi</b> (tout le monde) : copie l'action de <b>!accepter</b> et remplace son mode par <code>tournoi</code>. Les joueurs s'inscrivent avec <code>!tournoi</code>, se retirent avec <code>!tournoi quitter</code>, et <code>!tournoi info</code> dit où en est le tournoi.<br>
+    2. <b>Tournoi - Suivant</b> (ce nom exact) : copie la même action, mode <code>tournoi_suivant</code>, avec une commande réservée au streamer (par exemple <code>!suivant</code>). Elle lance le tournoi (tirage) puis joue chaque combat. L'overlay la relance tout seul à la fin de chaque combat tant que « Enchaîner automatiquement » est coché ; décoche-le pour lancer chaque combat toi-même.</small></div>`;
+  let haut='';
+  if(ouvert){const n=(T.inscrits||[]).length;
+    haut=`<div class="f" style="display:block"><b>${esc(T.nom)}</b> · ${STAT[T.statut]} · deck ${esc(T.ceinture)} · ${n} inscrit${n>1?'s':''}${T.statut==='inscriptions'?' / '+T.max_joueurs:''}
+      ${T.statut==='inscriptions'?`<p>${n?T.inscrits.map(x=>`<span class="chr">${esc(x.pseudo||'?')} <button class="sec" data-tr="${x.id}" title="Retirer" style="padding:0 6px">✕</button></span>`).join(' '):'<small>Aucun inscrit pour l\'instant.</small>'}</p>`:tableauSite(T)}
+      <div class="row">${T.statut==='inscriptions'?`<button id="tlan" ${n<2?'disabled':''}>🎲 Tirer le tableau et lancer</button>`:''}
+       <label><input type="checkbox" id="tauto" ${T.auto?'checked':''}> Enchaîner automatiquement les combats</label>
+       <label class="sec" style="cursor:pointer">🏆 Changer le trophée <input type="file" id="ttro" accept="image/*" style="display:none"></label>
+       <button class="sec" id="tann">🛑 Annuler le tournoi</button></div>
+      <small>${T.statut==='inscriptions'?'Le tirage peut aussi se faire en live : la première commande « Tournoi - Suivant » tire le tableau et lance le premier combat.':'Le combat suivant se lance avec l\'action « Tournoi - Suivant » (ou tout seul, si l\'enchaînement est coché).'}</small></div>`}
+  else haut=`<form class="f" id="tnew"><b>Nouveau tournoi</b>
+     <label><small>Nom</small><br><input name="nom" required maxlength="60" placeholder="Coupe du Cerf"></label>
+     <label><small>Thème : le deck de championnat utilisé</small><br><select name="div"><option value="libre">🥇 Ceinture Libre (toutes raretés)</option><option value="epique">🥈 Ceinture Épique (jusqu'à épique)</option><option value="rare">🥉 Ceinture Rare (communes et rares)</option></select></label>
+     <label><small>Nombre maximum de joueurs (vide : réglage par défaut, 32)</small><br><input name="max" type="number" min="2" max="64" style="width:90px"></label>
+     <div class="row"><label><small>💰 Vainqueur</small><br><input name="g1" type="number" min="0" value="0" style="width:90px"></label><label><small>Finaliste</small><br><input name="g2" type="number" min="0" value="0" style="width:90px"></label><label><small>Chaque demi-finaliste</small><br><input name="g3" type="number" min="0" value="0" style="width:90px"></label></div>
+     <label><small>Image du trophée (facultative : sinon une coupe or, argent ou bronze)</small><br><input name="tro" type="file" accept="image/*"></label>
+     <label><input name="auto" type="checkbox" checked> Enchaîner automatiquement les combats en live</label>
+     <small>BO1 jusqu'aux quarts, BO3 en demi-finale, BO5 en finale (réglages tournoi_format_autres, tournoi_format_demi, tournoi_format_finale). Un seul tournoi ouvert à la fois.</small>
+     <button>Créer le tournoi et ouvrir les inscriptions</button></form>`;
+  box.innerHTML=haut+aide+`<h3>Tous les tournois</h3>${L.length?`<table><tr><th>Tournoi</th><th>Statut</th><th>Joueurs</th><th>Vainqueur</th></tr>${L.map(x=>`<tr><td><b>${esc(x.nom)}</b><br><small>${(DIVS[x.division]||{}).e||''} ${new Date(x.cree_le).toLocaleDateString('fr-FR')}</small></td><td>${STAT[x.statut]||x.statut}</td><td>${x.joueurs}</td><td>${esc(x.pseudo_gagnant||'—')}</td></tr>`).join('')}</table>`:'<p><small>Aucun tournoi pour l\'instant.</small></p>'}`;
+  const f=$('#tnew');if(f)f.onsubmit=async e=>{e.preventDefault();const F=new FormData(f),bt=f.querySelector('button');bt.disabled=true;
+    try{const fi=f.tro.files[0],tro=fi?await upload(fi):null,nb=x=>Math.max(0,parseInt(F.get(x),10)||0);
+      const x=await sb.rpc('tournoi_creer',{p_nom:F.get('nom'),p_division:F.get('div'),p_max:F.get('max')?parseInt(F.get('max'),10):null,p_gold_1:nb('g1'),p_gold_2:nb('g2'),p_gold_3:nb('g3'),p_trophee:tro,p_auto:f.auto.checked});
+      if(x.error)throw x.error;uiAlert('🎖️ Tournoi créé : les inscriptions sont ouvertes (!tournoi dans le chat, ou l\'onglet Tournois du site).');aTournois()}
+    catch(err){bt.disabled=false;uiAlert((err&&err.message)||String(err))}};
+  if(!ouvert)return;
+  box.querySelectorAll('[data-tr]').forEach(b=>b.onclick=async()=>{const x=await sb.rpc('tournoi_retirer',{p_id:T.id,p_joueur:b.dataset.tr});if(x.error)return uiAlert(x.error.message);aTournois()});
+  const lan=$('#tlan');if(lan)lan.onclick=async()=>{if(!(await uiConfirm('Fermer les inscriptions et tirer le tableau au sort ?')))return;const x=await sb.rpc('tournoi_lancer',{p_id:T.id});if(x.error)return uiAlert(x.error.message);aTournois()};
+  $('#tauto').onchange=async e=>{const x=await sb.rpc('tournoi_regler',{p_id:T.id,p_auto:e.target.checked,p_trophee:null});if(x.error)uiAlert(x.error.message)};
+  $('#ttro').onchange=async e=>{const fi=e.target.files[0];if(!fi)return;try{const path=await upload(fi);const x=await sb.rpc('tournoi_regler',{p_id:T.id,p_auto:null,p_trophee:path});if(x.error)throw x.error;uiAlert('🏆 Trophée mis à jour.')}catch(err){uiAlert((err&&err.message)||String(err))}};
+  $('#tann').onclick=async()=>{if(!(await uiConfirm(`Annuler le tournoi « ${T.nom} » ? Personne ne reçoit de trophée.`)))return;const x=await sb.rpc('tournoi_annuler',{p_id:T.id});if(x.error)return uiAlert(x.error.message);aTournois()};
+}
 async function aReglages(){
   const r=await sb.from('reglages_jeu').select('cle,valeur');
   if(r.error){$('#sub').innerHTML='<p class="ko">Les réglages ne sont pas encore disponibles côté Supabase (07-dos-et-reglages.sql). Message de Supabase : <b>'+esc(r.error.message)+'</b></p>';return}

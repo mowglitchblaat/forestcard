@@ -100,6 +100,95 @@ async function championnat(b) {
   return new Response(JSON.stringify(res), { status: 200, headers: { 'content-type': 'application/json; charset=utf-8', 'x-message': encodeURIComponent(intro) } });
 }
 
+// ---------------- Tournois (46-tournois.sql) ----------------
+// « !tournoi » dans le chat (mode tournoi) : s'inscrire ; « !tournoi quitter » : se retirer ; « !tournoi info » : où en est le tournoi.
+// Mode tournoi_suivant (action Streamer.bot « Tournoi - Suivant », lancée par le streamer ou par l'overlay à la fin d'un combat) :
+// lance le tournoi s'il est encore aux inscriptions, puis joue le combat suivant (relais 3 contre 3, deck de championnat figé
+// à l'inscription, aucun gold par combat).
+const TOURNOI_VERS = ['la finale', 'les demi-finales', 'les quarts de finale', 'les huitièmes de finale', 'les seizièmes de finale'];   // « se qualifie pour … »
+const motCle = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z ]/g, ' ').trim();
+async function tournoiChat(b) {
+  const mot = motCle([b.message, b.texte, b.adversaire].filter(Boolean).join(' ')).split(/\s+/)[0] || '';
+  const id = String(b.twitch_id);
+  if (['quitter', 'retirer', 'desinscrire', 'desinscription', 'stop'].includes(mot)) {
+    const r = await rpc('tournoi_quitter', { p_twitch_id: id });
+    if (!r.ok) return txt(erreurSql(r, 'Impossible de te retirer du tournoi.'), 409);
+    return txt(`👋 ${r.data.pseudo} se retire du tournoi « ${r.data.tournoi} » (${r.data.inscrits} inscrit${r.data.inscrits > 1 ? 's' : ''}).`);
+  }
+  if (['info', 'infos', 'etat', 'tableau', 'bracket'].includes(mot)) {
+    const r = await rpc('tournoi_etat', {});
+    const T = r.ok && r.data ? r.data.tournoi : null;
+    if (!T || !['inscriptions', 'en_cours'].includes(T.statut)) return txt('🏆 Aucun tournoi ouvert pour le moment.' + (T && T.pseudo_gagnant ? ` Dernier vainqueur : ${T.pseudo_gagnant} (${T.nom}).` : ''));
+    if (T.statut === 'inscriptions') return txt(`🏆 Tournoi « ${T.nom} » (deck de championnat ${T.ceinture}) : inscriptions ouvertes, ${T.inscrits.length}/${T.max_joueurs} inscrits. Tape !tournoi pour t'inscrire !`);
+    const M = (T.matchs || []).find((m) => !m.gagnant && m.a && m.b);
+    return txt(`🏆 Tournoi « ${T.nom} » en cours` + (M ? ` : ${M.nom_tour}, ${M.pseudo_a} contre ${M.pseudo_b} (BO${M.format}, ${M.score_a}-${M.score_b}).` : '.'));
+  }
+  const r = await rpc('tournoi_inscrire', { p_twitch_id: id });
+  if (!r.ok) return txt(erreurSql(r, 'Inscription impossible.'), 409);
+  const d = r.data;
+  return txt(`🏆 ${d.pseudo} s'inscrit au tournoi « ${d.tournoi} » avec son deck de championnat ${d.ceinture} ! (${d.inscrits}/${d.max} inscrits)`);
+}
+async function pauseTournoi() {
+  try {
+    const r = await rest('reglages_jeu?cle=eq.tournoi_pause_secondes&select=valeur');
+    if (r.ok && Array.isArray(r.data) && r.data[0]) { const n = parseFloat(r.data[0].valeur); if (Number.isFinite(n) && n >= 0) return Math.min(120, n); }
+  } catch { /* valeur par défaut */ }
+  return 8;
+}
+async function tournoiSuivant() {
+  const r = await rpc('tournoi_preparer', {});
+  if (!r.ok) return txt(erreurSql(r, 'Tournoi indisponible (46-tournois.sql à lancer dans Supabase).'), 409);
+  const D = r.data, M = D.match;
+  // côté 0 du moteur = celui qui commence : il change à chaque combat
+  const A = D.inverse ? D.b : D.a, B = D.inverse ? D.a : D.b;
+  let res;
+  try {
+    const dos = await dosDe([A.id, B.id]);
+    await ajouterRaretes([...(A.deck || []), ...(B.deck || [])]);
+    const niveaux = await reglesNiveaux();
+    res = simulerRelais({ pseudo: A.pseudo, deck: A.deck, dos: dos[A.id] }, { pseudo: B.pseudo, deck: B.deck, dos: dos[B.id] },
+      { seed: Math.floor(Math.random() * 1e9), regles: { ...REGLES, gain: 0, perte: 0, nul: 0, equipe: 3, niveaux } });
+    res.ceintures = await ceinturesDe([A.id, B.id]);
+  } catch (e) {
+    console.error('tournoi :', String(e));
+    return txt("Le combat du tournoi a rencontré une erreur, rien n'est compté : relance le match suivant.", 500);
+  }
+  const w = res.gagnant;
+  const c = await rpc('tournoi_conclure', { p_match: M.id, p_gagnant: w === null ? null : (w === 0 ? A.id : B.id), p_seed: String(res.seed) });
+  if (!c.ok) return txt(erreurSql(c, 'Ce combat du tournoi est déjà compté.'), 409);
+  const T = c.data;
+  try {
+    const J = (res.journal.find((e) => e.t === 'debut') || {}).joueurs || [];
+    let tours = 0; for (const e of res.journal) if (e.t === 'tour') tours++;
+    const deroule = res.journal.filter((e) => e.t !== 'debut').map((e) => { const o = { tour: e.tour, t: e.t, txt: e.txt }; if (e.c != null) o.c = e.c;
+      const j = e.t === 'relais' && e.joueurs && e.joueurs[e.c]; if (j) o.trio = [j.carte, j.magie, j.piege]; return o; });
+    // l'historique porte aussi le signal de fin d'animation (combat_affiche) qui dévoile le résultat sur le site
+    const h = await rest('historique_combats', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({
+      mode: 'tournoi', joueur_a: A.id, joueur_b: B.id, pseudo_a: A.pseudo, pseudo_b: B.pseudo,
+      carte_a: J[0] ? J[0].carte : null, carte_b: J[1] ? J[1].carte : null, magie_a: J[0] ? J[0].magie : null, magie_b: J[1] ? J[1].magie : null,
+      piege_a: J[0] ? J[0].piege : null, piege_b: J[1] ? J[1].piege : null,
+      gagnant: w, gain_a: 0, gain_b: 0, tours, seed: res.seed, deroule }) });
+    if (!h.ok) console.error('historique_combats (tournoi) :', JSON.stringify(h.data));
+  } catch (e) { console.error('historique_combats (tournoi) :', String(e)); }
+  // scores dans l'ordre des côtés du combat (0 : celui qui a commencé)
+  const avant = D.inverse ? [M.score_b, M.score_a] : [M.score_a, M.score_b];
+  const apres = D.inverse ? [T.score_b, T.score_a] : [T.score_a, T.score_b];
+  const nomW = w === null ? null : (w === 0 ? A.pseudo : B.pseudo), nomL = w === 0 ? B.pseudo : A.pseudo;
+  const nbTours = (D.tableau && D.tableau.tours) || 1;
+  const sc = `${Math.max(...apres)}-${Math.min(...apres)}`;
+  res.tournoi = { id: D.tournoi, nom: D.nom, division: D.division, ceinture: D.ceinture, match: M.id, nom_tour: M.nom_tour, format: M.format,
+    num: M.num, premiere: M.num === 1, lance: !!D.lance, avant, apres, inverse: !!D.inverse, match_fini: !!T.match_fini,
+    finale: !!T.finale, tournoi_fini: !!T.tournoi_fini, champion: T.champion || null, suite: !!T.suite, pause: await pauseTournoi(),
+    tableau: D.tableau || null, tableau_final: T.tableau || null };
+  res.annonce = w === null ? `🤝 Match nul entre ${A.pseudo} et ${B.pseudo} (combat ${M.num}) : le combat est rejoué !`
+    : T.tournoi_fini ? `👑 ${nomW} remporte le tournoi « ${D.nom} » en battant ${nomL} ${sc} en finale !`
+    : T.match_fini ? `✅ ${nomW} bat ${nomL}${M.format > 1 ? ' ' + sc : ''} et se qualifie pour ${TOURNOI_VERS[nbTours - M.tour - 1] || 'le tour suivant'} !`
+    : `⚔️ ${nomW} remporte le combat ${M.num} : ${apres[0] === apres[1] ? 'égalité ' + sc : (apres[0] > apres[1] ? A.pseudo : B.pseudo) + ' mène ' + sc} (${M.nom_tour}, BO${M.format}).`;
+  if (T.prochain && T.match_fini && !T.tournoi_fini) res.annonce += ` Prochain match : ${T.prochain.a} contre ${T.prochain.b} (${T.prochain.nom_tour}).`;
+  const intro = `🏆 ${D.lance ? `Le tableau du tournoi « ${D.nom} » est tiré ! ` : `Tournoi « ${D.nom} » · `}${M.nom_tour}${M.format > 1 ? ` (BO${M.format}), combat ${M.num}` : ''} : ${A.pseudo} contre ${B.pseudo}, 3 combattants chacun !`;
+  return new Response(JSON.stringify(res), { status: 200, headers: { 'content-type': 'application/json; charset=utf-8', 'x-message': encodeURIComponent(intro) } });
+}
+
 // ---------------- Serveur ----------------
 const ERREURS = {
   JOUEUR_INCONNU: "Connecte-toi d'abord au site avec Twitch pour jouer.",
@@ -310,16 +399,21 @@ async function traiter(req) {
     // le combat pour le titre se joue uniquement en live, dans le chat (!accepter) : jamais depuis le site
     if (b.mode === 'accepter') return txt('Le combat pour le titre se joue en live : accepte le défi dans le chat avec !accepter.', 409);
     if (b.mode === 'defi') return txt('Le championnat se joue en live : lance ton défi dans le chat avec !defi.', 409);
+    // les tournois se jouent en live : le site inscrit les joueurs directement en base (onglet Tournois)
+    if (String(b.mode || '').trim().startsWith('tournoi')) return txt('Les tournois se jouent en live : inscris-toi dans l\'onglet Tournois du site ou avec !tournoi dans le chat.', 409);
     // depuis le site, on peut seulement refuser un défi et lire les ceintures, même en live
     if (live && !site.admin && !TITRE_TEXTE.includes(b.mode)) return txt(EN_LIVE, 409);
     b.twitch_id = site.twitch_id;
   } else if (!live) return txt(PAUSE, 409);
+  // tournoi : le combat suivant n'a pas de joueur (action lancée par le streamer ou par l'overlay)
+  if (String(b.mode || '').trim() === 'tournoi_suivant') return tournoiSuivant();
   if (!b.twitch_id) return txt('Joueur manquant.', 400);
   // championnat : Streamer.bot peut envoyer le texte de la commande dans le mode lui-même (« defi rare @bob »)
   // (« accepter %rawInput% » sans rien après arrive avec un espace en trop : « accepter ») : on nettoie toujours le mode
-  { const m = String(b.mode || '').trim().split(/\s+/); if (TITRE_MODES.includes(m[0])) { b.mode = m[0]; if (m.length > 1) b.message = [b.message, ...m.slice(1)].filter(Boolean).join(' '); } }
+  { const m = String(b.mode || '').trim().split(/\s+/); if (TITRE_MODES.includes(m[0]) || m[0] === 'tournoi') { b.mode = m[0]; if (m.length > 1) b.message = [b.message, ...m.slice(1)].filter(Boolean).join(' '); } }
 
   if (TITRE_MODES.includes(b.mode)) return championnat(b);
+  if (b.mode === 'tournoi') return tournoiChat(b);
 
   // ----- Booster quotidien : 1 à 3 boosters, une fois par jour -----
   if (b.mode === 'booster_quotidien') {
