@@ -2,7 +2,7 @@
 
 ## `migrations/`
 
-Les scripts SQL de la base, numérotés dans l'ordre où ils ont été appliqués (`10-equilibrage.sql` … `49-echarpe-participation.sql`). Ils ne sont pas exécutés par un outil : l'auteur les colle à la main dans l'éditeur SQL du dashboard Supabase, une fois, dans l'ordre.
+Les scripts SQL de la base, numérotés dans l'ordre où ils ont été appliqués (`10-equilibrage.sql` … `50-tournoi-suisse.sql`). Ils ne sont pas exécutés par un outil : l'auteur les colle à la main dans l'éditeur SQL du dashboard Supabase, une fois, dans l'ordre.
 
 - **Jamais de `delete` ni d'`update` sans `where`** : Supabase les refuse (extension pg_safeupdate, « DELETE requires a WHERE clause »). Pour tout vider, `where true`.
 - **Pas de 01 à 09** : l'auteur ne les a plus. Le schéma complet viendra de ses exports (fonctions, tables, RLS, triggers), voir `docs/legacy/reference.md`.

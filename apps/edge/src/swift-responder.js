@@ -176,11 +176,25 @@ async function tournoiSuivant() {
   const nomW = w === null ? null : (w === 0 ? A.pseudo : B.pseudo), nomL = w === 0 ? B.pseudo : A.pseudo;
   const nbTours = (D.tableau && D.tableau.tours) || 1;
   const sc = `${Math.max(...apres)}-${Math.min(...apres)}`;
-  res.tournoi = { id: D.tournoi, nom: D.nom, division: D.division, ceinture: D.ceinture, match: M.id, nom_tour: M.nom_tour, format: M.format,
+  res.tournoi = { id: D.tournoi, nom: D.nom, division: D.division, ceinture: D.ceinture, match: M.id, nom_tour: M.nom_tour, format: M.format, type: D.format || 'elimination', phase: M.phase || 'tableau', revanche: !!T.revanche, ronde_finie: !!T.ronde_finie,
     num: M.num, premiere: M.num === 1, lance: !!D.lance, avant, apres, inverse: !!D.inverse, match_fini: !!T.match_fini,
     finale: !!T.finale, petite: !!T.petite, tournoi_fini: !!T.tournoi_fini, champion: T.champion || null, suite: !!T.suite, pause: await pauseTournoi(),
-    tableau: D.tableau || null, tableau_final: T.tableau || null };
+    tableau: D.tableau || null, tableau_final: T.tournoi_fini ? T.tableau || null : null };
+  // format suisse : bilan des rondes suisses, puis winner et loser bracket (50-tournoi-suisse.sql)
+  const bilan = (id) => { const x = T.bilans && T.bilans[id]; return x ? ` (${x.v}-${x.d})` : ''; };
+  const idW = w === 0 ? A.id : B.id, idL = w === 0 ? B.id : A.id;
+  const versTxt = (v) => { const x = String(v || 'le match suivant'); const l = x.charAt(0).toLowerCase() + x.slice(1); return (/^loser/.test(l) ? 'au ' : /^le /.test(l) ? '' : 'en ') + l; };
+  const suisse = T.format === 'suisse' && w !== null && !T.tournoi_fini ? (
+    !T.match_fini ? null
+    : T.phase === 'suisse' ? `⚔️ ${nomW}${bilan(idW)} bat ${nomL}${bilan(idL)} (${M.nom_tour}).`
+      + (T.qualifies ? ` Fin des rondes suisses : ${T.qualifies.join(', ')} se qualifient pour le tableau final !` : T.ronde_finie ? ` ${M.nom_tour} terminée !` : '')
+    : T.revanche ? `🔥 ${nomW} bat ${nomL} ${sc} en grande finale : chacun a perdu une fois, la revanche décide !`
+    : T.phase === 'winner' ? `✅ ${nomW} bat ${nomL} ${sc} et passe ${versTxt(T.vers)} ; ${nomL} descend dans le loser bracket.`
+    : T.phase === 'loser' ? `✅ ${nomW} bat ${nomL} ${sc} et passe ${versTxt(T.vers)} ; ${nomL} est éliminé${T.place_perdant ? ` (${T.place_perdant}e place)` : ''}.`
+    : null) : null;
   res.annonce = w === null ? `🤝 Match nul entre ${A.pseudo} et ${B.pseudo} (combat ${M.num}) : le combat est rejoué !`
+    : suisse ? suisse
+    : T.tournoi_fini && T.format === 'suisse' ? `👑 ${nomW} remporte le tournoi « ${D.nom} » en battant ${nomL} ${sc} (${M.nom_tour}) !`
     : T.tournoi_fini && !T.petite ? `👑 ${nomW} remporte le tournoi « ${D.nom} » en battant ${nomL} ${sc} en finale !`
     : T.match_fini && T.petite ? `🥉 ${nomW} bat ${nomL}${M.format > 1 ? ' ' + sc : ''} en petite finale et prend la 3e place !` + (T.tournoi_fini && T.champion ? ` 👑 ${T.champion} remporte le tournoi « ${D.nom} » !` : '')
     : T.match_fini ? `✅ ${nomW} bat ${nomL}${M.format > 1 ? ' ' + sc : ''} et se qualifie pour ${TOURNOI_VERS[nbTours - M.tour - 1] || 'le tour suivant'} !`
