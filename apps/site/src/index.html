@@ -742,18 +742,26 @@ async function vCeintures(){
 // Tableau à élimination directe joué en live, combat après combat : BO1 jusqu'aux quarts, BO3 en demi-finale, BO5 en finale.
 // Inscription avec le deck de championnat de la ceinture du thème (figé à l'inscription). Sans spoil : un combat encore à l'écran
 // n'apparaît pas dans le tableau. Trophées gardés pour toujours dans l'armoire du profil.
-const PLACES={1:{l:'🥇 Vainqueur',m:'#fbbf24'},2:{l:'🥈 Finaliste',m:'#cbd5e1'},3:{l:'🥉 Demi-finaliste',m:'#d97706'}};
+const PLACES={1:{l:'🥇 Vainqueur',m:'#fbbf24'},2:{l:'🥈 Finaliste',m:'#cbd5e1'},3:{l:'🥉 3e place',m:'#d97706'}};
+const PLACE_NOM={1:'🥇 1re place',2:'🥈 2e place',3:'🥉 3e place',4:'4e place'};
+// Ce que rapporte une place (Admin > Récompenses) : gold, boosters, dos de carte, carte
+function recompenseHtml(r){const L=[];
+  if(r.gold>0)L.push(`💰 <b>${r.gold}</b> gold`);
+  if(r.booster_id&&r.boosters>0)L.push(`${r.booster_image?`<img src="${img(r.booster_image)}" alt="" style="height:30px;vertical-align:middle;border-radius:4px">`:'📦'} ${r.boosters}× ${esc(r.booster||'booster')}`);
+  if(r.dos_id)L.push(`${r.dos_image?`<img src="${img(r.dos_image)}" alt="" style="height:30px;vertical-align:middle;border-radius:3px">`:'🂠'} dos « ${esc(r.dos||'?')} »`);
+  if(r.variante_id)L.push(`${r.carte_image?`<img src="${img(r.carte_image)}" alt="" style="height:38px;vertical-align:middle;border-radius:3px">`:'🃏'} carte ${esc(r.carte||'?')}${r.version&&r.version!=='Standard'?` (${esc(r.version)})`:''}`);
+  return L.join(' · ')}
 const coupe=m=>`<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M18 8h28v10c0 9-6 16-14 16S18 27 18 18z" fill="${m}"/><path d="M18 12H9c0 9 4 13 10 13M46 12h9c0 9-4 13-10 13" fill="none" stroke="${m}" stroke-width="4"/><rect x="28" y="33" width="8" height="10" fill="${m}"/><rect x="20" y="43" width="24" height="6" rx="1" fill="${m}"/><rect x="16" y="50" width="32" height="7" rx="2" fill="#3a2a10" stroke="${m}" stroke-width="2"/></svg>`;
 const tropheeImg=(image,place)=>image?`<img src="${img(image)}" alt="">`:coupe((PLACES[place]||PLACES[1]).m);
 function armoire(L,mine){
   const n=p=>L.filter(x=>x.place===p).length,jr=d=>new Date(d).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'});
-  return `<h3>🏆 Armoire à trophées</h3>${L.length?`<p><small>${n(1)} tournoi${n(1)>1?'s':''} gagné${n(1)>1?'s':''} · ${n(2)} finale${n(2)>1?'s':''} · ${n(3)} demi-finale${n(3)>1?'s':''}</small></p>
+  return `<h3>🏆 Armoire à trophées</h3>${L.length?`<p><small>${n(1)} tournoi${n(1)>1?'s':''} gagné${n(1)>1?'s':''} · ${n(2)} fois finaliste · ${n(3)} fois 3e</small></p>
    <div class="arm">${L.map(x=>{const P=PLACES[x.place]||PLACES[1];return `<div class="tr p${x.place}" style="--m:${P.m}">${tropheeImg(x.image,x.place)}<span class="pl">${P.l}</span><span class="nm">${esc(x.nom)}</span><small>${esc(x.ceinture||'')} · ${jr(x.le)}</small></div>`}).join('')}</div>`
    :`<p><small>${mine?'Aucun trophée pour l\'instant : inscris-toi au prochain tournoi (onglet 🎖️ Tournois) !':'Aucun trophée pour l\'instant.'}</small></p>`}`}
 function tableauSite(T){
   const M=T.matchs||[],nt=T.tours||1,ps=(m,id,p)=>p?esc(p):(m.exempt&&!id?'—':'<span style="opacity:.5">?</span>');
   const box=m=>{const fin=!!m.gagnant,cl=id=>fin&&id&&m.gagnant===id?' w':fin&&id?' l':'',moi=m.a===user.id||m.b===user.id;
-    return `<div class="tbm${m.a_l_ecran?' on':''}${moi?' moi':''}"><div class="tbp${cl(m.a)}"><span>${ps(m,m.a,m.pseudo_a)}</span>${m.exempt?'':`<b>${m.score_a}</b>`}</div>${m.exempt?'<div class="tbp ex"><span>qualifié d\'office</span></div>':`<div class="tbp${cl(m.b)}"><span>${ps(m,m.b,m.pseudo_b)}</span><b>${m.score_b}</b></div>`}</div>`};
+    return `${m.petite?`<div class="tbh" style="margin-top:10px;color:#fdba74">🥉 Petite finale${m.format>1?' · BO'+m.format:''}</div>`:''}<div class="tbm${m.a_l_ecran?' on':''}${moi?' moi':''}"><div class="tbp${cl(m.a)}"><span>${ps(m,m.a,m.pseudo_a)}</span>${m.exempt?'':`<b>${m.score_a}</b>`}</div>${m.exempt?'<div class="tbp ex"><span>qualifié d\'office</span></div>':`<div class="tbp${cl(m.b)}"><span>${ps(m,m.b,m.pseudo_b)}</span><b>${m.score_b}</b></div>`}</div>`};
   let h='';for(let r=1;r<=nt;r++){const L=M.filter(m=>m.tour===r).sort((x,y)=>x.position-y.position);
     h+=`<div class="tbc"><div class="tbh">${esc(L[0]?L[0].nom_tour:'')}${L[0]&&L[0].format>1?' · BO'+L[0].format:''}</div><div class="tbl">${L.map(box).join('')}</div></div>`}
   return `<div class="tbg">${h}</div>`}
@@ -765,8 +773,9 @@ async function vTournois(id=null){
   const jr=d=>d?new Date(d).toLocaleDateString('fr-FR',{day:'numeric',month:'long'}):'';
   const STAT={inscriptions:'📝 Inscriptions ouvertes',en_cours:'⚔️ En cours',termine:'🏁 Terminé',annule:'Annulé'};
   let corps='<p><small>Aucun tournoi pour l\'instant : le prochain sera annoncé en live.</small></p>';
-  if(T){const inscrit=(T.inscrits||[]).some(x=>x.id===user.id),D=DIVS[T.division]||{e:'',nom:T.ceinture},g=T.gold||[0,0,0],ecran=(T.matchs||[]).some(x=>x.a_l_ecran);
-    const prix=g.some(x=>x>0)?`<br><small>💰 ${g[0]} gold au vainqueur${g[1]?`, ${g[1]} au finaliste`:''}${g[2]?`, ${g[2]} à chaque demi-finaliste`:''}</small>`:'';
+  if(T){const inscrit=(T.inscrits||[]).some(x=>x.id===user.id),D=DIVS[T.division]||{e:'',nom:T.ceinture},ecran=(T.matchs||[]).some(x=>x.a_l_ecran);
+    const RC=(T.recompenses||[]).filter(r=>recompenseHtml(r));
+    const prix=RC.length?`<div style="margin-top:8px"><b>🎁 À gagner</b>${RC.map(r=>`<div style="margin:4px 0"><small style="opacity:.8">${PLACE_NOM[r.place]}</small> ${recompenseHtml(r)}</div>`).join('')}</div>`:'';
     let action='';
     if(T.statut==='inscriptions')action=inscrit?'<button class="sec" id="tquit">Se retirer</button> <b class="ok">Tu es inscrit ✓</b>'
       :!mes[T.division]?`<button class="sec" id="tdeck">Prépare ton deck ${D.e}</button>`:'<button id="tins">🎖️ S\'inscrire</button>';
@@ -778,7 +787,7 @@ async function vTournois(id=null){
       :`<h3>Le tableau</h3>${ecran?'<p><small>⚔️ Combat en cours à l\'écran… le résultat s\'affiche à la fin de l\'animation.</small></p>':''}${tableauSite(T)}`}`}
   const P=E.passes||[];
   main.innerHTML=`<h3>🎖️ Tournois</h3>
-   <p><small>Des tournois à élimination directe, joués en live combat après combat, sans avoir besoin d'être là : inscris-toi avec ton deck de championnat (celui de la ceinture du thème), le tableau est tiré au sort au lancement. Combats en relais comme pour le titre : 3 combattants chacun. <b>BO1</b> jusqu'aux quarts, <b>BO3</b> en demi-finale, <b>BO5</b> en finale ; un combat nul est rejoué. Le vainqueur, le finaliste et les demi-finalistes gagnent un trophée, gardé pour toujours dans l'armoire de leur profil.</small></p>
+   <p><small>Des tournois à élimination directe, joués en live combat après combat, sans avoir besoin d'être là : inscris-toi avec ton deck de championnat (celui de la ceinture du thème), le tableau est tiré au sort au lancement. Combats en relais comme pour le titre : 3 combattants chacun. <b>BO1</b> jusqu'aux quarts, <b>BO3</b> en demi-finale et en petite finale (pour la 3e place), <b>BO5</b> en finale ; un combat nul est rejoué. Les trois premiers gagnent un trophée, gardé pour toujours dans l'armoire de leur profil, et les quatre premiers les récompenses du tournoi.</small></p>
    ${id&&T&&!['inscriptions','en_cours'].includes(T.statut)?'<p><button class="sec" id="tback">← Tournoi actuel</button></p>':''}
    ${corps}
    <h3>🏛️ Palmarès</h3>${P.length?`<table>${P.map(x=>`<tr><td>${(DIVS[x.division]||{}).e||''} <b>${esc(x.nom)}</b><br><small>${jr(x.fini_le)} · ${x.joueurs} joueurs</small></td><td>👑 ${esc(x.pseudo_gagnant||'?')}</td><td><button class="sec" data-tv="${x.id}">Voir</button></td></tr>`).join('')}</table>`:'<p><small>Aucun tournoi terminé pour l\'instant.</small></p>'}`;
@@ -1660,8 +1669,8 @@ function vRegles(){
   ${h('Les tournois','y','Un tableau à élimination directe, joué en live combat après combat.')}
   <div class="stats">
    ${c('🎖️ S\'inscrire',ul(['Quand un tournoi est ouvert : <code class="cmd">!tournoi</code> dans le chat, ou le bouton de l\'onglet 🎖️ Tournois','Il te faut le deck de championnat de la ceinture du thème (Rare, Épique ou Libre)','Ton deck est figé au moment de l\'inscription','<code class="cmd">!tournoi quitter</code> pour te retirer avant le début']))}
-   ${c('Le tableau',ul(['Tiré au sort au lancement ; s\'il manque des joueurs, certains sont qualifiés d\'office au premier tour','Combats en relais, 3 combattants chacun, comme pour le titre','<b>BO1</b> jusqu\'aux quarts, <b>BO3</b> en demi-finale, <b>BO5</b> en finale','Un match nul ne compte pour personne : le combat est rejoué','Pas besoin d\'être là : tout se joue tout seul']))}
-   ${c('🏆 Les trophées',ul(['Vainqueur, finaliste et demi-finalistes gagnent un trophée','Il reste pour toujours dans l\'armoire à trophées de ton profil','Certains tournois ont aussi des gold à gagner']))}
+   ${c('Le tableau',ul(['Tiré au sort au lancement ; s\'il manque des joueurs, certains sont qualifiés d\'office au premier tour','Combats en relais, 3 combattants chacun, comme pour le titre','<b>BO1</b> jusqu\'aux quarts, <b>BO3</b> en demi-finale et en petite finale, <b>BO5</b> en finale','Un match nul ne compte pour personne : le combat est rejoué','Pas besoin d\'être là : tout se joue tout seul']))}
+   ${c('🏆 Trophées et récompenses',ul(['Petite finale entre les perdants des demi-finales, pour la 3e place','Les trois premiers gagnent un trophée, gardé pour toujours dans l\'armoire à trophées de ton profil','Les quatre premiers gagnent les récompenses du tournoi (gold, boosters, dos de carte, carte), affichées dans l\'onglet 🎖️ Tournois']))}
   </div>
 
   ${h('Récompenses & économie','y','Tout le monde gagne quelque chose à chaque combat.')}
@@ -1716,11 +1725,11 @@ function vRegles(){
 
 /* ---------- Admin ---------- */
 async function vAdmin(){
-  const S={cartes:'Cartes',collections:'Collections',boosters:'Boosters',effets:'Effets',raretes:'Raretés',cadeaux:'Cadeaux',dos:'Dos de cartes',reglages:'Réglages',joueurs:'Joueurs',tournois:'🎖️ Tournois',votes:'🗳️ Votes',propos:'🎨 Propositions'};
+  const S={cartes:'Cartes',collections:'Collections',boosters:'Boosters',effets:'Effets',raretes:'Raretés',cadeaux:'Cadeaux',dos:'Dos de cartes',reglages:'Réglages',joueurs:'Joueurs',tournois:'🎖️ Tournois',recompenses:'🎁 Récompenses',votes:'🗳️ Votes',propos:'🎨 Propositions'};
   if(!(sub in S)){sub='cartes';ecrireAncre()}
   main.innerHTML=`<div class="row chips" id="asub">${Object.entries(S).map(([k,v])=>`<button class="${k==sub?'on':'sec'}" data-s="${k}">${v}</button>`).join('')}</div><div id="sub"></div>`;voirActif($('#asub'));
   main.querySelectorAll('button[data-s]').forEach(b=>b.onclick=()=>{sub=b.dataset.s;ecrireAncre();vAdmin()});
-  ({cartes:aCartes,collections:aCollections,boosters:aBoosters,effets:aEffets,raretes:aRaretes,cadeaux:aCadeaux,dos:aDos,reglages:aReglages,joueurs:aJoueurs,tournois:aTournois,votes:aVotes,propos:aPropos})[sub]();
+  ({cartes:aCartes,collections:aCollections,boosters:aBoosters,effets:aEffets,raretes:aRaretes,cadeaux:aCadeaux,dos:aDos,reglages:aReglages,joueurs:aJoueurs,tournois:aTournois,recompenses:aRecompenses,votes:aVotes,propos:aPropos})[sub]();
 }
 // Images allégées : converties en WebP (transparence conservée) et réduites à 1200 px de haut maximum ; gardées 1 an en cache.
 // Objectif : réduire le volume téléchargé depuis Supabase (quota « egress » du plan gratuit).
@@ -2235,16 +2244,15 @@ async function aTournois(){
      <label><small>Nom</small><br><input name="nom" required maxlength="60" placeholder="Coupe du Cerf"></label>
      <label><small>Thème : le deck de championnat utilisé</small><br><select name="div"><option value="libre">🥇 Ceinture Libre (toutes raretés)</option><option value="epique">🥈 Ceinture Épique (jusqu'à épique)</option><option value="rare">🥉 Ceinture Rare (communes et rares)</option></select></label>
      <label><small>Nombre maximum de joueurs (vide : réglage par défaut, 32)</small><br><input name="max" type="number" min="2" max="64" style="width:90px"></label>
-     <div class="row"><label><small>💰 Vainqueur</small><br><input name="g1" type="number" min="0" value="0" style="width:90px"></label><label><small>Finaliste</small><br><input name="g2" type="number" min="0" value="0" style="width:90px"></label><label><small>Chaque demi-finaliste</small><br><input name="g3" type="number" min="0" value="0" style="width:90px"></label></div>
      <label><small>Image du trophée (facultative : sinon une coupe or, argent ou bronze)</small><br><input name="tro" type="file" accept="image/*"></label>
      <label><input name="auto" type="checkbox" checked> Enchaîner automatiquement les combats en live</label>
-     <small>BO1 jusqu'aux quarts, BO3 en demi-finale, BO5 en finale (réglages tournoi_format_autres, tournoi_format_demi, tournoi_format_finale). Un seul tournoi ouvert à la fois.</small>
+     <small>BO1 jusqu'aux quarts, BO3 en demi-finale et en petite finale, BO5 en finale (réglages tournoi_format_autres, tournoi_format_demi, tournoi_format_petite, tournoi_format_finale). Un seul tournoi ouvert à la fois. Les récompenses reprennent celles du tournoi précédent : à retoucher dans l'onglet 🎁 Récompenses.</small>
      <button>Créer le tournoi et ouvrir les inscriptions</button></form>`;
   box.innerHTML=haut+aide+`<h3>Tous les tournois</h3>${L.length?`<table><tr><th>Tournoi</th><th>Statut</th><th>Joueurs</th><th>Vainqueur</th></tr>${L.map(x=>`<tr><td><b>${esc(x.nom)}</b><br><small>${(DIVS[x.division]||{}).e||''} ${new Date(x.cree_le).toLocaleDateString('fr-FR')}</small></td><td>${STAT[x.statut]||x.statut}</td><td>${x.joueurs}</td><td>${esc(x.pseudo_gagnant||'—')}</td></tr>`).join('')}</table>`:'<p><small>Aucun tournoi pour l\'instant.</small></p>'}`;
   const f=$('#tnew');if(f)f.onsubmit=async e=>{e.preventDefault();const F=new FormData(f),bt=f.querySelector('button');bt.disabled=true;
-    try{const fi=f.tro.files[0],tro=fi?await upload(fi):null,nb=x=>Math.max(0,parseInt(F.get(x),10)||0);
-      const x=await sb.rpc('tournoi_creer',{p_nom:F.get('nom'),p_division:F.get('div'),p_max:F.get('max')?parseInt(F.get('max'),10):null,p_gold_1:nb('g1'),p_gold_2:nb('g2'),p_gold_3:nb('g3'),p_trophee:tro,p_auto:f.auto.checked});
-      if(x.error)throw x.error;uiAlert('🎖️ Tournoi créé : les inscriptions sont ouvertes (!tournoi dans le chat, ou l\'onglet Tournois du site).');aTournois()}
+    try{const fi=f.tro.files[0],tro=fi?await upload(fi):null;
+      const x=await sb.rpc('tournoi_creer',{p_nom:F.get('nom'),p_division:F.get('div'),p_max:F.get('max')?parseInt(F.get('max'),10):null,p_trophee:tro,p_auto:f.auto.checked});
+      if(x.error)throw x.error;uiAlert('🎖️ Tournoi créé : les inscriptions sont ouvertes (!tournoi dans le chat, ou l\'onglet Tournois du site). Règle ses récompenses dans l\'onglet 🎁 Récompenses.');aTournois()}
     catch(err){bt.disabled=false;uiAlert((err&&err.message)||String(err))}};
   if(!ouvert)return;
   box.querySelectorAll('[data-tr]').forEach(b=>b.onclick=async()=>{const x=await sb.rpc('tournoi_retirer',{p_id:T.id,p_joueur:b.dataset.tr});if(x.error)return uiAlert(x.error.message);aTournois()});
@@ -2252,6 +2260,34 @@ async function aTournois(){
   $('#tauto').onchange=async e=>{const x=await sb.rpc('tournoi_regler',{p_id:T.id,p_auto:e.target.checked,p_trophee:null});if(x.error)uiAlert(x.error.message)};
   $('#ttro').onchange=async e=>{const fi=e.target.files[0];if(!fi)return;try{const path=await upload(fi);const x=await sb.rpc('tournoi_regler',{p_id:T.id,p_auto:null,p_trophee:path});if(x.error)throw x.error;uiAlert('🏆 Trophée mis à jour.')}catch(err){uiAlert((err&&err.message)||String(err))}};
   $('#tann').onclick=async()=>{if(!(await uiConfirm(`Annuler le tournoi « ${T.nom} » ? Personne ne reçoit de trophée.`)))return;const x=await sb.rpc('tournoi_annuler',{p_id:T.id});if(x.error)return uiAlert(x.error.message);aTournois()};
+}
+// Admin > Récompenses (46-tournois.sql) : ce que gagnent les 4 premières places du tournoi ouvert (gold, boosters, dos de carte, carte)
+async function aRecompenses(){
+  const box=$('#sub');box.innerHTML='<p>Chargement…</p>';
+  const [r,b,d,v]=await Promise.all([sb.rpc('tournoi_etat',{p_id:null}),sb.from('types_boosters').select('id,nom,actif').order('id'),
+    sb.from('dos_cartes').select('id,nom').order('nom'),sb.from('variantes_carte').select('id,nom,cartes(nom,raretes(nom,poids))')]);
+  if(r.error){box.innerHTML='<p class="ko">Récompenses indisponibles : lance d\'abord 46-tournois.sql dans Supabase. Message : <b>'+esc(r.error.message)+'</b></p>';return}
+  const T=r.data&&r.data.tournoi;
+  if(!T||!['inscriptions','en_cours'].includes(T.statut)){box.innerHTML='<p>Aucun tournoi ouvert : crée d\'abord le tournoi dans l\'onglet 🎖️ Tournois, puis règle ses récompenses ici.</p>';return}
+  const R={};(T.recompenses||[]).forEach(x=>R[x.place]=x);
+  const V=(v.data||[]).filter(x=>x.cartes).sort((x,y)=>((x.cartes.raretes||{}).poids??1e9)-((y.cartes.raretes||{}).poids??1e9)||x.cartes.nom.localeCompare(y.cartes.nom)||x.nom.localeCompare(y.nom));   // les plus rares en premier
+  const opt=(L,val,lab)=>`<option value="">— Aucun —</option>`+L.map(x=>`<option value="${x.id}"${String(val??'')===String(x.id)?' selected':''}>${esc(lab(x))}</option>`).join('');
+  const ligne=p=>{const x=R[p]||{};
+    return `<div class="stat" data-pl="${p}"><h4 style="margin:0 0 8px">${PLACE_NOM[p]}${p===4?' <small style="opacity:.6">(perdant de la petite finale, sans trophée)</small>':''}</h4>
+     <div class="row"><label><small>💰 Gold</small><br><input data-k="gold" type="number" min="0" value="${x.gold||0}" style="width:100px"></label>
+      <label><small>📦 Booster</small><br><select data-k="booster">${opt(b.data||[],x.booster_id,y=>y.nom+(y.actif?'':' (inactif)'))}</select></label>
+      <label><small>Nombre</small><br><input data-k="nb" type="number" min="0" value="${x.boosters||1}" style="width:70px"></label></div>
+     <div class="row"><label><small>🂠 Dos de carte</small><br><select data-k="dos">${opt(d.data||[],x.dos_id,y=>y.nom||'Dos')}</select></label>
+      <label style="flex:1;min-width:200px"><small>🃏 Carte (la version précise)</small><br><select data-k="carte" style="width:100%">${opt(V,x.variante_id,y=>`${y.cartes.nom} — ${y.nom}${y.cartes.raretes?' · '+y.cartes.raretes.nom:''}`)}</select></label></div>
+     <small style="opacity:.75">${recompenseHtml(x)||'Rien pour l\'instant.'}</small></div>`};
+  box.innerHTML=`<p>Récompenses du tournoi <b>${esc(T.nom)}</b>, données à la fin du tournoi (1re à 3e place : aussi un trophée). Un dos de carte déjà possédé n'est pas redonné. Les joueurs voient ces récompenses dans l'onglet 🎖️ Tournois.</p>
+   <div class="stats" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">${[1,2,3,4].map(ligne).join('')}</div>
+   <button id="rsave">Enregistrer les récompenses</button>`;
+  $('#rsave').onclick=async()=>{const bt=$('#rsave');bt.disabled=true;
+    try{for(const el of box.querySelectorAll('[data-pl]')){const g=k=>el.querySelector(`[data-k="${k}"]`).value,n=x=>x===''?null:parseInt(x,10);
+      const x=await sb.rpc('tournoi_recompense_regler',{p_id:T.id,p_place:+el.dataset.pl,p_gold:Math.max(0,parseInt(g('gold'),10)||0),p_booster:n(g('booster')),p_boosters:Math.max(0,parseInt(g('nb'),10)||0),p_dos:g('dos')||null,p_variante:n(g('carte'))});
+      if(x.error)throw x.error}
+     uiAlert('🎁 Récompenses enregistrées.');aRecompenses()}catch(err){bt.disabled=false;uiAlert((err&&err.message)||String(err))}};
 }
 async function aReglages(){
   const r=await sb.from('reglages_jeu').select('cle,valeur');

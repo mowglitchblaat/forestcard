@@ -178,11 +178,13 @@ async function tournoiSuivant() {
   const sc = `${Math.max(...apres)}-${Math.min(...apres)}`;
   res.tournoi = { id: D.tournoi, nom: D.nom, division: D.division, ceinture: D.ceinture, match: M.id, nom_tour: M.nom_tour, format: M.format,
     num: M.num, premiere: M.num === 1, lance: !!D.lance, avant, apres, inverse: !!D.inverse, match_fini: !!T.match_fini,
-    finale: !!T.finale, tournoi_fini: !!T.tournoi_fini, champion: T.champion || null, suite: !!T.suite, pause: await pauseTournoi(),
+    finale: !!T.finale, petite: !!T.petite, tournoi_fini: !!T.tournoi_fini, champion: T.champion || null, suite: !!T.suite, pause: await pauseTournoi(),
     tableau: D.tableau || null, tableau_final: T.tableau || null };
   res.annonce = w === null ? `🤝 Match nul entre ${A.pseudo} et ${B.pseudo} (combat ${M.num}) : le combat est rejoué !`
-    : T.tournoi_fini ? `👑 ${nomW} remporte le tournoi « ${D.nom} » en battant ${nomL} ${sc} en finale !`
+    : T.tournoi_fini && !T.petite ? `👑 ${nomW} remporte le tournoi « ${D.nom} » en battant ${nomL} ${sc} en finale !`
+    : T.match_fini && T.petite ? `🥉 ${nomW} bat ${nomL}${M.format > 1 ? ' ' + sc : ''} en petite finale et prend la 3e place !` + (T.tournoi_fini && T.champion ? ` 👑 ${T.champion} remporte le tournoi « ${D.nom} » !` : '')
     : T.match_fini ? `✅ ${nomW} bat ${nomL}${M.format > 1 ? ' ' + sc : ''} et se qualifie pour ${TOURNOI_VERS[nbTours - M.tour - 1] || 'le tour suivant'} !`
+      + (T.vers_petite ? ` ${nomL} jouera la petite finale.` : T.troisieme ? ` ${nomL} termine 3e.` : '')
     : `⚔️ ${nomW} remporte le combat ${M.num} : ${apres[0] === apres[1] ? 'égalité ' + sc : (apres[0] > apres[1] ? A.pseudo : B.pseudo) + ' mène ' + sc} (${M.nom_tour}, BO${M.format}).`;
   if (T.prochain && T.match_fini && !T.tournoi_fini) res.annonce += ` Prochain match : ${T.prochain.a} contre ${T.prochain.b} (${T.prochain.nom_tour}).`;
   const intro = `🏆 ${D.lance ? `Le tableau du tournoi « ${D.nom} » est tiré ! ` : `Tournoi « ${D.nom} » · `}${M.nom_tour}${M.format > 1 ? ` (BO${M.format}), combat ${M.num}` : ''} : ${A.pseudo} contre ${B.pseudo}, 3 combattants chacun !`;
