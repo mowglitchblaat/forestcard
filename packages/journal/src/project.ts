@@ -1315,7 +1315,7 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
     case 'bladesLaid':
       return {
         t: 'statut',
-        txt: `${e.blades} lame${e.blades > 1 ? 's' : ''} d'air tourne${e.blades > 1 ? 'nt' : ''} autour de ${name(e.side)} (${e.blades} × ${fr(e.damage)} dégâts dans ${turns(e.turns)})${e.packets > 1 ? ` : ${e.packets} vagues en attente` : ''}`,
+        txt: `${e.blades} lame${e.blades > 1 ? 's' : ''} d'air se plante${e.blades > 1 ? 'nt' : ''} dans ${name(e.side)} (${e.blades} × ${fr(e.damage)} dégâts dans ${turns(e.turns)})${e.packets > 1 ? ` : ${e.packets} vagues en attente` : ''}`,
         o: { c: e.side, k: 'lames', n: e.blades, v: e.damage, s: e.turns },
       };
     case 'bladesStruck':
