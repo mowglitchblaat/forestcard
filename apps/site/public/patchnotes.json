@@ -1,5 +1,38 @@
 [
   {
+    "date": "2026-10-29",
+    "intro": "Le Feu, le Poison, la Foudre, la Malédiction et le Ciblage reçoivent de nouvelles compétences, toutes animées en combat, et les tournois en live se préparent.",
+    "groupes": [
+      {
+        "titre": "Combat",
+        "points": [
+          "Embrasement (Feu) : la carte s’enflamme deux tours, frappe plus fort et brûle à chaque coup, mais se consume elle-même ; l’eau ou la glace l’éteignent.",
+          "Nouvelles compétences : Fureur incandescente, Sangsue toxique, Injection virulente, Surcharge, Accumulateur, Brisure de volonté, Étreinte maudite, Verrouillage total et Visée maintenue."
+        ]
+      },
+      {
+        "titre": "Magies et pièges",
+        "points": [
+          "La plupart de ces nouvelles compétences, dont l’Embrasement et l’Étreinte maudite, existent aussi en magie et en piège."
+        ]
+      },
+      {
+        "titre": "Animations",
+        "points": [
+          "Chaque mécanique du rework a son animation : lames d’air qui se plantent dans la carte puis la tranchent, racines qui l’enserrent, foudre, couches de terre, braises…",
+          "Le Courant ascendant affiche la puissance critique gagnée, et le critique s’affiche sur la carte qui frappe."
+        ]
+      },
+      {
+        "titre": "Site",
+        "points": [
+          "Les tournois en live arrivent : onglet Tournois, tableau des matchs avec petite finale, récompenses et armoire à trophées sur le profil.",
+          "Onglet Ceintures : le Panthéon compte aussi les doubles et triples champions."
+        ]
+      }
+    ]
+  },
+  {
     "date": "2026-10-28",
     "intro": "Le grand rework des combats : les statuts passent en niveaux, et quatre éléments arrivent avec leurs mécaniques (Terre, Eau, Vent, Foudre).",
     "groupes": [
