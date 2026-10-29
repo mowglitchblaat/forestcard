@@ -210,6 +210,7 @@ const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers
 const PAUSE = "🎬 Le jeu est en pause pendant le let's play : ouvre tes boosters et fais tes combats sur le site !";
 const EN_LIVE = 'Le jeu se joue en live en ce moment : rejoins le stream pour jouer !';
 const FERME = '🔒 Le jeu est fermé pour le moment, à bientôt !';
+const TOURNOI_EN_COURS = '🏆 Un tournoi est en cours : les autres combats reprennent après la finale !';
 
 function entetes() {
   const K = Deno.env.get('SERVICE_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
@@ -331,6 +332,13 @@ async function dosDe(ids) {
 }
 
 // Jeu en live (Admin > Réglages) : en pause, les commandes du live répondent PAUSE et le site prend le relais
+// Un tournoi en cours (46-tournois.sql) : les autres combats attendent la finale. Sans gravité en cas de souci.
+async function tournoiEnCours() {
+  try {
+    const r = await rest('tournois?statut=eq.en_cours&select=id&limit=1');
+    return r.ok && Array.isArray(r.data) && r.data.length > 0;
+  } catch { return false; }
+}
 async function jeuEnLive() {
   try {
     const r = await rest('reglages_jeu?cle=eq.jeu_live&select=valeur');
@@ -414,8 +422,11 @@ async function traiter(req) {
   // (« accepter %rawInput% » sans rien après arrive avec un espace en trop : « accepter ») : on nettoie toujours le mode
   { const m = String(b.mode || '').trim().split(/\s+/); if (TITRE_MODES.includes(m[0]) || m[0] === 'tournoi') { b.mode = m[0]; if (m.length > 1) b.message = [b.message, ...m.slice(1)].filter(Boolean).join(' '); } }
 
-  if (TITRE_MODES.includes(b.mode)) return championnat(b);
   if (b.mode === 'tournoi') return tournoiChat(b);
+  // tournoi en cours : ni combat du jour, ni duel, ni défi ou combat pour le titre jusqu'à la finale
+  if ((['defi', 'accepter'].includes(b.mode) || !TITRE_MODES.includes(b.mode) && b.mode !== 'booster_quotidien') && await tournoiEnCours())
+    return txt(TOURNOI_EN_COURS, 409);
+  if (TITRE_MODES.includes(b.mode)) return championnat(b);
 
   // ----- Booster quotidien : 1 à 3 boosters, une fois par jour -----
   if (b.mode === 'booster_quotidien') {
