@@ -2237,28 +2237,29 @@ async function aTournois(){
       ${T.statut==='inscriptions'?`<p>${n?T.inscrits.map(x=>`<span class="chr">${esc(x.pseudo||'?')} <button class="sec" data-tr="${x.id}" title="Retirer" style="padding:0 6px">✕</button></span>`).join(' '):'<small>Aucun inscrit pour l\'instant.</small>'}</p>`:tableauSite(T)}
       <div class="row">${T.statut==='inscriptions'?`<button id="tlan" ${n<2?'disabled':''}>🎲 Tirer le tableau et lancer</button>`:''}
        <label><input type="checkbox" id="tauto" ${T.auto?'checked':''}> Enchaîner automatiquement les combats</label>
-       <label class="sec" style="cursor:pointer">🏆 Changer le trophée <input type="file" id="ttro" accept="image/*" style="display:none"></label>
+       ${[1,2,3].map(i=>`<label class="sec" style="cursor:pointer">${['','🥇','🥈','🥉'][i]} Trophée <input type="file" data-tro="${i}" accept="image/*" style="display:none"></label>`).join('')}
        <button class="sec" id="tann">🛑 Annuler le tournoi</button></div>
       <small>${T.statut==='inscriptions'?'Le tirage peut aussi se faire en live : la première commande « Tournoi - Suivant » tire le tableau et lance le premier combat.':'Le combat suivant se lance avec l\'action « Tournoi - Suivant » (ou tout seul, si l\'enchaînement est coché).'}</small></div>`}
   else haut=`<form class="f" id="tnew"><b>Nouveau tournoi</b>
      <label><small>Nom</small><br><input name="nom" required maxlength="60" placeholder="Coupe du Cerf"></label>
      <label><small>Thème : le deck de championnat utilisé</small><br><select name="div"><option value="libre">🥇 Ceinture Libre (toutes raretés)</option><option value="epique">🥈 Ceinture Épique (jusqu'à épique)</option><option value="rare">🥉 Ceinture Rare (communes et rares)</option></select></label>
      <label><small>Nombre maximum de joueurs (vide : réglage par défaut, 32)</small><br><input name="max" type="number" min="2" max="64" style="width:90px"></label>
-     <label><small>Image du trophée (facultative : sinon une coupe or, argent ou bronze)</small><br><input name="tro" type="file" accept="image/*"></label>
+     <label><small>Images des trophées, une par place (facultatives : une place sans image prend celle du vainqueur ; sans aucune image, une coupe or, argent ou bronze)</small><br>🥇 <input name="tro1" type="file" accept="image/*"><br>🥈 <input name="tro2" type="file" accept="image/*"><br>🥉 <input name="tro3" type="file" accept="image/*"></label>
      <label><input name="auto" type="checkbox" checked> Enchaîner automatiquement les combats en live</label>
      <small>BO1 jusqu'aux quarts, BO3 en demi-finale et en petite finale, BO5 en finale (réglages tournoi_format_autres, tournoi_format_demi, tournoi_format_petite, tournoi_format_finale). Un seul tournoi ouvert à la fois. Les récompenses reprennent celles du tournoi précédent : à retoucher dans l'onglet 🎁 Récompenses.</small>
      <button>Créer le tournoi et ouvrir les inscriptions</button></form>`;
   box.innerHTML=haut+aide+`<h3>Tous les tournois</h3>${L.length?`<table><tr><th>Tournoi</th><th>Statut</th><th>Joueurs</th><th>Vainqueur</th></tr>${L.map(x=>`<tr><td><b>${esc(x.nom)}</b><br><small>${(DIVS[x.division]||{}).e||''} ${new Date(x.cree_le).toLocaleDateString('fr-FR')}</small></td><td>${STAT[x.statut]||x.statut}</td><td>${x.joueurs}</td><td>${esc(x.pseudo_gagnant||'—')}</td></tr>`).join('')}</table>`:'<p><small>Aucun tournoi pour l\'instant.</small></p>'}`;
   const f=$('#tnew');if(f)f.onsubmit=async e=>{e.preventDefault();const F=new FormData(f),bt=f.querySelector('button');bt.disabled=true;
-    try{const fi=f.tro.files[0],tro=fi?await upload(fi):null;
-      const x=await sb.rpc('tournoi_creer',{p_nom:F.get('nom'),p_division:F.get('div'),p_max:F.get('max')?parseInt(F.get('max'),10):null,p_trophee:tro,p_auto:f.auto.checked});
-      if(x.error)throw x.error;uiAlert('🎖️ Tournoi créé : les inscriptions sont ouvertes (!tournoi dans le chat, ou l\'onglet Tournois du site). Règle ses récompenses dans l\'onglet 🎁 Récompenses.');aTournois()}
+    try{const tro=[];for(const i of [1,2,3]){const fi=f['tro'+i].files[0];tro[i]=fi?await upload(fi):null}
+      const x=await sb.rpc('tournoi_creer',{p_nom:F.get('nom'),p_division:F.get('div'),p_max:F.get('max')?parseInt(F.get('max'),10):null,p_trophee:tro[1],p_auto:f.auto.checked});
+      if(x.error)throw x.error;
+      for(const i of [2,3])if(tro[i]){const y=await sb.rpc('tournoi_trophee',{p_id:x.data,p_place:i,p_image:tro[i]});if(y.error)throw y.error}uiAlert('🎖️ Tournoi créé : les inscriptions sont ouvertes (!tournoi dans le chat, ou l\'onglet Tournois du site). Règle ses récompenses dans l\'onglet 🎁 Récompenses.');aTournois()}
     catch(err){bt.disabled=false;uiAlert((err&&err.message)||String(err))}};
   if(!ouvert)return;
   box.querySelectorAll('[data-tr]').forEach(b=>b.onclick=async()=>{const x=await sb.rpc('tournoi_retirer',{p_id:T.id,p_joueur:b.dataset.tr});if(x.error)return uiAlert(x.error.message);aTournois()});
   const lan=$('#tlan');if(lan)lan.onclick=async()=>{if(!(await uiConfirm('Fermer les inscriptions et tirer le tableau au sort ?')))return;const x=await sb.rpc('tournoi_lancer',{p_id:T.id});if(x.error)return uiAlert(x.error.message);aTournois()};
   $('#tauto').onchange=async e=>{const x=await sb.rpc('tournoi_regler',{p_id:T.id,p_auto:e.target.checked,p_trophee:null});if(x.error)uiAlert(x.error.message)};
-  $('#ttro').onchange=async e=>{const fi=e.target.files[0];if(!fi)return;try{const path=await upload(fi);const x=await sb.rpc('tournoi_regler',{p_id:T.id,p_auto:null,p_trophee:path});if(x.error)throw x.error;uiAlert('🏆 Trophée mis à jour.')}catch(err){uiAlert((err&&err.message)||String(err))}};
+  box.querySelectorAll('[data-tro]').forEach(inp=>inp.onchange=async e=>{const fi=e.target.files[0];if(!fi)return;const i=+inp.dataset.tro;try{const path=await upload(fi);const x=await sb.rpc('tournoi_trophee',{p_id:T.id,p_place:i,p_image:path});if(x.error)throw x.error;uiAlert(`${['','🥇','🥈','🥉'][i]} Trophée de la ${i===1?'1re':i+'e'} place mis à jour.`)}catch(err){uiAlert((err&&err.message)||String(err))}});
   $('#tann').onclick=async()=>{if(!(await uiConfirm(`Annuler le tournoi « ${T.nom} » ? Personne ne reçoit de trophée.`)))return;const x=await sb.rpc('tournoi_annuler',{p_id:T.id});if(x.error)return uiAlert(x.error.message);aTournois()};
 }
 // Admin > Récompenses (46-tournois.sql) : ce que gagnent les 4 premières places du tournoi ouvert (gold, boosters, dos de carte, carte)
