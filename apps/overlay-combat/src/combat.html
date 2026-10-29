@@ -96,7 +96,7 @@ canvas.fx.saignement{box-shadow:inset 0 0 38px 10px rgba(170,10,20,.75);animatio
 /* statuts portés : une pastille par statut sur la carte (champ `etats` du journal), avec son niveau (I, II, III) ou son nombre */
 .etats{position:absolute;left:4%;top:5%;z-index:6;display:flex;flex-direction:column;align-items:flex-start;gap:.3vw;pointer-events:none}
 .et{display:flex;align-items:center;gap:.25vw;padding:.12vw .5vw .12vw .32vw;border-radius:1vw;background:rgba(10,8,20,.84);border:.12vw solid var(--ec);box-shadow:0 0 .6vw var(--ec);font:800 1.1vw/1.3 system-ui,sans-serif;color:#fff;white-space:nowrap}
-.nlame{position:absolute;z-index:6;width:11%;height:19%;pointer-events:none;transform-origin:50% 100%;transform:rotate(var(--r));filter:drop-shadow(0 0 .45vw rgba(186,230,253,.95))}
+.nlame{position:absolute;z-index:6;width:11%;height:19%;pointer-events:none;transform-origin:50% 98%;transform:rotate(var(--r));filter:drop-shadow(0 0 .35vw rgba(125,211,252,.95)) drop-shadow(0 .2vw .2vw rgba(0,0,0,.6))}
 .nlame svg{width:100%;height:100%;display:block;overflow:visible}
 .nracines{position:absolute;inset:-4% -4% 0;z-index:6;pointer-events:none;transform-origin:50% 100%;animation:nserre 2.6s ease-in-out 1.2s infinite}
 .nracines svg{width:100%;height:100%;display:block;overflow:visible}.nracines path.r{fill:none;stroke-linecap:round}
@@ -1420,15 +1420,19 @@ function nstreaks(c,col,n=14){nfxStart();const b=nbox(c);if(!b)return;for(let i=
 // lames d'air : elles convergent et tranchent la carte en X
 // Cisaillement : les lames d'air volent depuis l'adversaire et se plantent dans la carte ; elles y restent (une par lame en
 // attente, 24 au plus, réparties sur toute la carte) ; quand elles frappent, chacune s'arrache en tranchant la carte dans tous les sens
-let nLameN=0;const NLAMES_MAX=24;
-function svgLameAir(){const g='nla'+(++nLameN);return `<svg viewBox="0 0 40 100" preserveAspectRatio="none"><defs><linearGradient id="${g}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#38bdf8" stop-opacity=".15"/><stop offset=".45" stop-color="#bae6fd" stop-opacity=".85"/><stop offset="1" stop-color="#ffffff"/></linearGradient></defs>
- <path d="M21 100 L15 62 C11 40 13 18 26 0 C22 22 25 44 29 64 Z" fill="url(#${g})" stroke="#f0f9ff" stroke-width="1.4" stroke-linejoin="miter"/><path d="M21 96 L18 62 C16 42 18 22 24 8" stroke="#fff" stroke-width="1.1" fill="none" opacity=".9"/><path d="M8 66 L33 60" stroke="#e0f2fe" stroke-width="2.2" opacity=".7"/></svg>`}
-function nLamePlante(c,vol=true){const cw=$('#p'+c+' .cw');if(!cw)return;const dir=c===0?1:-1,d=document.createElement('div'),k=cw.querySelectorAll('.nlame').length,x=14+((k*.7548777+.31)%1)*72+R(-3,3),y=22+((k*.5698403+.47)%1)*60+R(-3,3),r=dir*R(35,70)+R(-8,8);
- d.className='nlame';d.style.left=`calc(${x}% - 5.5%)`;d.style.top=`calc(${y}% - 19%)`;d.style.setProperty('--r',r+'deg');d.innerHTML=svgLameAir();cw.appendChild(d);
- if(vol){d.animate([{transform:`translate(${dir*38}vw,${-6}vw) rotate(${r}deg)`,opacity:.2},{transform:`rotate(${r}deg)`,opacity:1,offset:.85},{transform:`rotate(${r+dir*6}deg)`},{transform:`rotate(${r}deg)`}],{duration:520,easing:'cubic-bezier(.3,0,.8,.4)'});
-  setTimeout(()=>{const b=nbox(c);if(b){nfxStart();nglow(b.x+b.w*x/100,b.y+b.h*y/100,6,'#e0f2fe',3,8,22)}},440)}}
-function nLamesSync(c,n){const cw=$('#p'+c+' .cw');if(!cw)return;const L=[...cw.querySelectorAll('.nlame:not(.out)')],want=Math.min(NLAMES_MAX,n||0);
- for(let i=L.length;i<want;i++)setTimeout(()=>nLamePlante(c),(i-L.length)*Math.max(45,140-want*5));
+let nLameN=0;const NLAMES_MAX=24,NLP=[0,0];   // NLP : lames en vol (pas encore plantées), pour ne pas en lancer deux fois
+function svgLameAir(){const g='nla'+(++nLameN);return `<svg viewBox="0 0 40 100" preserveAspectRatio="none"><defs><linearGradient id="${g}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#7dd3fc"/><stop offset=".5" stop-color="#ffffff"/><stop offset="1" stop-color="#bae6fd"/></linearGradient></defs>
+ <path d="M20 98 L13 58 C11 38 14 18 22 2 C23 20 27 38 28 58 Z" fill="url(#${g})" stroke="#0ea5e9" stroke-width="1.6" stroke-linejoin="round"/><path d="M20 94 L18 58 C17 40 19 22 22 8" stroke="#fff" stroke-width="1.4" fill="none"/>
+ <rect x="9" y="56" width="22" height="4" rx="2" fill="#e0f2fe" stroke="#0ea5e9" stroke-width="1"/><ellipse cx="20" cy="98" rx="9" ry="2.6" fill="#020617" opacity=".85"/><ellipse cx="20" cy="97.4" rx="5" ry="1" fill="#e0f2fe" opacity=".7"/></svg>`}
+// une lame vole le long de son axe et se plante, pointe la première, à un endroit libre de la carte
+function nLamePlante(c,vol=true){const cw=$('#p'+c+' .cw');if(!cw)return;const dir=c===0?1:-1,d=document.createElement('div'),P=[...cw.querySelectorAll('.nlame:not(.out)')].map(l=>[+l.dataset.x,+l.dataset.y]);
+ let x=50,y=50;for(let t=0;t<16;t++){x=R(18,82);y=R(30,80);if(P.every(([a,b])=>Math.hypot(a-x,(b-y)*.7)>(P.length>10?9:15)))break}
+ const r=dir*R(25,55),rad=r*Math.PI/180,hx=Math.sin(rad),hy=-Math.cos(rad);
+ d.className='nlame';d.dataset.x=x;d.dataset.y=y;d.style.left=`calc(${x}% - 5.5%)`;d.style.top=`calc(${y}% - 19%)`;d.style.setProperty('--r',r+'deg');d.innerHTML=svgLameAir();cw.appendChild(d);
+ if(vol){d.animate([{transform:`translate(${hx*30}vw,${hy*30}vw) rotate(${r}deg)`,opacity:.3},{transform:`translate(${-hx*.4}vw,${-hy*.4}vw) rotate(${r}deg)`,opacity:1,offset:.82},{transform:`rotate(${r+dir*4}deg)`,offset:.9},{transform:`rotate(${r}deg)`}],{duration:460,easing:'cubic-bezier(.4,0,.9,.5)'});
+  setTimeout(()=>{const b=nbox(c);if(b){nglow(b.x+b.w*x/100,b.y+b.h*y/100,7,'#e0f2fe',3,8,22);nshake(c,.25)}},380)}}
+function nLamesSync(c,n){const cw=$('#p'+c+' .cw');if(!cw)return;const L=[...cw.querySelectorAll('.nlame:not(.out)')],want=Math.min(NLAMES_MAX,n||0),have=L.length+(NLP[c]||0);
+ for(let i=have;i<want;i++){NLP[c]=(NLP[c]||0)+1;setTimeout(()=>{NLP[c]--;if(cw.isConnected&&cw.querySelectorAll('.nlame:not(.out)').length<Math.min(NLAMES_MAX,NP[c].lames||0))nLamePlante(c)},(i-have)*Math.max(45,140-want*5))}
  if(L.length>want)setTimeout(()=>{const M=[...cw.querySelectorAll('.nlame:not(.out)')],w=Math.min(NLAMES_MAX,NP[c].lames||0);M.slice(0,Math.max(0,M.length-w)).forEach(l=>{l.classList.add('out');l.animate([{opacity:1},{opacity:0}],{duration:400}).onfinish=()=>l.remove()})},1600)}
 async function nCisaille(c,esquive){nfxStart();const b=nbox(c),cw=$('#p'+c+' .cw');if(!b||!cw)return;const L=[...cw.querySelectorAll('.nlame:not(.out)')],keep=Math.min(NLAMES_MAX,NP[c].lames||0),go=L.slice(0,Math.max(1,L.length-keep));
  go.forEach(l=>{l.classList.add('out');l.animate([{filter:'brightness(1)'},{filter:'brightness(2.6) drop-shadow(0 0 1.2vw #e0f2fe)'}],{duration:260,fill:'forwards'})});await wait(280);
@@ -1476,7 +1480,8 @@ function nContamine(c){ndrops(c,'#38bdf8',30);const b=nbox(c);if(b)nglow(b.cx,b.
 function nVapeur(c){nsteam(c,22);nflash(c,'#e0f2fe');flot(c,'VAPORISATION !','#e0f2fe','big')}
 function nFaiblesse(c){const k=$('#p'+c+' .card');if(k)k.animate([{filter:'none'},{filter:'saturate(.2) brightness(.7)'},{filter:'none'}],{duration:900});ndrops(c,'#60a5fa',10);flot(c,'Affaibli','#60a5fa')}
 // vent : coup critique, courant ascendant
-function nCritique(c,bonus){nfxStart();const b=nbox(c);if(!b)return;nglow(b.cx,b.cy,22,'#fde68a',7,12,30);nring(b.cx,b.cy,b.w*.1,b.w*.8,'rgba(253,230,138,.95)',6,24);nflash(c,'#fbbf24',300);flot(c,'CRITIQUE ! +'+(bonus||0),'#fbbf24','big')}
+// le coup critique : la carte qui frappe brille d'or et annonce le critique, l'impact doré éclate sur la carte touchée
+function nCritique(a,d,bonus){nfxStart();const A=nbox(a),b=nbox(d);if(A){nflash(a,'#fbbf24',360);nglow(A.cx,A.cy,10,'#fde68a',3,10,26)}flot(a,'CRITIQUE ! +'+(bonus||0),'#fbbf24','big');if(!b)return;nglow(b.cx,b.cy,22,'#fde68a',7,12,30);nring(b.cx,b.cy,b.w*.1,b.w*.8,'rgba(253,230,138,.95)',6,24)}
 function nCourant(c){nstreaks(c,'rgba(186,230,253,.9)',16);flot(c,'Courant ascendant','#bae6fd')}
 // feu : embrasement (flammes), éteint par l'eau (vapeur) ou la glace (givre)
 function nEmbrase(c){nfxStart();const b=nbox(c);if(b){for(let i=0;i<34;i++)nadd({k:'glow',x:b.x+R(0,1)*b.w,y:b.y+b.h*R(.5,1),vx:R(-.8,.8),vy:-R(2,6),s:R(8,18),col:['#fb923c','#f97316','#fde047'][i%3],life:R(35,60)});nring(b.cx,b.cy,b.w*.2,b.w*.9,'rgba(249,115,22,.9)',6,28)}nflash(c,'#f97316')}
@@ -1503,7 +1508,7 @@ Object.assign(NK,{
  'statut:charge':e=>nChargeTerre(e.c,e.n),'statut:replique':e=>nReplique(e.c,e.to,false),'statut:replique_esquivee':e=>nReplique(e.c,e.to,true),
  'statut:enracinement':e=>nRacines(e.c,e.s),'finstatut:enracinement':()=>{},'statut:ultime_retenu':e=>flot(e.c,'Ultime retenu (racines)','#c084fc'),
  'statut:contamination':e=>nContamine(e.c),'finstatut:contamination':()=>{},'statut:vaporisation':e=>nVapeur(e.c),'statut:faiblesse':e=>nFaiblesse(e.c),'finstatut:faiblesse':()=>{},
- 'statut:critique':e=>nCritique(e.cible!=null?e.cible:1-e.c,e.n),'statut:courant':e=>nCourant(e.c),'finstatut:courant':()=>{},
+ 'statut:critique':e=>nCritique(e.c,e.cible!=null?e.cible:1-e.c,e.n),'statut:courant':e=>nCourant(e.c),'finstatut:courant':()=>{},
  'statut:fureur':e=>e.n||e.up?nFureur(e.c,!!e.up,e.n):flot(e.c,'Fureur incandescente','#fb923c','big'),
  'statut:sangsue':e=>{nfxStart();const b=nbox(e.c);if(b)nring(b.cx,b.cy,b.w*.2,b.w*.8,'rgba(134,239,172,.8)',4,26);flot(e.c,'Sangsue toxique','#86efac')},'finstatut:sangsue':()=>{},
  'statut:sangsue_soin':e=>nSangsue(e.c,e.cible),'statut:injection':e=>nInjection(e.c,e.by!=null?e.by:1-e.c,e.r),
@@ -1739,8 +1744,8 @@ if(DEMO){
   ['Vent','Cisaillement : 3 lames se plantent, puis tranchent',async c=>{nLamesPose(c,3);NP[c].lames=3;nLamesSync(c,3);await wait(1900);NP[c].lames=0;nCisaille(c,false)},3200,null,null,true],
   ['Vent','Cisaillement : 15 lames plantées, puis tranchent',async c=>{nLamesPose(c,15);NP[c].lames=15;nLamesSync(c,15);await wait(2400);NP[c].lames=0;nCisaille(c,false)},3800,null,null,true],
   ['Vent','Cisaillement esquivé',async c=>{NP[c].lames=2;nLamesSync(c,2);await wait(1300);NP[c].lames=0;nCisaille(c,true)},2400,null,null,true],
-  ['Vent','Coup critique',c=>nCritique(c,12),1500],
-  ['Vent','Courant ascendant',c=>{nCritique(c,12);setTimeout(()=>nCourant(1-c),500)},2000],
+  ['Vent','Coup critique',c=>nCritique(c,1-c,12),1500],
+  ['Vent','Courant ascendant',c=>{nCritique(c,1-c,12);setTimeout(()=>nCourant(c),500)},2000],
   ['Foudre','Marque de foudre niveau I, puis coup amplifié',async c=>{nFoudre(c,1);await wait(1100);nFoudreCoup(c,8)},2200],
   ['Foudre','Niveau II : rebonds (magie chargée, piège détruit)',async c=>{nFoudre(c,2);await wait(600);await nRebond(c,'magie','charged');await wait(500);await nRebond(c,'piege','destroyed')},3200,null,null,true],
   ['Foudre','Surcharge (la carte crépite)',async c=>{NP[c].surcharge=true;nSurcharge(c);await wait(2600);NP[c].surcharge=false},3000],
