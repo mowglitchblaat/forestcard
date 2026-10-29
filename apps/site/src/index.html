@@ -742,7 +742,7 @@ async function vCeintures(){
 // Tableau à élimination directe joué en live, combat après combat : BO1 jusqu'aux quarts, BO3 en demi-finale, BO5 en finale.
 // Inscription avec le deck de championnat de la ceinture du thème (figé à l'inscription). Sans spoil : un combat encore à l'écran
 // n'apparaît pas dans le tableau. Trophées gardés pour toujours dans l'armoire du profil.
-const PLACES={1:{l:'🥇 Vainqueur',m:'#fbbf24'},2:{l:'🥈 Finaliste',m:'#cbd5e1'},3:{l:'🥉 3e place',m:'#d97706'}};
+const PLACES={0:{l:'🎗️ Participant',m:'#2dd4bf'},1:{l:'🥇 Vainqueur',m:'#fbbf24'},2:{l:'🥈 Finaliste',m:'#cbd5e1'},3:{l:'🥉 3e place',m:'#d97706'}};
 const PLACE_NOM={1:'🥇 1re place',2:'🥈 2e place',3:'🥉 3e place',4:'4e place'};
 // Ce que rapporte une place (Admin > Récompenses) : gold, boosters, dos de carte, carte
 function recompenseHtml(r){const L=[];
@@ -752,11 +752,15 @@ function recompenseHtml(r){const L=[];
   if(r.variante_id)L.push(`${r.carte_image?`<img src="${img(r.carte_image)}" alt="" style="height:38px;vertical-align:middle;border-radius:3px">`:'🃏'} carte ${esc(r.carte||'?')}${r.version&&r.version!=='Standard'?` (${esc(r.version)})`:''}`);
   return L.join(' · ')}
 const coupe=m=>`<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M18 8h28v10c0 9-6 16-14 16S18 27 18 18z" fill="${m}"/><path d="M18 12H9c0 9 4 13 10 13M46 12h9c0 9-4 13-10 13" fill="none" stroke="${m}" stroke-width="4"/><rect x="28" y="33" width="8" height="10" fill="${m}"/><rect x="20" y="43" width="24" height="6" rx="1" fill="${m}"/><rect x="16" y="50" width="32" height="7" rx="2" fill="#3a2a10" stroke="${m}" stroke-width="2"/></svg>`;
-const tropheeImg=(image,place)=>image?`<img src="${img(image)}" alt="">`:coupe((PLACES[place]||PLACES[1]).m);
+// l'écharpe de participation (place 0), dessinée quand le tournoi n'a pas d'image d'écharpe
+const echarpe=m=>`<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M14 10c10 6 26 6 36 0l2 8c-11 7-29 7-40 0z" fill="${m}"/><path d="M22 17l-6 37 7-4 4 6 5-36zM42 17l6 37-7-4-4 6-5-36z" fill="${m}" opacity=".85"/><path d="M18 46l7-1M40 45l7 1" stroke="#0f2f2b" stroke-width="2"/></svg>`;
+const tropheeImg=(image,place)=>image?`<img src="${img(image)}" alt="">`:place===0?echarpe(PLACES[0].m):coupe((PLACES[place]||PLACES[1]).m);
 function armoire(L,mine){
   const n=p=>L.filter(x=>x.place===p).length,jr=d=>new Date(d).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'});
-  return `<h3>🏆 Armoire à trophées</h3>${L.length?`<p><small>${n(1)} tournoi${n(1)>1?'s':''} gagné${n(1)>1?'s':''} · ${n(2)} fois finaliste · ${n(3)} fois 3e</small></p>
-   <div class="arm">${L.map(x=>{const P=PLACES[x.place]||PLACES[1];return `<div class="tr p${x.place}" style="--m:${P.m}">${tropheeImg(x.image,x.place)}<span class="pl">${P.l}</span><span class="nm">${esc(x.nom)}</span><small>${esc(x.ceinture||'')} · ${jr(x.le)}</small></div>`}).join('')}</div>`
+  const case_=x=>{const P=PLACES[x.place]||PLACES[1];return `<div class="tr p${x.place}" style="--m:${P.m}">${tropheeImg(x.image,x.place)}<span class="pl">${P.l}</span><span class="nm">${esc(x.nom)}</span><small>${esc(x.ceinture||'')} · ${jr(x.le)}</small></div>`};
+  const T=L.filter(x=>x.place>0),E=L.filter(x=>x.place===0);
+  return `<h3>🏆 Armoire à trophées</h3>${L.length?`<p><small>${n(1)} tournoi${n(1)>1?'s':''} gagné${n(1)>1?'s':''} · ${n(2)} fois finaliste · ${n(3)} fois 3e · ${n(0)} participation${n(0)>1?'s':''}</small></p>
+   ${T.length?`<div class="arm">${T.map(case_).join('')}</div>`:''}${E.length?`<div class="arm">${E.map(case_).join('')}</div>`:''}`
    :`<p><small>${mine?'Aucun trophée pour l\'instant : inscris-toi au prochain tournoi (onglet 🎖️ Tournois) !':'Aucun trophée pour l\'instant.'}</small></p>`}`}
 function tableauSite(T){
   const M=T.matchs||[],nt=T.tours||1,ps=(m,id,p)=>p?esc(p):(m.exempt&&!id?'—':'<span style="opacity:.5">?</span>');
@@ -787,7 +791,7 @@ async function vTournois(id=null){
       :`<h3>Le tableau</h3>${ecran?'<p><small>⚔️ Combat en cours à l\'écran… le résultat s\'affiche à la fin de l\'animation.</small></p>':''}${tableauSite(T)}`}`}
   const P=E.passes||[];
   main.innerHTML=`<h3>🎖️ Tournois</h3>
-   <p><small>Des tournois à élimination directe, joués en live combat après combat, sans avoir besoin d'être là : inscris-toi avec ton deck de championnat (celui de la ceinture du thème), le tableau est tiré au sort au lancement. Combats en relais comme pour le titre : 3 combattants chacun. <b>BO1</b> jusqu'aux quarts, <b>BO3</b> en demi-finale, <b>BO5</b> en petite finale (pour la 3e place) et en finale ; un combat nul est rejoué. Les trois premiers gagnent un trophée, gardé pour toujours dans l'armoire de leur profil, et les quatre premiers les récompenses du tournoi.</small></p>
+   <p><small>Des tournois à élimination directe, joués en live combat après combat, sans avoir besoin d'être là : inscris-toi avec ton deck de championnat (celui de la ceinture du thème), le tableau est tiré au sort au lancement. Combats en relais comme pour le titre : 3 combattants chacun. <b>BO1</b> jusqu'aux quarts, <b>BO3</b> en demi-finale, <b>BO5</b> en petite finale (pour la 3e place) et en finale ; un combat nul est rejoué. Les trois premiers gagnent un trophée et chaque participant une écharpe, gardés pour toujours dans l'armoire de leur profil, et les quatre premiers les récompenses du tournoi.</small></p>
    ${id&&T&&!['inscriptions','en_cours'].includes(T.statut)?'<p><button class="sec" id="tback">← Tournoi actuel</button></p>':''}
    ${corps}
    <h3>🏛️ Palmarès</h3>${P.length?`<table>${P.map(x=>`<tr><td>${(DIVS[x.division]||{}).e||''} <b>${esc(x.nom)}</b><br><small>${jr(x.fini_le)} · ${x.joueurs} joueurs</small></td><td>👑 ${esc(x.pseudo_gagnant||'?')}</td><td><button class="sec" data-tv="${x.id}">Voir</button></td></tr>`).join('')}</table>`:'<p><small>Aucun tournoi terminé pour l\'instant.</small></p>'}`;
@@ -1670,7 +1674,7 @@ function vRegles(){
   <div class="stats">
    ${c('🎖️ S\'inscrire',ul(['Quand un tournoi est ouvert : <code class="cmd">!tournoi</code> dans le chat, ou le bouton de l\'onglet 🎖️ Tournois','Il te faut le deck de championnat de la ceinture du thème (Rare, Épique ou Libre)','Ton deck est figé au moment de l\'inscription','<code class="cmd">!tournoi quitter</code> pour te retirer avant le début']))}
    ${c('Le tableau',ul(['Tiré au sort au lancement ; s\'il manque des joueurs, certains sont qualifiés d\'office au premier tour','Combats en relais, 3 combattants chacun, comme pour le titre','<b>BO1</b> jusqu\'aux quarts, <b>BO3</b> en demi-finale, <b>BO5</b> en petite finale et en finale','Un match nul ne compte pour personne : le combat est rejoué','Pas besoin d\'être là : tout se joue tout seul']))}
-   ${c('🏆 Trophées et récompenses',ul(['Petite finale entre les perdants des demi-finales, pour la 3e place','Les trois premiers gagnent un trophée, gardé pour toujours dans l\'armoire à trophées de ton profil','Les quatre premiers gagnent les récompenses du tournoi (gold, boosters, dos de carte, carte), affichées dans l\'onglet 🎖️ Tournois']))}
+   ${c('🏆 Trophées et récompenses',ul(['Petite finale entre les perdants des demi-finales, pour la 3e place','Les trois premiers gagnent un trophée, gardé pour toujours dans l\'armoire à trophées de ton profil','Chaque participant reçoit une écharpe du tournoi, rangée dans son armoire','Les quatre premiers gagnent les récompenses du tournoi (gold, boosters, dos de carte, carte), affichées dans l\'onglet 🎖️ Tournois']))}
   </div>
 
   ${h('Récompenses & économie','y','Tout le monde gagne quelque chose à chaque combat.')}
@@ -2234,7 +2238,7 @@ async function aTournois(){
       ${T.statut==='inscriptions'?`<p>${n?T.inscrits.map(x=>`<span class="chr">${esc(x.pseudo||'?')} <button class="sec" data-tr="${x.id}" title="Retirer" style="padding:0 6px">✕</button></span>`).join(' '):'<small>Aucun inscrit pour l\'instant.</small>'}</p>`:tableauSite(T)}
       <div class="row">${T.statut==='inscriptions'?`<button id="tlan" ${n<2?'disabled':''}>🎲 Tirer le tableau et lancer</button>`:''}
        <label><input type="checkbox" id="tauto" ${T.auto?'checked':''}> Enchaîner automatiquement les combats</label>
-       ${[1,2,3].map(i=>`<label class="sec" style="cursor:pointer">${['','🥇','🥈','🥉'][i]} Trophée <input type="file" data-tro="${i}" accept="image/*" style="display:none"></label>`).join('')}
+       ${[1,2,3,0].map(i=>`<label class="sec" style="cursor:pointer">${['🎗️','🥇','🥈','🥉'][i]} ${i?'Trophée':'Écharpe'} <input type="file" data-tro="${i}" accept="image/*" style="display:none"></label>`).join('')}
        <button class="sec" id="tann">🛑 Annuler le tournoi</button></div>
       <small>${T.statut==='inscriptions'?'Le tirage peut aussi se faire en live : la première commande « Tournoi - Suivant » tire le tableau et lance le premier combat.':'Le combat suivant se lance avec l\'action « Tournoi - Suivant » (ou tout seul, si l\'enchaînement est coché).'}</small></div>`}
   else haut=`<form class="f" id="tnew"><b>Nouveau tournoi</b>
@@ -2242,21 +2246,22 @@ async function aTournois(){
      <label><small>Thème : le deck de championnat utilisé</small><br><select name="div"><option value="libre">🥇 Ceinture Libre (toutes raretés)</option><option value="epique">🥈 Ceinture Épique (jusqu'à épique)</option><option value="rare">🥉 Ceinture Rare (communes et rares)</option></select></label>
      <label><small>Nombre maximum de joueurs (vide : réglage par défaut, 32)</small><br><input name="max" type="number" min="2" max="64" style="width:90px"></label>
      <label><small>Images des trophées, une par place (facultatives : une place sans image prend celle du vainqueur ; sans aucune image, une coupe or, argent ou bronze)</small><br>🥇 <input name="tro1" type="file" accept="image/*"><br>🥈 <input name="tro2" type="file" accept="image/*"><br>🥉 <input name="tro3" type="file" accept="image/*"></label>
+     <label><small>Image de l'écharpe offerte à chaque participant (facultative : sinon une écharpe dessinée)</small><br>🎗️ <input name="tro0" type="file" accept="image/*"></label>
      <label><input name="auto" type="checkbox" checked> Enchaîner automatiquement les combats en live</label>
      <small>BO1 jusqu'aux quarts, BO3 en demi-finale, BO5 en petite finale et en finale (réglages tournoi_format_autres, tournoi_format_demi, tournoi_format_petite, tournoi_format_finale). Un seul tournoi ouvert à la fois. Les récompenses reprennent celles du tournoi précédent : à retoucher dans l'onglet 🎁 Récompenses.</small>
      <button>Créer le tournoi et ouvrir les inscriptions</button></form>`;
   box.innerHTML=haut+`<h3>Tous les tournois</h3>${L.length?`<table><tr><th>Tournoi</th><th>Statut</th><th>Joueurs</th><th>Vainqueur</th></tr>${L.map(x=>`<tr><td><b>${esc(x.nom)}</b><br><small>${(DIVS[x.division]||{}).e||''} ${new Date(x.cree_le).toLocaleDateString('fr-FR')}</small></td><td>${STAT[x.statut]||x.statut}</td><td>${x.joueurs}</td><td>${esc(x.pseudo_gagnant||'—')}</td></tr>`).join('')}</table>`:'<p><small>Aucun tournoi pour l\'instant.</small></p>'}`;
   const f=$('#tnew');if(f)f.onsubmit=async e=>{e.preventDefault();const F=new FormData(f),bt=f.querySelector('button');bt.disabled=true;
-    try{const tro=[];for(const i of [1,2,3]){const fi=f['tro'+i].files[0];tro[i]=fi?await upload(fi):null}
+    try{const tro=[];for(const i of [0,1,2,3]){const fi=f['tro'+i].files[0];tro[i]=fi?await upload(fi):null}
       const x=await sb.rpc('tournoi_creer',{p_nom:F.get('nom'),p_division:F.get('div'),p_max:F.get('max')?parseInt(F.get('max'),10):null,p_trophee:tro[1],p_auto:f.auto.checked});
       if(x.error)throw x.error;
-      for(const i of [2,3])if(tro[i]){const y=await sb.rpc('tournoi_trophee',{p_id:x.data,p_place:i,p_image:tro[i]});if(y.error)throw y.error}uiAlert('🎖️ Tournoi créé : les inscriptions sont ouvertes (!tournoi dans le chat, ou l\'onglet Tournois du site). Règle ses récompenses dans l\'onglet 🎁 Récompenses.');aTournois()}
+      for(const i of [0,2,3])if(tro[i]){const y=await sb.rpc('tournoi_trophee',{p_id:x.data,p_place:i,p_image:tro[i]});if(y.error)throw y.error}uiAlert('🎖️ Tournoi créé : les inscriptions sont ouvertes (!tournoi dans le chat, ou l\'onglet Tournois du site). Règle ses récompenses dans l\'onglet 🎁 Récompenses.');aTournois()}
     catch(err){bt.disabled=false;uiAlert((err&&err.message)||String(err))}};
   if(!ouvert)return;
   box.querySelectorAll('[data-tr]').forEach(b=>b.onclick=async()=>{const x=await sb.rpc('tournoi_retirer',{p_id:T.id,p_joueur:b.dataset.tr});if(x.error)return uiAlert(x.error.message);aTournois()});
   const lan=$('#tlan');if(lan)lan.onclick=async()=>{if(!(await uiConfirm('Fermer les inscriptions et tirer le tableau au sort ?')))return;const x=await sb.rpc('tournoi_lancer',{p_id:T.id});if(x.error)return uiAlert(x.error.message);aTournois()};
   $('#tauto').onchange=async e=>{const x=await sb.rpc('tournoi_regler',{p_id:T.id,p_auto:e.target.checked,p_trophee:null});if(x.error)uiAlert(x.error.message)};
-  box.querySelectorAll('[data-tro]').forEach(inp=>inp.onchange=async e=>{const fi=e.target.files[0];if(!fi)return;const i=+inp.dataset.tro;try{const path=await upload(fi);const x=await sb.rpc('tournoi_trophee',{p_id:T.id,p_place:i,p_image:path});if(x.error)throw x.error;uiAlert(`${['','🥇','🥈','🥉'][i]} Trophée de la ${i===1?'1re':i+'e'} place mis à jour.`)}catch(err){uiAlert((err&&err.message)||String(err))}});
+  box.querySelectorAll('[data-tro]').forEach(inp=>inp.onchange=async e=>{const fi=e.target.files[0];if(!fi)return;const i=+inp.dataset.tro;try{const path=await upload(fi);const x=await sb.rpc('tournoi_trophee',{p_id:T.id,p_place:i,p_image:path});if(x.error)throw x.error;uiAlert(i?`${['','🥇','🥈','🥉'][i]} Trophée de la ${i===1?'1re':i+'e'} place mis à jour.`:'🎗️ Écharpe de participation mise à jour.')}catch(err){uiAlert((err&&err.message)||String(err))}});
   $('#tann').onclick=async()=>{if(!(await uiConfirm(`Annuler le tournoi « ${T.nom} » ? Personne ne reçoit de trophée.`)))return;const x=await sb.rpc('tournoi_annuler',{p_id:T.id});if(x.error)return uiAlert(x.error.message);aTournois()};
 }
 // Admin > Récompenses (46-tournois.sql) : ce que gagnent les 4 premières places du tournoi ouvert (gold, boosters, dos de carte, carte)
