@@ -2228,9 +2228,6 @@ async function aTournois(){
   if(r.error||l.error){box.innerHTML='<p class="ko">Tournois indisponibles : lance d\'abord 46-tournois.sql dans Supabase. Message : <b>'+esc((r.error||l.error).message)+'</b></p>';return}
   const T=r.data&&r.data.tournoi,ouvert=T&&['inscriptions','en_cours'].includes(T.statut),L=l.data||[];
   const STAT={inscriptions:'📝 Inscriptions',en_cours:'⚔️ En cours',termine:'🏁 Terminé',annule:'❌ Annulé'};
-  const aide=`<div class="f" style="display:block"><b>Streamer.bot : 2 actions à créer une fois</b><br><small>
-    1. <b>!tournoi</b> (tout le monde) : copie l'action de <b>!accepter</b> et remplace son mode par <code>tournoi</code>. Les joueurs s'inscrivent avec <code>!tournoi</code>, se retirent avec <code>!tournoi quitter</code>, et <code>!tournoi info</code> dit où en est le tournoi.<br>
-    2. <b>Tournoi - Suivant</b> (ce nom exact) : copie la même action, mode <code>tournoi_suivant</code>, avec une commande réservée au streamer (par exemple <code>!suivant</code>). Elle lance le tournoi (tirage) puis joue chaque combat. L'overlay la relance tout seul à la fin de chaque combat tant que « Enchaîner automatiquement » est coché ; décoche-le pour lancer chaque combat toi-même.</small></div>`;
   let haut='';
   if(ouvert){const n=(T.inscrits||[]).length;
     haut=`<div class="f" style="display:block"><b>${esc(T.nom)}</b> · ${STAT[T.statut]} · deck ${esc(T.ceinture)} · ${n} inscrit${n>1?'s':''}${T.statut==='inscriptions'?' / '+T.max_joueurs:''}
@@ -2248,7 +2245,7 @@ async function aTournois(){
      <label><input name="auto" type="checkbox" checked> Enchaîner automatiquement les combats en live</label>
      <small>BO1 jusqu'aux quarts, BO3 en demi-finale et en petite finale, BO5 en finale (réglages tournoi_format_autres, tournoi_format_demi, tournoi_format_petite, tournoi_format_finale). Un seul tournoi ouvert à la fois. Les récompenses reprennent celles du tournoi précédent : à retoucher dans l'onglet 🎁 Récompenses.</small>
      <button>Créer le tournoi et ouvrir les inscriptions</button></form>`;
-  box.innerHTML=haut+aide+`<h3>Tous les tournois</h3>${L.length?`<table><tr><th>Tournoi</th><th>Statut</th><th>Joueurs</th><th>Vainqueur</th></tr>${L.map(x=>`<tr><td><b>${esc(x.nom)}</b><br><small>${(DIVS[x.division]||{}).e||''} ${new Date(x.cree_le).toLocaleDateString('fr-FR')}</small></td><td>${STAT[x.statut]||x.statut}</td><td>${x.joueurs}</td><td>${esc(x.pseudo_gagnant||'—')}</td></tr>`).join('')}</table>`:'<p><small>Aucun tournoi pour l\'instant.</small></p>'}`;
+  box.innerHTML=haut+`<h3>Tous les tournois</h3>${L.length?`<table><tr><th>Tournoi</th><th>Statut</th><th>Joueurs</th><th>Vainqueur</th></tr>${L.map(x=>`<tr><td><b>${esc(x.nom)}</b><br><small>${(DIVS[x.division]||{}).e||''} ${new Date(x.cree_le).toLocaleDateString('fr-FR')}</small></td><td>${STAT[x.statut]||x.statut}</td><td>${x.joueurs}</td><td>${esc(x.pseudo_gagnant||'—')}</td></tr>`).join('')}</table>`:'<p><small>Aucun tournoi pour l\'instant.</small></p>'}`;
   const f=$('#tnew');if(f)f.onsubmit=async e=>{e.preventDefault();const F=new FormData(f),bt=f.querySelector('button');bt.disabled=true;
     try{const tro=[];for(const i of [1,2,3]){const fi=f['tro'+i].files[0];tro[i]=fi?await upload(fi):null}
       const x=await sb.rpc('tournoi_creer',{p_nom:F.get('nom'),p_division:F.get('div'),p_max:F.get('max')?parseInt(F.get('max'),10):null,p_trophee:tro[1],p_auto:f.auto.checked});
