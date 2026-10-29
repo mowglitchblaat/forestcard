@@ -1429,7 +1429,7 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
         txt: e.full
           ? `L'accumulateur de ${name(e.side)} est plein (${e.charges}/${e.need}) : sa prochaine attaque est chargée !`
           : `${name(e.side)} accumule une charge (${e.charges}/${e.need})`,
-        o: { c: e.side, k: 'charge', n: e.charges, plein: e.full ? 1 : 0 },
+        o: { c: e.side, k: 'volt', n: e.charges, plein: e.full ? 1 : 0 },
       };
     case 'discharged':
       return {
