@@ -96,7 +96,7 @@ canvas.fx.saignement{box-shadow:inset 0 0 38px 10px rgba(170,10,20,.75);animatio
 /* statuts portés : une pastille par statut sur la carte (champ `etats` du journal), avec son niveau (I, II, III) ou son nombre */
 .etats{position:absolute;left:4%;top:5%;z-index:6;display:flex;flex-direction:column;align-items:flex-start;gap:.3vw;pointer-events:none}
 .et{display:flex;align-items:center;gap:.25vw;padding:.12vw .5vw .12vw .32vw;border-radius:1vw;background:rgba(10,8,20,.84);border:.12vw solid var(--ec);box-shadow:0 0 .6vw var(--ec);font:800 1.1vw/1.3 system-ui,sans-serif;color:#fff;white-space:nowrap}
-.nlame{position:absolute;z-index:6;width:18%;height:30%;pointer-events:none;transform-origin:50% 100%;transform:rotate(var(--r));filter:drop-shadow(0 0 .45vw rgba(186,230,253,.95))}
+.nlame{position:absolute;z-index:6;width:11%;height:19%;pointer-events:none;transform-origin:50% 100%;transform:rotate(var(--r));filter:drop-shadow(0 0 .45vw rgba(186,230,253,.95))}
 .nlame svg{width:100%;height:100%;display:block;overflow:visible}
 .nracines{position:absolute;inset:-4% -4% 0;z-index:6;pointer-events:none;transform-origin:50% 100%;animation:nserre 2.6s ease-in-out 1.2s infinite}
 .nracines svg{width:100%;height:100%;display:block;overflow:visible}.nracines path.r{fill:none;stroke-linecap:round}
@@ -1312,7 +1312,7 @@ function nfxReset(){NFX.mist=[0,0];NFX.lien=null;NFX.P.length=0;NFX.O.length=0;N
  [0,1].forEach(c=>{const cw=$('#p'+c+' .cw');if(cw)cw.querySelectorAll('.nret,.nail,.nglow').forEach(n=>n.remove());const k=$('#p'+c+' .card');if(k){k.classList.remove('mut1','mut2','mut3','mue');k.querySelectorAll('.ncar,.ntint').forEach(n=>n.remove())}})}
 function nfxStart(){nfxCanvas();fxAll.add(nfxReset);if(NFX.on)return;NFX.on=true;requestAnimationFrame(nfxLoop)}
 const nbox=c=>{const k=$('#p'+c+' .card');if(!k)return null;const r=k.getBoundingClientRect();return{x:r.left,y:r.top,w:r.width,h:r.height,cx:r.left+r.width/2,cy:r.top+r.height/2}};
-const nadd=p=>{if(NFX.P.length>=420)return;p.t=0;p.life=p.life||60;NFX.P.push(p)};   // plafond : un combat chargé ne s'emballe pas
+const nadd=p=>{if(NFX.P.length>=420)return;p.t=0;p.life=p.life||60;NFX.P.push(p);if(!NFX.on)nfxStart()};   // relance la boucle si elle s'était arrêtée entre deux effets   // plafond : un combat chargé ne s'emballe pas
 // sprites pré-dessinés : une seule image par couleur, au lieu d'un dégradé ou d'un flou recalculé à chaque image
 const NSPR={};function nspr(col){if(NSPR[col])return NSPR[col];const S=64,cv=document.createElement('canvas');cv.width=cv.height=S;const x=cv.getContext('2d'),g=x.createRadialGradient(S/2,S/2,0,S/2,S/2,S/2);
  if(col==='fog'){g.addColorStop(0,'rgba(225,235,245,1)');g.addColorStop(.55,'rgba(225,235,245,.45)');g.addColorStop(1,'rgba(225,235,245,0)')}else{g.addColorStop(0,'#fff');g.addColorStop(.28,col);g.addColorStop(1,'rgba(0,0,0,0)')}x.fillStyle=g;x.fillRect(0,0,S,S);return NSPR[col]=cv}
@@ -1419,22 +1419,26 @@ function ndrops(c,col,n=22){nfxStart();const b=nbox(c);if(!b)return;for(let i=0;
 function nstreaks(c,col,n=14){nfxStart();const b=nbox(c);if(!b)return;for(let i=0;i<n;i++)nadd({k:'streak',x:b.x+R(0,1)*b.w,y:b.y+b.h*R(.6,1.1),vx:0,vy:-R(7,12),l:R(.08,.16)*b.h,col,life:R(26,40)})}
 // lames d'air : elles convergent et tranchent la carte en X
 // Cisaillement : les lames d'air volent depuis l'adversaire et se plantent dans la carte ; elles y restent (une par lame en
-// attente, 6 au plus) ; quand elles frappent, elles s'illuminent puis s'arrachent en tranchant la carte
-let nLameN=0;
+// attente, 24 au plus, réparties sur toute la carte) ; quand elles frappent, chacune s'arrache en tranchant la carte dans tous les sens
+let nLameN=0;const NLAMES_MAX=24;
 function svgLameAir(){const g='nla'+(++nLameN);return `<svg viewBox="0 0 40 100" preserveAspectRatio="none"><defs><linearGradient id="${g}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#38bdf8" stop-opacity=".15"/><stop offset=".45" stop-color="#bae6fd" stop-opacity=".85"/><stop offset="1" stop-color="#ffffff"/></linearGradient></defs>
  <path d="M21 100 L15 62 C11 40 13 18 26 0 C22 22 25 44 29 64 Z" fill="url(#${g})" stroke="#f0f9ff" stroke-width="1.4" stroke-linejoin="miter"/><path d="M21 96 L18 62 C16 42 18 22 24 8" stroke="#fff" stroke-width="1.1" fill="none" opacity=".9"/><path d="M8 66 L33 60" stroke="#e0f2fe" stroke-width="2.2" opacity=".7"/></svg>`}
-function nLamePlante(c,vol=true){const cw=$('#p'+c+' .cw');if(!cw)return;const dir=c===0?1:-1,d=document.createElement('div'),k=cw.querySelectorAll('.nlame').length,x=[30,62,46,24,72,52][k%6]+R(-6,6),y=[34,50,64,56,30,42][k%6]+R(-5,5),r=dir*R(35,70)+R(-8,8);
- d.className='nlame';d.style.left=`calc(${x}% - 9%)`;d.style.top=`calc(${y}% - 30%)`;d.style.setProperty('--r',r+'deg');d.innerHTML=svgLameAir();cw.appendChild(d);
+function nLamePlante(c,vol=true){const cw=$('#p'+c+' .cw');if(!cw)return;const dir=c===0?1:-1,d=document.createElement('div'),k=cw.querySelectorAll('.nlame').length,x=14+((k*.7548777+.31)%1)*72+R(-3,3),y=22+((k*.5698403+.47)%1)*60+R(-3,3),r=dir*R(35,70)+R(-8,8);
+ d.className='nlame';d.style.left=`calc(${x}% - 5.5%)`;d.style.top=`calc(${y}% - 19%)`;d.style.setProperty('--r',r+'deg');d.innerHTML=svgLameAir();cw.appendChild(d);
  if(vol){d.animate([{transform:`translate(${dir*38}vw,${-6}vw) rotate(${r}deg)`,opacity:.2},{transform:`rotate(${r}deg)`,opacity:1,offset:.85},{transform:`rotate(${r+dir*6}deg)`},{transform:`rotate(${r}deg)`}],{duration:520,easing:'cubic-bezier(.3,0,.8,.4)'});
   setTimeout(()=>{const b=nbox(c);if(b){nfxStart();nglow(b.x+b.w*x/100,b.y+b.h*y/100,6,'#e0f2fe',3,8,22)}},440)}}
-function nLamesSync(c,n){const cw=$('#p'+c+' .cw');if(!cw)return;const L=[...cw.querySelectorAll('.nlame:not(.out)')],want=Math.min(6,n||0);
- for(let i=L.length;i<want;i++)setTimeout(()=>nLamePlante(c),(i-L.length)*140);
- if(L.length>want)setTimeout(()=>{const M=[...cw.querySelectorAll('.nlame:not(.out)')],w=Math.min(6,NP[c].lames||0);M.slice(0,Math.max(0,M.length-w)).forEach(l=>{l.classList.add('out');l.animate([{opacity:1},{opacity:0}],{duration:400}).onfinish=()=>l.remove()})},1600)}
-async function nCisaille(c,esquive){nfxStart();const b=nbox(c),cw=$('#p'+c+' .cw');if(!b||!cw)return;const L=[...cw.querySelectorAll('.nlame:not(.out)')],keep=Math.min(6,NP[c].lames||0),go=L.slice(0,Math.max(1,L.length-keep));
+function nLamesSync(c,n){const cw=$('#p'+c+' .cw');if(!cw)return;const L=[...cw.querySelectorAll('.nlame:not(.out)')],want=Math.min(NLAMES_MAX,n||0);
+ for(let i=L.length;i<want;i++)setTimeout(()=>nLamePlante(c),(i-L.length)*Math.max(45,140-want*5));
+ if(L.length>want)setTimeout(()=>{const M=[...cw.querySelectorAll('.nlame:not(.out)')],w=Math.min(NLAMES_MAX,NP[c].lames||0);M.slice(0,Math.max(0,M.length-w)).forEach(l=>{l.classList.add('out');l.animate([{opacity:1},{opacity:0}],{duration:400}).onfinish=()=>l.remove()})},1600)}
+async function nCisaille(c,esquive){nfxStart();const b=nbox(c),cw=$('#p'+c+' .cw');if(!b||!cw)return;const L=[...cw.querySelectorAll('.nlame:not(.out)')],keep=Math.min(NLAMES_MAX,NP[c].lames||0),go=L.slice(0,Math.max(1,L.length-keep));
  go.forEach(l=>{l.classList.add('out');l.animate([{filter:'brightness(1)'},{filter:'brightness(2.6) drop-shadow(0 0 1.2vw #e0f2fe)'}],{duration:260,fill:'forwards'})});await wait(280);
  if(esquive){go.forEach(l=>l.animate([{opacity:1},{opacity:0,transform:`rotate(${l.style.getPropertyValue('--r')}) translateY(-4vw)`}],{duration:380}).onfinish=()=>l.remove());flot(c,'Esquivé !','#e5e7eb');return}
- const dir=c===0?1:-1;go.forEach((l,i)=>{const r=l.style.getPropertyValue('--r');l.animate([{transform:`rotate(${r})`,opacity:1},{transform:`translate(${-dir*10}vw,${R(-6,6)}vw) rotate(calc(${r} + ${dir*180}deg))`,opacity:0}],{duration:460,delay:i*50,easing:'ease-in'}).onfinish=()=>l.remove()});
- nslash(b.x,b.y,b.x+b.w,b.y+b.h,'#ffffff',7,26);setTimeout(()=>nslash(b.x+b.w,b.y,b.x,b.y+b.h,'#ffffff',7,26),110);nshards(b.cx,b.cy,16,'#e0f2fe',.2,6);nshake(c,.9);flot(c,'CISAILLEMENT !','#bae6fd','big')}
+ // chaque lame s'arrache en tranchant la carte dans une direction au hasard : une entaille par lame (8 au moins), dans tous les sens
+ const n=Math.max(8,go.length),D=Math.hypot(b.w,b.h)*.5;
+ go.forEach((l,i)=>{const r=l.style.getPropertyValue('--r'),a=R(0,6.283);setTimeout(()=>l.animate([{transform:`rotate(${r})`,opacity:1},{transform:`translate(${Math.cos(a)*14}vw,${Math.sin(a)*14}vw) rotate(calc(${r} + ${R(300,720)}deg))`,opacity:0}],{duration:420,easing:'ease-in'}).onfinish=()=>l.remove(),i*35)});
+ for(let i=0;i<n;i++)setTimeout(()=>{const a=i*2.399+R(-.25,.25),ox=R(-.25,.25)*b.w,oy=R(-.25,.25)*b.h,cx=b.cx+ox,cy=b.cy+oy;
+  nslash(cx-Math.cos(a)*D,cy-Math.sin(a)*D,cx+Math.cos(a)*D,cy+Math.sin(a)*D,i%3?'#e0f2fe':'#ffffff',R(4,7),30);nglow(cx,cy,3,'#e0f2fe',4,7,18)},i*45);
+ setTimeout(()=>{nshards(b.cx,b.cy,22,'#e0f2fe',.2,7);nshake(c,1.1);nflash(c,'#e0f2fe',260)},Math.min(n,14)*45);flot(c,'CISAILLEMENT !','#bae6fd','big')}
 function nLamesPose(c,n){flot(c,"Lames d'air ×"+(n||1),'#bae6fd')}
 // foudre : un éclair tombe sur la carte ; niveau II, il rebondit vers la magie puis le piège
 function nFoudre(c,lv){nfxStart();const b=nbox(c);if(!b)return;nbolt(b.cx+R(-.2,.2)*b.w,0,b.cx,b.cy,'#fde047',lv>1?7:4,lv>1?22:16);nflash(c,'#fde047');nglow(b.cx,b.cy,lv>1?24:12,'#fef08a',6,11,30);if(lv>1){nshake(c,.7);flot(c,'FOUDRE II !','#fde047','big')}else flot(c,'Marque de foudre','#fde047')}
@@ -1733,6 +1737,7 @@ if(DEMO){
   ['Nouvelles mécaniques','Mutation insecte (niveaux I, II, III)',async c=>{for(const n of[1,2,3]){nMutation(c,n);await wait(1600)}},5200,null,null,true],
   ['Nouvelles mécaniques','Mue (2 tours, puis la carte mue)',async c=>{nMueDebut(c);await wait(1600);nMue(c)},2800,null,null,true],
   ['Vent','Cisaillement : 3 lames se plantent, puis tranchent',async c=>{nLamesPose(c,3);NP[c].lames=3;nLamesSync(c,3);await wait(1900);NP[c].lames=0;nCisaille(c,false)},3200,null,null,true],
+  ['Vent','Cisaillement : 15 lames plantées, puis tranchent',async c=>{nLamesPose(c,15);NP[c].lames=15;nLamesSync(c,15);await wait(2400);NP[c].lames=0;nCisaille(c,false)},3800,null,null,true],
   ['Vent','Cisaillement esquivé',async c=>{NP[c].lames=2;nLamesSync(c,2);await wait(1300);NP[c].lames=0;nCisaille(c,true)},2400,null,null,true],
   ['Vent','Coup critique',c=>nCritique(c,12),1500],
   ['Vent','Courant ascendant',c=>{nCritique(c,12);setTimeout(()=>nCourant(1-c),500)},2000],
