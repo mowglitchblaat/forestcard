@@ -1482,7 +1482,7 @@ function nFaiblesse(c){const k=$('#p'+c+' .card');if(k)k.animate([{filter:'none'
 // vent : coup critique, courant ascendant
 // le coup critique : la carte qui frappe brille d'or et annonce le critique, l'impact doré éclate sur la carte touchée
 function nCritique(a,d,bonus){nfxStart();const A=nbox(a),b=nbox(d);if(A){nflash(a,'#fbbf24',360);nglow(A.cx,A.cy,10,'#fde68a',3,10,26)}flot(a,'CRITIQUE ! +'+(bonus||0),'#fbbf24','big');if(!b)return;nglow(b.cx,b.cy,22,'#fde68a',7,12,30);nring(b.cx,b.cy,b.w*.1,b.w*.8,'rgba(253,230,138,.95)',6,24)}
-function nCourant(c){nstreaks(c,'rgba(186,230,253,.9)',16);flot(c,'Courant ascendant','#bae6fd')}
+function nCourant(c,n,v){nstreaks(c,'rgba(186,230,253,.9)',16);flot(c,v?`Courant ascendant${n>1?' ×'+n:''} : critique ${v} %`:'Courant ascendant','#bae6fd')}   // n : cumuls, v : puissance critique de la carte maintenant
 // feu : embrasement (flammes), éteint par l'eau (vapeur) ou la glace (givre)
 function nEmbrase(c){nfxStart();const b=nbox(c);if(b){for(let i=0;i<34;i++)nadd({k:'glow',x:b.x+R(0,1)*b.w,y:b.y+b.h*R(.5,1),vx:R(-.8,.8),vy:-R(2,6),s:R(8,18),col:['#fb923c','#f97316','#fde047'][i%3],life:R(35,60)});nring(b.cx,b.cy,b.w*.2,b.w*.9,'rgba(249,115,22,.9)',6,28)}nflash(c,'#f97316')}
 function nEteint(c,by){if(by==='water')nsteam(c,18);else if(by==='ice'){const b=nbox(c);if(b){nfxStart();nshards(b.cx,b.cy,16,'#bae6fd',.25,5)}flot(c,'Éteint par la glace','#bae6fd')}}
@@ -1508,7 +1508,7 @@ Object.assign(NK,{
  'statut:charge':e=>nChargeTerre(e.c,e.n),'statut:replique':e=>nReplique(e.c,e.to,false),'statut:replique_esquivee':e=>nReplique(e.c,e.to,true),
  'statut:enracinement':e=>nRacines(e.c,e.s),'finstatut:enracinement':()=>{},'statut:ultime_retenu':e=>flot(e.c,'Ultime retenu (racines)','#c084fc'),
  'statut:contamination':e=>nContamine(e.c),'finstatut:contamination':()=>{},'statut:vaporisation':e=>nVapeur(e.c),'statut:faiblesse':e=>nFaiblesse(e.c),'finstatut:faiblesse':()=>{},
- 'statut:critique':e=>nCritique(e.c,e.cible!=null?e.cible:1-e.c,e.n),'statut:courant':e=>nCourant(e.c),'finstatut:courant':()=>{},
+ 'statut:critique':e=>nCritique(e.c,e.cible!=null?e.cible:1-e.c,e.n),'statut:courant':e=>nCourant(e.c,e.s,e.v),'finstatut:courant':()=>{},
  'statut:fureur':e=>e.n||e.up?nFureur(e.c,!!e.up,e.n):flot(e.c,'Fureur incandescente','#fb923c','big'),
  'statut:sangsue':e=>{nfxStart();const b=nbox(e.c);if(b)nring(b.cx,b.cy,b.w*.2,b.w*.8,'rgba(134,239,172,.8)',4,26);flot(e.c,'Sangsue toxique','#86efac')},'finstatut:sangsue':()=>{},
  'statut:sangsue_soin':e=>nSangsue(e.c,e.cible),'statut:injection':e=>nInjection(e.c,e.by!=null?e.by:1-e.c,e.r),
@@ -1745,7 +1745,7 @@ if(DEMO){
   ['Vent','Cisaillement : 15 lames plantées, puis tranchent',async c=>{nLamesPose(c,15);NP[c].lames=15;nLamesSync(c,15);await wait(2400);NP[c].lames=0;nCisaille(c,false)},3800,null,null,true],
   ['Vent','Cisaillement esquivé',async c=>{NP[c].lames=2;nLamesSync(c,2);await wait(1300);NP[c].lames=0;nCisaille(c,true)},2400,null,null,true],
   ['Vent','Coup critique',c=>nCritique(c,1-c,12),1500],
-  ['Vent','Courant ascendant',c=>{nCritique(c,1-c,12);setTimeout(()=>nCourant(c),500)},2000],
+  ['Vent','Courant ascendant',c=>{nCritique(c,1-c,12);setTimeout(()=>nCourant(c,1,60),500)},2000],
   ['Foudre','Marque de foudre niveau I, puis coup amplifié',async c=>{nFoudre(c,1);await wait(1100);nFoudreCoup(c,8)},2200],
   ['Foudre','Niveau II : rebonds (magie chargée, piège détruit)',async c=>{nFoudre(c,2);await wait(600);await nRebond(c,'magie','charged');await wait(500);await nRebond(c,'piege','destroyed')},3200,null,null,true],
   ['Foudre','Surcharge (la carte crépite)',async c=>{NP[c].surcharge=true;nSurcharge(c);await wait(2600);NP[c].surcharge=false},3000],
