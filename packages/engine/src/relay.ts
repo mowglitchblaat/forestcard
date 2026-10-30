@@ -3,8 +3,10 @@
 //
 //   - each player draws a trio (fighter, magic, trap) from their deck; a card already played is never
 //     drawn again (draw(): never-played cards first);
-//   - when a fighter falls, its player sends the next one with a new trio. The fighter still standing
-//     keeps everything: HP, statuses, magic and trap already played. The new fighter acts first, and
+//   - when a fighter falls, the turn under way is closed first: if the card playing it still stands,
+//     its "every turn" passives, its status damage, its purifications and the end of its durations
+//     still happen (moments.ts, TURN_CLOSE). Then its player sends the next one with a new trio. The
+//     fighter still standing keeps everything: HP, statuses, magic and trap already played. The new fighter acts first, and
 //     only its magic is revealed;
 //   - no round limit: each duel goes on until a KO (a safety cap of RELAY_ROUND_CAP rounds ends a
 //     duel that cannot end: the fighter with the lowest share of its max HP falls, exhausted);
@@ -24,7 +26,7 @@ import {
   opponent,
   over,
 } from './combat/combat.ts';
-import { TURN } from './combat/moments.ts';
+import { TURN, TURN_CLOSE } from './combat/moments.ts';
 import type { Side } from './combat/state.ts';
 import { settleMagicCancellations } from './mechanics/magic-cancel.ts';
 import { revealMagic } from './mechanics/magic-timing.ts';
@@ -82,7 +84,10 @@ export function simulateRelay(
         if (over(c)) break;
         emit(c, { type: 'turnStarted', side: id(c, a), turn: ++turn });
         for (let i = 0; i < TURN.length; i++) {
-          if (i > 0 && over(c)) break sides;
+          if (i > 0 && over(c)) {
+            closeTurn(c, a, i);
+            break sides;
+          }
           (TURN[i] as (typeof TURN)[number])(c, a);
         }
       }
@@ -149,6 +154,18 @@ export function simulateRelay(
         : [rules.perte, rules.gain];
   emit(c, { type: 'combatEnded', winner, rewards });
   return { seed, regles: rules, gagnant: winner, recompenses: rewards };
+}
+
+// A fighter fell during a's turn, before its step `from`: a, if it still stands, ends its turn
+// (TURN_CLOSE), so what comes at the end of a turn is not lost to the KO. It may fall doing it (its
+// own poison): both fighters are then down at once.
+function closeTurn(c: ReturnType<typeof createCombat>, a: Side, from: number): void {
+  for (let i = from; i < TURN.length; i++) {
+    const step = TURN[i] as (typeof TURN)[number];
+    if (a.hp <= 0) return;
+    if (TURN_CLOSE.includes(step)) step(c, a);
+    over(c); // flushes what the step left pending, as between two steps of a turn
+  }
 }
 
 // As in simulate.ts: magic cancellation settled first, then each magic of `order` acts.

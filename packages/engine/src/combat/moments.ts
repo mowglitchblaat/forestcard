@@ -251,3 +251,12 @@ export const TURN: ((c: Combat, s: Side) => Flow)[] = [
   endOfTurnEffects, // 6. burn, poison, bleed, purifications, delayed damage
   endTurn, // 7. frost, fracture, fatigue, rage, double damage, reflect, trap immunity, timed thefts
 ];
+
+// The moments that still close a card's turn once its opponent has fallen (relay.ts: the fighter
+// standing ends its turn before the next one comes in). Not its ultimate, attack or chewing: there is
+// nobody left to aim at.
+export const TURN_CLOSE: readonly ((c: Combat, s: Side) => Flow)[] = [
+  everyTurn,
+  endOfTurnEffects,
+  endTurn,
+];

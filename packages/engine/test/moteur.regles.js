@@ -1006,6 +1006,18 @@ test('relais : le survivant garde ses PV, le nouveau combattant joue en premier'
   assert.equal(t.c, 1, 'le nouveau combattant ouvre le duel');
 });
 
+test('relais : le tour de celui qui met KO se termine (soin de chaque tour) avant l\'entrée du suivant', () => {
+  const r = relais([C('A1', 100, 1000, { passif: { type: 'soin_tour', u: 'pts', val: 10 } })], [C('B1', 20, 50), C('B2', 20, 50), C('B3', 20, 50)]);
+  const entrees1 = r.journal.map((e, i) => [e, i]).filter(([e]) => e.t === 'relais' && e.c === 1);
+  assert.equal(entrees1.length, 2);
+  for (const [, i] of entrees1) {
+    const tour = r.journal.slice(0, i).map(e => e.t).lastIndexOf('tour');
+    const fin = r.journal.slice(tour, i);
+    assert.equal(r.journal[tour].c, 0, 'A1 met KO pendant son tour');
+    assert.ok(fin.some(e => e.t === 'soin' && e.c === 0), 'A1 se soigne avant que le suivant entre');
+  }
+});
+
 test('relais : une magie déjà jouée n\'est pas retirée au combattant suivant', () => {
   const m = n => MAG(n, { type: 'atq_mod', val: 1, cible: 'soi' });
   const r = relais([C('A1', 100, 100), C('A2', 100, 100), C('A3', 100, 100), m('M1'), m('M2'), m('M3')], [C('B1', 1, 100), C('B2', 1, 100), C('B3', 1, 100)]);
