@@ -203,7 +203,7 @@ canvas.fx.solide{box-shadow:inset 0 0 30px 8px rgba(120,113,108,.75)}
 #tbracket .tbs table{width:100%;border-collapse:collapse;color:#e5ece7;font-weight:800}
 #tbracket .tbs td{padding:.25em .6em;border-bottom:.15vh solid rgba(252,211,77,.15);white-space:nowrap}
 #tbracket .tbs td:nth-child(2){max-width:22vw;overflow:hidden;text-overflow:ellipsis}#tbracket .tbs td:last-child{text-align:right;color:#fde68a}
-#tbracket .tbs tr.q td:first-child{color:#5eead4}#tbracket .tbs tr.q{background:rgba(94,234,212,.08)}
+#tbracket .tbs tr.q td:first-child{color:#5eead4}#tbracket .tbs tr.q{background:rgba(94,234,212,.08)}#tbracket .tbs tr.lq td:first-child{color:#f9a8d4}#tbracket .tbs tr.lq{background:rgba(249,168,212,.07)}
 #tbracket.big .tbp{padding:.2em .6em}#tbracket.big .tbl{gap:.35vh}#tbracket.big .tbh{font-size:1.4vh}
 #tbracket .tbx{margin:1.6vh 0 .6vh;color:#fdba74}
 #tbracket .tbw{font-size:5.4vh;font-weight:900;color:#fcd34d;text-shadow:0 0 2vh #f59e0b,0 0 3px #000;animation:beltpop .9s cubic-bezier(.2,1.4,.4,1)}
@@ -385,7 +385,7 @@ function tournoiFin(g){const b=$('#titreban'),T=TOURNOI;if(!b||!T)return;const i
  if(T.match_fini){b.classList.add('nouveau');i.innerHTML=`${nm(g)} se qualifie${T.format>1?` (${Math.max(...a)}-${Math.min(...a)})`:''} !`;return}
  b.classList.add('fin');i.innerHTML=`${nm(g)} gagne le combat · ${nm(0)} ${a[0]} - ${a[1]} ${nm(1)}`}
 // format suisse (50-tournoi-suisse.sql) : le classement et la ronde en cours, puis le winner et le loser bracket
-function tableauSuisseHtml(T,o){const M=T.matchs||[],sw=M.filter(m=>m.phase==='suisse'),br=M.filter(m=>m.phase!=='suisse'&&!(m.phase==='revanche'&&!m.a));
+function tableauSuisseHtml(T,o){const M=T.matchs||[],sw=M.filter(m=>m.phase==='suisse'),br=M.filter(m=>m.phase!=='suisse'&&!(m.phase==='revanche'&&!m.a)&&!(m.exempt&&!m.a));
  const ps=(m,id,p)=>p?escT(p):'?',pos=(x,y)=>x.position-y.position;
  const box=m=>{const fin=!!m.gagnant,cl=id=>fin&&id&&m.gagnant===id?' w':fin&&id?' l':'';
   return `<div class="tbm${o.actif===m.id?' on':''}"><div class="tbp${cl(m.a)}"><span>${ps(m,m.a,m.pseudo_a)}</span>${m.exempt?'':`<b>${m.score_a}</b>`}</div>${m.exempt?'<div class="tbp ex"><span>exempt (victoire)</span></div>':`<div class="tbp${cl(m.b)}"><span>${ps(m,m.b,m.pseudo_b)}</span><b>${m.score_b}</b></div>`}</div>`};
@@ -393,7 +393,7 @@ function tableauSuisseHtml(T,o){const M=T.matchs||[],sw=M.filter(m=>m.phase==='s
  const parTour=L=>[...new Set(L.map(m=>m.tour))].sort((x,y)=>x-y).map(t=>{const X=L.filter(m=>m.tour===t).sort(pos);return col(X,X[0].nom_tour)}).join('');
  let corps;
  if(!br.length){const r=Math.max(1,...sw.map(m=>m.tour)),L=sw.filter(m=>m.tour===r).sort(pos),C=T.classement||[];
-  corps=`<div class="tbg" style="--tbn:${Math.max(4,Math.min(10,C.length/2))}"><div class="tbc tbs"><div class="tbh">Classement · ronde ${r}/${T.rondes||'?'}</div><table>${C.map(x=>`<tr class="${x.rang<=(T.coupe||4)?'q':''}"><td>${x.rang}</td><td>${escT(x.pseudo)}</td><td>${x.victoires}-${x.defaites}</td></tr>`).join('')}</table></div>${col(L,'Ronde '+r)}</div>`}
+  corps=`<div class="tbg" style="--tbn:${Math.max(4,Math.min(10,C.length/2))}"><div class="tbc tbs"><div class="tbh">Classement · ronde ${r}/${T.rondes||'?'}</div><table>${C.map(x=>`<tr class="${x.rang<=(T.coupe||4)?'q':(T.coupe||4)>2&&x.rang<=2*(T.coupe||4)?'lq':''}"><td>${x.rang}</td><td>${escT(x.pseudo)}</td><td>${x.victoires}-${x.defaites}</td></tr>`).join('')}</table></div>${col(L,'Ronde '+r)}</div>`}
  else{const W=br.filter(m=>m.phase!=='loser'),Lo=br.filter(m=>m.phase==='loser'),n=Math.max(1,...W.map(m=>W.filter(x=>x.tour===m.tour).length));
   corps=`<div class="tbz">Winner bracket</div><div class="tbg half" style="--tbn:${n}">${parTour(W)}</div>${Lo.length?`<div class="tbz">Loser bracket</div><div class="tbg half" style="--tbn:${Math.max(1,n/2)}">${parTour(Lo)}</div>`:''}`}
  return `<div class="tbt"><small>🏆 TOURNOI · DECK ${escT(String(T.ceinture||'').toUpperCase())}</small><b>${escT(T.nom)}</b></div>${corps}${o.champion?`<div class="tbw">👑 ${escT(o.champion)} remporte le tournoi !</div>`:''}`}

@@ -764,15 +764,15 @@ function armoire(L,mine){
    :`<p><small>${mine?'Aucun trophée pour l\'instant : inscris-toi au prochain tournoi (onglet 🎖️ Tournois) !':'Aucun trophée pour l\'instant.'}</small></p>`}`}
 // format suisse (50-tournoi-suisse.sql) : classement et ronde en cours, puis winner et loser bracket
 function tableauSuisseSite(T){
-  const M=T.matchs||[],sw=M.filter(m=>m.phase==='suisse'),br=M.filter(m=>m.phase!=='suisse'&&!(m.phase==='revanche'&&!m.a)),pos=(x,y)=>x.position-y.position;
+  const M=T.matchs||[],sw=M.filter(m=>m.phase==='suisse'),br=M.filter(m=>m.phase!=='suisse'&&!(m.phase==='revanche'&&!m.a)&&!(m.exempt&&!m.a)),pos=(x,y)=>x.position-y.position;   // un match du loser bracket resté vide (pas assez de joueurs) n'est pas montré
   const ps=p=>p?esc(p):'<span style="opacity:.5">?</span>';
   const box=m=>{const fin=!!m.gagnant,cl=id=>fin&&id&&m.gagnant===id?' w':fin&&id?' l':'',moi=m.a===user.id||m.b===user.id;
     return `<div class="tbm${m.a_l_ecran?' on':''}${moi?' moi':''}"><div class="tbp${cl(m.a)}"><span>${ps(m.pseudo_a)}</span>${m.exempt?'':`<b>${m.score_a}</b>`}</div>${m.exempt?'<div class="tbp ex"><span>exempt (victoire)</span></div>':`<div class="tbp${cl(m.b)}"><span>${ps(m.pseudo_b)}</span><b>${m.score_b}</b></div>`}</div>`};
   const col=(L,t)=>`<div class="tbc"><div class="tbh">${esc(t)}${L[0]&&L[0].format>1?' · BO'+L[0].format:''}</div><div class="tbl">${L.map(box).join('')}</div></div>`;
   const parTour=L=>[...new Set(L.map(m=>m.tour))].sort((x,y)=>x-y).map(t=>{const X=L.filter(m=>m.tour===t).sort(pos);return col(X,X[0].nom_tour)}).join('');
   const C=T.classement||[],r=Math.max(1,...sw.map(m=>m.tour));
-  const cl=`<table><tr><th>#</th><th>Joueur</th><th>V-D</th><th title="Force des adversaires : total de leurs victoires">Adv.</th></tr>${C.map(x=>`<tr${x.id===user.id?' style="color:#c4b5fd"':''}><td>${x.rang<=(T.coupe||4)?'✅ ':''}${x.rang}</td><td>${esc(x.pseudo||'?')}</td><td>${x.victoires}-${x.defaites}</td><td>${x.buchholz}</td></tr>`).join('')}</table>`;
-  let h=`<h4>📊 Rondes suisses · ${Math.min(r,T.rondes||r)}/${T.rondes||'?'}</h4><p><small>✅ les ${T.coupe||4} premiers à la fin des rondes vont dans le tableau final.</small></p>${cl}`;
+  const cl=`<table><tr><th>#</th><th>Joueur</th><th>V-D</th><th title="Force des adversaires : total de leurs victoires">Adv.</th></tr>${C.map(x=>`<tr${x.id===user.id?' style="color:#c4b5fd"':''}><td>${x.rang<=(T.coupe||4)?'✅ ':(T.coupe||4)>2&&x.rang<=2*(T.coupe||4)?'💀 ':''}${x.rang}</td><td>${esc(x.pseudo||'?')}</td><td>${x.victoires}-${x.defaites}</td><td>${x.buchholz}</td></tr>`).join('')}</table>`;
+  let h=`<h4>📊 Rondes suisses · ${Math.min(r,T.rondes||r)}/${T.rondes||'?'}</h4><p><small>✅ les ${T.coupe||4} premiers à la fin des rondes commencent dans le winner bracket (2 vies)${(T.coupe||4)>2?` ; 💀 les ${T.coupe||4} suivants commencent dans le loser bracket (1 vie)`:''}.</small></p>${cl}`;
   if(!br.length)h+=`<div class="tbg">${col(sw.filter(m=>m.tour===r).sort(pos),'Ronde '+r)}</div>`;
   else{const W=br.filter(m=>m.phase!=='loser'),Lo=br.filter(m=>m.phase==='loser');
     h+=`<h4>🏆 Winner bracket</h4><div class="tbg">${parTour(W)}</div>${Lo.length?`<h4>💀 Loser bracket</h4><div class="tbg">${parTour(Lo)}</div>`:''}`}
