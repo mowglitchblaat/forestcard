@@ -411,7 +411,13 @@ function panneau(i,j){const im=j.imageCombat||j.image,t=tierRar(j.rar),col=(j.ra
  $('#p'+i).innerHTML=`<div class="pj">${String(j.pseudo).replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div>${EQUIPE[i]?`<div class="eq">${Array.from({length:EQUIPE[i].of},(_,k)=>`<b class="${k<EQUIPE[i].n-1?'off':''}"></b>`).join('')}</div>`:''}<div class="cw${t!=='co'?' rr rr-'+t:''}" style="--g:${col}"><div class="card" ${im?`style="background-image:url('${urlImg(im)}')"`:''}>${im?'':j.carte}<div class="dosf" style="${dosCSS(j)}">${j.dos?'':'🌲'}</div>${t==='ep'||t==='lg'||t==='ul'?'<span class="shn"></span>':''}${j.imageCombat?'<span class="sv sva" data-v=""></span><span class="sv svp" data-v=""></span>':''}</div>${beltsHtml(i)}<div class="etats"></div></div>
  <div class="nm">${j.carte}</div><div class="bar"><i></i></div><div class="pv"></div>
  <div class="mp"><div class="mw"><div class="mini${magV?' vide':' back dos mag'}" id="m${i}" ${magV?mini(j.magieImg):`style="${dosCSS(j)}"`}>${magV?(j.magieImg?'':j.magie):(j.dos?'':'?')}</div><small>Magie</small></div>
- <div class="mw"><div class="mini back${/^Aucun/.test(j.piege)?' vide':''}${j.dos?' dos':''}" id="g${i}" ${j.dos?`style="background-image:url('${urlImg(j.dos)}')"`:''}>${j.dos?'':'?'}</div><small>Piège</small></div></div>`}
+ <div class="mw"><div class="mini back${/^Aucun/.test(j.piege)?' vide':''}${j.dos?' dos':''}" id="g${i}" ${j.dos?`style="background-image:url('${urlImg(j.dos)}')"`:''}>${j.dos?'':'?'}</div><small>Piège</small></div></div>`;
+ secoursImg(i,j)}
+// Image du combattant qui ne charge pas (miroir GitHub, Supabase, cache d'OBS) : on retente sur Supabase, puis l'image complète, puis le nom de la carte
+function secoursImg(i,j){const im=j.imageCombat||j.image;if(!im)return;const essais=[urlImg(im),STORAGE+im,j.imageCombat&&j.image?urlImg(j.image):'',j.imageCombat&&j.image?STORAGE+j.image:''].filter((u,n,a)=>u&&a.indexOf(u)===n);
+ const essai=n=>{const k=$('#p'+i+' .card');if(!k||JOUEURS[i]!==j)return;if(n>=essais.length){k.style.backgroundImage='';k.querySelectorAll('.sv').forEach(x=>x.remove());k.insertBefore(document.createTextNode(j.carte||''),k.firstChild);return}
+  const t=new Image();t.onload=()=>{const k2=$('#p'+i+' .card');if(n&&k2&&JOUEURS[i]===j){k2.style.backgroundImage=`url('${essais[n]}')`;if(essais[n].indexOf(im)<0)k2.querySelectorAll('.sv').forEach(x=>x.remove())}};t.onerror=()=>essai(n+1);t.src=essais[n]};
+ essai(0)}
 let st={},FEU=null;const fxAll=new Set(),R=(a,b)=>a+Math.random()*(b-a);
 function fxStart(card,k){
  const cv=document.createElement('canvas');cv.className='fx '+k;const d=k==='brulure'?1:Math.min(1.5,window.devicePixelRatio||1),W=card.clientWidth,H=card.clientHeight;
