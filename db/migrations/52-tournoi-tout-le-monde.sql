@@ -438,7 +438,7 @@ begin
   select i.joueur_id, t.id, 0, t.nom, t.division, t.echarpe from public.tournoi_inscrits i where i.tournoi_id = t.id;
 end $$;
 
--- Le tableau d'un tournoi (50-tournoi-suisse.sql), avec les têtes du loser bracket
+-- Le tableau d'un tournoi (50-tournoi-suisse.sql), avec les têtes du loser bracket et le podium (armoire : détail d'un trophée)
 create or replace function public.tournoi_json(p_id bigint, p_masquer boolean)
 returns jsonb language plpgsql security definer set search_path = public as $$
 declare t public.tournois; m public.tournoi_matchs; k record; nt int; caches bigint[] := '{}'; ronde_cachee int;
@@ -482,6 +482,8 @@ begin
   return jsonb_build_object(
     'id', t.id, 'nom', t.nom, 'division', t.division, 'ceinture', public.titre_nom(t.division), 'statut', t.statut,
     'format', t.format, 'rondes', t.rondes, 'coupe', t.coupe, 'coupe_loser', public.tournoi_coupe_loser(t), 'places_winner', t.places_winner, 'places_loser', t.places_loser,
+    'places', (select coalesce(jsonb_agg(jsonb_build_object('place', tr.place, 'pseudo', j.pseudo) order by tr.place), '[]')
+               from public.trophees tr left join public.joueurs j on j.id = tr.joueur_id where tr.tournoi_id = t.id and tr.place between 1 and 3),
     'max_joueurs', coalesce(t.max_joueurs, public.reglage_num('tournoi_max_joueurs', 32)::int),
     'recompenses', public.tournoi_recompenses_json(t.id), 'trophee', t.trophee, 'auto', t.auto,
     'cree_le', t.cree_le, 'lance_le', t.lance_le, 'fini_le', t.fini_le,

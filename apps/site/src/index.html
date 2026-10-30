@@ -50,6 +50,10 @@ table{border-collapse:collapse;width:100%}td,th{padding:6px;border-bottom:1px so
 .arm .tr{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;text-align:center;gap:4px;padding-bottom:10px;border-bottom:6px solid #5b3d22;box-shadow:0 6px 0 -2px #2f1f12}
 .arm .tr img,.arm .tr svg{height:86px;max-width:110px;object-fit:contain;filter:drop-shadow(0 4px 6px rgba(0,0,0,.7)) drop-shadow(0 0 8px var(--m))}
 .arm .tr.p2 img,.arm .tr.p2 svg{height:72px}.arm .tr.p3 img,.arm .tr.p3 svg{height:62px}
+.arm .tr[data-trd]{cursor:pointer;border-radius:8px 8px 0 0;transition:transform .15s}.arm .tr[data-trd]:hover,.arm .tr[data-trd]:focus-visible{transform:translateY(-3px);outline:none;background:rgba(255,255,255,.04)}
+.trdb{position:relative;max-width:620px;width:100%;max-height:92vh;overflow:auto;padding:22px;border-radius:18px;border:2px solid var(--m);background:#16161f;box-shadow:0 0 40px rgba(0,0,0,.6)}
+.trdb .tdh{display:flex;gap:16px;align-items:center}.trdb .tdh img,.trdb .tdh svg{height:96px;max-width:120px;object-fit:contain;flex:none;filter:drop-shadow(0 0 10px var(--m))}
+.trdb h2{margin:0 0 4px}.trdb table{width:100%;border-collapse:collapse;font-size:14px}.trdb td{padding:5px 6px;border-bottom:1px solid #2c2c38}.trdb .x{position:absolute;top:10px;right:10px}
 .arm .pl{font-size:11px;font-weight:800;padding:2px 8px;border-radius:4px;background:var(--m);color:#1a1205}.arm .nm{font-size:13px;font-weight:700;line-height:1.2}.arm small{opacity:.7;font-size:11px}.pth{background:#1d1d27;border:1px solid #2c2c38;border-radius:12px;padding:12px}.pth span{display:inline}.stat span{color:#aaa;font-size:13px;display:block}
 .stat.card2{display:flex;gap:12px;align-items:center;grid-column:span 2}
 .stat.card2 img{width:80px;border-radius:4px;filter:drop-shadow(0 0 3px var(--g)) drop-shadow(0 0 10px var(--g))}
@@ -755,13 +759,37 @@ const coupe=m=>`<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M18 8h28v10
 // l'écharpe de participation (place 0), dessinée quand le tournoi n'a pas d'image d'écharpe
 const echarpe=m=>`<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M14 10c10 6 26 6 36 0l2 8c-11 7-29 7-40 0z" fill="${m}"/><path d="M22 17l-6 37 7-4 4 6 5-36zM42 17l6 37-7-4-4 6-5-36z" fill="${m}" opacity=".85"/><path d="M18 46l7-1M40 45l7 1" stroke="#0f2f2b" stroke-width="2"/></svg>`;
 const tropheeImg=(image,place)=>image?`<img src="${img(image)}" alt="">`:place===0?echarpe(PLACES[0].m):coupe((PLACES[place]||PLACES[1]).m);
-function armoire(L,mine){
+function armoire(L,mine,joueur){
   const n=p=>L.filter(x=>x.place===p).length,jr=d=>new Date(d).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'});
-  const case_=x=>{const P=PLACES[x.place]||PLACES[1];return `<div class="tr p${x.place}" style="--m:${P.m}">${tropheeImg(x.image,x.place)}<span class="pl">${P.l}</span><span class="nm">${esc(x.nom)}</span><small>${esc(x.ceinture||'')} · ${jr(x.le)}</small></div>`};
+  const case_=x=>{const P=PLACES[x.place]||PLACES[1];return `<div class="tr p${x.place}" style="--m:${P.m}"${x.tournoi?` data-trd="${x.tournoi}" data-i="${L.indexOf(x)}" data-j="${esc(joueur||'')}" role="button" tabindex="0" title="Voir le détail"`:''}>${tropheeImg(x.image,x.place)}<span class="pl">${P.l}</span><span class="nm">${esc(x.nom)}</span><small>${esc(x.ceinture||'')} · ${jr(x.le)}</small></div>`};
   const T=L.filter(x=>x.place>0),E=L.filter(x=>x.place===0);
   return `<h3>🏆 Armoire à trophées</h3>${L.length?`<p><small>${n(1)} tournoi${n(1)>1?'s':''} gagné${n(1)>1?'s':''} · ${n(2)} fois finaliste · ${n(3)} fois 3e · ${n(0)} participation${n(0)>1?'s':''}</small></p>
    ${T.length?`<div class="arm">${T.map(case_).join('')}</div>`:''}${E.length?`<div class="arm">${E.map(case_).join('')}</div>`:''}`
    :`<p><small>${mine?'Aucun trophée pour l\'instant : inscris-toi au prochain tournoi (onglet 🎖️ Tournois) !':'Aucun trophée pour l\'instant.'}</small></p>`}`}
+// Détail d'un trophée ou d'une écharpe de l'armoire : le tournoi, la place, le parcours du joueur, le podium, la récompense
+async function tropheeDetail(tid,joueur,x){
+  const r=await sb.rpc('tournoi_etat',{p_id:+tid});
+  if(r.error||!r.data||!r.data.tournoi)return uiAlert('Détail du tournoi indisponible'+(r.error?' : '+r.error.message:'.'));
+  const T=r.data.tournoi,P=PLACES[x.place]||PLACES[1],jr=d=>d?new Date(d).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}):'?';
+  const M=(T.matchs||[]).filter(m=>(m.a===joueur||m.b===joueur)&&!(m.exempt&&!m.b&&m.phase!=='winner'&&m.phase!=='tableau'));
+  const C=(T.classement||[]).find(c=>c.id===joueur);
+  const lig=m=>{const moi=m.a===joueur,adv=moi?m.pseudo_b:m.pseudo_a,sm=moi?m.score_a:m.score_b,sa=moi?m.score_b:m.score_a,g=m.gagnant===joueur;
+    return `<tr><td>${esc(m.nom_tour||'')}</td><td>${m.exempt?'<i>qualifié d\'office</i>':'contre <b>'+esc(adv||'?')+'</b>'}</td><td style="text-align:right;white-space:nowrap">${m.exempt?'':m.gagnant?`${g?'✅':'❌'} ${sm}-${sa}`:'à jouer'}</td></tr>`};
+  const podium=[1,2,3].map(p=>{const e=(T.places||[]).find(q=>q.place===p);return e?`${PLACE_NOM[p]} : <b>${esc(e.pseudo||'?')}</b>`:''}).filter(Boolean).join(' · ');
+  const rec=x.place>0&&(T.recompenses||[]).find(q=>q.place===x.place);
+  const fond=document.createElement('div');fond.className='cmo';
+  fond.innerHTML=`<div class="trdb" role="dialog" aria-modal="true" aria-label="Détail du trophée" style="--m:${P.m}"><button class="sec x" data-f>✕</button>
+   <div class="tdh">${tropheeImg(x.image,x.place)}<div><h2>${esc(T.nom)}</h2><span class="chr" style="background:${P.m};color:#1a1205;font-weight:800">${P.l}</span>
+    <p><small>${esc(T.ceinture||'')} · ${T.format==='suisse'?'rondes suisses + double élimination':'élimination directe'} · ${(T.inscrits||[]).length} participants<br>${T.lance_le&&T.fini_le&&jr(T.lance_le)!==jr(T.fini_le)?`du ${jr(T.lance_le)} au ${jr(T.fini_le)}`:T.fini_le||T.lance_le?'le '+jr(T.fini_le||T.lance_le):''}</small></p></div></div>
+   ${podium?`<p>${podium}</p>`:''}
+   ${C?`<p>📊 Rondes suisses : <b>${C.victoires}-${C.defaites}</b>, ${C.rang}${C.rang===1?'er':'e'} du classement${C.rang<=(T.coupe||0)?' (winner bracket)':C.rang<=(T.coupe||0)+(T.coupe_loser||0)?' (loser bracket)':''}</p>`:''}
+   ${M.length?`<h3>Parcours</h3><table>${M.map(lig).join('')}</table>`:''}
+   ${rec&&recompenseHtml(rec)?`<h3>Récompense</h3><p>${recompenseHtml(rec)}</p>`:''}</div>`;
+  const fin=()=>{fond.remove();document.removeEventListener('keydown',kb)},kb=e=>{if(e.key==='Escape')fin()};
+  fond.onclick=e=>{if(e.target===fond||e.target.closest('[data-f]'))fin()};
+  document.addEventListener('keydown',kb);document.body.appendChild(fond);fond.querySelector('[data-f]').focus()}
+function armoireClics(root,L){root.querySelectorAll('.arm .tr[data-trd]').forEach(el=>{const x=L[+el.dataset.i];
+  const go=()=>tropheeDetail(el.dataset.trd,el.dataset.j,x||{place:0});el.onclick=go;el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();go()}}})}
 // format suisse (50-tournoi-suisse.sql) : classement et ronde en cours, puis winner et loser bracket
 function tableauSuisseSite(T){
   const M=T.matchs||[],sw=M.filter(m=>m.phase==='suisse'),br=M.filter(m=>m.phase!=='suisse'&&!(m.phase==='revanche'&&!m.a)&&!(m.exempt&&!m.a)),pos=(x,y)=>x.position-y.position;   // un match du loser bracket resté vide (pas assez de joueurs) n'est pas montré
@@ -1161,11 +1189,12 @@ async function vProfil(id=user.id){
    ${st('Combat le plus long',S.combat_long_tours?S.combat_long_tours+' tours':'—')}
    ${st('Dégâts totaux infligés',n('degats_totaux'))}</div>
   <h3>Cartes</h3><div class="stats">${cardTile('Carte la plus jouée',D.plus_jouee,'combats')}${cardTile('Carte la plus victorieuse',D.plus_gagnante,'victoires')}</div>
-  ${rt&&!rt.error?armoire(rt.data||[],mine):''}
+  ${rt&&!rt.error?armoire(rt.data||[],mine,id):''}
   ${coll}
   ${tot?'':`<p><small>${mine?'Aucun combat joué pour l\'instant : tes statistiques de combat apparaîtront après ton premier combat.':'Ce joueur n\'a pas encore combattu.'}</small></p>`}
   <p><button class="sec" data-cl>🏆 Voir le classement</button></p>`;
   const bc=main.querySelector('[data-cl]');if(bc)bc.onclick=()=>show('classement');
+  if(rt&&!rt.error)armoireClics(main,rt.data||[]);
   main.querySelectorAll('button[data-p]').forEach(b=>b.onclick=()=>{vProfil(b.dataset.p);window.scrollTo(0,0)});
 }
 
