@@ -12,7 +12,7 @@ import { bleedAmount } from './bleed.ts';
 import { dotAmount } from './dot.ts';
 import type { Attack } from '../combat/attack.ts';
 import { attackSources, mergedSource } from '../combat/sources.ts';
-import { emit, id, over, raw, roll, round, type Combat } from '../combat/combat.ts';
+import { emit, id, over, raw, roll, round, standIn, type Combat } from '../combat/combat.ts';
 import { damage } from '../combat/damage.ts';
 import type { EffectContext, EffectRules } from '../combat/effect-context.ts';
 import { applyEffect } from '../combat/effects.ts';
@@ -168,7 +168,11 @@ function missiles(
           if (b > 0) emit(c, { type: 'damaged', side: id(c, v), amount: b, cause: 'blast' });
         }
       }
-      if (over(c)) break;
+      if (over(c)) {
+        const next = standIn(c, x); // the blast took its target: the salvo goes on to the newcomer
+        if (next === x || o.hp <= 0) break;
+        x = next;
+      }
       continue;
     }
     const shot = blockedShot(o);
@@ -200,7 +204,14 @@ function missiles(
           emit(c, { type: 'damaged', side: id(c, o), amount: b, cause: 'missileReturned' });
       }
     }
-    if (o.hp <= 0 || over(c)) break;
+    if (o.hp <= 0) break;
+    if (over(c)) {
+      // its target fell: the rest of the salvo goes to the fighter taking its place (relay), or stops
+      const next = standIn(c, x);
+      if (next === x || o.hp <= 0) break;
+      x = next;
+      continue;
+    }
     const element =
       e.mstatut === 'aleatoire'
         ? (ELEMENTS[Math.floor(c.random() * ELEMENTS.length)] as string)

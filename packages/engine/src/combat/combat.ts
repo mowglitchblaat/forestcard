@@ -44,6 +44,7 @@ export type Combat = {
   trapChainDepth: number;
   held: HeldEvent[][]; // nested holds, innermost last
   triggers: Triggers; // what the event hook does, from both decks (mechanics/triggers.ts)
+  standIn?: (s: Side) => Side; // relay.ts: a fallen fighter's player sends the next one, now
 };
 
 // Raw card values take part in arithmetic exactly as in the legacy engine: JavaScript coerces them
@@ -295,6 +296,11 @@ export function flush(c: Combat): void {
     if (c.pendingEffects.length) (c.pendingEffects.shift() as () => void)();
   } while (c.pendingRevives.length || c.pendingEffects.length);
 }
+
+// A fallen card, in a relay combat (relay.ts): its player's next fighter takes its place now, and what
+// was still aimed at it goes on to the newcomer (the rest of a chained attack, of a missile salvo).
+// Anywhere else, or with nobody left to send: the card itself, still fallen.
+export const standIn = (c: Combat, s: Side): Side => (s.hp <= 0 && c.standIn ? c.standIn(s) : s);
 
 // Flushes, then tells whether a card is down.
 export function over(c: Combat): boolean {

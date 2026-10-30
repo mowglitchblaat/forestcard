@@ -1006,16 +1006,38 @@ test('relais : le survivant garde ses PV, le nouveau combattant joue en premier'
   assert.equal(t.c, 1, 'le nouveau combattant ouvre le duel');
 });
 
-test('relais : le tour de celui qui met KO se termine (soin de chaque tour) avant l\'entrée du suivant', () => {
+// Les tours de jeu d'un camp : pour chaque ligne « tour » de c, les lignes jusqu'au tour suivant.
+const toursDe = (r, c) => r.journal.map((e, i) => [e, i]).filter(([e]) => e.t === 'tour' && e.c === c)
+  .map(([, i]) => { const j = r.journal.findIndex((e, k) => k > i && e.t === 'tour'); return r.journal.slice(i, j < 0 ? undefined : j); });
+
+test('relais : le suivant entre tout de suite, puis celui qui a mis KO finit son tour (soin de chaque tour)', () => {
   const r = relais([C('A1', 100, 1000, { passif: { type: 'soin_tour', u: 'pts', val: 10 } })], [C('B1', 20, 50), C('B2', 20, 50), C('B3', 20, 50)]);
-  const entrees1 = r.journal.map((e, i) => [e, i]).filter(([e]) => e.t === 'relais' && e.c === 1);
-  assert.equal(entrees1.length, 2);
-  for (const [, i] of entrees1) {
-    const tour = r.journal.slice(0, i).map(e => e.t).lastIndexOf('tour');
-    const fin = r.journal.slice(tour, i);
-    assert.equal(r.journal[tour].c, 0, 'A1 met KO pendant son tour');
-    assert.ok(fin.some(e => e.t === 'soin' && e.c === 0), 'A1 se soigne avant que le suivant entre');
+  const ko = toursDe(r, 0).filter(t => t.some(e => e.t === 'relais' && e.c === 1));
+  assert.equal(ko.length, 2);
+  for (const t of ko) {
+    const i = t.findIndex(e => e.t === 'relais');
+    assert.ok(t.slice(i).some(e => e.t === 'soin' && e.c === 0), 'A1 se soigne après l\'entrée du suivant, dans le même tour');
   }
+});
+
+test('relais : les coups restants d\'une attaque frappent le combattant qui vient d\'entrer', () => {
+  const r = relais([C('A1', 100, 1000, { passif: { type: 'multi_frappe', chance: 100, frappes: 3 } })], [C('B1', 1, 50), C('B2', 1, 50), C('B3', 1, 50)]);
+  assert.equal(r.gagnant, 0);
+  const t = toursDe(r, 0)[0];
+  assert.equal(t.filter(e => e.t === 'relais' && e.c === 1).length, 2, 'une seule attaque de 3 coups met KO les trois');
+  const i = t.findIndex(e => e.t === 'relais');
+  assert.ok(t.slice(i).some(e => e.t === 'degats' && e.c === 1), 'le coup suivant frappe le nouveau');
+});
+
+test('relais : la suite d\'une salve de missiles s\'abat sur le combattant qui vient d\'entrer', () => {
+  const ult = { type: 'missiles', frappes: 4, val: 100, apres_tours: 1, utilisations: 1 };
+  const r = relais([C('A1', 0, 1000, { ultime: ult })], [C('B1', 0, 50), C('B2', 0, 50), C('B3', 0, 50)]);
+  assert.equal(r.gagnant, 0);
+  const t = toursDe(r, 0).find(x => x.some(e => e.t === 'relais' && e.c === 1));
+  assert.ok(t, 'la salve met KO pendant le tour de A1');
+  assert.equal(t.filter(e => e.t === 'relais' && e.c === 1).length, 2, 'une salve : les trois tombent l\'un après l\'autre');
+  const i = t.map(e => e.t === 'relais').lastIndexOf(true);
+  assert.ok(t.slice(i).some(e => e.t === 'degats' && e.c === 1), 'B3 prend les missiles restants');
 });
 
 test('relais : une magie déjà jouée n\'est pas retirée au combattant suivant', () => {

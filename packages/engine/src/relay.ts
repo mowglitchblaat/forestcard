@@ -3,10 +3,12 @@
 //
 //   - each player draws a trio (fighter, magic, trap) from their deck; a card already played is never
 //     drawn again (draw(): never-played cards first);
-//   - when a fighter falls, the turn under way is closed first: if the card playing it still stands,
-//     its "every turn" passives, its status damage, its purifications and the end of its durations
-//     still happen (moments.ts, TURN_CLOSE). Then its player sends the next one with a new trio. The
-//     fighter still standing keeps everything: HP, statuses, magic and trap already played. The new fighter acts first, and
+//   - when a fighter falls, its player sends the next one at once, with a new trio (only its magic is
+//     revealed), and the turn under way goes on against it: the rest of a chained attack or of a
+//     missile salvo strikes it (combat.ts, standIn), and it is there for the end of the turn (a heal it
+//     can absorb, an ultimate it can trigger…). The card playing the turn, if it falls, ends its turn
+//     there. Then a new duel starts, the new fighter acting first. The fighter still standing keeps
+//     everything: HP, statuses, magic and trap already played. The new fighter acts first, and
 //     only its magic is revealed;
 //   - no round limit: each duel goes on until a KO (a safety cap of RELAY_ROUND_CAP rounds ends a
 //     duel that cannot end: the fighter with the lowest share of its max HP falls, exhausted);
@@ -21,12 +23,12 @@ import {
   createCombat,
   disableEmptySlots,
   emit,
+  flush,
   id,
   newSide,
   opponent,
-  over,
 } from './combat/combat.ts';
-import { TURN, TURN_CLOSE } from './combat/moments.ts';
+import { TURN } from './combat/moments.ts';
 import type { Side } from './combat/state.ts';
 import { settleMagicCancellations } from './mechanics/magic-cancel.ts';
 import { revealMagic } from './mechanics/magic-timing.ts';
@@ -68,76 +70,73 @@ export function simulateRelay(
   emit(c, { type: 'combatStarted', first, team });
   revealMagics(c, [c.sides[first] as Side, c.sides[1 - first] as Side]);
 
+  const canSend = (i: number) => fielded[i]! < team && fielded[i]! < (fighters[i] ?? 0);
+  // The players who sent a fighter during the turn under way.
+  const entered = new Set<number>();
+  // A fallen fighter (after what was pending: a revive, a trap) gives way to its player's next one.
+  c.standIn = (s: Side): Side => {
+    flush(c);
+    const i = c.sides.indexOf(s);
+    if (s.hp > 0 || i < 0 || !canSend(i)) return s;
+    const next = newSide(c, players[i] as Player, used[i], [s.fighter, s.magic, s.trap]);
+    (used[i] as Card[]).push(next.fighter, next.magic, next.trap);
+    c.sides[i] = next;
+    disableEmptySlots(next);
+    fielded[i]!++;
+    entered.add(i);
+    const standing = c.sides[1 - i] as Side;
+    if (standing.hp > 0) handOver(c, standing, [s]);
+    emit(c, { type: 'fighterEntered', side: i, index: fielded[i]!, of: team });
+    revealMagics(c, [next]);
+    return next;
+  };
+  // After a turn: what is pending, then the fallen give way. Whether someone is still down (the end).
+  const settle = (): boolean => {
+    flush(c);
+    c.sides.forEach((s) => c.standIn!(s));
+    return c.sides.some((s) => s.hp <= 0);
+  };
+
   let order: Side[] = [c.sides[first] as Side, c.sides[1 - first] as Side];
   let turn = 0;
-  for (;;) {
-    // One duel: rounds until a KO (or the safety cap).
-    for (c.round = 1; !over(c); c.round++) {
+  duels: for (;;) {
+    entered.clear();
+    // One duel: rounds until a fighter falls (or the safety cap).
+    for (c.round = 1; ; c.round++) {
       if (c.round > RELAY_ROUND_CAP) {
         const worn = c.sides.reduce((x, y) => (y.hp / y.maxHp < x.hp / x.maxHp ? y : x));
         worn.hp = 0;
         emit(c, { type: 'fighterExhausted', side: id(c, worn) });
+        if (settle()) break duels;
         break;
       }
-      sides: for (let oi = 0; oi < 2; oi++) {
+      for (let oi = 0; oi < 2; oi++) {
         const a = order[oi] as Side;
-        if (over(c)) break;
         emit(c, { type: 'turnStarted', side: id(c, a), turn: ++turn });
         for (let i = 0; i < TURN.length; i++) {
-          if (i > 0 && over(c)) {
-            closeTurn(c, a, i);
-            break sides;
+          if (i > 0) {
+            flush(c);
+            const o = opponent(c, a);
+            if (o.hp <= 0 && c.standIn(o).hp <= 0) break; // nobody left to send
+            if (a.hp <= 0) break; // its turn ends with it
           }
           (TURN[i] as (typeof TURN)[number])(c, a);
         }
+        if (settle()) break duels;
+        if (entered.size) break;
       }
+      if (entered.size) break;
     }
-    // Who fell, and who can still send a fighter.
-    const down = c.sides.map((s) => s.hp <= 0);
-    const canSend = [0, 1].map((i) => fielded[i]! < team && fielded[i]! < (fighters[i] ?? 0));
-    if ((down[0] && !canSend[0]) || (down[1] && !canSend[1])) break;
-    // The fallen send their next fighter, with a new trio.
-    const entering: Side[] = [];
-    const gone: Side[] = [];
-    [0, 1].forEach((i) => {
-      if (!down[i]) return;
-      const previous = c.sides[i] as Side;
-      gone.push(previous);
-      const next = newSide(c, players[i] as Player, used[i], [
-        previous.fighter,
-        previous.magic,
-        previous.trap,
-      ]);
-      (used[i] as Card[]).push(next.fighter, next.magic, next.trap);
-      c.sides[i] = next;
-      disableEmptySlots(next);
-      fielded[i]!++;
-      entering.push(next);
-    });
-    // The fighter still standing keeps its state; its ultimates' cooldowns start again with the
-    // new duel (rounds count from 1 again).
-    c.sides.forEach((s) => {
-      if (!entering.includes(s)) {
-        s.ultimates.forEach((u) => (u.lastRound = -99));
-        handOver(c, s, gone);
-      }
+    // A new duel: the new fighter acts first (both new: the starting order). The fighter still
+    // standing keeps its state; its ultimates' cooldowns start again (rounds count from 1 again).
+    c.sides.forEach((s, i) => {
+      if (!entered.has(i)) s.ultimates.forEach((u) => (u.lastRound = -99));
     });
     c.round = 0;
     c.pendingRevives = [];
     c.pendingEffects = [];
-    entering.forEach((s) => {
-      const i = id(c, s);
-      emit(c, { type: 'fighterEntered', side: i, index: fielded[i]!, of: team });
-    });
-    // The new fighter acts first (both new: the starting order).
-    order =
-      entering.length === 1
-        ? [entering[0] as Side, opponent(c, entering[0] as Side)]
-        : [c.sides[first] as Side, c.sides[1 - first] as Side];
-    revealMagics(
-      c,
-      order.filter((s) => entering.includes(s)),
-    );
+    const one = entered.size === 1 ? (c.sides[[...entered][0]!] as Side) : null;
+    order = one ? [one, opponent(c, one)] : [c.sides[first] as Side, c.sides[1 - first] as Side];
   }
 
   const out = [0, 1].map(
@@ -154,18 +153,6 @@ export function simulateRelay(
         : [rules.perte, rules.gain];
   emit(c, { type: 'combatEnded', winner, rewards });
   return { seed, regles: rules, gagnant: winner, recompenses: rewards };
-}
-
-// A fighter fell during a's turn, before its step `from`: a, if it still stands, ends its turn
-// (TURN_CLOSE), so what comes at the end of a turn is not lost to the KO. It may fall doing it (its
-// own poison): both fighters are then down at once.
-function closeTurn(c: ReturnType<typeof createCombat>, a: Side, from: number): void {
-  for (let i = from; i < TURN.length; i++) {
-    const step = TURN[i] as (typeof TURN)[number];
-    if (a.hp <= 0) return;
-    if (TURN_CLOSE.includes(step)) step(c, a);
-    over(c); // flushes what the step left pending, as between two steps of a turn
-  }
 }
 
 // As in simulate.ts: magic cancellation settled first, then each magic of `order` acts.

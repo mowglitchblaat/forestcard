@@ -16,7 +16,7 @@ import {
   type Strike,
   type StrikeStep,
 } from './attack.ts';
-import { emit, id, opponent, type Combat } from './combat.ts';
+import { emit, id, opponent, standIn, type Combat } from './combat.ts';
 import { run, type Flow, type Step } from './flow.ts';
 import type { Side } from './state.ts';
 import { scan } from './traps.ts';
@@ -202,6 +202,16 @@ function strikes(c: Combat, at: Attack, steps: readonly StrikeStep[], st: Strike
   return undefined;
 }
 
+// Its target fell: the rest of the attack goes to the fighter taking its place (relay.ts). Elsewhere,
+// or with nobody left to send, the attack stops there.
+function retarget(c: Combat, at: Attack): boolean {
+  const next = standIn(c, at.d);
+  if (next === at.d) return false;
+  at.d = next;
+  at.idd = id(c, next);
+  return true;
+}
+
 // 3. The attack: whether it can, how many strikes, then each strike; the traps scan once it is done.
 export function attack(c: Combat, a: Side): Flow {
   const d = opponent(c, a);
@@ -221,15 +231,19 @@ export function attack(c: Combat, a: Side): Flow {
   a.attacks++;
   emit(c, { type: 'attacked', side: at.ia, strikes: at.base });
   if (run(c, at, BEFORE_STRIKES)) return 'stop';
-  for (let k = 0; k < at.strikes && d.hp > 0; k++) {
+  for (let k = 0; k < at.strikes; k++) {
+    if (at.d.hp <= 0 && !retarget(c, at)) break;
     if (k >= at.base) emit(c, { type: 'extraStrike', side: at.ia });
     else if (at.base > 1) emit(c, { type: 'strike', side: at.ia, index: k + 1, of: at.base });
     const st: Strike = { k, n: 0, blocked: false };
     let flow = strikes(c, at, STRIKE, st);
     if (!flow && landed(at, st)) flow = strikes(c, at, LANDED, st);
     if (!flow) flow = strikes(c, at, AFTER_STRIKE, st);
-    if (flow === 'stop') return 'stop';
-    if (flow === 'break') break;
+    // a strike that stops the attack because its target fell: in a relay, the rest goes on
+    if ((flow === 'stop' || flow === 'break') && (at.d.hp > 0 || a.hp <= 0 || !retarget(c, at))) {
+      if (flow === 'stop') return 'stop';
+      break;
+    }
   }
   scan(c, { kind: 'attack', by: at.ia });
   return undefined;
@@ -250,13 +264,4 @@ export const TURN: ((c: Combat, s: Side) => Flow)[] = [
   everyTurn, // 5. ATQ / HP growth, heal, random
   endOfTurnEffects, // 6. burn, poison, bleed, purifications, delayed damage
   endTurn, // 7. frost, fracture, fatigue, rage, double damage, reflect, trap immunity, timed thefts
-];
-
-// The moments that still close a card's turn once its opponent has fallen (relay.ts: the fighter
-// standing ends its turn before the next one comes in). Not its ultimate, attack or chewing: there is
-// nobody left to aim at.
-export const TURN_CLOSE: readonly ((c: Combat, s: Side) => Flow)[] = [
-  everyTurn,
-  endOfTurnEffects,
-  endTurn,
 ];
