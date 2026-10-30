@@ -1,5 +1,31 @@
 [
   {
+    "date": "2026-10-30",
+    "intro": "Les tournois prennent de l’ampleur avec un nouveau format suisse, de nouveaux trophées et une écharpe pour chaque participant.",
+    "groupes": [
+      {
+        "titre": "Combat",
+        "points": [
+          "Évite la mort : la carte tient à 1 PV pendant que son piège se joue ; si un contre-piège l’achève à ce moment-là, la protection ne la sauve plus."
+        ]
+      },
+      {
+        "titre": "Animations",
+        "points": [
+          "Lien parasitaire : avec plusieurs liens, le soin s’affiche sur toutes les vrilles, plus seulement sur une."
+        ]
+      },
+      {
+        "titre": "Site",
+        "points": [
+          "Nouveau format de tournoi, le suisse : des rondes où l’on affronte des joueurs au même score, puis les meilleurs passent dans un tableau à double élimination (avec revanche possible en grande finale).",
+          "Pendant un tournoi, les autres combats attendent la fin ; la petite finale se joue maintenant en BO5.",
+          "Récompenses : un trophée or, argent ou bronze selon la place, et une écharpe de participation pour chaque inscrit, rangée dans l’armoire à trophées."
+        ]
+      }
+    ]
+  },
+  {
     "date": "2026-10-29",
     "intro": "Le Feu, le Poison, la Foudre, la Malédiction et le Ciblage reçoivent de nouvelles compétences, toutes animées en combat, et les tournois en live se préparent.",
     "groupes": [
