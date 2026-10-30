@@ -385,7 +385,7 @@ function tournoiFin(g){const b=$('#titreban'),T=TOURNOI;if(!b||!T)return;const i
  if(T.match_fini){b.classList.add('nouveau');i.innerHTML=`${nm(g)} se qualifie${T.format>1?` (${Math.max(...a)}-${Math.min(...a)})`:''} !`;return}
  b.classList.add('fin');i.innerHTML=`${nm(g)} gagne le combat · ${nm(0)} ${a[0]} - ${a[1]} ${nm(1)}`}
 // format suisse (50-tournoi-suisse.sql) : le classement et la ronde en cours, puis le winner et le loser bracket
-function tableauSuisseHtml(T,o){const M=T.matchs||[],sw=M.filter(m=>m.phase==='suisse'),br=M.filter(m=>m.phase!=='suisse'&&!(m.phase==='revanche'&&!m.a)&&!(m.exempt&&!m.a));
+function tableauSuisseHtml(T,o){const W=T.coupe||4,L=T.coupe_loser??(W>2?W:0),M=T.matchs||[],sw=M.filter(m=>m.phase==='suisse'),br=M.filter(m=>m.phase!=='suisse'&&!(m.phase==='revanche'&&!m.a)&&!(m.exempt&&!m.a));
  const ps=(m,id,p)=>p?escT(p):'?',pos=(x,y)=>x.position-y.position;
  const box=m=>{const fin=!!m.gagnant,cl=id=>fin&&id&&m.gagnant===id?' w':fin&&id?' l':'';
   return `<div class="tbm${o.actif===m.id?' on':''}"><div class="tbp${cl(m.a)}"><span>${ps(m,m.a,m.pseudo_a)}</span>${m.exempt?'':`<b>${m.score_a}</b>`}</div>${m.exempt?'<div class="tbp ex"><span>exempt (victoire)</span></div>':`<div class="tbp${cl(m.b)}"><span>${ps(m,m.b,m.pseudo_b)}</span><b>${m.score_b}</b></div>`}</div>`};
@@ -393,7 +393,7 @@ function tableauSuisseHtml(T,o){const M=T.matchs||[],sw=M.filter(m=>m.phase==='s
  const parTour=L=>[...new Set(L.map(m=>m.tour))].sort((x,y)=>x-y).map(t=>{const X=L.filter(m=>m.tour===t).sort(pos);return col(X,X[0].nom_tour)}).join('');
  let corps;
  if(!br.length){const r=Math.max(1,...sw.map(m=>m.tour)),L=sw.filter(m=>m.tour===r).sort(pos),C=T.classement||[];
-  corps=`<div class="tbg" style="--tbn:${Math.max(4,Math.min(10,C.length/2))}"><div class="tbc tbs"><div class="tbh">Classement · ronde ${r}/${T.rondes||'?'}</div><table>${C.map(x=>`<tr class="${x.rang<=(T.coupe||4)?'q':(T.coupe||4)>2&&x.rang<=2*(T.coupe||4)?'lq':''}"><td>${x.rang}</td><td>${escT(x.pseudo)}</td><td>${x.victoires}-${x.defaites}</td></tr>`).join('')}</table></div>${col(L,'Ronde '+r)}</div>`}
+  corps=`<div class="tbg" style="--tbn:${Math.max(4,Math.min(10,C.length/2))}"><div class="tbc tbs"><div class="tbh">Classement · ronde ${r}/${T.rondes||'?'}</div><table>${C.map(x=>`<tr class="${x.rang<=W?'q':x.rang<=W+L?'lq':''}"><td>${x.rang}</td><td>${escT(x.pseudo)}</td><td>${x.victoires}-${x.defaites}</td></tr>`).join('')}</table></div>${col(L,'Ronde '+r)}</div>`}
  else{const W=br.filter(m=>m.phase!=='loser'),Lo=br.filter(m=>m.phase==='loser'),n=Math.max(1,...W.map(m=>W.filter(x=>x.tour===m.tour).length));
   corps=`<div class="tbz">Winner bracket</div><div class="tbg half" style="--tbn:${n}">${parTour(W)}</div>${Lo.length?`<div class="tbz">Loser bracket</div><div class="tbg half" style="--tbn:${Math.max(1,n/2)}">${parTour(Lo)}</div>`:''}`}
  return `<div class="tbt"><small>🏆 TOURNOI · DECK ${escT(String(T.ceinture||'').toUpperCase())}</small><b>${escT(T.nom)}</b></div>${corps}${o.champion?`<div class="tbw">👑 ${escT(o.champion)} remporte le tournoi !</div>`:''}`}
