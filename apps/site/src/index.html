@@ -791,20 +791,67 @@ async function tropheeDetail(tid,joueur,x){
 function armoireClics(root,L){root.querySelectorAll('.arm .tr[data-trd]').forEach(el=>{const x=L[+el.dataset.i];
   const go=()=>tropheeDetail(el.dataset.trd,el.dataset.j,x||{place:0});el.onclick=go;el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();go()}}})}
 // format suisse (50-tournoi-suisse.sql) : classement et ronde en cours, puis winner et loser bracket
+// Le winner et le loser bracket (format suisse) : une colonne par tour
+function bracketsSuisse(br){
+  const pos=(x,y)=>x.position-y.position,ps=p=>p?esc(p):'<span style="opacity:.5">?</span>';
+  const box=m=>{const fin=!!m.gagnant,cl=id=>fin&&id&&m.gagnant===id?' w':fin&&id?' l':'',moi=m.a===user.id||m.b===user.id;
+    return `<div class="tbm${m.a_l_ecran?' on':''}${moi?' moi':''}"><div class="tbp${cl(m.a)}"><span>${ps(m.pseudo_a)}</span>${m.exempt?'':`<b>${m.score_a}</b>`}</div>${m.exempt?'<div class="tbp ex"><span>exempt (victoire)</span></div>':`<div class="tbp${cl(m.b)}"><span>${ps(m.pseudo_b)}</span><b>${m.score_b}</b></div>`}</div>`};
+  const col=(L,t)=>`<div class="tbc"><div class="tbh">${esc(t)}${L[0]&&L[0].format>1?' · BO'+L[0].format:''}</div><div class="tbl">${L.map(box).join('')}</div></div>`;
+  const parTour=L=>[...new Set(L.map(m=>m.tour))].sort((x,y)=>x-y).map(t=>{const X=L.filter(m=>m.tour===t).sort(pos);return col(X,X[0].nom_tour)}).join('');
+  const W=br.filter(m=>m.phase!=='loser'),Lo=br.filter(m=>m.phase==='loser');
+  return `<h4>🏆 Winner bracket</h4><div class="tbg">${parTour(W)}</div>${Lo.length?`<h4>💀 Loser bracket</h4><div class="tbg">${parTour(Lo)}</div>`:''}`}
+// Pendant les inscriptions : le format qui sera joué avec les inscrits du moment (même calcul que tournoi_coupes et
+// tournoi_double_creer, 52-tournoi-tout-le-monde.sql), et le tableau final avec des places au lieu des pseudos
+function apercuSuisse(T){
+  const n=(T.inscrits||[]).length;if(T.format!=='suisse'||n<2)return'';
+  const rondes=n<=2?1:n===3?2:n<=8?3:n<=16?4:n<=32?5:6;
+  let w=Math.min(n,Math.max(2,T.places_winner??Math.round(n*.6)));if(T.places_winner==null&&w>=n&&n>2)w=n-1;
+  const l=Math.max(0,Math.min(n-w,T.places_loser??n-w)),rg=i=>i+(i===1?'er':'e')+' du suisse',s=rondes>1?'s':'';
+  const head=`<h3>🔮 Le format, avec ${n} inscrit${n>1?'s':''}</h3><p><small><b>${rondes} ronde${s} suisse${s}</b> en BO1 (la 1re tirée au sort au lancement, les suivantes entre joueurs au même nombre de victoires), puis le tableau final : <b>✅ les ${w} premiers</b> en winner bracket (2 vies)${l?`, <b>💀 les ${l} suivants</b> en loser bracket (1 vie)`:''}${n>w+l?`, les ${n-w-l} derniers éliminés`:''}. Les places se remplissent avec le classement à la fin des rondes ; l'aperçu change à chaque inscription.</small></p>`;
+  const M=[];let id=0;const add=o=>{const m={id:++id,score_a:'',score_b:'',a:null,b:null,pseudo_a:null,pseudo_b:null,exempt:false,gagnant:null,fini:false,sv:0,sc:0,pv:0,pc:0,format:3,...o};M.push(m);return m};
+  const seed=k=>({a:'#'+k,p:rg(k)});
+  const ordre=q=>{let o=[1,2];if(q<=1)return[1];while(o.length<q){const L=o.length;o=o.flatMap(x=>[x,2*L+1-x])}return o};
+  const pose=(m,c,x)=>{if(!x)return;if(c===0){m.a=x.a;m.pseudo_a=x.p}else{m.b=x.a;m.pseudo_b=x.p}};
+  if(w<=2&&l===0){const f=add({tour:1,position:1,phase:'grande',nom_tour:'Finale',format:5});pose(f,0,seed(1));pose(f,1,seed(2));return head+bracketsSuisse(M)}
+  let tb=1,rw=0;while(tb<w){tb*=2;rw++}const moitie=tb/2;let ps=moitie,p=0;while(ps<l){ps*=2;p++}
+  const ow=ordre(tb),op=ordre(ps);let cur=1;const tw=[cur],tp=[cur],td=[],tre=[];
+  for(let q=2;q<=p;q++)tp.push(++cur);
+  for(let r=1;r<=rw;r++){td.push(++cur);if(r<rw){tw.push(++cur);tre.push(++cur)}}
+  const at=(t,pos,ph)=>M.find(m=>m.tour===t&&m.position===pos&&m.phase===ph);
+  for(let r=1;r<=rw;r++){const k=tb>>r,nom=k===1?'Finale du winner':k===2?'Demi-finale du winner':k===4?'Quart de finale du winner':`Winner bracket, ${r}${r===1?'er':'e'} tour`;
+    for(let i=1;i<=k;i++){const m=add({tour:tw[r-1],position:i,phase:'winner',nom_tour:nom});if(r===1){pose(m,0,ow[2*i-2]<=w&&seed(ow[2*i-2]));pose(m,1,ow[2*i-1]<=w&&seed(ow[2*i-1]))}}}
+  let nb=0;
+  for(let q=1;q<=p;q++){nb++;const k=ps>>q;for(let i=1;i<=k;i++){const m=add({tour:tp[q-1],position:q===1?moitie+i:i,phase:'loser',nom_tour:`Loser bracket, ${nb}${nb===1?'er':'e'} tour`});
+    if(q===1){pose(m,0,op[2*i-2]<=l&&seed(w+op[2*i-2]));pose(m,1,op[2*i-1]<=l&&seed(w+op[2*i-1]))}}}
+  for(let r=1;r<=rw;r++){nb++;const k=tb>>r;for(let i=1;i<=k;i++)add({tour:td[r-1],position:i,phase:'loser',format:r===rw?5:3,nom_tour:r===rw?'Finale du loser':`Loser bracket, ${nb}${nb===1?'er':'e'} tour`});
+    if(r<rw){nb++;for(let i=1;i<=k/2;i++)add({tour:tre[r-1],position:i,phase:'loser',nom_tour:r+1===rw?'Demi-finale du loser':`Loser bracket, ${nb}e tour`})}}
+  if(p===0&&l>0){const reel=x=>ow[2*(moitie-x+1)-1]<=w,pl=[...Array(moitie)].map((_,x)=>x+1).sort((x,y)=>reel(x)-reel(y)||x-y);
+    for(let i=1;i<=l;i++)pose(at(td[0],pl[i-1],'loser'),0,seed(w+i))}
+  const gf=add({tour:cur+1,position:1,phase:'grande',nom_tour:'Grande finale',format:5});
+  for(let r=1;r<=rw;r++){const k=tb>>r;
+    M.filter(m=>m.phase==='winner'&&m.tour===tw[r-1]).forEach(m=>{m.sv=r<rw?at(tw[r],(m.position+1)>>1,'winner').id:gf.id;m.sc=r<rw?(m.position-1)%2:0;m.pv=at(td[r-1],k-m.position+1,'loser').id;m.pc=1});
+    M.filter(m=>m.phase==='loser'&&m.tour===td[r-1]).forEach(m=>{m.sv=r<rw?at(tre[r-1],(m.position+1)>>1,'loser').id:gf.id;m.sc=r<rw?(m.position-1)%2:1});
+    if(r<rw)M.filter(m=>m.phase==='loser'&&m.tour===tre[r-1]).forEach(m=>{m.sv=at(td[r],m.position,'loser').id;m.sc=0})}
+  for(let q=1;q<=p;q++)M.filter(m=>m.phase==='loser'&&m.tour===tp[q-1]&&(q>1||m.position>moitie)).forEach(m=>{const pp=m.position-(q===1?moitie:0);
+    m.sv=q<p?at(tp[q],(pp+1)>>1,'loser').id:at(td[0],pp,'loser').id;m.sc=q<p?(pp-1)%2:0});
+  // les exemptions : un côté que plus aucun match n'alimente reste vide ; le joueur présent passe, avec sa place
+  const mort=(m,c)=>!(c?m.b:m.a)&&!M.some(f=>!f.fini&&((f.sv===m.id&&f.sc===c)||(f.pv===m.id&&f.pc===c)));
+  for(let fait=true;fait;){fait=false;for(const m of [...M].sort((x,y)=>x.tour-y.tour||x.position-y.position)){if(m.fini)continue;const da=mort(m,0),db=mort(m,1);
+    if((da||db)&&(da||m.a)&&(db||m.b)){m.fini=true;m.exempt=true;const x=m.a?{a:m.a,p:m.pseudo_a}:m.b?{a:m.b,p:m.pseudo_b}:null;
+      m.a=x&&x.a;m.pseudo_a=x&&x.p;m.b=null;m.pseudo_b=null;if(x&&m.sv)pose(M.find(t=>t.id===m.sv),m.sc,x);fait=true;break}}}
+  return head+bracketsSuisse(M.filter(m=>!(m.exempt&&!m.a)))}
 function tableauSuisseSite(T){
   const M=T.matchs||[],sw=M.filter(m=>m.phase==='suisse'),br=M.filter(m=>m.phase!=='suisse'&&!(m.phase==='revanche'&&!m.a)&&!(m.exempt&&!m.a)),pos=(x,y)=>x.position-y.position;   // un match du loser bracket resté vide (pas assez de joueurs) n'est pas montré
   const ps=p=>p?esc(p):'<span style="opacity:.5">?</span>';
   const box=m=>{const fin=!!m.gagnant,cl=id=>fin&&id&&m.gagnant===id?' w':fin&&id?' l':'',moi=m.a===user.id||m.b===user.id;
     return `<div class="tbm${m.a_l_ecran?' on':''}${moi?' moi':''}"><div class="tbp${cl(m.a)}"><span>${ps(m.pseudo_a)}</span>${m.exempt?'':`<b>${m.score_a}</b>`}</div>${m.exempt?'<div class="tbp ex"><span>exempt (victoire)</span></div>':`<div class="tbp${cl(m.b)}"><span>${ps(m.pseudo_b)}</span><b>${m.score_b}</b></div>`}</div>`};
   const col=(L,t)=>`<div class="tbc"><div class="tbh">${esc(t)}${L[0]&&L[0].format>1?' · BO'+L[0].format:''}</div><div class="tbl">${L.map(box).join('')}</div></div>`;
-  const parTour=L=>[...new Set(L.map(m=>m.tour))].sort((x,y)=>x-y).map(t=>{const X=L.filter(m=>m.tour===t).sort(pos);return col(X,X[0].nom_tour)}).join('');
   const C=T.classement||[],r=Math.max(1,...sw.map(m=>m.tour));
   const W=T.coupe||4,L=T.coupe_loser??(W>2?W:0);   // winner et loser bracket (52-tournoi-tout-le-monde.sql)
   const cl=`<table><tr><th>#</th><th>Joueur</th><th>V-D</th><th title="Force des adversaires : total de leurs victoires">Adv.</th></tr>${C.map(x=>`<tr${x.id===user.id?' style="color:#c4b5fd"':''}><td>${x.rang<=W?'✅ ':x.rang<=W+L?'💀 ':''}${x.rang}</td><td>${esc(x.pseudo||'?')}</td><td>${x.victoires}-${x.defaites}</td><td>${x.buchholz}</td></tr>`).join('')}</table>`;
   let h=`<h4>📊 Rondes suisses · ${Math.min(r,T.rondes||r)}/${T.rondes||'?'}</h4><p><small>✅ les ${W} premiers à la fin des rondes commencent dans le winner bracket (2 vies)${L?` ; 💀 les ${L} suivants commencent dans le loser bracket (1 vie)`:''}${C.length>W+L?' ; les autres sont éliminés':''}.</small></p>${cl}`;
   if(!br.length)h+=`<div class="tbg">${col(sw.filter(m=>m.tour===r).sort(pos),'Ronde '+r)}</div>`;
-  else{const W=br.filter(m=>m.phase!=='loser'),Lo=br.filter(m=>m.phase==='loser');
-    h+=`<h4>🏆 Winner bracket</h4><div class="tbg">${parTour(W)}</div>${Lo.length?`<h4>💀 Loser bracket</h4><div class="tbg">${parTour(Lo)}</div>`:''}`}
+  else h+=bracketsSuisse(br);
   return h}
 function tableauSite(T){
   if(T.format==='suisse')return tableauSuisseSite(T);
@@ -832,7 +879,7 @@ async function vTournois(id=null){
       <div style="flex:1;min-width:220px"><div style="font-size:22px;font-weight:900">${esc(T.nom)}</div><small>${STAT[T.statut]||''} · deck de championnat ${D.e} ${esc(T.ceinture)} · ${(T.inscrits||[]).length}${T.statut==='inscriptions'?'/'+T.max_joueurs:''} joueur${(T.inscrits||[]).length>1?'s':''}${T.fini_le&&T.statut==='termine'?' · le '+jr(T.fini_le):''}</small>${prix}
       ${T.statut==='termine'&&T.pseudo_gagnant?`<div style="font-size:20px;font-weight:800;margin-top:6px;color:#fcd34d">👑 ${esc(T.pseudo_gagnant)} remporte le tournoi !</div>`:''}
       <div class="row">${action}</div>${T.statut==='inscriptions'?'<small>Ou dans le chat pendant le live : <b>!tournoi</b> (et <b>!tournoi quitter</b> pour te retirer). Ton deck de championnat est figé au moment de l\'inscription.</small>':''}</div></div>
-      ${T.statut==='inscriptions'?`<h3>Inscrits</h3>${(T.inscrits||[]).length?`<p>${T.inscrits.map(x=>`<span class="chr"${x.id===user.id?' style="border-color:#a78bfa"':''}>${esc(x.pseudo||'?')}</span>`).join(' ')}</p>`:'<p><small>Personne pour l\'instant : sois le premier !</small></p>'}`
+      ${T.statut==='inscriptions'?`<h3>Inscrits</h3>${(T.inscrits||[]).length?`<p>${T.inscrits.map(x=>`<span class="chr"${x.id===user.id?' style="border-color:#a78bfa"':''}>${esc(x.pseudo||'?')}</span>`).join(' ')}</p>`:'<p><small>Personne pour l\'instant : sois le premier !</small></p>'}${apercuSuisse(T)}`
       :`<h3>Le tableau</h3>${ecran?'<p><small>⚔️ Combat en cours à l\'écran… le résultat s\'affiche à la fin de l\'animation.</small></p>':''}${tableauSite(T)}`}`}
   const P=E.passes||[];
   main.innerHTML=`<h3>🎖️ Tournois</h3>
