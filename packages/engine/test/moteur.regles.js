@@ -535,7 +535,7 @@ test('attaque annulée ≠ attaque bloquée : annulée = rien ne passe, bloquée
   assert.ok(r2.journal.some(e => /marque/.test(e.txt || '')), 'la marque passe');
 });
 
-test('programmation : N passives d\'abord, puis l\'activation réveille les passifs et lance tous les ultimes programmés', () => {
+test('programmation : N passives d\'abord, puis l\'activation réveille les passifs et installe les ultimes programmés', () => {
   const prog = { type: 'programmation', chance: 100, nbpassif: 2, passifs: { type: 'soin_tour', val: 10, u: 'pts', lib: 'Soin' }, ultimes: { type: 'degats', val: 40, lib: 'Dégâts 40' } };
   const r = combat([C('Robot', 20, SOLIDE, { passif: prog })], [C('b', 20, SOLIDE)], { regles: { maxTours: 8, maxProlong: 0 } });
   const k = r.journal.filter(e => ['prog', 'prog_act'].includes(e.k)).map(e => e.k);
@@ -543,12 +543,34 @@ test('programmation : N passives d\'abord, puis l\'activation réveille les pass
   const iAct = r.journal.findIndex(e => e.k === 'prog_act');
   assert.ok(iAct > 0, 'une activation a lieu');
   assert.ok(!r.journal.slice(0, iAct).some(e => /subit 40/.test(e.txt || '') || (e.t === 'soin' && e.c === 0)), 'rien n\'agit avant l\'activation');
-  const apres = r.journal.slice(iAct);
   const nbU = r.journal.slice(0, iAct).filter(e => e.k === 'prog' && e.quoi === 'u').length;
-  if (nbU) assert.ok(apres.some(e => /ULTIME programmé/.test(e.txt || '')), 'les ultimes programmés se lancent');
-  // une 2e activation relance les ultimes déjà programmés
-  const acts = r.journal.map((e, i) => e.k === 'prog_act' ? i : -1).filter(i => i >= 0);
-  if (acts.length > 1 && nbU) assert.ok(r.journal.slice(acts[1]).some(e => /ULTIME programmé/.test(e.txt || '')), 'relancés à chaque activation');
+  assert.equal(r.journal.filter(e => e.k === 'prog_ult_pret').length >= nbU, true, 'chaque ultime programmé est installé');
+});
+
+test('programmation : un ultime programmé a ses utilisations, son délai et son déclencheur, et ne se relance plus à chaque activation', () => {
+  // (avant : chaque activation relançait tous les ultimes déjà programmés ; maintenant chacun a ses utilisations)
+  const prog = { type: 'programmation', chance: 100, nbpassif: 1, ultimes: { type: 'degats', val: 40, lib: 'Dégâts 40' }, pumax: 2, pdmax: 2 };
+  for (let seed = 1; seed <= 40; seed++) {
+    const r = combat([C('Robot', 20, SOLIDE, { passif: prog })], [C('b', 20, SOLIDE)], { seed, regles: { maxTours: 10, maxProlong: 0 } });
+    const pret = r.journal.filter(e => e.k === 'prog_ult_pret' && e.c === 0);
+    for (const p of pret) {
+      assert.ok(p.reste >= 1 && p.reste <= 2, 'seed ' + seed + ' : 1 à 2 utilisations (pumax)');
+      assert.match(p.txt, /installé : « Dégâts 40 », se lance .+ \(\d utilisations?, [12] tours? entre deux\)/);
+      const tirs = r.journal.filter(e => e.k === 'prog_ult' && e.c === 0 && e.n === p.n);
+      assert.ok(tirs.length <= p.reste, 'seed ' + seed + ' : jamais plus que ses utilisations');
+      tirs.forEach((t, i) => assert.equal(t.reste, p.reste - i - 1, 'utilisations restantes'));
+    }
+  }
+});
+
+test('programmation : jamais d\'activation à vide, au moins une programmation passive entre deux activations', () => {
+  const prog = { type: 'programmation', chance: 100, nbpassif: 0, passifs: { type: 'soin_tour', val: 1, u: 'pts', lib: 'Soin' } };
+  for (let seed = 1; seed <= 30; seed++) {
+    const r = combat([C('Robot', 20, SOLIDE, { passif: prog })], [C('b', 20, SOLIDE)], { seed, regles: { maxTours: 10, maxProlong: 0 } });
+    const k = r.journal.filter(e => ['prog', 'prog_act'].includes(e.k) && e.c === 0).map(e => e.k);
+    assert.equal(k[0], 'prog', 'seed ' + seed + ' : la première est passive, même avec N = 0');
+    for (let i = 1; i < k.length; i++) if (k[i] === 'prog_act') assert.equal(k[i - 1], 'prog', 'seed ' + seed + ' : une passive avant chaque activation');
+  }
 });
 
 test('détonation : consume brûlure, poison et saignement (dégâts restants + bonus), moitié si solidifié, dégâts de zone', () => {

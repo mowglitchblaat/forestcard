@@ -11,6 +11,7 @@ import type {
   DomainEvent,
   MistedStatus,
   ProgrammedDraw,
+  ProgrammedTrigger,
   RandomEffectKey,
   RandomPassiveKey,
   StatusKind,
@@ -141,6 +142,33 @@ const RANDOM_PASSIVE_LABELS: Record<RandomPassiveKey, string> = {
   regen: 'Régénération',
   atqRise: 'ATQ qui monte',
   detonation: 'Détonation',
+};
+
+// A programmed ultimate's trigger, as the journal says it (x: its drawn value).
+const programTrigger = (t: ProgrammedTrigger, x: number): string => {
+  const s = x > 1 ? 's' : '';
+  switch (t) {
+    case 'apres_tours':
+      return `se lance dans ${x} tour${s}`;
+    case 'sur_carte':
+      return "se lance quand une de ses cartes s'active";
+    case 'pv_sous':
+      return `se lance sous ${x} % de ses PV`;
+    case 'adv_pv_sous':
+      return `se lance quand l'adversaire passe sous ${x} % de PV`;
+    case 'coups_recus':
+      return `se lance toutes les ${x} attaques reçues`;
+    case 'attaques':
+      return `se lance toutes les ${x} attaques qu'il fait`;
+    case 'coup_fort':
+      return `se lance quand il subit un coup d'au moins ${x}`;
+    case 'inflige_coup_fort':
+      return `se lance quand il inflige un coup d'au moins ${x}`;
+    case 'statut':
+      return 'se lance quand il reçoit un statut';
+    case 'adv_statut':
+      return "se lance quand l'adversaire reçoit un statut";
+  }
 };
 
 // A programmed effect's name: the name of what was drawn (programming without a list), else its
@@ -1264,7 +1292,7 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
       return {
         t: 'statut',
         txt: `${name(e.side)} se programme : ${e.what === 'p' ? 'passif' : 'ultime'} « ${programLabel(e.label, e.effectType, e.drawn)} » (en attente)`,
-        o: { c: e.side, k: 'prog', quoi: e.what },
+        o: { c: e.side, k: 'prog', quoi: e.what, n: e.n },
       };
     case 'programmingActivated':
       return {
@@ -1280,11 +1308,20 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
         o: { c: e.side, k: 'prog_on' },
       };
     }
+    case 'programmedUltimateInstalled': {
+      const u = `${e.uses} utilisation${e.uses > 1 ? 's' : ''}`;
+      const d = `${e.delay} tour${e.delay > 1 ? 's' : ''} entre deux`;
+      return {
+        t: 'statut',
+        txt: `Ultime programmé de ${name(e.side)} installé : « ${programLabel(e.label, e.effectType, e.drawn)} », ${programTrigger(e.trigger, e.x)} (${u}, ${d})`,
+        o: { c: e.side, k: 'prog_ult_pret', n: e.n, reste: e.uses },
+      };
+    }
     case 'programmedUltimate':
       return {
         t: 'ultime',
         txt: `ULTIME programmé de ${name(e.side)} : ${programLabel(e.label, e.effectType, e.drawn)} !`,
-        o: { c: e.side },
+        o: { c: e.side, k: 'prog_ult', n: e.n, reste: e.left },
       };
 
     // ── Headshot, targeting ──

@@ -1991,9 +1991,11 @@ async function aCartes(){
     <b>Passifs</b> <small>(tu peux en cumuler plusieurs)</small><div id="b-pas"></div>
     <input type="checkbox" name="prog" hidden>
     <div id="s-prog" style="display:none;border-left:3px solid #38bdf8;padding-left:10px;margin:6px 0"><b>⚙️ Programmation</b> <small>(collection mécanique)</small><br>
-     <small>À chaque tour (avant d'attaquer) : X % de chances de lancer une programmation. Les N premières sont passives (la carte acquiert au hasard un passif ou un ultime, qui dort), ensuite 50 % passive / 50 % active. Une programmation active réveille les passifs programmés (pour toujours) et lance tous les ultimes programmés. Un « évite la mort » ou une réanimation déjà utilisés ne reviennent pas.</small>
+     <small>À chaque tour (avant d'attaquer) : X % de chances de lancer une programmation. Les N premières sont passives (la carte acquiert au hasard un passif ou un ultime, qui dort), ensuite 50 % passive / 50 % active. Jamais d'activation à vide : après une activation, au moins une programmation passive passe avant la suivante. Une programmation active installe ce qui dort, pour de bon : les passifs s'activent (chacun avec ses règles) et chaque ultime programmé devient un ultime de la carte, avec un nombre d'utilisations, un délai et un déclencheur tirés au hasard (dans X tours, sous X % de PV, toutes les X attaques, coup fort, statut reçu…), dans les limites ci-dessous. Un « évite la mort » ou une réanimation déjà utilisés ne reviennent pas.</small>
      <div class="row"><label><small>% de chances à chaque tour</small><br><input name="pchance" type="number" min="0" max="100" value="50" style="width:90px"></label>
-     <label><small>Programmations passives d'abord (N)</small><br><input name="pnb" type="number" min="0" value="2" style="width:90px"></label></div>
+     <label><small>Programmations passives d'abord (N)</small><br><input name="pnb" type="number" min="0" value="2" style="width:90px"></label>
+     <label><small>Ultime programmé : utilisations max</small><br><input name="pumax" type="number" min="1" value="3" style="width:90px"></label>
+     <label><small>Ultime programmé : délai max (tours)</small><br><input name="pdmax" type="number" min="1" value="2" style="width:90px"></label></div>
      <small style="color:#7dd3fc">🎲 Chaque programmation passive tire au hasard un passif ou un ultime parmi <b>tous ceux du jeu</b>, avec des valeurs adaptées à la carte : rien d'autre à remplir.</small>
      <div hidden><div id="b-ppas"></div><div id="b-pult"></div></div></div></div>
    <div id="s-mag" style="display:none"><b>Effet de la magie</b><div id="b-mag"></div><div class="row"><label><small>Agit à partir de son tour N (vide ou 1 = dès le début)</small><br><input name="mdebut" type="number" min="0" style="width:110px"></label> <label><small>Dure N tours (vide ou 0 = tout le combat)</small><br><input name="mduree" type="number" min="0" style="width:110px"></label></div></div>
@@ -2057,7 +2059,7 @@ async function aCartes(){
     try{let ult=null,pas=null,eff=null;
      if(t=='combattant'){ult=B.ult.get();if(ult){if(+f.utours.value)ult.apres_tours=+f.utours.value;if(f.ucarte.checked)ult.sur_carte=true;if(f.udecl.value){ult.udecl=f.udecl.value;if(f.udx.value!=='')ult.udx=+f.udx.value}ult.utilisations=+f.uuses.value||0;ult.delai_tours=+f.ucd.value||0}pas=B.pas.get();{const a=!pas?[]:pas.briques||[pas],r=a.filter(b=>b&&b.type!=='programmation');pas=!r.length?null:r.length==1?r[0]:{briques:r}}
       if(f.prog.checked){const lb=q=>{const v=['val','chance','pctpv','degtour','ragev','tours'].filter(k=>q[k]!=null&&q[k]!=='').map(k=>q[k]);return{...q,lib:String(cat(q.type)||q.type).split(/ ?[:(]/)[0].slice(0,40)+(v.length?' ('+v.join(' · ')+')':'')}},ml=x=>!x?null:x.briques?{briques:x.briques.map(lb)}:lb(x);   // programmation : rangée dans les passifs
-       const pb={type:'programmation',chance:f.pchance.value===''?50:+f.pchance.value,nbpassif:f.pnb.value===''?2:+f.pnb.value,passifs:null,ultimes:null};   // tirage au hasard parmi tous les passifs et ultimes du jeu
+       const pb={type:'programmation',chance:f.pchance.value===''?50:+f.pchance.value,nbpassif:f.pnb.value===''?2:+f.pnb.value,pumax:f.pumax.value===''?3:+f.pumax.value,pdmax:f.pdmax.value===''?2:+f.pdmax.value,passifs:null,ultimes:null};   // tirage au hasard parmi tous les passifs et ultimes du jeu
        pas=!pas?pb:pas.briques?{briques:[...pas.briques,pb]}:{briques:[pas,pb]}}}
      else if(t=='magie'){eff=B.mag.get();if(eff){delete eff.magdebut;delete eff.magduree;if(+f.mdebut.value>1)eff.magdebut=+f.mdebut.value;if(+f.mduree.value>0)eff.magduree=+f.mduree.value}}   // début et durée de la magie, rangés sur son effet
      else{const c=B.con.get(),x=B.pef.get();if(c||x)eff={condition:c,effet:x,declenchements:+f.decl.value||1}}
@@ -2087,7 +2089,7 @@ async function aCartes(){
     f.file.required=false;
     const u=c.ultime||{};B.ult.set(c.ultime);f.utours.value=u.apres_tours||'';f.ucarte.checked=!!u.sur_carte;f.udecl.value=u.udecl||'';f.udx.value=u.udx??'';f.uuses.value=u.utilisations??1;f.ucd.value=u.delai_tours??0;
     {let pz=c.passif,pg=null;if(pz){const arr=pz.briques||[pz];pg=arr.find(b=>b&&b.type==='programmation')||null;if(pg){const rest=arr.filter(b=>b!==pg);pz=!rest.length?null:rest.length==1?rest[0]:{briques:rest}}}
-     f.prog.checked=!!pg;$('#s-prog').style.display=pg?'':'none';if(pg){f.pchance.value=pg.chance??50;f.pnb.value=pg.nbpassif??2;B.ppas.set(pg.passifs);B.pult.set(pg.ultimes)}
+     f.prog.checked=!!pg;$('#s-prog').style.display=pg?'':'none';if(pg){f.pchance.value=pg.chance??50;f.pnb.value=pg.nbpassif??2;f.pumax.value=pg.pumax??3;f.pdmax.value=pg.pdmax??2;B.ppas.set(pg.passifs);B.pult.set(pg.ultimes)}
      if(pg){const a=!pz?[]:pz.briques||[pz];a.push({type:'programmation'});pz=a.length==1?a[0]:{briques:a}}B.pas.set(pz)}if(c.type=='magie'){B.mag.set(c.effet);f.mdebut.value=c.effet&&c.effet.magdebut||'';f.mduree.value=c.effet&&c.effet.magduree||''}
     if(c.type=='piege'&&c.effet){B.con.set(c.effet.condition);B.pef.set(c.effet.effet);f.decl.value=c.effet.declenchements||1}
     $('#ftitle').textContent='Modifier : '+c.nom;$('#fbtn').textContent='Enregistrer les modifications';$('#fcancel').style.display='';

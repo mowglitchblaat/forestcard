@@ -194,7 +194,9 @@ function programmingText(p: Fx): string {
   ];
   const ch = isEmpty(p.chance) ? 50 : nz(p.chance);
   const N = isEmpty(p.nbpassif) ? 2 : nz(p.nbpassif);
-  return `Programmation : à chaque tour, ${ch} % de chances de se programmer (les ${N} premières fois en passif, puis 50 % passif / 50 % actif). Passif : acquiert au hasard ${it.length ? (it as string[]).join(', ') : 'un passif ou un ultime parmi tous ceux du jeu'}, qui reste en attente. Actif : réveille les passifs programmés et lance tous les ultimes programmés`;
+  const um = isEmpty(p.pumax) ? 3 : Math.max(1, nz(p.pumax));
+  const dm = isEmpty(p.pdmax) ? 2 : Math.max(1, nz(p.pdmax));
+  return `Programmation : à chaque tour, ${ch} % de chances de se programmer (les ${N} premières fois en passif, puis 50 % passif / 50 % actif). Passif : acquiert au hasard ${it.length ? (it as string[]).join(', ') : 'un passif ou un ultime parmi tous ceux du jeu'}, qui reste en attente. Actif (jamais à vide) : les passifs programmés s'activent pour toujours, chaque ultime programmé s'installe avec ${um} utilisation${um > 1 ? 's' : ''} max, ${dm} tour${dm > 1 ? 's' : ''} de délai max et un déclencheur tirés au hasard`;
 }
 
 // ── Passives ──

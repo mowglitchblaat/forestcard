@@ -18,7 +18,11 @@ import { type FractureState, fractureState } from '../mechanics/fracture.ts';
 import { type FrostState, frostState } from '../mechanics/frost.ts';
 import { type HealingState, healingState } from '../mechanics/healing.ts';
 import { type KnellState, knellState } from '../mechanics/knell.ts';
-import { type ProgrammingState, programmingState } from '../mechanics/programming.ts';
+import {
+  type ProgrammedSlot,
+  type ProgrammingState,
+  programmingState,
+} from '../mechanics/programming.ts';
 import { type PurificationState, purificationState } from '../mechanics/purification.ts';
 import { type RageState, rageState } from '../mechanics/rage.ts';
 import { type ReflectState, reflectState } from '../mechanics/reflect.ts';
@@ -54,6 +58,7 @@ export type UltimateSlot = {
   lastRound: number;
   copiedFrom?: EffectData | null | undefined;
   triggered?: number; // an event met its udecl: fires at its next chance (legacy: trg)
+  programmed?: ProgrammedSlot; // a programmed ultimate installed (mechanics/programming.ts)
 };
 
 // A stat change made by an active magic, or a function undoing one. Replayed when the magic is

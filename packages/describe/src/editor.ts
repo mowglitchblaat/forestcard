@@ -74,6 +74,8 @@ export const EDITOR_FIELDS = {
   tours: ['Nb de tours', 'n'],
   chance: ['Chance (%)', 'n'],
   nbpassif: ["Programmation : nombre de programmations passives d'abord (2 par défaut)", 'n'],
+  pumax: ['Programmation : utilisations max d\'un ultime programmé (3 par défaut)', 'n'],
+  pdmax: ['Programmation : délai max entre deux utilisations, en tours (2 par défaut)', 'n'],
   frappes: ['Nb de frappes', 'n'],
   coups: ['Nb de coups', 'n'],
   seuildeg: ['Dégâts min en un coup', 'n'],
@@ -859,9 +861,11 @@ export const EDITOR_MAGICS: { readonly [K in EffectType]?: EditorEntry } = {
     'tours',
   ],
   programmation: [
-    "⚙️ Programmation (collection mécanique) : donne le passif Programmation à son combattant jusqu'à la fin du combat (à chaque tour, X % de chances de se programmer, 50 par défaut ; les N premières fois en passif). Tirage parmi tous les passifs et ultimes du jeu",
+    "⚙️ Programmation (collection mécanique) : donne le passif Programmation à son combattant jusqu'à la fin du combat (à chaque tour, X % de chances de se programmer, 50 par défaut ; les N premières fois en passif). Tirage parmi tous les passifs et ultimes du jeu ; un ultime programmé s'installe à l'activation avec des utilisations, un délai et un déclencheur tirés au hasard",
     'chance',
     'nbpassif',
+    'pumax',
+    'pdmax',
   ],
   transcendance: [
     "Transcendance : au début de ses X-ième, 2X-ième et 3X-ième tours (X = 4 par défaut), avant son attaque, monte d'un niveau (3 niveaux) jusqu'à la fin du combat. À chaque niveau : purifiée (étourdissement compris), ATQ +X % et PV max +X % (15 % par défaut). Dès le niveau I, chaque attaque qui touche purifie l'adversaire et vole de la vie (10 / 20 / 30 % des dégâts par défaut)",

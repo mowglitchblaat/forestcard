@@ -224,6 +224,7 @@ export const TRIGGER_FACT: { [K in EventType]: Classify<K> | null } = {
   programmed: null,
   programmingActivated: null,
   programmedPassivesAwake: null,
+  programmedUltimateInstalled: null,
   programmedUltimate: fact('ultimate'),
   // New mechanics (no legacy line): a parasitic link is a negative status received.
   headshot: null,

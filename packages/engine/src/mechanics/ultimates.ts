@@ -1,6 +1,6 @@
 // Ultimates: the card's own, and those it stole or copied. One fires after X rounds (apres_tours),
 // when a card activates (sur_carte), on an event or under X % of HP (udecl: mechanics/triggers.ts), with a delay between two uses (delai_tours) and a number of
-// uses (utilisations). An inhibiting rooting holds them until it ends (mechanics/rooting.ts). Effects: steal the opponent's (vol_ultime), copy it (copie_ultime: the
+// uses (utilisations); a programmed ultimate is one more slot (mechanics/programming.ts). An inhibiting rooting holds them until it ends (mechanics/rooting.ts). Effects: steal the opponent's (vol_ultime), copy it (copie_ultime: the
 // opponent keeps its own), reset a card's (reset_ultime).
 
 import { emit, id, opponent, over, raw, type Combat } from '../combat/combat.ts';
@@ -46,7 +46,18 @@ export function ultimate(c: Combat, s: Side): Flow {
     slot.lastRound = c.round;
     s.cardActivated = 0;
     slot.triggered = 0;
-    emit(c, { type: 'ultimateTriggered', side: id(c, s) });
+    const pg = slot.programmed;
+    if (pg)
+      emit(c, {
+        type: 'programmedUltimate',
+        side: id(c, s),
+        n: pg.n,
+        left: Math.max(0, raw(u.utilisations) - slot.uses),
+        label: pg.label,
+        effectType: pg.effectType,
+        drawn: pg.drawn,
+      });
+    else emit(c, { type: 'ultimateTriggered', side: id(c, s) });
     const previousSource = c.source;
     c.source = 'ultime';
     applyEffect(c, u, s, opponent(c, s));

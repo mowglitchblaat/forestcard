@@ -200,6 +200,20 @@ export type RandomPassiveKey =
 
 // What a programming without a list drew: a passive of the passive pool, or an ultimate of the
 // random effect pool. The journal names it from the key.
+// The triggers a programmed ultimate can draw (mechanics/programming.ts): keys of the ultimate's
+// trigger (udecl), plus apres_tours and sur_carte.
+export type ProgrammedTrigger =
+  | 'apres_tours'
+  | 'sur_carte'
+  | 'pv_sous'
+  | 'adv_pv_sous'
+  | 'coups_recus'
+  | 'attaques'
+  | 'coup_fort'
+  | 'inflige_coup_fort'
+  | 'statut'
+  | 'adv_statut';
+
 export type ProgrammedDraw =
   | { pool: 'passives'; key: RandomPassiveKey }
   | { pool: 'effects'; key: RandomEffectKey };
@@ -579,15 +593,33 @@ export type DomainEvent =
       type: 'programmed';
       side: SideIndex;
       what: 'p' | 'u';
+      n: number; // its rank among all that the card programmed
       label: unknown;
       effectType: unknown;
       drawn: ProgrammedDraw | undefined;
     }
   | { type: 'programmingActivated'; side: SideIndex }
   | { type: 'programmedPassivesAwake'; side: SideIndex; count: number }
+  // A programmed ultimate installed at an activation: its uses, its delay between two uses (turns)
+  // and its trigger (x: the trigger's value: turns, % of HP, attacks, damage; 0 without one).
+  | {
+      type: 'programmedUltimateInstalled';
+      side: SideIndex;
+      n: number;
+      label: unknown;
+      effectType: unknown;
+      drawn: ProgrammedDraw | undefined;
+      uses: number;
+      delay: number;
+      trigger: ProgrammedTrigger;
+      x: number;
+    }
+  // An installed programmed ultimate fires (instead of ultimateTriggered); left: its uses left.
   | {
       type: 'programmedUltimate';
       side: SideIndex;
+      n: number;
+      left: number;
       label: unknown;
       effectType: unknown;
       drawn: ProgrammedDraw | undefined;

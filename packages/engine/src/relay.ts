@@ -130,7 +130,13 @@ export function simulateRelay(
     // A new duel: the new fighter acts first (both new: the starting order). The fighter still
     // standing keeps its state; its ultimates' cooldowns start again (rounds count from 1 again).
     c.sides.forEach((s, i) => {
-      if (!entered.has(i)) s.ultimates.forEach((u) => (u.lastRound = -99));
+      if (!entered.has(i))
+        s.ultimates.forEach((u) => {
+          u.lastRound = -99;
+          // a programmed ultimate "in X turns" keeps the turns it had left
+          if (u.programmed && u.effect && u.effect.apres_tours)
+            u.effect.apres_tours = Math.max(1, +u.effect.apres_tours - c.round);
+        });
     });
     c.round = 0;
     c.pendingRevives = [];

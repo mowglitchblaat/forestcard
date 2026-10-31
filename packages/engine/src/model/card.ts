@@ -78,6 +78,9 @@ export type EffectData = {
   // Programming passive: how many first programmings are passive, and the programmable passives
   // and ultimates. `lib`: an effect's label, given by the admin.
   nbpassif?: Num;
+  // and the most uses and turns of delay a programmed ultimate can draw (3 and 2 when empty)
+  pumax?: Num;
+  pdmax?: Num;
   passifs?: EffectData | null;
   ultimes?: EffectData | null;
   lib?: unknown;

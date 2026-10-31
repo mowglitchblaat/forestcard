@@ -66,6 +66,9 @@ canvas.fx.malediction{box-shadow:inset 0 0 40px 10px rgba(150,70,230,.7);animati
 .pgm i.on.p{border-color:#38bdf8;box-shadow:0 0 1.2vh #38bdf8,0 0 .4vh #000}.pgm i.on.p svg{fill:#bae6fd}
 .pgm i.on.u{border-color:#fb923c;box-shadow:0 0 1.2vh #fb923c,0 0 .4vh #000}.pgm i.on.u svg{fill:#fed7aa}
 .pgm i.flash{animation:pgfl .9s ease-out}
+.pgm.pgmh{bottom:auto;top:3%}   /* programmation activée : ce qui est installé se range en haut de la carte */
+.pgm i{position:relative}.pgm i b{position:absolute;right:-.6vh;bottom:-.6vh;min-width:1.7vh;height:1.7vh;padding:0 .3vh;box-sizing:border-box;border-radius:1vh;background:#fb923c;color:#1c0a00;font:900 1.3vh/1.7vh system-ui,sans-serif;font-style:normal;text-align:center;box-shadow:0 0 .4vh #000}
+.pgm i.used{opacity:.35;filter:grayscale(1)}.pgm i.used b{display:none}
 @keyframes pgin{from{transform:scale(0) rotate(-120deg)}to{transform:none}}
 @keyframes pgfl{0%{transform:scale(1)}30%{transform:scale(1.5);filter:brightness(2)}100%{transform:scale(1)}}
 .card.annul{animation:annul 1s ease-out}
@@ -320,7 +323,7 @@ function allumerMini(i,k){const Z=ZONES[i]&&ZONES[i][k];if(!Z)return;Z.forEach(z
 const ST_PASSIF={brulure:'brulure',poison:'poison',saignement:'saignement',malediction:'malediction',gel:'gel',fracture:'fracture',fatigue:'fatigue',etourdi:'etourdir'};
 // quel effet de quelle carte vient d'agir, d'après la ligne du journal
 function allumerEffets(e){if(e.c==null&&e.from==null)return;const c=e.c,o=c!=null?1-c:null;
- if(e.t==='ultime')return allumer(c,[],true);
+ if(e.t==='ultime')return e.k==='prog_ult'?allumer(c,['programmation']):allumer(c,[],true);
  if(e.t==='esquive')return allumer(c,['esquive']);
  if(e.t==='bloque'&&/une partie/.test(e.txt||''))return allumer(c,['reduc_degats']);
  if(e.t==='degats'&&e.k==='renvoi'&&e.from!=null)return allumer(e.from,['renvoi']);
@@ -633,9 +636,14 @@ const SVG_ENG='<svg viewBox="0 0 24 24"><path d="M19.4 13a7.5 7.5 0 0 0 0-2l2.1-
 function engrenage(x,cx,cy,r,rot,col,al){const n=10,ri=r*.78,ro=r;x.save();x.translate(cx,cy);x.rotate(rot);x.beginPath();
  for(let i=0;i<n*2;i++){const a0=i*Math.PI/n,a1=(i+1)*Math.PI/n,R2=i%2?ri:ro;x.lineTo(Math.cos(a0+.08)*R2,Math.sin(a0+.08)*R2);x.lineTo(Math.cos(a1-.08)*R2,Math.sin(a1-.08)*R2)}
  x.closePath();x.globalAlpha=al;x.fillStyle=col;x.shadowColor=col;x.shadowBlur=r*.5;x.fill();x.shadowBlur=0;x.globalCompositeOperation='destination-out';x.beginPath();x.arc(0,0,r*.36,0,7);x.fill();x.restore()}
-function pgmSlots(c){const k=$('#p'+c+' .card');if(!k)return null;let z=k.querySelector('.pgm');if(!z){z=document.createElement('div');z.className='pgm';k.appendChild(z)}return z}
+function pgmSlots(c,haut){const k=$('#p'+c+' .card');if(!k)return null;const sel=haut?'.pgm.pgmh':'.pgm:not(.pgmh)';let z=k.querySelector(sel);if(!z){z=document.createElement('div');z.className=haut?'pgm pgmh':'pgm';k.appendChild(z)}return z}
+// activation : les emplacements du bas montent se ranger en haut de la carte (installés pour de bon)
+function pgmMonte(c){const bas=pgmSlots(c),haut=pgmSlots(c,true);if(!bas||!haut)return;[...bas.querySelectorAll('i')].forEach((i,n)=>{const a=i.getBoundingClientRect();haut.appendChild(i);i.classList.add('on');const b=i.getBoundingClientRect();if(i.animate)i.animate([{transform:`translate(${a.left-b.left}px,${a.top-b.top}px)`},{transform:'none'}],{duration:750,delay:n*70,easing:'cubic-bezier(.3,.9,.3,1.1)',fill:'backwards'})})}
+const pgmIcone=(c,n)=>{const k=$('#p'+c+' .card');return k&&n!=null?k.querySelector(`.pgm i[data-n="${n}"]`):null};
+// un ultime programmé : son compteur d'utilisations restantes (éteint quand il n'en a plus)
+function pgmReste(c,n,reste,flash){const i=pgmIcone(c,n);if(!i)return;let b=i.querySelector('b');if(!b){b=document.createElement('b');i.appendChild(b)}b.textContent=reste;i.classList.toggle('used',reste<=0);if(flash){i.classList.remove('flash');void i.offsetWidth;i.classList.add('flash');setTimeout(()=>i.classList.remove('flash'),900)}}
 // programmation passive : un balayage holographique « écrit » le programme, un engrenage se forme puis rejoint son emplacement (éteint : il dort)
-function progFx(c,quoi){const K=rc(c),col=quoi==='u'?'#fb923c':'#38bdf8',rgb=quoi==='u'?'251,146,60':'56,189,248';
+function progFx(c,quoi,n){const K=rc(c),col=quoi==='u'?'#fb923c':'#38bdf8',rgb=quoi==='u'?'251,146,60':'56,189,248';
  addFx(1.5,(x,t)=>{
   const sc=cl(t/.6),y=K.y+K.h*sc;   // ligne de balayage de haut en bas
   if(t<.75){x.save();x.beginPath();x.rect(K.x,K.y,K.w,K.h);x.clip();
@@ -646,7 +654,7 @@ function progFx(c,quoi){const K=rc(c),col=quoi==='u'?'#fb923c':'#38bdf8',rgb=quo
   const ap=cl((t-.25)/.35),vol=ez(cl((t-1)/.45)),cx=K.cx,cy=K.cy+(K.y+K.h*.9-K.cy)*vol,r=K.w*(.22*ez(ap))*(1-.8*vol);
   if(ap>0&&r>1)engrenage(x,cx,cy,r,t*2.4,col,1-cl((t-1.35)/.15));
  });
- setTimeout(()=>{const z=pgmSlots(c);if(z){const i=document.createElement('i');i.className=quoi==='u'?'u':'p';i.innerHTML=quoi==='u'?SVG_ECL:SVG_ENG;z.appendChild(i)}},1350)}
+ setTimeout(()=>{const z=pgmSlots(c);if(z){const i=document.createElement('i');i.className=quoi==='u'?'u':'p';if(n!=null)i.dataset.n=n;i.innerHTML=quoi==='u'?SVG_ECL:SVG_ENG;z.appendChild(i)}},1350)}
 // programmation active : des circuits partent des emplacements et s'illuminent sur toute la carte, un grand engrenage tourne, les emplacements s'allument
 function activFx(c){const K=rc(c),traces=[];
  for(let i=0;i<12;i++){let px=K.x+K.w*(.15+.7*Math.random()),py=K.y+K.h*.94;const pts=[[px,py]];for(let j=0;j<5;j++){if(j%2===0)py-=K.h*(.1+.15*Math.random());else px+=(Math.random()<.5?-1:1)*K.w*(.08+.15*Math.random());px=Math.max(K.x+4,Math.min(K.x+K.w-4,px));py=Math.max(K.y+4,py);pts.push([px,py])}traces.push({pts,d:Math.random()*.25})}
@@ -660,7 +668,7 @@ function activFx(c){const K=rc(c),traces=[];
    for(let k=1;k<=Math.floor(n);k++){x.fillStyle=`rgba(224,242,254,${fade})`;x.beginPath();x.arc(P[k][0],P[k][1],3,0,7);x.fill()}x.shadowBlur=0}
   if(t>.55&&t<.95){x.fillStyle=`rgba(186,230,253,${.35*(1-cl((t-.55)/.4))})`;x.fillRect(K.x,K.y,K.w,K.h)}   // éclair de mise sous tension
  });
- setTimeout(()=>{const z=pgmSlots(c);if(z)z.querySelectorAll('i').forEach((i,n)=>setTimeout(()=>{i.classList.add('on','flash');setTimeout(()=>i.classList.remove('flash'),900)},n*90))},550)}
+ setTimeout(()=>{const z=pgmSlots(c);if(z)z.querySelectorAll('i').forEach((i,n)=>setTimeout(()=>{i.classList.add('on','flash');setTimeout(()=>i.classList.remove('flash'),900)},n*90));setTimeout(()=>pgmMonte(c),1100)},550)}
 
 // DÉTONATION : les statuts de la carte (feu, poison, sang) sont aspirés au centre, puis explosion (boule de feu, onde de choc, débris, écran qui tremble)
 function detoFx(c,parts,o={}){const K=rc(c),S=o.s||1,W=K.w*S,COL={brulure:'255,140,40',poison:'120,230,90',saignement:'230,40,50'},cols=(parts&&parts.length?parts:['brulure']).map(k=>COL[k]||COL.brulure),RN=Math.random,T0=S<1?.05:.2;
@@ -1628,9 +1636,10 @@ async function jouer(res){
    else if(e.t==='missile'){await missileFx(e.from,e.c,e.n)}
    else if(e.t==='detonation'&&e.mis){detoFx(e.c,e.parts,{s:.6});await wait(e.parts&&e.parts.length?380:250)}
    else if(e.t==='detonation'){detoFx(e.c,e.parts);setTimeout(()=>flot(e.c,'DÉTONATION !','#fb923c','big'),260);await wait(1500)}
-   else if(e.t==='statut'&&e.k==='prog'){if(e.quoi)progFx(e.c,e.quoi);flot(e.c,e.quoi==='u'?'Ultime programmé':e.quoi==='p'?'Passif programmé':'Rien à programmer',e.quoi==='u'?'#fdba74':'#7dd3fc');await wait(1500)}   // programmation passive : l'élément dort (emplacement éteint) jusqu'à l'activation
+   else if(e.t==='statut'&&e.k==='prog'){if(e.quoi)progFx(e.c,e.quoi,e.n);flot(e.c,e.quoi==='u'?'Ultime programmé':e.quoi==='p'?'Passif programmé':'Rien à programmer',e.quoi==='u'?'#fdba74':'#7dd3fc');await wait(1500)}   // programmation passive : l'élément dort (emplacement éteint) jusqu'à l'activation
    else if(e.t==='statut'&&e.k==='prog_act'){activFx(e.c);flot(e.c,'ACTIVATION !','#38bdf8','big');await wait(1900)}
    else if(e.t==='statut'&&e.k==='prog_on'){await wait(200)}
+   else if(e.t==='statut'&&e.k==='prog_ult_pret'){pgmReste(e.c,e.n,e.reste,true);await wait(450)}   // ultime programmé installé : ses utilisations sur son icône
    else if(e.t==='statut'&&e.k==='transc_prep'){flot(e.c,'✦ Transcendance','#fde68a');await wait(700)}
    else if(e.t==='statut'&&e.k==='transc'){auraFx(e.c,{gold:1});aureole(e.c,{croix:false});flot(e.c,'Transcendance '+(['I','II','III'][(e.niv||1)-1])+' !','#fef3c7');if(!st[e.c+'transc'])statut(e.c,'transc',true);await wait(2600)}
    else if(e.t==='finstatut'&&e.k==='transc_prep'){}
@@ -1674,7 +1683,7 @@ async function jouer(res){
    else if(e.t==='stat'&&e.k==='mod'&&e.d)fleches(e.c,e.s,e.d);
    else if(e.t==='finstatut'&&e.k==='marque'){document.querySelectorAll('#p'+e.c+' .lame').forEach(l=>{const n=+(l.className.match(/l(\d)/)||[])[1];if(n>(e.n||0))l.animate([{opacity:1},{opacity:0}],{duration:400,fill:'forwards'}).onfinish=()=>l.remove()})}
    else if(e.t==='finstatut')statut(e.c,e.k,false);
-   else if(e.t==='ultime'){card.classList.add('ult');ultFx(e.c);setTimeout(()=>card.classList.remove('ult'),2400)}
+   else if(e.t==='ultime'){if(e.k==='prog_ult')pgmReste(e.c,e.n,e.reste,true);card.classList.add('ult');ultFx(e.c);setTimeout(()=>card.classList.remove('ult'),2400)}
    else if(e.t==='magie'){faceMagie(e.c);const m=$('#m'+e.c);await zoomCarte('m'+e.c,e,'magie');m.classList.add('act');setTimeout(()=>m.classList.remove('act'),1000);allumerMini(e.c,'m')}
    else if(e.t==='piege'){revele(e.c,e);await zoomCarte('g'+e.c,e,'piege');allumerMini(e.c,'t');$('#g'+e.c).classList.toggle('annule',e.k==='bloque')}
    let ms={magie:600,piege:600,ultime:2200,fin:5000,degats:900,soin:1300,esquive:1100,bloque:1500,statut:1100,stat:1500,vol:1500,protege:2900,finstatut:250,frappe:350}[e.t]||900;
@@ -1747,6 +1756,7 @@ if(DEMO){
   ['Programmation','Passif programmé (en attente)',c=>{progFx(c,'p');flot(c,'Passif programmé','#7dd3fc')},1700],
   ['Programmation','Ultime programmé (en attente)',c=>{progFx(c,'u');flot(c,'Ultime programmé','#fdba74')},1700],
   ['Programmation','Programmation active',c=>{activFx(c);flot(c,'ACTIVATION !','#38bdf8','big')},2300],
+  ['Programmation','Activation : tout se range en haut, ultime utilisé',async c=>{const b=900+(Date.now()%1e5)*3;progFx(c,'p',b);await wait(500);progFx(c,'u',b+1);await wait(1600);activFx(c);flot(c,'ACTIVATION !','#38bdf8','big');await wait(2000);pgmReste(c,b+1,2,true);await wait(1200);$('#p'+c+' .card').classList.add('ult');ultFx(c);pgmReste(c,b+1,1,true);setTimeout(()=>$('#p'+c+' .card').classList.remove('ult'),2400);await wait(2500);pgmReste(c,b+1,0,true)},7600],
   ['Défense','Esquive',c=>{flot(c,'Esquive !','#e5e7eb');vent(c)},1700],
   ['Défense','Attaque annulée (✖ sur l\'attaquant)',c=>{annuleFx(1-c);flot(1-c,'Attaque annulée','#fca5a5')},1600],
   ['Défense','Blocage (bouclier)',c=>bouclier(c),1600],
