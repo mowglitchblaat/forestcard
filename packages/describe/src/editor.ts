@@ -74,7 +74,7 @@ export const EDITOR_FIELDS = {
   tours: ['Nb de tours', 'n'],
   chance: ['Chance (%)', 'n'],
   nbpassif: ["Programmation : nombre de programmations passives d'abord (2 par défaut)", 'n'],
-  pumax: ['Programmation : utilisations max d\'un ultime programmé (3 par défaut)', 'n'],
+  pumax: ["Programmation : utilisations max d'un ultime programmé (3 par défaut)", 'n'],
   pdmax: ['Programmation : délai max entre deux utilisations, en tours (2 par défaut)', 'n'],
   frappes: ['Nb de frappes', 'n'],
   coups: ['Nb de coups', 'n'],
