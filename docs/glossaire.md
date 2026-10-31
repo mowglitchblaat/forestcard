@@ -111,7 +111,7 @@ Clés de `EFFECT_TYPES`, exécutées par `applyEffect` (`packages/engine/src/com
 | `fracture` | **à niveaux** : chance de se blesser en attaquant et dégâts en % de sa propre ATQ, selon le niveau ; brise la solidification | `fracture.ts` |
 | `fatigue` | **à niveaux** : un % de l'ATQ en moins pendant `fattours` tours, rendu ensuite | `fatigue.ts` |
 | `rage` | dégâts en plus par coup pendant X tours, puis une fatigue dont le niveau suit l'intensité de la rage (bonus jusqu'à 5 : I ; jusqu'à 12 : II ; plus : III), ou le niveau réglé sur la carte (`fatniv`) | `rage.ts` |
-| `etourdir_effet` | étourdit la cible pendant X tours ; `essais` jets de chance, le premier succès suffit ; sans effet sur une carte solidifiée | `stun.ts` |
+| `etourdir_effet` | étourdit la cible pendant X tours (tant qu'elle est étourdie, elle ne peut ni esquiver, ni riposter après un blocage, ni préparer de contre-attaque : ligne `k: 'etourdi_bloque'`) ; `essais` jets de chance, le premier succès suffit ; sans effet sur une carte solidifiée | `stun.ts` |
 | `souffle` | dégâts, puis chance de poser un statut élémentaire (`statut` ; `aleatoire` : tiré à chaque souffle) ; `rechance` % de souffler encore, jusqu'au premier échec, `remax` souffles en plus au maximum (3 par défaut). Esquivable, blocable et réductible ; le renvoi ne renvoie que les dégâts | `breath.ts` |
 | `purification` | retire les statuts négatifs (sauf l'étourdissement), rend l'ATQ perdue ; éventuellement répétée | `purification.ts` |
 | `solidification` | X % de chances d'être insensible à l'étourdissement pendant X tours adverses ; solidifiée, la carte ne prend que la moitié des dégâts de statuts d'une détonation ou d'un missile | `solidification.ts` |

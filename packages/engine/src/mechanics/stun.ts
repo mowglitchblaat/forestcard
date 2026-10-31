@@ -1,5 +1,6 @@
-// Stun: the stunned card skips its next attacks (a stun always does, even purified). A
-// solidification blocks a new stun.
+// Stun: the stunned card skips its next attacks (a stun always does, even purified). While stunned,
+// it cannot dodge (dodge.ts), riposte after a block (block.ts) nor prepare a counter (counter.ts).
+// A solidification blocks a new stun.
 //
 // Laid by: an effect (etourdir_effet), an attack (passive or attack effect etourdir: chances add
 // up, the duration is the triggering source's).

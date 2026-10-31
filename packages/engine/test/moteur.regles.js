@@ -958,8 +958,30 @@ test('avalage : la carte avalée ne reçoit rien, ce qui la visait touche la car
   assert.ok(r.journal.slice(i, j).some(e => /Ogre subit 9 dégâts directs/.test(e.txt || '')));
 });
 
-// ================= Blocage avec riposte =================
+// ================= Étourdi : ni esquive, ni riposte, ni contre-attaque =================
 const MUR = (x = {}) => MAG('Mur', { type: 'bloque_attaque', ...x });
+const CHOC = (tours = 2) => MAG('Choc', { type: 'etourdir_effet', ciblem: 'adversaire', tours });
+test('étourdi : la carte étourdie ne peut pas esquiver', () => {
+  const r = combat([C('A', 10, SOLIDE), CHOC()], [C('B', 10, SOLIDE, { passif: { type: 'esquive', chance: 100 } })], { regles: { maxTours: 2, maxProlong: 0 } });
+  const i = r.journal.findIndex(e => e.t === 'attaque' && e.c === 0);
+  assert.ok(i > 0);
+  const suite = r.journal.slice(i, i + 4);
+  assert.ok(!suite.some(e => e.t === 'esquive'), 'pas d\'esquive');
+  assert.ok(suite.some(e => e.k === 'etourdi_bloque' && e.quoi === 'dodge' && /B est étourdi : impossible d'esquiver/.test(e.txt)));
+  assert.ok(suite.some(e => /B subit 10 dégâts/.test(e.txt || '')), 'le coup touche');
+});
+test('étourdi : un blocage tient, mais la carte étourdie ne riposte pas', () => {
+  const r = combat([C('Bloqueur', 10, SOLIDE), MUR({ riposte: 'renvoi', pctriposte: 50 })], [C('Frappeur', 30, SOLIDE), CHOC()], { regles: { maxTours: 2, maxProlong: 0 } });
+  assert.ok(r.journal.some(e => e.t === 'bloque'), 'le blocage tient');
+  assert.equal(lignes(r, e => e.k === 'riposte').length, 0, 'pas de riposte');
+  assert.ok(r.journal.some(e => e.k === 'etourdi_bloque' && e.quoi === 'riposte'));
+});
+test('étourdi : pas de contre-attaque préparée au tour où l\'étourdissement fait sauter l\'attaque', () => {
+  const r = combat([C('A', 10, SOLIDE, { passif: { type: 'etourdir', chance: 100, tours: 1 } })], [C('B', 10, SOLIDE, { passif: { type: 'bonus_frappe', coups: 1, val: 50, u: 'pts' } })], { regles: { maxTours: 3, maxProlong: 0 } });
+  assert.ok(r.journal.some(e => e.k === 'etourdi_bloque' && e.quoi === 'counter' && /pas de contre-attaque/.test(e.txt)));
+});
+
+// ================= Blocage avec riposte =================
 test('blocage + riposte renvoi : X % des dégâts bloqués repartent sur l\'attaquant, une seule fois', () => {
   const r = combat([C('Bloqueur', 10, SOLIDE), MUR({ riposte: 'renvoi', pctriposte: 50 })], [C('Frappeur', 30, SOLIDE)], { regles: { maxTours: 4, maxProlong: 0 } });
   const rip = lignes(r, e => e.k === 'riposte');

@@ -1294,6 +1294,12 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
         txt: `${name(e.side)} se programme : ${e.what === 'p' ? 'passif' : 'ultime'} « ${programLabel(e.label, e.effectType, e.drawn)} » (en attente)`,
         o: { c: e.side, k: 'prog', quoi: e.what, n: e.n },
       };
+    case 'stunnedCannot':
+      return {
+        t: 'statut',
+        txt: `${name(e.side)} est étourdi : ${e.what === 'dodge' ? "impossible d'esquiver" : e.what === 'riposte' ? 'pas de riposte' : 'pas de contre-attaque'}`,
+        o: { c: e.side, k: 'etourdi_bloque', quoi: e.what },
+      };
     case 'programmingActivated':
       return {
         t: 'statut',

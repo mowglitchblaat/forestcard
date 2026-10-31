@@ -1667,6 +1667,7 @@ async function jouer(res){
    else if(e.t==='statut'&&e.k==='etourdi'){if(!st[e.c+'etourdi'])statut(e.c,'etourdi',true)}
    else if(e.t==='statut'&&e.k==='etourdi_fin')statut(e.c,'etourdi',false);
    else if(e.t==='statut'&&e.k==='etourdi_tour'){}
+   else if(e.t==='statut'&&e.k==='etourdi_bloque'){flot(e.c,e.quoi==='dodge'?'Étourdi : pas d\'esquive':e.quoi==='riposte'?'Étourdi : pas de riposte':'Étourdi : pas de contre-attaque','#facc15');await wait(500)}   // l'étourdi ne peut ni esquiver, ni riposter, ni contre-attaquer
    else if(e.t==='stat'&&e.k==='esq')flot(e.c,'Esquive '+(e.d>=0?'+':'')+e.d+' %','#bae6fd')
    else if(e.k==='vol_carte')await volCarte(e);   // la carte volée passe de l'autre côté
    else if(e.k==='vol_retour')await volRetour(e);   // fin d'un vol à durée : la carte repart chez son propriétaire

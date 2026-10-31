@@ -11,10 +11,15 @@ export type CounterState = {
 };
 export const counterState = (): CounterState => ({ counterBonus: 0 });
 
-// Start of its turn: reads the hits taken since its last turn, then resets them.
+// Start of its turn: reads the hits taken since its last turn, then resets them. A stunned card
+// (this turn's attack is skipped) prepares no counter: those hits are lost.
 export function counterAtStart(c: Combat, s: Side): Flow {
   s.passives.forEach((p) => {
     if (p.type === 'bonus_frappe' && s.hitsTaken >= (p.coups || 1)) {
+      if (s.status.stunTurns > 0) {
+        emit(c, { type: 'stunnedCannot', side: id(c, s), what: 'counter' });
+        return;
+      }
       s.status.counterBonus = amount(p, s.atq);
       emit(c, { type: 'counterPrepared', side: id(c, s) });
     }

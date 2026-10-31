@@ -56,6 +56,11 @@ function takeBlock(a: Side): BlockRiposte | null {
 // its own branch: a block without riposte draws nothing.
 export function riposte(c: Combat, d: Side, a: Side, n: number, r: BlockRiposte | null): void {
   if (!r || !r.kind || a.hp <= 0 || d.hp <= 0) return;
+  // a stunned card blocks, but cannot riposte
+  if (d.status.stunTurns > 0) {
+    emit(c, { type: 'stunnedCannot', side: id(c, d), what: 'riposte' });
+    return;
+  }
   if (r.chance < 100 && !roll(c, r.chance)) return;
   emit(c, { type: 'blockRiposte', side: id(c, d), target: id(c, a), kind: r.kind });
   if (r.kind === 'renvoi') {

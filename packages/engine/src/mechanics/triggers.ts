@@ -222,6 +222,7 @@ export const TRIGGER_FACT: { [K in EventType]: Classify<K> | null } = {
   transcendenceLost: null,
   transcended: null,
   programmed: null,
+  stunnedCannot: null,
   programmingActivated: null,
   programmedPassivesAwake: null,
   programmedUltimateInstalled: null,

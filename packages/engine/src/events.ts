@@ -598,6 +598,9 @@ export type DomainEvent =
       effectType: unknown;
       drawn: ProgrammedDraw | undefined;
     }
+  // A stunned card misses a defence it would have had: a dodge (only when it had a chance), a
+  // block's riposte, a counter (bonus_frappe) it would have prepared.
+  | { type: 'stunnedCannot'; side: SideIndex; what: 'dodge' | 'riposte' | 'counter' }
   | { type: 'programmingActivated'; side: SideIndex }
   | { type: 'programmedPassivesAwake'; side: SideIndex; count: number }
   // A programmed ultimate installed at an activation: its uses, its delay between two uses (turns)

@@ -15,14 +15,22 @@ export type DodgeState = {
 };
 export const dodgeState = (): DodgeState => ({ dodgeBonus: 0 });
 
-// One draw (if the chance is above 0): does d dodge?
-export function dodges(c: Combat, d: Side): boolean {
-  const chance = Math.min(
+// Its dodge chance (passives, magics, a frost's malus), capped.
+const dodgeChance = (c: Combat, d: Side): number =>
+  Math.min(
     c.rules.plafondEsquive,
     d.passives.filter((p) => p.type === 'esquive').reduce((q, p) => q + (p.chance || 0), 0) +
       d.status.dodgeBonus -
       frostDodgeMalus(d), // a frozen card dodges less
   );
+
+// One draw (if the chance is above 0): does d dodge? A stunned card cannot dodge (no draw).
+export function dodges(c: Combat, d: Side): boolean {
+  if (d.status.stunTurns > 0) {
+    if (dodgeChance(c, d) > 0) emit(c, { type: 'stunnedCannot', side: id(c, d), what: 'dodge' });
+    return false;
+  }
+  const chance = dodgeChance(c, d);
   return chance > 0 && roll(c, chance);
 }
 
