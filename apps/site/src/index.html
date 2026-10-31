@@ -803,10 +803,13 @@ function bracketsSuisse(br){
 // Pendant les inscriptions : le format qui sera joué avec les inscrits du moment (même calcul que tournoi_coupes et
 // tournoi_double_creer, 52-tournoi-tout-le-monde.sql), et le tableau final avec des places au lieu des pseudos
 function apercuSuisse(T){
-  const n=(T.inscrits||[]).length;if(T.format!=='suisse'||n<2)return'';
-  const rondes=n<=2?1:n===3?2:n<=8?3:n<=16?4:n<=32?5:6;
-  let w=Math.min(n,Math.max(2,T.places_winner??Math.round(n*.6)));if(T.places_winner==null&&w>=n&&n>2)w=n-1;
-  const l=Math.max(0,Math.min(n-w,T.places_loser??n-w)),rg=i=>i+(i===1?'er':'e')+' du suisse',s=rondes>1?'s':'';
+  const n=(T.inscrits||[]).length;if(T.format!=='suisse')return'';
+  const fmt=n=>{const rondes=n<=2?1:n===3?2:n<=8?3:n<=16?4:n<=32?5:6;let w=Math.min(n,Math.max(2,T.places_winner??Math.round(n*.6)));if(T.places_winner==null&&w>=n&&n>2)w=n-1;
+    return{rondes,w,l:Math.max(0,Math.min(n-w,T.places_loser??n-w))}};
+  // pas encore assez d'inscrits : ce que donnerait le format selon le nombre de joueurs
+  if(n<2)return`<h3>🔮 Le format</h3><p><small>Des rondes suisses en BO1, puis tout le monde (ou presque) continue dans un tableau final à double élimination. Le détail dépend du nombre d'inscrits et s'affiche ici dès le 2e inscrit. Quelques exemples :</small></p>
+    <table><tr><th>Inscrits</th><th>Rondes suisses</th><th>✅ Winner bracket</th><th>💀 Loser bracket</th></tr>${[4,6,8,10,12,16,20].map(k=>{const f=fmt(k);return`<tr><td>${k}</td><td>${f.rondes}</td><td>les ${f.w} premiers</td><td>${f.l?'les '+f.l+' suivants':'—'}${k>f.w+f.l?` (${k-f.w-f.l} éliminés)`:''}</td></tr>`}).join('')}</table>`;
+  const {rondes,w,l}=fmt(n),rg=i=>i+(i===1?'er':'e')+' du suisse',s=rondes>1?'s':'';
   const head=`<h3>🔮 Le format, avec ${n} inscrit${n>1?'s':''}</h3><p><small><b>${rondes} ronde${s} suisse${s}</b> en BO1 (la 1re tirée au sort au lancement, les suivantes entre joueurs au même nombre de victoires), puis le tableau final : <b>✅ les ${w} premiers</b> en winner bracket (2 vies)${l?`, <b>💀 les ${l} suivants</b> en loser bracket (1 vie)`:''}${n>w+l?`, les ${n-w-l} derniers éliminés`:''}. Les places se remplissent avec le classement à la fin des rondes ; l'aperçu change à chaque inscription.</small></p>`;
   const M=[];let id=0;const add=o=>{const m={id:++id,score_a:'',score_b:'',a:null,b:null,pseudo_a:null,pseudo_b:null,exempt:false,gagnant:null,fini:false,sv:0,sc:0,pv:0,pc:0,format:3,...o};M.push(m);return m};
   const seed=k=>({a:'#'+k,p:rg(k)});
