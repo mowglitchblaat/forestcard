@@ -1,5 +1,31 @@
 [
   {
+    "date": "2026-10-31",
+    "intro": "Les combats en relais deviennent plus fluides, et le tournoi suisse garde désormais tout le monde jusqu’au tableau final.",
+    "groupes": [
+      {
+        "titre": "Combat",
+        "points": [
+          "En relais, quand un combattant tombe, le suivant entre tout de suite : la suite d’une attaque en plusieurs coups ou d’une salve le frappe, et la carte qui jouait finit son tour normalement avant un nouveau duel."
+        ]
+      },
+      {
+        "titre": "Animations",
+        "points": [
+          "Si l’image d’un combattant ne charge pas, l’overlay essaie d’autres versions avant d’afficher simplement son nom."
+        ]
+      },
+      {
+        "titre": "Site",
+        "points": [
+          "Tournoi suisse : plus personne n’est éliminé après les rondes, les premiers du classement commencent dans le tableau des gagnants et les suivants dans celui des perdants.",
+          "Pendant les inscriptions, un aperçu montre le format et le tableau final selon le nombre d’inscrits.",
+          "Armoire à trophées : un clic sur un trophée ou une écharpe affiche le tournoi, la place, le podium et le parcours match par match."
+        ]
+      }
+    ]
+  },
+  {
     "date": "2026-10-30",
     "intro": "Les tournois prennent de l’ampleur avec un nouveau format suisse, de nouveaux trophées et une écharpe pour chaque participant.",
     "groupes": [
