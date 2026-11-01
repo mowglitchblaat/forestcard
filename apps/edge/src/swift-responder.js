@@ -101,7 +101,8 @@ async function championnat(b) {
 }
 
 // ---------------- Tournois (46-tournois.sql) ----------------
-// « !tournoi » dans le chat (mode tournoi) : s'inscrire ; « !tournoi quitter » : se retirer ; « !tournoi info » : où en est le tournoi.
+// « !tournoi » dans le chat (mode tournoi) : s'inscrire ; « !tournoi quitter » : se retirer (inscriptions) ou abandonner (tournoi commencé) ;
+// « !tournoi info » : où en est le tournoi.
 // Mode tournoi_suivant (action Streamer.bot « Tournoi - Suivant », lancée par le streamer ou par l'overlay à la fin d'un combat) :
 // lance le tournoi s'il est encore aux inscriptions, puis joue le combat suivant (relais 3 contre 3, deck de championnat figé
 // à l'inscription, aucun gold par combat).
@@ -113,7 +114,14 @@ async function tournoiChat(b) {
   if (['quitter', 'retirer', 'desinscrire', 'desinscription', 'stop'].includes(mot)) {
     const r = await rpc('tournoi_quitter', { p_twitch_id: id });
     if (!r.ok) return txt(erreurSql(r, 'Impossible de te retirer du tournoi.'), 409);
-    return txt(r.data.abandon ? `🏳️ ${r.data.pseudo} abandonne le tournoi « ${r.data.tournoi} » ! Ses matchs restants sont perdus par forfait.` : `👋 ${r.data.pseudo} se retire du tournoi « ${r.data.tournoi} » (${r.data.inscrits} inscrit${r.data.inscrits > 1 ? 's' : ''}).`);
+    // tournoi commencé : abandon définitif, ses matchs prêts à jouer sont perdus par forfait (54-abandon-tournoi-correctifs.sql)
+    if (r.data.abandon) {
+      const g = r.data.gagnants || [];
+      return txt(`🏳️ ${r.data.pseudo} abandonne le tournoi « ${r.data.tournoi} » : ses matchs restants sont perdus par forfait.`
+        + (g.length ? ` ${g.join(', ')} passe${g.length > 1 ? 'nt' : ''} par forfait.` : '')
+        + (r.data.tournoi_fini && r.data.champion ? ` 👑 ${r.data.champion} remporte le tournoi !` : ''));
+    }
+    return txt(`👋 ${r.data.pseudo} se retire du tournoi « ${r.data.tournoi} » (${r.data.inscrits} inscrit${r.data.inscrits > 1 ? 's' : ''}).`);
   }
   if (['info', 'infos', 'etat', 'tableau', 'bracket'].includes(mot)) {
     const r = await rpc('tournoi_etat', {});
