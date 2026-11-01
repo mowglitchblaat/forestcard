@@ -113,7 +113,7 @@ async function tournoiChat(b) {
   if (['quitter', 'retirer', 'desinscrire', 'desinscription', 'stop'].includes(mot)) {
     const r = await rpc('tournoi_quitter', { p_twitch_id: id });
     if (!r.ok) return txt(erreurSql(r, 'Impossible de te retirer du tournoi.'), 409);
-    return txt(`👋 ${r.data.pseudo} se retire du tournoi « ${r.data.tournoi} » (${r.data.inscrits} inscrit${r.data.inscrits > 1 ? 's' : ''}).`);
+    return txt(r.data.abandon ? `🏳️ ${r.data.pseudo} abandonne le tournoi « ${r.data.tournoi} » ! Ses matchs restants sont perdus par forfait.` : `👋 ${r.data.pseudo} se retire du tournoi « ${r.data.tournoi} » (${r.data.inscrits} inscrit${r.data.inscrits > 1 ? 's' : ''}).`);
   }
   if (['info', 'infos', 'etat', 'tableau', 'bracket'].includes(mot)) {
     const r = await rpc('tournoi_etat', {});
