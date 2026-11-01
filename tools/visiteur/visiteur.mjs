@@ -10,7 +10,10 @@ import { describeCard } from '@forestcard/describe';
 
 const SB = 'https://bjsvqikjnvaomyoifiml.supabase.co';
 const KEY = process.env.SUPABASE_KEY;
-if (!KEY) { console.error('SUPABASE_KEY manquante (secret SUPABASE_SERVICE_KEY).'); process.exit(1); }
+// En cas d'échec, le message part aussi en annotation GitHub (visible sans les journaux).
+const echec = m => { console.error(m); console.log('::error title=Mode visiteur::' + String(m).replace(/\n/g, ' ').slice(0, 900)); process.exit(1); };
+process.on('unhandledRejection', e => echec(e && e.message || e));
+if (!KEY) echec('SUPABASE_KEY manquante (secret SUPABASE_SERVICE_KEY).');
 const JOUEURS = (process.env.VISITEUR_JOUEURS || 'mowglitchblaat').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
 const SITE = 'https://mowglitchblaat.github.io/forestcard/';
 const DOSSIER = path.resolve('visiteur');

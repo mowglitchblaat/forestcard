@@ -38,7 +38,8 @@ jobs:
       - name: Publier
         id: publish
         run: |
-          git add assets/img assets/visiteur
+          git add assets/img
+          if [ -d assets/visiteur ]; then git add assets/visiteur; fi
           if git diff --cached --quiet; then echo "Rien de nouveau."; echo "changed=false" >> "$GITHUB_OUTPUT"; exit 0; fi
           git config user.name "copie-images"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
