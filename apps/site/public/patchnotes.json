@@ -1,5 +1,24 @@
 [
   {
+    "date": "2026-11-01",
+    "intro": "La Programmation devient plus imprévisible et l’étourdissement pèse enfin sur la défense.",
+    "groupes": [
+      {
+        "titre": "Combat",
+        "points": [
+          "Programmation : chaque ultime programmé devient un ultime de plus de la carte, avec un nombre d’utilisations, un délai et un déclencheur tirés au hasard ; une activation ne se déclenche plus jamais à vide.",
+          "Étourdissement : une carte étourdie ne peut plus esquiver, riposter après un blocage, ni préparer de contre-attaque."
+        ]
+      },
+      {
+        "titre": "Animations",
+        "points": [
+          "Les icônes de Programmation sont rangées en haut de la carte et affichent les utilisations restantes ; une petite mention signale quand l’étourdissement empêche une défense."
+        ]
+      }
+    ]
+  },
+  {
     "date": "2026-10-31",
     "intro": "Les combats en relais deviennent plus fluides, et le tournoi suisse garde désormais tout le monde jusqu’au tableau final.",
     "groupes": [
