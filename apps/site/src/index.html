@@ -679,7 +679,7 @@ function histoireCeintures(E){
       C.filter(c=>avant(c)===r&&(c.gagnant===r.joueur||c.gagnant==null)).sort((x,y)=>T(x.fini_le)-T(y.fini_le))
        .forEach(c=>L.push(c.gagnant==null?ligne('🤝',`Match nul contre ${b(autre(c,r.joueur))} : garde la ceinture`,c.fini_le):ligne('🛡️',`Défend contre ${b(autre(c,r.joueur))}`,c.fini_le)));
       if(r.fin){const fin=C.find(c=>pres(c.fini_le,r.fin)&&c.gagnant&&c.gagnant!==r.joueur);
-        L.push(r.raison==='refus'?ligne('🏳️','3e refus de défi : la ceinture lui est retirée',r.fin):r.raison==='inactivite'?ligne('⏳','7 jours sans combat pour le titre : la ceinture lui est retirée',r.fin)
+        L.push(r.raison==='refus'?ligne('🏳️','3e refus de défi : la ceinture lui est retirée',r.fin):r.raison==='abandon'?ligne('🏳️','Rend sa ceinture, qui devient vacante',r.fin):r.raison==='inactivite'?ligne('⏳','7 jours sans combat pour le titre : la ceinture lui est retirée',r.fin)
           :ligne('⚔️',`Battu par ${b(fin?(fin.challenger===r.joueur?fin.pseudo_adversaire:fin.pseudo_challenger):'?')}`,r.fin))}
       const nd=r.defenses||0,tete=`<div style="display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline"><span style="font-size:17px">👑 ${b(r.pseudo)}</span><small style="opacity:.75">${r.fin?'a régné '+duree(T(r.fin)-T(r.debut)):'en cours depuis '+duree(Date.now()-T(r.debut))} · ${nd} défense${nd>1?'s':''}${r.primes?` · 💰 ${r.primes} gold de primes`:''}</small></div>`;
       out.push(`<div style="border-left:3px solid ${r.fin?'#555':'#fbbf24'};padding:4px 0 4px 10px;margin:8px 0">${tete}${L.join('')}</div>`);
