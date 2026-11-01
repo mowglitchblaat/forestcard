@@ -302,6 +302,10 @@ export function flush(c: Combat): void {
 // Anywhere else, or with nobody left to send: the card itself, still fallen.
 export const standIn = (c: Combat, s: Side): Side => (s.hp <= 0 && c.standIn ? c.standIn(s) : s);
 
+// Whether a card is still in play. Always true outside a relay; in a relay, a fallen fighter that gave
+// way to the next one (standIn) has left: nothing applies to it any more (no opponent to find).
+export const inPlay = (c: Combat, s: Side): boolean => c.sides.includes(s);
+
 // Flushes, then tells whether a card is down.
 export function over(c: Combat): boolean {
   flush(c);

@@ -14,7 +14,7 @@
 // poison).
 
 import { damage } from '../combat/damage.ts';
-import { emit, id, opponent, over, roll, round, type Combat } from '../combat/combat.ts';
+import { emit, id, inPlay, opponent, over, roll, round, type Combat } from '../combat/combat.ts';
 import type { EffectContext, EffectRules } from '../combat/effect-context.ts';
 import type { Flow } from '../combat/flow.ts';
 import type { Side } from '../combat/state.ts';
@@ -99,6 +99,7 @@ export function tickDot(c: Combat, s: Side, dot: DamageOverTime): void {
     amount: n,
     cause: isPoison(dot.kind) ? 'poison' : 'burn',
   });
+  if (!inPlay(c, s)) return; // relay: it fell and gave way to the next fighter, nothing more applies
   if (!isPoison(dot.kind) && n > 0 && s.hp > 0)
     calcinate(c, s, round((n * c.levels.calcination) / 100));
   if (isPoison(dot.kind)) leechTick(c, s, dot, n); // a toxic leech on the other side (venom.ts)
@@ -125,7 +126,7 @@ export function calcinate(c: Combat, s: Side, n: number): void {
 // End of its turn: burn and poison in application order.
 export function dotTicks(c: Combat, s: Side): Flow {
   for (const dot of s.status.dots.slice()) {
-    if (s.hp <= 0 || over(c)) return 'stop';
+    if (s.hp <= 0 || !inPlay(c, s) || over(c)) return 'stop';
     if (!s.status.dots.includes(dot)) continue;
     tickDot(c, s, dot);
   }

@@ -16,7 +16,7 @@ import {
   type Strike,
   type StrikeStep,
 } from './attack.ts';
-import { emit, id, opponent, standIn, type Combat } from './combat.ts';
+import { emit, id, inPlay, opponent, standIn, type Combat } from './combat.ts';
 import { run, type Flow, type Step } from './flow.ts';
 import type { Side } from './state.ts';
 import { scan } from './traps.ts';
@@ -249,10 +249,20 @@ export function attack(c: Combat, a: Side): Flow {
   return undefined;
 }
 
-export const startTurn = (c: Combat, s: Side): Flow => run(c, s, START_OF_TURN);
-export const everyTurn = (c: Combat, s: Side): Flow => run(c, s, EVERY_TURN);
-export const endOfTurnEffects = (c: Combat, s: Side): Flow => run(c, s, END_OF_TURN_EFFECTS);
-export const endTurn = (c: Combat, s: Side): Flow => run(c, s, END_OF_TURN);
+// A card's steps, while it is in play: in a relay, a fighter that fell and gave way to the next one
+// during the sequence (a missile, a detonation, a status tick) gets nothing more (relay.ts).
+function runOn(c: Combat, s: Side, steps: readonly Step<Side>[]): Flow {
+  for (const step of steps) {
+    if (!inPlay(c, s)) return 'stop';
+    if (step(c, s) === 'stop') return 'stop';
+  }
+  return undefined;
+}
+
+export const startTurn = (c: Combat, s: Side): Flow => runOn(c, s, START_OF_TURN);
+export const everyTurn = (c: Combat, s: Side): Flow => runOn(c, s, EVERY_TURN);
+export const endOfTurnEffects = (c: Combat, s: Side): Flow => runOn(c, s, END_OF_TURN_EFFECTS);
+export const endTurn = (c: Combat, s: Side): Flow => runOn(c, s, END_OF_TURN);
 
 // A card's turn, in a fixed order (the same for everyone, whether it plays first or second). The
 // combat checks for a fallen card between two of them (simulate.ts).

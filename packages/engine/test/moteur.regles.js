@@ -1551,3 +1551,47 @@ test('évite la mort par un piège, contré par une salve de missiles (adv_piege
     assert.match(coup.txt, /subit 29 dégâts/, 'la frappe mortelle laisse b à 1 PV');
   }
 });
+
+// Relais : une salve de missiles venue d'un piège (adv_piege) achève une carte en plein milieu de sa séquence
+// (coup de poison, fin de tour) ; le suivant entre tout de suite. La carte sortie ne reçoit plus rien :
+// avant, la suite de sa séquence cherchait son adversaire alors qu'elle n'était plus en jeu, et le combat plantait.
+test('relais : une carte achevée en plein tour par une salve laisse sa place sans planter le combat', () => {
+  const MT001 = PIE('MT-001', { type: 'adv_piege' }, { type: 'missiles', val: 4, bonus: 5, conso: 100, frappes: 4, mstatut: 'aucun' });
+  const cas = [
+    {
+      seed: 104,
+      a: [
+        C("L'Horreur Mowgli", 22, 55, { passif: { briques: [{ u: 'pct', type: 'fatigue', chance: 65, fatval: 10, fattours: 2 }, { val: 5, type: 'malediction', tours: 3, chance: 65 }] } }),
+        C('Serpent', 11, 45, { passif: { type: 'poison', tours: 2, chance: 100, niveau: 1 } }),
+        MAG('fleche poison', { type: 'atk_poison', tours: 2, chance: 75, degtour: 3 }),
+        MAG('MarsupiRAGE', { u: 'pts', type: 'rage', ragev: 4, fatval: 2, fattours: 2, ragetours: 6 }),
+        MT001,
+        PIE('Deuxieme chance', { type: 'proprio_meurt' }, { cond: 'aucune', type: 'mort_evitee', seuil: null }),
+      ],
+      b: [
+        C("L'Arkat Zombie", 32, 123, { passif: { u: 'pct', val: 50, type: 'reduc_degats', chance: 33 } }),
+        C('Raidraw Le Bonk', 37, 92, { passif: { type: 'etourdir', tours: null, chance: 35, essais: null } }),
+        MAG('Coeur de golem de glace', { type: 'solidification', tours: 4, chance: 70 }),
+        PIE('Rituel demoniaque', { type: 'proprio_pv_sous', seuilpv: 20 }, { type: 'double_degats', tours: 1 }),
+      ],
+    },
+    {
+      seed: 378,
+      a: [
+        C('Trio chasseurs', 19, 70, { passif: { briques: [{ type: 'saignement', pctpv: 7, tours: 1, chance: 55, reducsoin: 40 }, { type: 'multi_frappe', chance: 50, frappes: 3 }] } }),
+        MAG('Souffle élementaire', { val: 3, sval: 5, type: 'souffle', remax: 5, tours: 2, chance: 50, statut: 'aleatoire', rechance: 80, reducsoin: null }),
+        MT001,
+      ],
+      b: [
+        C('CT-001', 22, 75, { ultime: { val: 25, sval: null, type: 'missiles', bonus: 10, conso: 65, recul: 10, tours: null, chance: null, frappes: 1, mstatut: 'aucun', apres_tours: 2, delai_tours: 1, utilisations: 0 } }),
+        C('Araignée Humanoide', 15, 78, { passif: { briques: [{ max: 3, type: 'enchainement', chance: 45 }, { val: 3, type: 'malediction', tours: 2, chance: 40 }] } }),
+        PIE('Ambuscade de loups', { type: 'proprio_pv_sous', seuilpv: 10 }, { val: 16, type: 'degats' }),
+      ],
+    },
+  ];
+  for (const { seed, a, b } of cas) {
+    const r = relais(a, b, { seed });
+    assert.ok(entrees(r).length > 0, 'un combattant est bien entré en relais');
+    assert.ok(r.gagnant === 0 || r.gagnant === 1 || r.gagnant === null, 'le combat va au bout');
+  }
+});

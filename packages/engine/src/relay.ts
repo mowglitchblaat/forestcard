@@ -7,8 +7,9 @@
 //     revealed), and the turn under way goes on against it: the rest of a chained attack or of a
 //     missile salvo strikes it (combat.ts, standIn), and it is there for the end of the turn (a heal it
 //     can absorb, an ultimate it can trigger…). The card playing the turn, if it falls, ends its turn
-//     there. Then a new duel starts, the new fighter acting first. The fighter still standing keeps
-//     everything: HP, statuses, magic and trap already played. The new fighter acts first, and
+//     there. A fighter that has given way gets nothing more: the rest of its sequence (a status
+//     tick, its end-of-turn steps) stops once it is out of play (combat.ts, inPlay). Then a new
+//     duel starts, the new fighter acting first. The fighter still standing keeps everything: HP, statuses, magic and trap already played. The new fighter acts first, and
 //     only its magic is revealed;
 //   - no round limit: each duel goes on until a KO (a safety cap of RELAY_ROUND_CAP rounds ends a
 //     duel that cannot end: the fighter with the lowest share of its max HP falls, exhausted);
@@ -116,6 +117,7 @@ export function simulateRelay(
         for (let i = 0; i < TURN.length; i++) {
           if (i > 0) {
             flush(c);
+            if (!c.sides.includes(a)) break; // it fell during the step and gave way: its turn ends
             const o = opponent(c, a);
             if (o.hp <= 0 && c.standIn(o).hp <= 0) break; // nobody left to send
             if (a.hp <= 0) break; // its turn ends with it
