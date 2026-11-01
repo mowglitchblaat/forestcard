@@ -15,9 +15,6 @@ const UNTOUCHED = [
   // The author's rule tests, run by packages/engine/test/legacy-rules.test.ts.
   'packages/engine/test/moteur.regles.js',
   'tools/copier-images/copier-images.mjs',
-  // The visitor page, written each night like the images (tools/visiteur).
-  'tools/visiteur/visiteur.mjs',
-  'assets/visiteur/**',
   'docs/**',
   // Card images and their lists, written by the nightly copy (tools/copier-images).
   'assets/img/**',
