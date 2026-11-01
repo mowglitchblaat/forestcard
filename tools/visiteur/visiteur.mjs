@@ -3,36 +3,24 @@
 // publiées (stats et effets, dans les mots du site) et la collection, les decks et les stats des joueurs
 // choisis. Écrit visiteur/index.html et visiteur/donnees.json (le dossier courant : assets/).
 // Lancé chaque nuit par .github/workflows/images.yml, ou à la main (onglet Actions → « Copie des images »).
-// Joueurs montrés : VISITEUR_JOUEURS (pseudos séparés par des virgules), mowglitchblaat par défaut.
+// Données lues par la fonction visiteur_donnees() (db/migrations/53-mode-visiteur.sql) avec la clé publique : aucun
+// secret. Les joueurs montrés sont ceux de la liste écrite dans cette fonction.
 import fs from 'node:fs';
 import path from 'node:path';
 import { describeCard } from '@forestcard/describe';
 
 const SB = 'https://bjsvqikjnvaomyoifiml.supabase.co';
-const KEY = process.env.SUPABASE_KEY;
+const PUBLIQUE = 'sb_publishable_-3cPqDCyE-zhb3z5r6dPhg_DJFKGAI6';
 // En cas d'échec, le message part aussi en annotation GitHub (visible sans les journaux).
 const echec = m => { console.error(m); console.log('::error title=Mode visiteur::' + String(m).replace(/\n/g, ' ').slice(0, 900)); process.exit(1); };
 process.on('unhandledRejection', e => echec(e && e.message || e));
-if (!KEY) echec('SUPABASE_KEY manquante (secret SUPABASE_SERVICE_KEY).');
-const JOUEURS = (process.env.VISITEUR_JOUEURS || 'mowglitchblaat').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
 const SITE = 'https://mowglitchblaat.github.io/forestcard/';
 const DOSSIER = path.resolve('visiteur');
 
-const entetes = { apikey: KEY };
-if (!KEY.startsWith('sb_')) entetes.Authorization = 'Bearer ' + KEY;
-async function lire(table, requete) {
-  const r = await fetch(`${SB}/rest/v1/${table}?${requete}`, { headers: entetes });
-  if (!r.ok) throw new Error(`${table} illisible (${r.status}) : ${await r.text()}`);
-  return r.json();
-}
-
-const [cartes, variantes, collections, raretes, joueurs] = await Promise.all([
-  lire('cartes', 'select=id,nom,type,collection_id,rarete_id,atq,pv,ultime,passif,effet,description,actif&actif=eq.true'),
-  lire('variantes_carte', 'select=id,carte_id,nom'),
-  lire('collections', 'select=id,nom,active'),
-  lire('raretes', 'select=id,nom,ordre'),
-  lire('joueurs', 'select=id,pseudo'),
-]);
+const r = await fetch(`${SB}/rest/v1/rpc/visiteur_donnees`, { method: 'POST', headers: { apikey: PUBLIQUE, 'Content-Type': 'application/json' }, body: '{}' });
+if (!r.ok) echec(`visiteur_donnees indisponible (${r.status}) : lance db/migrations/53-mode-visiteur.sql dans Supabase. ${await r.text()}`);
+const D = await r.json();
+const { cartes, variantes, collections, raretes } = D;
 
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const rar = new Map(raretes.map(r => [r.id, r]));
@@ -60,16 +48,10 @@ const catalogue = cartes.map(fiche);
 
 // Les joueurs montrés : collection (versions possédées), decks, stats.
 const profils = [];
-for (const pseudo of JOUEURS) {
-  const j = joueurs.find(x => String(x.pseudo).toLowerCase() === pseudo);
-  if (!j) { console.warn('joueur introuvable :', pseudo); continue; }
-  const [coll, deck, enr, champ, stats] = await Promise.all([
-    lire('collection_joueur', `select=variante_id,quantite&joueur_id=eq.${j.id}`),
-    lire('deck', `select=carte_id&joueur_id=eq.${j.id}`),
-    lire('decks_enregistres', `select=nom,cartes&joueur_id=eq.${j.id}&order=id`),
-    lire('decks_championnat', `select=division,cartes&joueur_id=eq.${j.id}`),
-    lire('stats_joueurs', `select=victoires,defaites,nuls,meilleure_serie,plus_gros_coup,boosters_ouverts&joueur_id=eq.${j.id}`),
-  ]);
+for (const j of D.joueurs || []) {
+  const { collection: coll, decks_enregistres: enr, decks_championnat: champ } = j;
+  const deck = (j.deck || []).map(carte_id => ({ carte_id }));
+  const stats = j.stats ? [j.stats] : [];
   const varInfo = new Map(variantes.map(v => [v.id, v]));
   const possede = new Map();   // carte → [{version, quantite}]
   for (const l of coll) {

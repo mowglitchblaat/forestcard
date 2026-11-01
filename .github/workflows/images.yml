@@ -29,9 +29,8 @@ jobs:
       - name: Mode visiteur
         # A static page of the cards and the collection, readable without login nor JavaScript
         # (tools/visiteur). Its failure does not stop the image copy.
+        # Reads db/migrations/53-mode-visiteur.sql's function with the public key: no secret.
         continue-on-error: true
-        env:
-          SUPABASE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         run: |
           node tools/node-only/link.ts
           cd assets && node ../tools/visiteur/visiteur.mjs
