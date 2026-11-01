@@ -34,9 +34,13 @@ const FILES: [url: string, source: string][] = [
   ['fx-preview.html', 'apps/web/dist/fx-preview.html'],
   ['favicon.svg', 'apps/web/dist/favicon.svg'],
 ];
-// Written by the nightly image copy (.github/workflows/images.yml): absent from a fresh clone of
+// Written by the nightly workflow (.github/workflows/images.yml): absent from a fresh clone of
 // this repository, so optional here.
-const OPTIONAL: [url: string, source: string][] = [['img', 'assets/img']];
+const OPTIONAL: [url: string, source: string][] = [
+  ['img', 'assets/img'],
+  // The visitor page (tools/visiteur), written by the same nightly workflow.
+  ['visiteur', 'assets/visiteur'],
+];
 
 const missing = FILES.filter(([, source]) => !existsSync(join(ROOT, source)));
 if (missing.length)

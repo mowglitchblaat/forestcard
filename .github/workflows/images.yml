@@ -26,14 +26,23 @@ jobs:
         env:
           SUPABASE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         run: node ../tools/copier-images/copier-images.mjs
+      - name: Mode visiteur
+        # A static page of the cards and the collection, readable without login nor JavaScript
+        # (tools/visiteur). Its failure does not stop the image copy.
+        continue-on-error: true
+        env:
+          SUPABASE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          node tools/node-only/link.ts
+          cd assets && node ../tools/visiteur/visiteur.mjs
       - name: Publier
         id: publish
         run: |
-          git add assets/img
+          git add assets/img assets/visiteur
           if git diff --cached --quiet; then echo "Rien de nouveau."; echo "changed=false" >> "$GITHUB_OUTPUT"; exit 0; fi
           git config user.name "copie-images"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -q -m "Images : copie depuis Supabase"
+          git commit -q -m "Images et mode visiteur : copie depuis Supabase"
           git pull -q --rebase && git push -q
           echo "changed=true" >> "$GITHUB_OUTPUT"
   # A push made with the workflow token does not trigger pages.yml: call it explicitly.
