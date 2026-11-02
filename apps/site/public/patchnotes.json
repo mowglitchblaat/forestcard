@@ -1,5 +1,31 @@
 [
   {
+    "date": "2026-11-02",
+    "intro": "Les tournois gèrent enfin proprement les abandons, et l’admin peut glisser un petit mot avec ses cadeaux.",
+    "groupes": [
+      {
+        "titre": "Combat",
+        "points": [
+          "Relais : quand un combattant tombe en plein milieu de son tour (poison, effets de fin de tour), le combat ne plante plus et le suivant prend sa place normalement."
+        ]
+      },
+      {
+        "titre": "Site",
+        "points": [
+          "Tournois : un joueur peut abandonner un tournoi en cours ; ses matchs restants sont perdus par forfait, il ne reçoit ni place ni récompense et les suivants montent d’un cran.",
+          "Le tableau et le classement affichent un drapeau blanc pour les abandons, et le bot annonce dans le chat qui passe par forfait.",
+          "Ceintures : quand un champion rend sa ceinture, l’historique l’indique clairement au lieu d’un « Battu par ? »."
+        ]
+      },
+      {
+        "titre": "Boutique et boosters",
+        "points": [
+          "Les boosters offerts par l’admin peuvent maintenant être accompagnés d’un petit mot, affiché au joueur à sa prochaine connexion."
+        ]
+      }
+    ]
+  },
+  {
     "date": "2026-11-01",
     "intro": "La Programmation devient plus imprévisible et l’étourdissement pèse enfin sur la défense.",
     "groupes": [
