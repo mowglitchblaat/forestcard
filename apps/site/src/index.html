@@ -389,11 +389,18 @@ async function init(){
   joueur=await q(sb.from('joueurs').select('*').eq('id',user.id).single());
   isAdmin=await q(sb.rpc('is_admin'));await chargerEtat();
   header();lireAncre();show(tab);
+  cadeauxNonLus();
   // Gold à jour sans recharger la page : petite lecture toutes les 45 s, seulement quand l'onglet du navigateur est visible
   setInterval(async()=>{if(document.hidden||!user)return;const r=await sb.from('joueurs').select('monnaie,fragments').eq('id',user.id).single();
     if(!r.error&&r.data&&(r.data.monnaie!==joueur.monnaie||r.data.fragments!==joueur.fragments)){joueur={...joueur,...r.data};header()}
     const av=JEU.live+'/'+JEU.ferme;await chargerEtat();if(av!==JEU.live+'/'+JEU.ferme&&!document.querySelector('#jscene.on'))show(tab)},45000);   // jeu mis en pause ou relancé : l'onglet « Jouer » apparaît ou disparaît
 }
+// Petits mots joints aux cadeaux de l'admin (55-cadeaux-messages.sql) : montrés une fois, à la connexion
+async function cadeauxNonLus(){
+  const r=await sb.rpc('cadeaux_non_lus');if(r.error||!Array.isArray(r.data)||!r.data.length)return;
+  for(const m of r.data)await uiAlert(`🎁 Un cadeau t'attend !${m.booster?`\n${m.quantite>1?m.quantite+'× ':''}${m.booster}`:''}\n\n« ${m.message} »`);
+  await sb.rpc('cadeaux_lus',{p_ids:r.data.map(m=>m.id)});
+  if(r.data.some(m=>m.booster))refreshJoueur()}
 function header(){
   $('#me').innerHTML=`${isAdmin?'<small style="opacity:.5;margin-right:8px">site v11 (avalage)</small>':''}${esc(joueur.pseudo)} · 💰 ${joueur.monnaie}${joueur.fragments>0?` · 🧩 ${joueur.fragments}`:''} <button class="sec" id="out">Déconnexion</button>`;
   $('#out').onclick=async()=>{await sb.auth.signOut();location.reload()};
@@ -2228,10 +2235,13 @@ async function aRaretes(){
 async function aCadeaux(){
   const [t,j]=await Promise.all([q(sb.from('types_boosters').select('id,nom')),q(sb.from('joueurs').select('id,pseudo').order('pseudo'))]);
   $('#sub').innerHTML=`<form class="f" id="fg"><select name="j"><option value="">🎁 Tous les joueurs</option>${opts(j,'pseudo')}</select>
-   <select name="t">${opts(t)}</select><input name="n" type="number" min="1" value="1"><button>Offrir</button></form>`;
+   <select name="t">${opts(t)}</select><input name="n" type="number" min="1" value="1">
+   <input name="m" maxlength="500" placeholder="Petit mot (facultatif), vu à sa prochaine connexion" style="flex:1;min-width:220px"><button>Offrir</button></form>`;
   $('#fg').onsubmit=async e=>{e.preventDefault();const f=e.target;
     const {error}=await sb.rpc('offrir_boosters',{p_joueur:f.j.value||null,p_type_id:+f.t.value,p_quantite:+f.n.value});
-    uiAlert(error?error.message:'Boosters offerts !');};
+    if(error)return uiAlert(error.message);
+    if(f.m.value.trim()){const x=await sb.rpc('cadeau_message',{p_joueur:f.j.value||null,p_message:f.m.value,p_type_id:+f.t.value,p_quantite:+f.n.value});if(x.error)return uiAlert('Boosters offerts, mais le mot n\'est pas parti : '+x.error.message)}
+    uiAlert(f.m.value.trim()?'Boosters offerts, avec ton mot !':'Boosters offerts !');f.m.value=''};
 }
 
 /* ---------- Admin : gérer les cartes et boosters des membres ---------- */
