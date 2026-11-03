@@ -36,7 +36,9 @@ const has = (e: EffectData | null | undefined, type: string): boolean =>
   !!e && (e.type === type || (e.briques || []).some((b) => (b as EffectData).type === type));
 export function breakAvoidDeath(c: Combat, dst: Side): void {
   const magic =
-    !!dst.magicActive && !dst.status.magicAvoidDeathUsed && has(effetOf(c, dst.magic), 'mort_evitee');
+    !!dst.magicActive &&
+    !dst.status.magicAvoidDeathUsed &&
+    has(effetOf(c, dst.magic), 'mort_evitee');
   const t = effetOf(c, dst.trap);
   const trap =
     !!dst.trapActive &&

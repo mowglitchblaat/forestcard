@@ -55,7 +55,12 @@ export function magicCancelEffect({ c, e, x }: EffectContext): void {
 
 // End of its turn: the cancellation ends, the magic comes back.
 export function magicCancelEnd(c: Combat, s: Side): Flow {
-  if (s.magicCancelTurns > 0 && --s.magicCancelTurns === 0 && !s.magicActive && effetOf(c, s.magic)) {
+  if (
+    s.magicCancelTurns > 0 &&
+    --s.magicCancelTurns === 0 &&
+    !s.magicActive &&
+    effetOf(c, s.magic)
+  ) {
     const neverActed = s.magicNeverActed;
     s.magicActive = 1;
     s.magicCancelStage = 0;

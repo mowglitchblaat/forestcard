@@ -674,7 +674,7 @@ export const EDITOR_ULTIMATES: { readonly [K in EffectType]?: EditorEntry } = {
     "☠️ Injection virulente (Poison) : pas de poison : pose un poison I (3 tours) ; empoisonné : son poison monte d'un niveau ; au poison III : dégâts bruts, X % des dégâts de poison restants (le poison reste)",
   ],
   forge: [
-    "🔨 Forge : améliore au hasard une de ses cartes (combattant, magie ou piège encore armé) en augmentant une valeur déjà inscrite (ATQ, PV, %, chance, durée, niveau ; un piège peut gagner un déclenchement). 3 forges max par carte (valeurs dans Réglages > Niveaux)",
+    '🔨 Forge : améliore au hasard une de ses cartes (combattant, magie ou piège encore armé) en augmentant une valeur déjà inscrite (ATQ, PV, %, chance, durée, niveau ; un piège peut gagner un déclenchement). 3 forges max par carte (valeurs dans Réglages > Niveaux)',
   ],
   forge_creation: [
     '🔨 Forge de création : forge une nouvelle magie ou un nouveau piège, avec un effet tiré au hasard ; remplace en priorité la carte épuisée',
@@ -1041,7 +1041,7 @@ export const EDITOR_MAGICS: { readonly [K in EffectType]?: EditorEntry } = {
     "☠️ Injection virulente (Poison) : pas de poison : pose un poison I (3 tours) ; empoisonné : son poison monte d'un niveau ; au poison III : dégâts bruts, X % des dégâts de poison restants (le poison reste)",
   ],
   forge: [
-    "🔨 Forge : améliore au hasard une de ses cartes (combattant, magie ou piège encore armé) en augmentant une valeur déjà inscrite (ATQ, PV, %, chance, durée, niveau ; un piège peut gagner un déclenchement). 3 forges max par carte (valeurs dans Réglages > Niveaux)",
+    '🔨 Forge : améliore au hasard une de ses cartes (combattant, magie ou piège encore armé) en augmentant une valeur déjà inscrite (ATQ, PV, %, chance, durée, niveau ; un piège peut gagner un déclenchement). 3 forges max par carte (valeurs dans Réglages > Niveaux)',
   ],
   forge_creation: [
     '🔨 Forge de création : forge une nouvelle magie ou un nouveau piège, avec un effet tiré au hasard ; remplace en priorité la carte épuisée',

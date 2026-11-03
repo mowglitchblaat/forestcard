@@ -64,7 +64,7 @@ const FORGE_CONDITION_LABELS: Record<string, string> = {
   adv_ultime: "quand l'adversaire lance son ultime",
   proprio_pv_sous: 'quand ses PV baissent',
   adv_soigne: "quand l'adversaire se soigne",
-  proprio_statut: "quand il reçoit un statut",
+  proprio_statut: 'quand il reçoit un statut',
 };
 
 const RANDOM_EFFECT_LABELS: Record<RandomEffectKey, string> = {
