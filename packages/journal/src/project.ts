@@ -541,7 +541,7 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
       return {
         t: 'statut',
         txt: `FORGE ! ${name(e.side)} ${what} (${e.level}/${e.max}) : ${FORGE_FIELD_LABELS[e.field]} ${fr(e.from)} → ${fr(e.to)}`,
-        o: { c: e.side, k: 'forge', s: e.slot, f: e.field, n: e.level, d: e.to - e.from },
+        o: { c: e.side, k: 'forge', s: e.slot, f: e.field, n: e.level, m: e.max, d: e.to - e.from },
       };
     }
     case 'forgeIdle':
