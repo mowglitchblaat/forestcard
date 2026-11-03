@@ -398,7 +398,7 @@ async function init(){
 // Petits mots joints aux cadeaux de l'admin (55-cadeaux-messages.sql) : montrés une fois, à la connexion
 async function cadeauxNonLus(){
   const r=await sb.rpc('cadeaux_non_lus');if(r.error||!Array.isArray(r.data)||!r.data.length)return;
-  for(const m of r.data)await uiAlert(`🎁 Un cadeau t'attend !${m.booster?`\n${m.quantite>1?m.quantite+'× ':''}${m.booster}`:''}\n\n« ${m.message} »`);
+  for(const m of r.data)await uiAlert(`🎁 Un cadeau t'attend !${m.booster?`\n${m.quantite>1?m.quantite+'× ':''}${m.booster}`:''}${m.carte?`\n🃏 ${m.quantite>1?m.quantite+'× ':''}${m.carte}${m.version?' · '+m.version:''} (déjà dans ta collection)`:''}\n\n« ${m.message} »`);
   await sb.rpc('cadeaux_lus',{p_ids:r.data.map(m=>m.id)});
   if(r.data.some(m=>m.booster))refreshJoueur()}
 function header(){
@@ -2233,15 +2233,36 @@ async function aRaretes(){
 }
 
 async function aCadeaux(){
-  const [t,j]=await Promise.all([q(sb.from('types_boosters').select('id,nom')),q(sb.from('joueurs').select('id,pseudo').order('pseudo'))]);
-  $('#sub').innerHTML=`<form class="f" id="fg"><select name="j"><option value="">🎁 Tous les joueurs</option>${opts(j,'pseudo')}</select>
+  const [t,j,v]=await Promise.all([q(sb.from('types_boosters').select('id,nom')),q(sb.from('joueurs').select('id,pseudo').order('pseudo')),
+    q(sb.from('variantes_carte').select('id,nom,image_path,cartes(nom,type,raretes(nom,poids))'))]);
+  // les versions de cartes, les plus rares en premier (comme les récompenses de tournoi)
+  const V=(v||[]).filter(x=>x.cartes).sort((x,y)=>((x.cartes.raretes||{}).poids??1e9)-((y.cartes.raretes||{}).poids??1e9)||x.cartes.nom.localeCompare(y.cartes.nom)||String(x.nom).localeCompare(String(y.nom)));
+  const labV=x=>`${x.cartes.nom}${x.nom?' · '+x.nom:''}${x.cartes.raretes?' ('+x.cartes.raretes.nom+')':''}`;
+  const joueurs=`<option value="">🎁 Tous les joueurs</option>${opts(j,'pseudo')}`;
+  $('#sub').innerHTML=`<h4 style="margin:4px 0 8px">📦 Offrir des boosters</h4>
+   <form class="f" id="fg"><select name="j">${joueurs}</select>
    <select name="t">${opts(t)}</select><input name="n" type="number" min="1" value="1">
-   <input name="m" maxlength="500" placeholder="Petit mot (facultatif), vu à sa prochaine connexion" style="flex:1;min-width:220px"><button>Offrir</button></form>`;
+   <input name="m" maxlength="500" placeholder="Petit mot (facultatif), vu à sa prochaine connexion" style="flex:1;min-width:220px"><button>Offrir</button></form>
+   <h4 style="margin:18px 0 8px">🃏 Offrir une carte</h4>
+   <form class="f" id="fc"><select name="j">${joueurs}</select>
+   <select name="v" style="max-width:340px">${V.map(x=>`<option value="${x.id}">${esc(labV(x))}</option>`).join('')}</select><input name="n" type="number" min="1" max="100" value="1">
+   <input name="m" maxlength="500" placeholder="Petit mot (facultatif), ex : Joyeux Halloween ! 🎃" style="flex:1;min-width:220px"><button>Offrir la carte</button></form>
+   <div id="fcap" style="margin-top:8px"></div>
+   <p><small>La carte arrive tout de suite dans la collection (une carte déjà possédée devient un doublon). « Tous les joueurs » : chaque joueur inscrit sur le site à ce moment-là. (Il faut avoir lancé 56-cadeaux-cartes.sql dans Supabase.)</small></p>`;
   $('#fg').onsubmit=async e=>{e.preventDefault();const f=e.target;
     const {error}=await sb.rpc('offrir_boosters',{p_joueur:f.j.value||null,p_type_id:+f.t.value,p_quantite:+f.n.value});
     if(error)return uiAlert(error.message);
     if(f.m.value.trim()){const x=await sb.rpc('cadeau_message',{p_joueur:f.j.value||null,p_message:f.m.value,p_type_id:+f.t.value,p_quantite:+f.n.value});if(x.error)return uiAlert('Boosters offerts, mais le mot n\'est pas parti : '+x.error.message)}
     uiAlert(f.m.value.trim()?'Boosters offerts, avec ton mot !':'Boosters offerts !');f.m.value=''};
+  const fc=$('#fc'),apercu=()=>{const x=V.find(y=>String(y.id)===fc.v.value);$('#fcap').innerHTML=x&&x.image_path?`<img src="${img(x.image_path)}" alt="" style="width:110px;border-radius:8px;box-shadow:0 0 10px #000">`:''};
+  fc.v.onchange=apercu;apercu();
+  fc.onsubmit=async e=>{e.preventDefault();const f=e.target,x=V.find(y=>String(y.id)===f.v.value);if(!x)return;
+    const qui=f.j.value?f.j.options[f.j.selectedIndex].text:'TOUS les joueurs',n=+f.n.value||1;
+    if(!await uiConfirm(`Offrir ${n>1?n+'× ':''}${labV(x)} à ${qui} ?`))return;
+    const r=await sb.rpc('offrir_carte',{p_joueur:f.j.value||null,p_variante_id:+f.v.value,p_quantite:n});
+    if(r.error)return uiAlert(/offrir_carte|function/i.test(r.error.message)?'Lance d\'abord 56-cadeaux-cartes.sql dans Supabase. Message : '+r.error.message:r.error.message);
+    if(f.m.value.trim()){const y=await sb.rpc('cadeau_message_carte',{p_joueur:f.j.value||null,p_message:f.m.value,p_variante_id:+f.v.value,p_quantite:n});if(y.error)return uiAlert('Carte offerte, mais le mot n\'est pas parti : '+y.error.message)}
+    uiAlert(`Carte offerte à ${r.data} joueur${r.data>1?'s':''}${f.m.value.trim()?', avec ton mot':''} !`);f.m.value=''};
 }
 
 /* ---------- Admin : gérer les cartes et boosters des membres ---------- */
