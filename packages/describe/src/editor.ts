@@ -406,6 +406,14 @@ export const EDITOR_PASSIVES: Record<PassiveType, EditorEntry> = {
   sangsue_toxique: [
     "☠️ Sangsue toxique (Poison) : à chaque tic de poison de l'adversaire, récupère un % de ses dégâts selon le niveau du poison (valeurs dans Réglages > Niveaux)",
   ],
+  forge: [
+    '🔨 Forge : tous les X tours (2 si vide), améliore au hasard une de ses cartes (une valeur déjà inscrite ; 3 forges max par carte)',
+    'tours',
+  ],
+  forge_creation: [
+    '🔨 Forge de création : tous les X tours (2 si vide), forge une nouvelle magie ou un nouveau piège au hasard',
+    'tours',
+  ],
   accumulateur: [
     '⚡ Accumulateur (Foudre) : chaque marque de foudre posée donne une charge ; à X charges, la prochaine attaque fait +X % (valeurs dans Réglages > Niveaux)',
   ],
@@ -664,6 +672,12 @@ export const EDITOR_ULTIMATES: { readonly [K in EffectType]?: EditorEntry } = {
   ],
   injection_virulente: [
     "☠️ Injection virulente (Poison) : pas de poison : pose un poison I (3 tours) ; empoisonné : son poison monte d'un niveau ; au poison III : dégâts bruts, X % des dégâts de poison restants (le poison reste)",
+  ],
+  forge: [
+    "🔨 Forge : améliore au hasard une de ses cartes (combattant, magie ou piège encore armé) en augmentant une valeur déjà inscrite (ATQ, PV, %, chance, durée, niveau ; un piège peut gagner un déclenchement). 3 forges max par carte (valeurs dans Réglages > Niveaux)",
+  ],
+  forge_creation: [
+    '🔨 Forge de création : forge une nouvelle magie ou un nouveau piège, avec un effet tiré au hasard ; remplace en priorité la carte épuisée',
   ],
   surcharge: [
     "⚡ Surcharge (Foudre) : s'électrocute (X % de ses PV max), puis 2 tours : ATQ −X %, X % de chances d'enchaîner (jusqu'à 3 coups), chaque coup pose la foudre (valeurs dans Réglages > Niveaux)",
@@ -1025,6 +1039,12 @@ export const EDITOR_MAGICS: { readonly [K in EffectType]?: EditorEntry } = {
   ],
   injection_virulente: [
     "☠️ Injection virulente (Poison) : pas de poison : pose un poison I (3 tours) ; empoisonné : son poison monte d'un niveau ; au poison III : dégâts bruts, X % des dégâts de poison restants (le poison reste)",
+  ],
+  forge: [
+    "🔨 Forge : améliore au hasard une de ses cartes (combattant, magie ou piège encore armé) en augmentant une valeur déjà inscrite (ATQ, PV, %, chance, durée, niveau ; un piège peut gagner un déclenchement). 3 forges max par carte (valeurs dans Réglages > Niveaux)",
+  ],
+  forge_creation: [
+    '🔨 Forge de création : forge une nouvelle magie ou un nouveau piège, avec un effet tiré au hasard ; remplace en priorité la carte épuisée',
   ],
   surcharge: [
     "⚡ Surcharge (Foudre) : s'électrocute (X % de ses PV max), puis 2 tours : ATQ −X %, X % de chances d'enchaîner (jusqu'à 3 coups), chaque coup pose la foudre (valeurs dans Réglages > Niveaux)",

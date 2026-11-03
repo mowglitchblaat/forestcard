@@ -5,7 +5,7 @@
 // nothing more for the thief). duree: turns OF THE THIEF it keeps the card; then it goes back to its owner (empty or 0
 // = until the end of the combat).
 
-import { emit, id, opponent, over, type Combat } from '../combat/combat.ts';
+import { effetOf, emit, id, opponent, over, type Combat } from '../combat/combat.ts';
 import type { EffectContext, EffectRules } from '../combat/effect-context.ts';
 import { applyEffect } from '../combat/effects.ts';
 import type { Flow } from '../combat/flow.ts';
@@ -71,7 +71,7 @@ export function steal(
     if (source === 'piege') o.trapActive = 0;
     emit(c, { type: 'magicStolen', side: id(c, o), from: id(c, x), card: x.magic, slot, turns });
     const firstDelta = o.magicDeltas.length;
-    applyEffect(c, x.magic.effet, o, x, true);
+    applyEffect(c, effetOf(c, x.magic), o, x, true);
     // Its effects are kept apart, to be removed when it goes back.
     if (turns > 0)
       o.status.timedThefts.push({
@@ -131,14 +131,16 @@ export function giveBack(c: Combat, o: Side, theft: TimedTheft): void {
       ok,
     });
     // Back home: its "once" effects do not replay.
-    if (ok && theft.card.effet) {
+    const back = effetOf(c, theft.card);
+    if (ok && back) {
       x.magicActive = 1;
-      applyEffect(c, theft.card.effet, x, o, true, true);
+      applyEffect(c, back, x, o, true, true);
       c.sides.forEach((s) => (s.cardActivated = 1));
     }
   } else {
     const holds = o.trap === theft.card && o.trapActive;
-    const max = (theft.card.effet && theft.card.effet.declenchements) || 1;
+    const payload = effetOf(c, theft.card);
+    const max = (payload && payload.declenchements) || 1;
     const used = holds ? o.trapTriggers : theft.ownerTriggers; // the thief carried on its count
     restoreTrap(o, theft.previous);
     const ok = !!(holds && x.trap === theft.card && !x.trapActive);

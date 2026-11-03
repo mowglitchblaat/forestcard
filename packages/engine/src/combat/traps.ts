@@ -3,7 +3,7 @@
 import type { EffectData } from '../model/card.ts';
 import type { TriggerFact } from '../mechanics/triggers.ts';
 import { applyEffect } from './effects.ts';
-import { emit, opponent, raw, type Combat } from './combat.ts';
+import { effetOf, emit, opponent, raw, type Combat } from './combat.ts';
 
 export type ScanEvent =
   | { kind: 'attack'; by: number }
@@ -15,7 +15,7 @@ export type ScanEvent =
 
 export function scan(c: Combat, ev: ScanEvent): void {
   c.sides.forEach((o, i) => {
-    const e = o.trap.effet;
+    const e = effetOf(c, o.trap);
     if (!o.trapActive || !e || !e.condition || o.trapTriggers >= (e.declenchements || 1)) return;
     if (ev.kind === 'death') {
       const avoidsDeath =

@@ -13,6 +13,7 @@ import type {
   ProgrammedDraw,
   ProgrammedTrigger,
   RandomEffectKey,
+  ForgeField,
   RandomPassiveKey,
   StatusKind,
 } from '@forestcard/engine';
@@ -36,6 +37,35 @@ const KNIFE = '\u{1F52A}';
 const turns = (n: number) => `${n} tour${n > 1 ? 's' : ''}`;
 // A status level, in roman numerals (model/levels.ts in the engine).
 const lvl = (n: number) => ['I', 'II', 'III'][Math.min(3, Math.max(1, n)) - 1] as string;
+
+// What a forge raised (mechanics/forge.ts).
+const FORGE_FIELD_LABELS: Record<ForgeField, string> = {
+  atq: 'ATQ',
+  maxHp: 'PV max',
+  declenchements: 'déclenchements',
+  chance: 'chance (%)',
+  tours: 'durée (tours)',
+  niveau: 'niveau',
+  val: 'puissance',
+  pctatq: 'puissance (%)',
+  pctcrit: 'puissance du headshot (%)',
+  pctlien: 'part du lien (%)',
+  pctriposte: 'riposte (%)',
+  bonus: 'bonus (%)',
+  ragev: 'bonus de rage',
+  eclat: "dégâts d'éclat",
+  matq: 'ATQ de mutation',
+  mpv: 'PV de mutation',
+  sval: 'valeur du statut',
+};
+// The condition a forged trap gets.
+const FORGE_CONDITION_LABELS: Record<string, string> = {
+  adv_attaque: "quand l'adversaire attaque",
+  adv_ultime: "quand l'adversaire lance son ultime",
+  proprio_pv_sous: 'quand ses PV baissent',
+  adv_soigne: "quand l'adversaire se soigne",
+  proprio_statut: "quand il reçoit un statut",
+};
 
 const RANDOM_EFFECT_LABELS: Record<RandomEffectKey, string> = {
   atqUp: 'ATQ en hausse',
@@ -503,6 +533,32 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
       return { t: 'vol', txt: `${name(e.side)} équipe ${e.card.nom}` };
     case 'unknownEffect':
       return { t: 'inconnu', txt: `Effet non géré par le moteur : ${e.effectType}` };
+    case 'forged': {
+      const what =
+        e.slot === 'fighter'
+          ? 'se forge'
+          : `forge ${e.slot === 'magic' ? 'la magie' : 'le piège'} ${e.card.nom}`;
+      return {
+        t: 'statut',
+        txt: `FORGE ! ${name(e.side)} ${what} (${e.level}/${e.max}) : ${FORGE_FIELD_LABELS[e.field]} ${fr(e.from)} → ${fr(e.to)}`,
+        o: { c: e.side, k: 'forge', s: e.slot, f: e.field, n: e.level, d: e.to - e.from },
+      };
+    }
+    case 'forgeIdle':
+      return {
+        t: 'statut',
+        txt: `${name(e.side)} frappe l'enclume, mais plus rien n'est à forger`,
+        o: { c: e.side, k: 'forge_vide' },
+      };
+    case 'forgeCreated':
+      return {
+        t: 'statut',
+        txt:
+          e.kind === 'magie'
+            ? `FORGE ! ${name(e.side)} forge une nouvelle magie${e.replaced ? ' (elle remplace la sienne)' : ''} : ${RANDOM_EFFECT_LABELS[e.effect]} !`
+            : `FORGE ! ${name(e.side)} forge un nouveau piège${e.replaced ? ' (il remplace le sien)' : ''}, armé ${FORGE_CONDITION_LABELS[e.condition ?? ''] ?? ''} : ${RANDOM_EFFECT_LABELS[e.effect]}`,
+        o: { c: e.side, k: 'forge_creation', s: e.kind, r: e.replaced ? 1 : 0 },
+      };
     case 'randomEffectDrawn':
       return {
         t: 'statut',

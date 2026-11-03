@@ -1,7 +1,7 @@
 // Trap immunity (insensible_piege): the opponent's trap cannot fire on the card for X of its turns;
 // a trap it blocked re-arms when the immunity ends, if it can still fire.
 
-import { emit, id, opponent, type Combat } from '../combat/combat.ts';
+import { effetOf, emit, id, opponent, type Combat } from '../combat/combat.ts';
 import type { EffectContext, EffectRules } from '../combat/effect-context.ts';
 import type { Flow } from '../combat/flow.ts';
 import type { Side } from '../combat/state.ts';
@@ -23,7 +23,7 @@ export function trapImmunityEffect({ e, o, onUndo }: EffectContext): void {
 export function trapImmunityEnd(c: Combat, s: Side): Flow {
   if (s.status.trapImmunityTurns > 0 && --s.status.trapImmunityTurns === 0) {
     const x = opponent(c, s);
-    const payload = x.trap.effet;
+    const payload = effetOf(c, x.trap);
     if (
       x.trapBlocked &&
       x.trapActive &&

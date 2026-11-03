@@ -1,7 +1,7 @@
 // The opponent's magic or trap destroyed (detruire: a magic's changes undone), a magic or trap drawn
 // from the card's own deck and equipped (equiper: a magic acts at once, a trap is armed).
 
-import { draw, emit, id } from '../combat/combat.ts';
+import { draw, effetOf, emit, id } from '../combat/combat.ts';
 import type { EffectContext, EffectRules } from '../combat/effect-context.ts';
 import { applyEffect } from '../combat/effects.ts';
 import { undoMagic } from './theft.ts';
@@ -29,7 +29,7 @@ export function equipEffect({ c, e, o, x }: EffectContext): void {
   if (e.carte === 'magie') {
     o.magic = card;
     o.magicActive = 1;
-    applyEffect(c, card.effet, o, x, true);
+    applyEffect(c, effetOf(c, card), o, x, true);
   } else {
     o.trap = card;
     o.trapActive = 1;

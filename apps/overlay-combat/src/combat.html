@@ -1579,6 +1579,9 @@ function nVolt(c,n,plein){nfxStart();const b=nbox(c);if(!b)return;nglow(b.cx,b.y
 function nDecharge(c){nfxStart();const b=nbox(c);if(!b)return;for(let i=0;i<5;i++)nbolt(b.cx,b.cy,b.cx+R(-1,1)*b.w,b.cy+R(-1,1)*b.h,'#ffffff',4,16);nring(b.cx,b.cy,b.w*.1,b.w,'rgba(253,224,71,.9)',6,24);flot(c,'DÉCHARGE !','#facc15','big')}
 // malédiction : brisure de volonté (la carte se fissure), étreinte maudite (anneau violet)
 function nBrisure(c,ok){nfxStart();const b=nbox(c);if(!b)return;if(!ok){flot(c,'Rien à briser','#c4b5fd');return}nshake(c,1.4);ncracks(b.cx,b.cy,5,b.w*.55);nshards(b.cx,b.cy,22,'#a855f7',.25,7);nglow(b.cx,b.cy,14,'#a855f7',5,14,36);nflash(c,'#a855f7');flot(c,'BRISURE DE VOLONTÉ','#c084fc','big')}
+// Forge : trois coups de marteau (étincelles orange), puis la carte rougeoie ; la création forge une carte neuve (gerbe dorée)
+function nForge(c,lv,txt){nfxStart();const b=nbox(c);if(!b)return;for(let i=0;i<3;i++)setTimeout(()=>{nshards(b.cx,b.cy+b.h*.15,14,i===2?'#fde68a':'#fb923c',.32,8);nglow(b.cx,b.cy+b.h*.15,8,'#f97316',3,10,26,.05);nshake(c,.35)},i*230);setTimeout(()=>{nflash(c,'#f97316',520);nglow(b.cx,b.cy,16,'#fdba74',2,14,46,0,.6)},700);flot(c,txt||('FORGE'+(lv?' '+lv+'/3':'')+' !'),'#fdba74','big')}
+function nForgeCreation(c,piege){nfxStart();const b=nbox(c);if(!b)return;for(let i=0;i<3;i++)setTimeout(()=>{nshards(b.cx,b.cy,18,'#fb923c',.3,9);nshake(c,.4)},i*230);setTimeout(()=>{nring(b.cx,b.cy,b.w*.2,b.w*.95,'rgba(253,224,71,.85)',5,30);nglow(b.cx,b.cy,26,'#fde047',4,14,50,0,.8);nflash(c,'#fde047',600)},700);flot(c,piege?'PIÈGE FORGÉ !':'MAGIE FORGÉE !','#fde047','big')}
 function nEtreinte(c){nfxStart();const b=nbox(c);if(b)nring(b.cx,b.cy,b.w*.9,b.w*.35,'rgba(168,85,247,.85)',5,34);flot(c,'Étreinte maudite','#c084fc')}
 function nEtreinteSerre(c){nfxStart();const b=nbox(c);if(b)nring(b.cx,b.cy,b.w*.7,b.w*.3,'rgba(168,85,247,.7)',4,24)}
 Object.assign(NK,{
@@ -1593,7 +1596,8 @@ Object.assign(NK,{
  'statut:sangsue':e=>{nfxStart();const b=nbox(e.c);if(b)nring(b.cx,b.cy,b.w*.2,b.w*.8,'rgba(134,239,172,.8)',4,26);flot(e.c,'Sangsue toxique','#86efac')},'finstatut:sangsue':()=>{},
  'statut:sangsue_soin':e=>nSangsue(e.c,e.cible),'statut:injection':e=>nInjection(e.c,e.by!=null?e.by:1-e.c,e.r),
  'statut:surcharge':e=>nSurcharge(e.c),'finstatut:surcharge':()=>{},'statut:volt':e=>nVolt(e.c,e.n,e.plein),'statut:decharge':e=>nDecharge(e.c),
- 'statut:brisure':e=>nBrisure(e.c,!/rien à briser/.test(e.txt||'')),'statut:etreinte':e=>nEtreinte(e.c)});
+ 'statut:brisure':e=>nBrisure(e.c,!/rien à briser/.test(e.txt||'')),'statut:etreinte':e=>nEtreinte(e.c),
+ 'statut:forge':e=>nForge(e.c,e.n),'statut:forge_vide':e=>flot(e.c,'Plus rien à forger','#fdba74'),'statut:forge_creation':e=>nForgeCreation(e.c,e.s==='piege')});
 async function jouer(res){
  file.push(res);if(enCours)return;enCours=true;
  while(file.length){const R=file.shift();await verrouPrendre('combat');await chargerMiroir();   // liste des images copiées sur GitHub, relue à chaque combat : OBS ouvert longtemps ne repasse jamais par Supabase pour une image copiée
@@ -1836,6 +1840,8 @@ if(DEMO){
   ['Foudre','Niveau II : rebonds (magie chargée, piège détruit)',async c=>{nFoudre(c,2);await wait(600);await nRebond(c,'magie','charged');await wait(500);await nRebond(c,'piege','destroyed')},3200,null,null,true],
   ['Foudre','Surcharge (la carte crépite)',async c=>{NP[c].surcharge=true;nSurcharge(c);await wait(2600);NP[c].surcharge=false},3000],
   ['Foudre','Accumulateur : 3 charges, puis décharge',async c=>{for(let n=1;n<=3;n++){nVolt(c,n,n===3);await wait(700)}nDecharge(c)},3200],
+  ['Forge','Forge : amélioration (3 coups de marteau)',async c=>{nForge(c,1)},2200],
+  ['Forge','Forge de création : une nouvelle magie',async c=>{nForgeCreation(c,false)},2400],
   ['Terre','Sédimentation : couches, bouclier, il encaisse',async c=>{for(let n=1;n<=3;n++){nCouche(c,n);await wait(600)}nBouclierPierre(c,24);NP[c].bouclier=24;nfxStart();await wait(1200);nBouclierEncaisse(c,10);await wait(900);NP[c].bouclier=0},4400],
   ['Terre','Réplique sismique',async c=>{for(let n=1;n<=3;n++){nChargeTerre(c,n);await wait(500)}await nReplique(c,1-c,false)},3000],
   ['Enracinement','Épineux (les racines enserrent la carte)',async c=>{nRacines(c,'epineux');nRacinesSync(c,true);await wait(2800);nRacinesSync(c,false)},3600],

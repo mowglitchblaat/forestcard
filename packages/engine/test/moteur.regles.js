@@ -1595,3 +1595,51 @@ test('relais : une carte achevée en plein tour par une salve laisse sa place sa
     assert.ok(r.gagnant === 0 || r.gagnant === 1 || r.gagnant === null, 'le combat va au bout');
   }
 });
+
+// ================= Forge (novembre 2026) =================
+test('forge : améliore une carte du forgeur (combattant, magie ou piège), 3 forges max par carte', () => {
+  const r = combat([C('A', 10, 1000, { passif: { type: 'forge', tours: 1 } }), MAG('Rage', { type: 'atq_mod', cible: 'soi', val: 10, u: 'pts' }), PIE('Piège', { type: 'adv_pv_bas', seuilpv: 1 }, { type: 'poison_effet', ciblem: 'adversaire', niveau: 1, tours: 2, chance: 50 })], [C('B', 1, SOLIDE)], { regles: { maxTours: 12, maxProlong: 0 } });
+  const f = lignes(r, e => e.k === 'forge');
+  assert.equal(f.length, 9, '3 cartes × 3 forges');
+  ['fighter', 'magic', 'trap'].forEach(s => assert.deepEqual(f.filter(e => e.s === s).map(e => e.n), [1, 2, 3], s));
+  assert.ok(f.every(e => e.d > 0), 'une forge augmente toujours');
+  assert.ok(r.journal.some(e => e.k === 'forge_vide'), 'tout est forgé au max : plus rien à forger');
+});
+
+test('forge : une magie qui a déjà agi ne grandit que par ses changements d\'ATQ / PV, appliqués tout de suite', () => {
+  const r = combat([C('A', 10, 1000, { passif: { type: 'forge', tours: 1 } }), MAG('Force', { type: 'atq_mod', cible: 'soi', val: 20, u: 'pts' })], [C('B', 1, SOLIDE)], { regles: { maxTours: 12, maxProlong: 0 } });
+  lignes(r, e => e.k === 'forge' && e.s === 'magic').forEach(e => assert.equal(e.f, 'val'));
+  const i = r.journal.findIndex(e => e.k === 'forge' && e.s === 'magic');
+  assert.ok(i >= 0);
+  const forge = r.journal[i];
+  const suite = r.journal[i + 1];
+  assert.equal(suite.k, 'mod');
+  assert.equal(suite.d, forge.d, "l'ATQ en plus est donnée tout de suite");
+});
+
+test('forge : un piège épuisé ne se forge pas ; un piège peut gagner un déclenchement', () => {
+  let plus = 0;
+  for (let seed = 1; seed <= 40; seed++) {
+    const r = combat([C('A', 10, 1000, { passif: { type: 'forge', tours: 1 } }), PIE('Piège', { type: 'adv_pv_bas', seuilpv: 1 }, { type: 'degats', val: 5 })], [C('B', 1, SOLIDE)], { seed, regles: { maxTours: 6, maxProlong: 0 } });
+    plus += lignes(r, e => e.k === 'forge' && e.f === 'declenchements').length;
+    assert.ok(lignes(r, e => e.k === 'forge' && e.f === 'declenchements').length <= 1, 'une fois par piège');
+  }
+  assert.ok(plus > 0, 'déjà vu en 40 combats');
+});
+
+test('forge de création : une nouvelle magie ou un nouveau piège, la carte épuisée en priorité', () => {
+  const r = combat([C('A', 10, 1000, { ultime: { type: 'forge_creation', apres_tours: 1, utilisations: 1 } })], [C('B', 1, SOLIDE)], { regles: { maxTours: 4, maxProlong: 0 } });
+  const l = lignes(r, e => e.k === 'forge_creation');
+  assert.equal(l.length, 1);
+  assert.equal(l[0].r, 0, 'aucune carte remplacée : A n\'avait ni magie ni piège');
+  const p = combat([C('A', 10, 1000, { ultime: { type: 'forge_creation', apres_tours: 1, utilisations: 1 } }), MAG('Force', { type: 'atq_mod', cible: 'soi', val: 20, u: 'pts' })], [C('B', 1, SOLIDE)], { regles: { maxTours: 4, maxProlong: 0 } });
+  assert.equal(lignes(p, e => e.k === 'forge_creation')[0].s, 'piege', 'la magie agit encore : il forge un piège');
+});
+
+test('forge : la carte en base n\'est jamais modifiée (combats suivants intacts)', () => {
+  const mag = MAG('Force', { type: 'atq_mod', cible: 'soi', val: 20, u: 'pts' });
+  const fighter = C('A', 10, 1000, { passif: { briques: [{ type: 'forge', tours: 1 }, { type: 'poison', chance: 30, niveau: 1, tours: 2 }] } });
+  const avant = JSON.stringify([mag, fighter]);
+  for (let seed = 1; seed <= 10; seed++) combat([fighter, mag], [C('B', 1, SOLIDE)], { seed, regles: { maxTours: 10, maxProlong: 0 } });
+  assert.equal(JSON.stringify([mag, fighter]), avant);
+});

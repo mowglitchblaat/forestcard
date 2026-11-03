@@ -9,7 +9,7 @@
 // or stolen: it does nothing, and the card reforms only from another source left (or stays down).
 
 import { applyEffect } from '../combat/effects.ts';
-import { emit, id, opponent, raw, round, type Combat } from '../combat/combat.ts';
+import { effetOf, emit, id, opponent, raw, round, type Combat } from '../combat/combat.ts';
 import type { EffectContext, EffectRules } from '../combat/effect-context.ts';
 import type { Side } from '../combat/state.ts';
 import { scan } from '../combat/traps.ts';
@@ -30,7 +30,7 @@ export const reviveState = (): ReviveState => ({ usedReviveSources: [], grantedR
 // On a lethal hit no avoid-death stopped: a revive trap is kept for the death (returned, nothing is
 // used yet); otherwise the other "owner dies" traps fire now.
 export function reviveTrapOnLethal(c: Combat, dst: Side): TrapRevive | null {
-  const trapPayload = dst.trapActive && dst.trap.effet;
+  const trapPayload = dst.trapActive && effetOf(c, dst.trap);
   const trapEffect = trapPayload && trapPayload.effet;
   // Detonation damage: no revive, so a trap holding one fires as any other "owner dies" trap.
   const reviveBrick =
@@ -57,13 +57,13 @@ export function reviveTrapOnLethal(c: Combat, dst: Side): TrapRevive | null {
 }
 
 // Revive sources, in order: granted by an ultimate or a trap, passive, active magic.
-function reviveSource(d: Side): ReviveSource | undefined {
+function reviveSource(c: Combat, d: Side): ReviveSource | undefined {
   const sources: ReviveSource[] = [
     ...d.status.grantedRevives,
     ...d.passives.filter((p) => p.type === 'reanimation'),
   ];
-  if (d.magicActive && d.magic.effet) {
-    const me = d.magic.effet;
+  const me = d.magicActive ? effetOf(c, d.magic) : null;
+  if (me) {
     (me.type === 'reanimation'
       ? [me]
       : (me.briques || []).filter((b) => (b as EffectData).type === 'reanimation')
@@ -76,7 +76,7 @@ function reviveSource(d: Side): ReviveSource | undefined {
 // flushes), from the revive trap kept for this death first; a revive denied by detonation damage is
 // announced.
 export function reviveOnLethal(c: Combat, dst: Side, trap: TrapRevive | null): void {
-  if (c.noRevive && reviveSource(dst))
+  if (c.noRevive && reviveSource(c, dst))
     c.pendingEffects.push(() =>
       emit(c, {
         type: 'reviveDenied',
@@ -90,7 +90,7 @@ export function reviveOnLethal(c: Combat, dst: Side, trap: TrapRevive | null): v
     c.pendingRevives.push({ side: dst, pct: trap.pct, trap });
     return;
   }
-  const reviveFrom = reviveSource(dst);
+  const reviveFrom = reviveSource(c, dst);
   if (reviveFrom) {
     dst.status.usedReviveSources.push(reviveFrom);
     dst.hp = 0;
@@ -137,7 +137,7 @@ export function flushRevives(c: Combat): void {
         }
       } else {
         // Countered: no revive from it; another source may still bring the card back.
-        const from = reviveSource(d);
+        const from = reviveSource(c, d);
         if (from) {
           d.status.usedReviveSources.push(from);
           reform(c, d, from.pctrev || 0);

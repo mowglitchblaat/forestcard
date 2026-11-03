@@ -4,7 +4,15 @@
 // holding an avoid-death). The damage line shows first, the protection right after. An execution
 // ignores it and breaks it (breakAvoidDeath): a revived card is not saved by it afterwards.
 
-import { emit, hold, id, releaseAsTheyWere, releaseNow, type Combat } from '../combat/combat.ts';
+import {
+  effetOf,
+  emit,
+  hold,
+  id,
+  releaseAsTheyWere,
+  releaseNow,
+  type Combat,
+} from '../combat/combat.ts';
 import type { EffectContext, EffectRules } from '../combat/effect-context.ts';
 import type { Side } from '../combat/state.ts';
 import { scan } from '../combat/traps.ts';
@@ -28,8 +36,8 @@ const has = (e: EffectData | null | undefined, type: string): boolean =>
   !!e && (e.type === type || (e.briques || []).some((b) => (b as EffectData).type === type));
 export function breakAvoidDeath(c: Combat, dst: Side): void {
   const magic =
-    !!dst.magicActive && !dst.status.magicAvoidDeathUsed && has(dst.magic.effet, 'mort_evitee');
-  const t = dst.trap.effet;
+    !!dst.magicActive && !dst.status.magicAvoidDeathUsed && has(effetOf(c, dst.magic), 'mort_evitee');
+  const t = effetOf(c, dst.trap);
   const trap =
     !!dst.trapActive &&
     !!t &&
@@ -49,7 +57,7 @@ export function breakAvoidDeath(c: Combat, dst: Side): void {
 // On a lethal hit: what to show after the damage line if the card is protected (it is then left at
 // 1 HP by damage()), or null.
 export function avoidDeath(c: Combat, dst: Side): (() => void) | null {
-  const magicEffect = dst.magicActive && dst.magic.effet ? dst.magic.effet : null;
+  const magicEffect = (dst.magicActive && effetOf(c, dst.magic)) || null;
   const avoid = magicEffect
     ? magicEffect.type === 'mort_evitee'
       ? magicEffect

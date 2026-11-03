@@ -88,6 +88,8 @@ export const EFFECT_TYPES = [
   'brisure_volonte',
   'verrouillage_total',
   'etreinte_maudite',
+  'forge',
+  'forge_creation',
 ] as const;
 export type EffectType = (typeof EFFECT_TYPES)[number];
 
@@ -141,6 +143,8 @@ export const PASSIVE_TYPES = [
   'accumulateur',
   'etreinte_maudite',
   'visee_maintenue',
+  'forge',
+  'forge_creation',
 ] as const;
 export type PassiveType = (typeof PASSIVE_TYPES)[number];
 

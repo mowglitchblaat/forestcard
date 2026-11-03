@@ -3,6 +3,7 @@
 // moments.ts.
 // No effect is tied to the round in general: each one is tied to the turn of ITS card.
 
+import { forgeCreationEveryTurn, forgeEveryTurn } from '../mechanics/forge.ts';
 import { healEveryTurn } from '../mechanics/healing.ts';
 import { randomEveryTurn } from '../mechanics/random.ts';
 import { atqGrowth, maxHpGrowth } from '../mechanics/stats.ts';
@@ -21,6 +22,8 @@ export const EVERY_TURN_PASSIVES: Record<string, (c: Combat, s: Side, p: EffectD
   soin_tour: healEveryTurn,
   atq_tours: atqGrowth,
   pv_tours: maxHpGrowth,
+  forge: forgeEveryTurn,
+  forge_creation: forgeCreationEveryTurn,
 };
 
 // 5. Its "every turn" passives, in the order the card holds them.

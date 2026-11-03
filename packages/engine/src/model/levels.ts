@@ -53,6 +53,16 @@ export type StatusLevels = {
   brisure: number; // will break: damage = this × the ATQ the opponent lost to curses
   etreinte: number; // cursed embrace: ATQ each curse takes more at each attack of the cursed card
   visee: number; // held aim: % of chances to keep a targeting once it is used
+  // Forge (mechanics/forge.ts): levels per card, and the ranges a forge draws its gain in.
+  forgeMax: number; // forges a card can take at most
+  forgeStatMin: number; // fighter's ATQ or max HP: % gained, drawn between min and max
+  forgeStatMax: number;
+  forgeValeurMin: number; // a value of an effect or a passive: % gained, drawn between min and max
+  forgeValeurMax: number;
+  forgeChanceMin: number; // a chance: points gained, drawn between min and max
+  forgeChanceMax: number;
+  forgePlafondChance: number; // a forged chance never goes over this
+  forgeDeclenchement: number; // trap: % of chances that the forge gives one trigger more (once)
 };
 
 export const DEFAULT_LEVELS: StatusLevels = {
@@ -84,6 +94,15 @@ export const DEFAULT_LEVELS: StatusLevels = {
   brisure: 2,
   etreinte: 1,
   visee: 50,
+  forgeMax: 3,
+  forgeStatMin: 10,
+  forgeStatMax: 20,
+  forgeValeurMin: 10,
+  forgeValeurMax: 25,
+  forgeChanceMin: 3,
+  forgeChanceMax: 8,
+  forgePlafondChance: 90,
+  forgeDeclenchement: 15,
 };
 
 export const MAX_LEVEL = 3;

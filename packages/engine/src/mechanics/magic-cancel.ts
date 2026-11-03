@@ -6,7 +6,7 @@
 // cancelled magic's effects goes through (the first card to play has priority if both cancel); the
 // cancelled magic is then shown and crossed out when the cancelling one acts.
 
-import { emit, id, opponent, type Combat } from '../combat/combat.ts';
+import { effetOf, emit, id, opponent, type Combat } from '../combat/combat.ts';
 import type { EffectContext, EffectRules } from '../combat/effect-context.ts';
 import { applyEffect } from '../combat/effects.ts';
 import type { Flow } from '../combat/flow.ts';
@@ -29,10 +29,10 @@ const cancelTurns = (e: EffectData) => {
 export function settleMagicCancellations(c: Combat, order: Side[]): void {
   order.forEach((s) => {
     const x = opponent(c, s);
-    if (s.magicActive && cancelsMagic(s.magic.effet) && x.magicActive) {
+    if (s.magicActive && cancelsMagic(effetOf(c, s.magic)) && x.magicActive) {
       x.magicActive = 0;
       x.magicCancelStage = 1;
-      x.magicCancelTurns = cancelTurns(s.magic.effet as EffectData);
+      x.magicCancelTurns = cancelTurns(effetOf(c, s.magic) as EffectData);
       x.magicNeverActed = 1;
     }
   });
@@ -42,7 +42,7 @@ export function magicCancelEffect({ c, e, x }: EffectContext): void {
   if (x.magicCancelStage === 1) {
     // Cancelled before acting (combat start): shown, then crossed out.
     x.magicCancelStage = 2;
-    if (x.magic.effet) emit(c, { type: 'magicRevealed', side: id(c, x) });
+    if (effetOf(c, x.magic)) emit(c, { type: 'magicRevealed', side: id(c, x) });
     emit(c, { type: 'magicCancelled', side: id(c, x), turns: x.magicCancelTurns });
   } else if (x.magicActive) {
     x.magicActive = 0;
@@ -55,13 +55,13 @@ export function magicCancelEffect({ c, e, x }: EffectContext): void {
 
 // End of its turn: the cancellation ends, the magic comes back.
 export function magicCancelEnd(c: Combat, s: Side): Flow {
-  if (s.magicCancelTurns > 0 && --s.magicCancelTurns === 0 && !s.magicActive && s.magic.effet) {
+  if (s.magicCancelTurns > 0 && --s.magicCancelTurns === 0 && !s.magicActive && effetOf(c, s.magic)) {
     const neverActed = s.magicNeverActed;
     s.magicActive = 1;
     s.magicCancelStage = 0;
     s.magicNeverActed = 0;
     emit(c, { type: 'magicBack', side: id(c, s) });
-    applyEffect(c, s.magic.effet, s, opponent(c, s), true, !neverActed);
+    applyEffect(c, effetOf(c, s.magic), s, opponent(c, s), true, !neverActed);
     c.sides.forEach((k) => (k.cardActivated = 1));
     if (s.hp <= 0) return 'stop';
   }

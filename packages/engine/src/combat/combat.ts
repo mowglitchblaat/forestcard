@@ -45,7 +45,19 @@ export type Combat = {
   held: HeldEvent[][]; // nested holds, innermost last
   triggers: Triggers; // what the event hook does, from both decks (mechanics/triggers.ts)
   standIn?: (s: Side) => Side; // relay.ts: a fallen fighter's player sends the next one, now
+  // Magics and traps forged during this combat (mechanics/forge.ts): their improved effect. Kept
+  // apart from the card data (shared between combats); the card keeps its identity and its forge
+  // follows it (stolen, given back).
+  forged: Map<Card, ForgedCard>;
 };
+
+// A magic or trap forged during the combat: its improved effect, its forge level, the triggers the
+// forge gave it (one at most).
+export type ForgedCard = { effet: EffectData; level: number; extraTrigger: number };
+
+// The effect of a magic or a trap as it plays now: forged during this combat, or as stored.
+export const effetOf = (c: Combat, card: Card): EffectData | null | undefined =>
+  c.forged.get(card)?.effet ?? card.effet;
 
 // Raw card values take part in arithmetic exactly as in the legacy engine: JavaScript coerces them
 // the same way whatever their declared type. This assertion only tells the compiler so.
@@ -218,6 +230,7 @@ export function createCombat(rules: Rules, seed: number, onEvent: OnEvent): Comb
     trapChainDepth: 0,
     held: [],
     triggers: { any: false, traps: false },
+    forged: new Map(),
   };
   return combat;
 }

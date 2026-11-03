@@ -4,7 +4,7 @@
 //   - magduree: it acts for X turns of its card, then it is spent: everything it did is undone, as
 //     for a cancelled magic (empty or 0: the whole combat).
 
-import { emit, id, opponent, type Combat } from '../combat/combat.ts';
+import { effetOf, emit, id, opponent, type Combat } from '../combat/combat.ts';
 import { applyEffect } from '../combat/effects.ts';
 import type { Flow } from '../combat/flow.ts';
 import type { Side } from '../combat/state.ts';
@@ -20,14 +20,14 @@ const duration = (e: EffectData | null | undefined): number =>
   Math.max(0, parseInt(String(e?.magduree), 10) || 0);
 
 function act(c: Combat, s: Side): void {
-  applyEffect(c, s.magic.effet, s, opponent(c, s), true);
-  s.magicTurnsLeft = duration(s.magic.effet);
+  applyEffect(c, effetOf(c, s.magic), s, opponent(c, s), true);
+  s.magicTurnsLeft = duration(effetOf(c, s.magic));
 }
 
 // The start of the combat (and of each overtime): the magic shows, and acts now or waits.
 export function revealMagic(c: Combat, s: Side): void {
   emit(c, { type: 'magicRevealed', side: id(c, s) });
-  const at = startTurn(s.magic.effet);
+  const at = startTurn(effetOf(c, s.magic));
   if (at > s.status.turnsPlayed + 1) {
     s.magicStartTurn = at;
     emit(c, { type: 'magicDelayed', side: id(c, s), turn: at });
@@ -40,7 +40,7 @@ export function revealMagic(c: Combat, s: Side): void {
 export function delayedMagicAtStart(c: Combat, s: Side): Flow {
   if (!s.magicStartTurn || s.status.turnsPlayed + 1 < s.magicStartTurn) return undefined;
   s.magicStartTurn = 0;
-  if (!s.magicActive || s.magicStolen || !s.magic.effet) return undefined;
+  if (!s.magicActive || s.magicStolen || !effetOf(c, s.magic)) return undefined;
   emit(c, { type: 'magicActivated', side: id(c, s) });
   act(c, s);
   c.sides.forEach((k) => (k.cardActivated = 1));

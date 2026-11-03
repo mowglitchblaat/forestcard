@@ -218,6 +218,27 @@ export type ProgrammedDraw =
   | { pool: 'passives'; key: RandomPassiveKey }
   | { pool: 'effects'; key: RandomEffectKey };
 
+// Forge (mechanics/forge.ts): which of the forging card's cards, and what grew on it.
+export type ForgeSlot = 'fighter' | 'magic' | 'trap';
+export type ForgeField =
+  | 'atq'
+  | 'maxHp'
+  | 'declenchements'
+  | 'chance'
+  | 'tours'
+  | 'niveau'
+  | 'val'
+  | 'pctatq'
+  | 'pctcrit'
+  | 'pctlien'
+  | 'pctriposte'
+  | 'bonus'
+  | 'ragev'
+  | 'eclat'
+  | 'matq'
+  | 'mpv'
+  | 'sval';
+
 export type DomainEvent =
   // Combat flow
   | { type: 'combatStarted'; first: number; team?: number } // team: relay combat, fighters per player
@@ -272,6 +293,30 @@ export type DomainEvent =
       exhausted: boolean;
     }
   | { type: 'equipped'; side: SideIndex; card: Card }
+  // Forge: a card improved (level: its forges now, of max), or nothing left to forge; a new magic
+  // or trap forged (effect: its effect, drawn in the random pool; condition: a trap's condition)
+  | {
+      type: 'forged';
+      side: SideIndex;
+      slot: ForgeSlot;
+      card: Card;
+      level: number;
+      max: number;
+      field: ForgeField;
+      effectType: string | undefined;
+      from: number;
+      to: number;
+    }
+  | { type: 'forgeIdle'; side: SideIndex }
+  | {
+      type: 'forgeCreated';
+      side: SideIndex;
+      kind: 'magie' | 'piege';
+      card: Card;
+      effect: RandomEffectKey;
+      replaced: boolean;
+      condition?: string;
+    }
   | { type: 'unknownEffect'; effectType: string | undefined }
   | { type: 'randomEffectDrawn'; side: SideIndex; effect: RandomEffectKey }
   // Attack

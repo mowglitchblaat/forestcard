@@ -111,6 +111,8 @@ const EFFECT_LABELS: Record<EffectType, (e: Fx) => string> = {
   sangsue_toxique: () => 'Sangsue toxique',
   injection_virulente: () => 'Injection virulente',
   surcharge: () => 'Surcharge',
+  forge: () => 'Forge',
+  forge_creation: () => 'Forge de création',
   brisure_volonte: () => 'Brisure de volonté',
   verrouillage_total: () => 'Verrouillage total',
   etreinte_maudite: () => 'Étreinte maudite',
@@ -163,6 +165,8 @@ const PASSIVE_LABELS: Record<PassiveType, (p: Fx) => string> = {
   fureur_incandescente: () => 'Fureur incandescente',
   sangsue_toxique: () => 'Sangsue toxique',
   accumulateur: () => 'Accumulateur',
+  forge: () => 'Forge',
+  forge_creation: () => 'Forge de création',
   etreinte_maudite: () => 'Étreinte maudite',
   visee_maintenue: () => 'Visée maintenue',
 };
