@@ -1,5 +1,31 @@
 [
   {
+    "date": "2026-11-03",
+    "intro": "Une nouvelle mécanique arrive : la Forge, pour renforcer ses cartes en plein combat.",
+    "groupes": [
+      {
+        "titre": "Combat",
+        "points": [
+          "Forge (ultime, magie, piège ou passif) : améliore au hasard une de ses cartes (combattant, magie ou piège encore armé), jusqu’à 3 fois par carte : plus d’ATQ ou de PV, une valeur, une chance ou une durée plus forte, parfois un déclenchement de piège en plus.",
+          "Forge de création : fabrique en plein combat une nouvelle magie ou un nouveau piège à l’effet tiré au hasard, en remplaçant d’abord la carte déjà utilisée.",
+          "Les améliorations ne durent que le temps du combat : vos cartes restent intactes pour les suivants."
+        ]
+      },
+      {
+        "titre": "Animations",
+        "points": [
+          "La Forge a son animation (trois coups de marteau et des étincelles, une gerbe dorée pour la création), et un petit marteau avec le niveau de forge s’affiche sur chaque carte forgée."
+        ]
+      },
+      {
+        "titre": "Admin",
+        "points": [
+          "Les deux Forges se règlent dans les réglages des niveaux et se choisissent dans l’éditeur de cartes."
+        ]
+      }
+    ]
+  },
+  {
     "date": "2026-11-02",
     "intro": "Les tournois gèrent enfin proprement les abandons, et l’admin peut glisser un petit mot avec ses cadeaux.",
     "groupes": [
