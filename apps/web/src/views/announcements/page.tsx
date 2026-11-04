@@ -1,6 +1,7 @@
 // Announcements (58-annonces.sql): the admin's news, newest first, and the votes, where a player
 // picks one option (each with its picture) and may change it while the vote is open. The counts
-// show once the player voted, once the vote is closed, and always to the admin. Opening the page
+// show once the player voted, once the vote is closed, and always to the admin. A shared puzzle
+// (59-puzzle.sql, puzzle.tsx) shows its board instead of its picture. Opening the page
 // marks every announcement seen (the sidebar's dot).
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -22,6 +23,7 @@ import { fetchMirror, imageKeys, imageUrl } from '@/data/images';
 import { ICONS } from '@/lib/icons';
 import { listMark, markSeen, SEEN_KEYS } from '@/lib/seen';
 import { useSession } from '@/lib/session';
+import { PuzzleGame } from './puzzle';
 
 const dateOf = (iso: string) =>
   new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -67,7 +69,13 @@ export function AnnouncementCard({
     <Card>
       <CardHeader>
         <CardTitle className="flex flex-wrap items-center gap-2">
-          {a.type === 'vote' ? <ICONS.votes /> : <ICONS.announcements />}
+          {a.type === 'vote' ? (
+            <ICONS.votes />
+          ) : a.type === 'puzzle' ? (
+            <ICONS.puzzle />
+          ) : (
+            <ICONS.announcements />
+          )}
           {a.titre}
           {a.type === 'vote' &&
             (a.ouvert ? (
@@ -82,9 +90,14 @@ export function AnnouncementCard({
         <CardDescription>{dateOf(a.cree_le)}</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
-        {picture && <img src={picture} alt="" className="w-full rounded-lg" />}
+        {picture && a.type !== 'puzzle' && (
+          <img src={picture} alt="" className="w-full rounded-lg" />
+        )}
         {a.texte && <p className="whitespace-pre-line">{a.texte}</p>}
         {a.type === 'vote' && <VoteOptions announcement={a} images={images} />}
+        {a.type === 'puzzle' && a.puzzle && picture && (
+          <PuzzleGame announcement={a} picture={picture} />
+        )}
         {children}
       </CardContent>
     </Card>

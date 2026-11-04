@@ -1,6 +1,7 @@
 // Admin · Annonces (58-annonces.sql): publish a plain announcement (title, text, picture) or a vote
 // (options, each with its picture: the next collection, say), then close or reopen a vote, or
-// delete an announcement. The admin sees the counts at any time.
+// delete an announcement. The admin sees the counts at any time. Or a shared puzzle (59-puzzle.sql):
+// a picture, its grid (columns × rows) and the pieces each player gets a day.
 
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -31,6 +32,9 @@ const emptyDraft = (): AnnouncementDraft => ({
     { libelle: '', image: null },
     { libelle: '', image: null },
   ],
+  cols: 10,
+  lignes: 10,
+  parJour: 5,
 });
 
 export function AnnouncementsAdmin() {
@@ -58,7 +62,9 @@ export function AnnouncementsAdmin() {
             type="single"
             variant="outline"
             value={draft.type}
-            onValueChange={(v) => v && set({ type: v === 'vote' ? 'vote' : 'annonce' })}
+            onValueChange={(v) =>
+              v && set({ type: v === 'vote' || v === 'puzzle' ? v : 'annonce' })
+            }
           >
             <ToggleGroupItem value="annonce">
               <ICONS.announcements />
@@ -67,6 +73,10 @@ export function AnnouncementsAdmin() {
             <ToggleGroupItem value="vote">
               <ICONS.votes />
               Vote
+            </ToggleGroupItem>
+            <ToggleGroupItem value="puzzle">
+              <ICONS.puzzle />
+              Puzzle
             </ToggleGroupItem>
           </ToggleGroup>
           <Field label="Titre">
@@ -79,13 +89,49 @@ export function AnnouncementsAdmin() {
               onChange={(e) => set({ texte: e.target.value })}
             />
           </Field>
-          <Field label="Image (facultative)">
+          <Field label={draft.type === 'puzzle' ? 'Image du puzzle' : 'Image (facultative)'}>
             <Input
               type="file"
               accept="image/*"
               onChange={(e) => set({ image: e.target.files?.[0] ?? null })}
             />
           </Field>
+          {draft.type === 'puzzle' && (
+            <div className="grid gap-3 sm:grid-cols-3">
+              <Field label="Colonnes">
+                <Input
+                  type="number"
+                  min={2}
+                  max={20}
+                  value={draft.cols}
+                  onChange={(e) => set({ cols: Number(e.target.value) })}
+                />
+              </Field>
+              <Field label="Lignes">
+                <Input
+                  type="number"
+                  min={2}
+                  max={20}
+                  value={draft.lignes}
+                  onChange={(e) => set({ lignes: Number(e.target.value) })}
+                />
+              </Field>
+              <Field label="Pièces par joueur et par jour">
+                <Input
+                  type="number"
+                  min={1}
+                  max={50}
+                  value={draft.parJour}
+                  onChange={(e) => set({ parJour: Number(e.target.value) })}
+                />
+              </Field>
+              <small className="text-muted-foreground sm:col-span-3">
+                {draft.cols * draft.lignes || 0} pièces. Puzzle commun : chaque joueur reçoit ses
+                pièces du jour et les pose à leur place ; l'image se révèle au fil des pièces, et le
+                puzzle se ferme tout seul à la dernière.
+              </small>
+            </div>
+          )}
           {draft.type === 'vote' && (
             <div className="flex flex-col gap-3">
               <b className="text-sm">Options du vote</b>
@@ -140,7 +186,11 @@ export function AnnouncementsAdmin() {
                   await createAnnouncement(draft);
                   setDraft(emptyDraft());
                   setForm(form + 1);
-                  return draft.type === 'vote' ? 'Vote publié.' : 'Annonce publiée.';
+                  return draft.type === 'vote'
+                    ? 'Vote publié.'
+                    : draft.type === 'puzzle'
+                      ? 'Puzzle publié.'
+                      : 'Annonce publiée.';
                 })
               }
             >
@@ -159,7 +209,7 @@ export function AnnouncementsAdmin() {
         list.data.map((a) => (
           <AnnouncementCard key={a.id} announcement={a}>
             <div className="flex flex-wrap gap-2">
-              {a.type === 'vote' && (
+              {a.type !== 'annonce' && (
                 <Button
                   size="sm"
                   variant="outline"
@@ -167,14 +217,18 @@ export function AnnouncementsAdmin() {
                   onClick={() =>
                     action.run(async () => {
                       await setAnnouncementOpen(a.id, !a.ouvert);
-                      return a.ouvert
-                        ? `Vote « ${a.titre} » clos.`
-                        : `Vote « ${a.titre} » rouvert.`;
+                      return `« ${a.titre} » ${a.ouvert ? 'fermé' : 'rouvert'}.`;
                     })
                   }
                 >
                   <ICONS.closed />
-                  {a.ouvert ? 'Clore le vote' : 'Rouvrir le vote'}
+                  {a.ouvert
+                    ? a.type === 'vote'
+                      ? 'Clore le vote'
+                      : 'Fermer le puzzle'
+                    : a.type === 'vote'
+                      ? 'Rouvrir le vote'
+                      : 'Rouvrir le puzzle'}
                 </Button>
               )}
               <HoldButton
