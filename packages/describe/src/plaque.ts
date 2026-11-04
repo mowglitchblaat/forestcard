@@ -102,7 +102,7 @@ const EFFECT_LABELS: Record<EffectType, (e: Fx) => string> = {
   contamination: () => 'Contamination',
   atk_contamination: () => 'Coup contaminant',
   cisaillement: () => 'Cisaillement',
-  atk_cisaillement: () => 'Coup tranchant',
+  atk_cisaillement: () => 'Cisaillement',
   atk_critique: () => 'Coups critiques',
   marque_foudre: () => 'Marque de foudre',
   atk_foudre: () => 'Coup foudroyant',
