@@ -4,6 +4,7 @@
 // badged ("Nouveau", "Prix : 300 → 250"). Buying writes: gold and stock are re-read after.
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Link } from '@tanstack/react-router';
 import { TONES } from '@/lib/tones';
 import { ICONS } from '@/lib/icons';
 import { useEffect, useState } from 'react';
@@ -29,12 +30,14 @@ import {
   shopKeys,
 } from '@/data/shop';
 import { listMark, markSeen, SEEN_KEYS } from '@/lib/seen';
+import { fetchGameState, gameStateKey } from '@/data/admin';
 import { useSession } from '@/lib/session';
 
 export function ShopPage() {
   const userId = useSession()?.user.id ?? '';
   const client = useQueryClient();
   const offers = useQuery({ queryKey: shopKeys.offers, queryFn: fetchShop });
+  const game = useQuery({ queryKey: gameStateKey, queryFn: fetchGameState, staleTime: 60_000 });
   const stock = useQuery({
     queryKey: shopKeys.stock(userId),
     queryFn: () => fetchStock(userId),
@@ -103,7 +106,21 @@ export function ShopPage() {
               )}
             </div>
             <p className="text-sm text-muted-foreground">
-              Ouvre-les pendant le live avec <code>!booster</code>.
+              {game.data?.closed ? (
+                '🔒 Le jeu est fermé pour le moment : tu pourras les ouvrir à la réouverture.'
+              ) : game.data && !game.data.live ? (
+                <>
+                  🎬 Le jeu est en pause : ouvre-les sur la page{' '}
+                  <Link to="/jouer" className="underline">
+                    Jouer
+                  </Link>
+                  .
+                </>
+              ) : (
+                <>
+                  Ouvre-les pendant le live avec <code>!booster</code>.
+                </>
+              )}
             </p>
           </>
         ) : (

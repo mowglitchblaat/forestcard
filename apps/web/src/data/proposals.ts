@@ -85,6 +85,12 @@ export type ProposalInput = {
   idea: string;
   atq: number | null; // fighters only
   pv: number | null;
+  // The card's effects, as the admin's editor writes them (30-propositions-completes.sql), and the
+  // composer's settings; absent before that migration, the proposal leaves without them.
+  ultime?: unknown;
+  passif?: unknown;
+  effet?: unknown;
+  compo?: Record<string, unknown> | null;
 };
 
 // In-memory proposals of the demo build, and its images (object URLs).
@@ -111,7 +117,7 @@ export const imageUrl = (path: string | null): string | null =>
 
 // The drawing lightened before upload (legacy alleger): 1600 px high at most, WebP, if smaller.
 // An animated GIF or another format is sent as it is.
-export async function lighten(file: File, maxHeight = 1600, quality = 0.9): Promise<Blob> {
+export async function lighten(file: File, maxHeight = 2070, quality = 0.92): Promise<Blob> {
   if (!/^image\/(png|jpe?g|webp)$/i.test(file.type || '')) return file;
   try {
     const bmp = await createImageBitmap(file);
@@ -216,7 +222,17 @@ export async function propose(userId: string, input: ProposalInput): Promise<voi
         if (input.atq !== null) args.p_atq = input.atq;
         if (input.pv !== null) args.p_pv = input.pv;
       }
-      const { error } = await supabase.rpc('proposer_carte', args);
+      const full = {
+        ...args,
+        p_ultime: input.ultime ?? null,
+        p_passif: input.passif ?? null,
+        p_effet: input.effet ?? null,
+        p_compo: input.compo ?? null,
+      };
+      let { error } = await supabase.rpc('proposer_carte', full);
+      // The database not updated yet: the proposal leaves without its effects.
+      if (error && /p_ultime|p_compo|function/i.test(error.message))
+        ({ error } = await supabase.rpc('proposer_carte', args));
       if (error) throw new Error(error.message);
     }
   } catch (e) {
