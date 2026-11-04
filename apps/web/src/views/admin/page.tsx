@@ -10,6 +10,7 @@ import { CollectionsAdmin } from './collections';
 import { EffectsAdmin } from './effects';
 import { GiftsAdmin } from './gifts';
 import { PlayersAdmin } from './players';
+import { ProposalsAdmin } from './proposals';
 import { RaritiesAdmin } from './rarities';
 import { SettingsAdmin } from './settings';
 import { VotesAdmin } from './votes';
@@ -25,6 +26,7 @@ const SUB_VIEWS: Partial<Record<AdminView, () => ReactNode>> = {
   reglages: SettingsAdmin,
   joueurs: PlayersAdmin,
   votes: VotesAdmin,
+  propos: ProposalsAdmin,
 };
 
 export function AdminSubView({ sub }: { sub: AdminView }) {
