@@ -97,9 +97,9 @@ describe('sorts', () => {
 
 describe('recycling gains', () => {
   test('every copy above the first, at the rarity price', () => {
-    expect(gainOf(ours, DEFAULT_PRICES)).toEqual({ copies: 2, gold: 10, fragments: 0 });
-    expect(gainOf(cerf, DEFAULT_PRICES)).toEqual({ copies: 0, gold: 0, fragments: 0 });
-    expect(totalGain(all, DEFAULT_PRICES)).toEqual({ copies: 3, gold: 15, fragments: 0 });
+    expect(gainOf(ours, DEFAULT_PRICES)).toEqual({ copies: 2, gold: 10, fragments: 0, alt: 0 });
+    expect(gainOf(cerf, DEFAULT_PRICES)).toEqual({ copies: 0, gold: 0, fragments: 0, alt: 0 });
+    expect(totalGain(all, DEFAULT_PRICES)).toEqual({ copies: 3, gold: 15, fragments: 0, alt: 0 });
   });
 
   test('an unknown rarity is paid as common', () => {

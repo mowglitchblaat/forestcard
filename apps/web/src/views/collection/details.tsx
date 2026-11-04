@@ -14,7 +14,7 @@ import { Progress } from '@/components/ui/progress';
 import { backKeys, fetchBacks } from '@/data/backs';
 import type { CollectionEntry } from '@/data/cards';
 import { fetchMirror, imageKeys, imageUrl } from '@/data/images';
-import { gainOf, type Prices } from '@/data/recycling';
+import { fragmentsOffered, gainOf, type Prices } from '@/data/recycling';
 import { textOn } from '@/lib/rarity';
 import { collectionOf, num, TYPE_LABELS } from './model';
 import { RecycleBlock } from './recycle';
@@ -133,7 +133,12 @@ export function CardDetails({
       <div className="flex flex-wrap items-center justify-center gap-2 text-sm">
         <RarityBadge entry={entry} />
         <span className="text-muted-foreground">{meta.join(' · ')}</span>
-        {prices && <Badge variant="secondary">×{quantite}</Badge>}
+        {prices &&
+          (quantite > 0 ? (
+            <Badge variant="secondary">×{quantite}</Badge>
+          ) : (
+            <Badge variant="outline">Pas encore dans ta collection</Badge>
+          ))}
       </div>
       {card.type === 'combattant' && (card.atq != null || card.pv != null) && (
         <div className="flex flex-col gap-2">
@@ -146,7 +151,14 @@ export function CardDetails({
         <p className="text-sm text-muted-foreground italic">{card.description}</p>
       )}
       {/* A new block per card: what it paid stays with the card recycled. */}
-      {gain && <RecycleBlock key={entry.variant.id} variantId={entry.variant.id} gain={gain} />}
+      {gain && quantite > 0 && (
+        <RecycleBlock
+          key={entry.variant.id}
+          variantId={entry.variant.id}
+          gain={gain}
+          offered={!!prices && fragmentsOffered(prices)}
+        />
+      )}
     </div>
   );
 }

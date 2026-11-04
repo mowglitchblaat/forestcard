@@ -177,7 +177,7 @@ function Tile({
         type="button"
         onClick={onSelect}
         aria-pressed={selected}
-        className="group relative rounded-lg transition hover:-translate-y-1 focus-visible:outline-none"
+        className={`group relative rounded-lg transition hover:-translate-y-1 focus-visible:outline-none ${entry.quantite === 0 ? 'opacity-40 grayscale' : ''}`}
       >
         <CardImage
           entry={entry}

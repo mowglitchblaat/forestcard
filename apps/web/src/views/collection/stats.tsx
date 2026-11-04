@@ -16,7 +16,7 @@ import {
 import type { CollectionEntry, GameCard } from '@/data/cards';
 import { type Prices, totalGain } from '@/data/recycling';
 import { pct, progress } from './model';
-import { RecycleBlock } from './recycle';
+import { RecycleAll } from './recycle';
 
 export function StatsBand({
   entries,
@@ -27,7 +27,8 @@ export function StatsBand({
   game: GameCard[] | undefined;
   prices: Prices;
 }) {
-  const owned = new Set(entries.filter((e) => e.quantite > 0).map((e) => e.card.id));
+  // game: one item per version of a card (its id the version's), as the collection counts them.
+  const owned = new Set(entries.filter((e) => e.quantite > 0).map((e) => e.variant.id));
   const p = game?.length ? progress(game, owned) : null;
   const gain = totalGain(entries, prices);
 
@@ -98,7 +99,7 @@ export function StatsBand({
         </CardHeader>
         <CardContent className="text-sm">
           <div className="text-muted-foreground">
-            <RecycleBlock gain={gain} />
+            <RecycleAll entries={entries} prices={prices} />
           </div>
         </CardContent>
       </Card>

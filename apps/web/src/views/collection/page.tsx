@@ -4,7 +4,7 @@
 import { CollectionSkeleton } from '@/components/skeletons';
 import { useQuery } from '@tanstack/react-query';
 import { getRouteApi } from '@tanstack/react-router';
-import { cardKeys, fetchCollection, fetchGameCards } from '@/data/cards';
+import { cardKeys, type CollectionEntry, fetchCollection, fetchGameCardsFull } from '@/data/cards';
 import { fetchMirror, imageKeys } from '@/data/images';
 import { DEFAULT_PRICES, fetchPrices, recyclingKeys } from '@/data/recycling';
 import { useSession } from '@/lib/session';
@@ -28,7 +28,7 @@ export function CollectionPage() {
     queryFn: () => fetchCollection(userId),
     enabled: userId !== '',
   });
-  const game = useQuery({ queryKey: cardKeys.gameCards, queryFn: fetchGameCards });
+  const game = useQuery({ queryKey: cardKeys.gameCardsFull, queryFn: fetchGameCardsFull });
   const prices = useQuery({ queryKey: recyclingKeys.prices, queryFn: fetchPrices });
   const mirror = useQuery({
     queryKey: imageKeys.mirror,
@@ -47,11 +47,27 @@ export function CollectionPage() {
       </p>
     );
 
+  // Every version of every card counts as a card of the collection, an alternative version too.
+  // The ones the player lacks are shown greyed, so everyone sees what the game holds.
+  const units = (game.data ?? []).flatMap((c) =>
+    c.variantes_carte.map((v) => ({ ...c, id: v.id })),
+  );
+  const ownedVariants = new Set(entries.map((e) => e.variant.id));
+  const missing: CollectionEntry[] = (game.data ?? []).flatMap((c) =>
+    c.variantes_carte
+      .filter((v) => !ownedVariants.has(v.id))
+      .map((v) => ({ quantite: 0, variant: v, card: c })),
+  );
+
   return (
     <div className="flex flex-col gap-6">
-      <StatsBand entries={entries} game={game.data} prices={prices.data ?? DEFAULT_PRICES} />
-      <CardBrowser
+      <StatsBand
         entries={entries}
+        game={game.data ? units : undefined}
+        prices={prices.data ?? DEFAULT_PRICES}
+      />
+      <CardBrowser
+        entries={[...entries, ...missing]}
         search={search}
         set={set}
         images={mirror.data ?? new Set<string>()}
