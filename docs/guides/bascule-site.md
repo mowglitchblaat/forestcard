@@ -27,6 +27,7 @@ Point de départ (4 novembre 2026) : le site React avait été synchronisé avec
 
 | Vue | Nouveauté | État |
 | --- | --- | --- |
+| collection | une carte s'ouvre en grand dans une fenêtre, détail à côté, la carte s'incline sous le pointeur et se retourne | fait |
 | collection | chaque version compte comme une carte ; les versions manquantes en grisé, avec leur détail | fait |
 | collection | recyclage en gold ou en fragments ; recyclage des doublons par raretés cochées | fait |
 | decks | decks de championnat (Rare, Épique, Libre : 15 cartes, 5 / 5 / 5, raretés limitées) | fait |
