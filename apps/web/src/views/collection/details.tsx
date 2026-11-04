@@ -15,7 +15,7 @@ import { backKeys, fetchBacks } from '@/data/backs';
 import type { CollectionEntry } from '@/data/cards';
 import { fetchMirror, imageKeys, imageUrl } from '@/data/images';
 import { fragmentsOffered, gainOf, type Prices } from '@/data/recycling';
-import { textOn } from '@/lib/rarity';
+import { textOn, tierOf } from '@/lib/rarity';
 import { collectionOf, num, TYPE_LABELS } from './model';
 import { RecycleBlock } from './recycle';
 
@@ -132,6 +132,7 @@ export function CardDetails({
         back={back}
         backName={backName}
         glow={card.raretes.couleur ?? '#888'}
+        tier={tierOf(card.raretes)}
       />
     </div>
   );

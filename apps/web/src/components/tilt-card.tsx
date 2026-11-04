@@ -60,6 +60,7 @@ export function TiltCard({
   back,
   backName,
   glow,
+  tier,
 }: {
   front: ReactNode;
   // The image of the player's back; none: the game's own back.
@@ -67,6 +68,8 @@ export function TiltCard({
   // "Dos équipé : …" under the button; none while the backs load.
   backName: string | null;
   glow: string;
+  // The rarity's holographic layer (épique, légendaire, GGEZ), following the pointer.
+  tier?: string;
 }) {
   const [flipped, setFlipped] = useState(false);
   // Turned over, the card leans the other way under the same pointer.
@@ -119,6 +122,7 @@ export function TiltCard({
             aria-hidden={flipped}
           >
             {front}
+            {tier && <div aria-hidden data-tier={tier} className="tier-holo" />}
             {glare}
           </div>
           <div

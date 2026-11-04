@@ -24,7 +24,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { CARD_TYPES, type CardType, type CollectionEntry } from '@/data/cards';
 import { imageUrl } from '@/data/images';
 import type { Prices } from '@/data/recycling';
-import { rarityRank } from '@/lib/rarity';
+import { rarityRank, tierOf } from '@/lib/rarity';
 import { CardDetails, CardImage } from './details';
 import { collectionOf, filterEntries, num, sortEntries, TYPE_LABELS } from './model';
 import { type CollectionSearch, type Sort, SORTS } from './search';
@@ -173,19 +173,24 @@ function Tile({
 }) {
   if (pick) return <PickTile entry={entry} image={image} onDetails={onSelect} pick={pick} />;
   const color = entry.card.raretes.couleur ?? undefined;
+  const tier = tierOf(entry.card.raretes);
   return (
     <CardTooltip entry={entry}>
       <button
         type="button"
         onClick={onSelect}
         aria-pressed={selected}
-        className={`group relative rounded-lg transition hover:-translate-y-1 focus-visible:outline-none ${entry.quantite === 0 ? 'opacity-40 grayscale' : ''}`}
+        data-tier={tier}
+        className={`group relative tier-frame p-0.5 transition hover:-translate-y-1 focus-visible:outline-none ${entry.quantite === 0 ? 'opacity-40 grayscale' : ''}`}
+        style={{ '--rarity': color }}
       >
         <CardImage
           entry={entry}
           image={image}
           className={selected ? 'shadow-lg' : 'shadow-sm group-hover:shadow-lg'}
         />
+        {/* The rarity's shine over the image (épique, légendaire, GGEZ), as on the legacy page. */}
+        <span aria-hidden data-tier={tier} className="tier-shine" />
         {/* Rarity: a coloured band at the bottom of the card, a ring of the same colour when selected. */}
         <span
           aria-hidden

@@ -536,3 +536,150 @@
     cursor: pointer;
   }
 }
+
+/* The rarity effects of the legacy page's collection (.ct, .ci::after, .ho), by tier (data-tier:
+   commun, rare, epique, legendaire, ggez; set from tierOf). The tile: a halo in the rarity colour
+   (--rarity), pulsing for légendaire and GGEZ, with a turning border (gold, rainbow); a shine that
+   sweeps the image for épique and légendaire, a rainbow sheen for GGEZ. The big card: a
+   holographic layer that follows the pointer (--mx, set by useTilt), stronger for GGEZ. As on the
+   legacy page, the moving effects stop for whoever asks for less motion. */
+@property --tier-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes tier-shine {
+  0%,
+  55% {
+    transform: translateX(-130%);
+  }
+  100% {
+    transform: translateX(130%);
+  }
+}
+@keyframes tier-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 10px 0 color-mix(in srgb, var(--rarity) 38%, transparent),
+      0 8px 22px rgb(0 0 0 / 0.4);
+  }
+  50% {
+    box-shadow:
+      0 0 24px 3px color-mix(in srgb, var(--rarity) 80%, transparent),
+      0 8px 22px rgb(0 0 0 / 0.4);
+  }
+}
+@keyframes tier-spin {
+  to {
+    --tier-angle: 360deg;
+  }
+}
+@utility tier-frame {
+  border-radius: 0.75rem;
+  border: 2px solid transparent;
+  box-shadow: 0 0 12px 0 color-mix(in srgb, var(--rarity, #888) 38%, transparent);
+  &[data-tier='legendaire'] {
+    background:
+      linear-gradient(var(--card), var(--card)) padding-box,
+      conic-gradient(
+          from var(--tier-angle),
+          var(--rarity),
+          #fffbe0,
+          var(--rarity),
+          #ffe58a,
+          var(--rarity)
+        )
+        border-box;
+  }
+  &[data-tier='ggez'] {
+    background:
+      linear-gradient(var(--card), var(--card)) padding-box,
+      conic-gradient(from var(--tier-angle), #ff3b6b, #ffb703, #5eead4, #60a5fa, #c084fc, #ff3b6b)
+        border-box;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    &[data-tier='legendaire'] {
+      animation:
+        tier-glow 2.4s ease-in-out infinite,
+        tier-spin 4.5s linear infinite;
+    }
+    &[data-tier='ggez'] {
+      animation:
+        tier-glow 2s ease-in-out infinite,
+        tier-spin 3.4s linear infinite;
+    }
+  }
+}
+@utility tier-shine {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  border-radius: inherit;
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    background: linear-gradient(
+      115deg,
+      transparent 38%,
+      rgb(255 255 255 / 0.4) 50%,
+      transparent 62%
+    );
+    transform: translateX(-130%);
+  }
+  &[data-tier='epique']::after,
+  &[data-tier='legendaire']::after {
+    opacity: 1;
+  }
+  &[data-tier='ggez']::after {
+    opacity: 1;
+    background: linear-gradient(
+      115deg,
+      transparent 30%,
+      rgb(255 60 120 / 0.38) 40%,
+      rgb(255 220 60 / 0.4) 47%,
+      rgb(80 255 200 / 0.4) 54%,
+      rgb(100 160 255 / 0.4) 61%,
+      transparent 70%
+    );
+    mix-blend-mode: color-dodge;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    &[data-tier='epique']::after {
+      animation: tier-shine 5s ease-in-out infinite 1s;
+    }
+    &[data-tier='legendaire']::after {
+      animation: tier-shine 3.6s ease-in-out infinite 1s;
+    }
+    &[data-tier='ggez']::after {
+      animation: tier-shine 3s ease-in-out infinite 0.6s;
+    }
+  }
+}
+@utility tier-holo {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  mix-blend-mode: color-dodge;
+  background: linear-gradient(
+    115deg,
+    transparent 20%,
+    rgb(255 0 170 / 0.45) 35%,
+    rgb(0 230 255 / 0.45) 50%,
+    rgb(255 230 0 / 0.45) 65%,
+    transparent 80%
+  );
+  background-size: 220% 100%;
+  background-position: var(--mx, 50%) 0;
+  &[data-tier='epique'],
+  &[data-tier='legendaire'] {
+    opacity: 0.4;
+  }
+  &[data-tier='ggez'] {
+    opacity: 0.7;
+  }
+}
