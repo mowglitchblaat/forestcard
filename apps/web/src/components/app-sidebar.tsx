@@ -45,6 +45,12 @@ import {
   STOCK_REFRESH,
 } from '@/data/shop';
 import { fetchGameState, gameStateKey } from '@/data/admin';
+import {
+  ANNOUNCEMENTS_REFRESH,
+  announcementIds,
+  announcementKeys,
+  fetchAnnouncements,
+} from '@/data/announcements';
 import { useSession } from '@/lib/session';
 import {
   countdown,
@@ -95,6 +101,7 @@ const ADMIN_ICONS: Record<AdminView, LucideIcon> = {
   joueurs: ICONS.players,
   tournois: ICONS.tournaments,
   recompenses: ICONS.rewards,
+  annonces: ICONS.announcements,
   votes: ICONS.votes,
   propos: ICONS.proposals,
 };
@@ -216,6 +223,7 @@ function EncyclopediaLink({ page }: { page: EncyclopediaPage }) {
 
 const SITE_ICONS: Record<SitePage, LucideIcon> = {
   jouer: ICONS.play,
+  annonces: ICONS.announcements,
   live: ICONS.live,
   votes: ICONS.votes,
 };
@@ -231,12 +239,32 @@ function SiteLink({ page, isAdmin }: { page: SitePage; isAdmin: boolean }) {
     <SidebarMenuItem>
       <SidebarMenuButton asChild tooltip={label}>
         <Link to={`/${page}`} activeProps={{ 'data-active': true }}>
-          <Icon />
+          <span className="relative">
+            <Icon />
+            {page === 'annonces' && <AnnouncementsDot />}
+          </span>
           <span>{label}</span>
         </Link>
       </SidebarMenuButton>
     </SidebarMenuItem>
   );
+}
+
+// Announcements not seen yet (yellow), or an open vote not answered yet (blue).
+function AnnouncementsDot() {
+  const seen = useSeen(SEEN_KEYS.announcements);
+  const list = useQuery({
+    queryKey: announcementKeys.all,
+    queryFn: fetchAnnouncements,
+    staleTime: ANNOUNCEMENTS_REFRESH,
+    refetchInterval: ANNOUNCEMENTS_REFRESH,
+    retry: false,
+  }).data;
+  if (!list) return null;
+  if (unseen(seen, announcementIds(list)).length > 0) return <NewDot kind="news" />;
+  if (list.some((a) => a.type === 'vote' && a.ouvert && a.mon_vote === null))
+    return <NewDot kind="vote" />;
+  return null;
 }
 
 function PlayerLink({ view }: { view: PlayerView }) {
@@ -338,6 +366,7 @@ const DOTS = {
   rules: { ring: TONES.info.border, fill: TONES.info.fill, label: 'Pas encore lu' },
   todo: { ring: TONES.info.border, fill: TONES.info.fill, label: "Encore à jouer aujourd'hui" },
   stock: { ring: TONES.info.border, fill: TONES.info.fill, label: 'Des boosters à ouvrir en live' },
+  vote: { ring: TONES.info.border, fill: TONES.info.fill, label: 'Un vote attend ta voix' },
   news: { ring: TONES.new.border, fill: TONES.new.fill, label: 'Du nouveau' },
 };
 

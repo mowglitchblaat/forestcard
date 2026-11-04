@@ -14,6 +14,7 @@ export const SEEN_KEYS = {
   backs: 'forestcard-dos-vus',
   gamesRules: 'forestcard-jeux-regles-vues',
   shop: 'forestcard-boutique-vue',
+  announcements: 'forestcard-annonces-vues',
 } as const;
 type SeenKey = (typeof SEEN_KEYS)[keyof typeof SEEN_KEYS];
 

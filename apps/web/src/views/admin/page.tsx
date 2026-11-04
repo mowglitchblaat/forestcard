@@ -3,6 +3,7 @@
 
 import type { ReactNode } from 'react';
 import type { AdminView } from '@/views';
+import { AnnouncementsAdmin } from './announcements';
 import { BacksAdmin } from './backs';
 import { BoostersAdmin } from './boosters';
 import { CardsAdmin } from './cards';
@@ -28,6 +29,7 @@ const SUB_VIEWS: Partial<Record<AdminView, () => ReactNode>> = {
   joueurs: PlayersAdmin,
   tournois: TournamentsAdmin,
   recompenses: RewardsAdmin,
+  annonces: AnnouncementsAdmin,
   votes: VotesAdmin,
   propos: ProposalsAdmin,
 };

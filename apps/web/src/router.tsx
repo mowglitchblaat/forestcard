@@ -32,6 +32,7 @@ import { PatchSearch } from '@/views/patch/search';
 import { RulesPage } from '@/views/rules/page';
 import { RulesSearch } from '@/views/rules/search';
 import { PlayPage } from '@/views/play/page';
+import { AnnouncementsPage } from '@/views/announcements/page';
 import { VotesPage } from '@/views/votes/page';
 import { VotesSearch } from '@/views/votes/search';
 import {
@@ -151,6 +152,12 @@ const playRoute = createRoute({
   component: PlayPage,
 });
 
+const announcementsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: 'annonces',
+  component: AnnouncementsPage,
+});
+
 const votesRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: 'votes',
@@ -201,6 +208,7 @@ export const router = createRouter({
     effectsRoute,
     liveRoute,
     playRoute,
+    announcementsRoute,
     votesRoute,
     viewRoute,
     adminRoute,
