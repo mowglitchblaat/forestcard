@@ -28,9 +28,17 @@ import {
   saveDeck,
 } from '@/data/decks';
 import { fetchMirror, imageKeys, imageUrl } from '@/data/images';
+import {
+  DIVISIONS,
+  type Division,
+  fetchChampionshipDecks,
+  isDivision,
+  tournamentKeys,
+} from '@/data/tournaments';
 import { useSession } from '@/lib/session';
 import { draftKey, hasDraft } from './draft';
 import { DeckEditor } from './editor';
+import { CHAMPIONSHIP_PREFIX, ChampionshipEditor } from './championship';
 import { byCard, type Composition, combatDeckId, compose, DECK_SIZE } from './model';
 import { CompositionBar, NameDialog, Slots } from './parts';
 import { NEW_DECK } from './search';
@@ -59,6 +67,11 @@ export function DeckPage() {
     queryFn: fetchMirror,
     staleTime: Infinity,
   });
+  const championship = useQuery({
+    queryKey: tournamentKeys.decks(userId),
+    queryFn: () => fetchChampionshipDecks(userId),
+    enabled: userId !== '',
+  });
   const owned = useMemo(() => byCard(collection.data ?? []), [collection.data]);
   const [creating, setCreating] = useState(false);
 
@@ -79,7 +92,20 @@ export function DeckPage() {
   const typeOf = typeOfIn(owned);
 
   let main;
-  if (open === null)
+  const belt = open?.startsWith(CHAMPIONSHIP_PREFIX)
+    ? open.slice(CHAMPIONSHIP_PREFIX.length)
+    : null;
+  if (belt !== null && isDivision(belt))
+    main = (
+      <ChampionshipEditor
+        key={`${belt}:${(championship.data?.get(belt) ?? []).join(',')}`}
+        division={belt}
+        saved={championship.data?.get(belt) ?? []}
+        owned={owned}
+        images={images}
+      />
+    );
+  else if (open === null)
     main = (
       <p className="text-muted-foreground">
         Aucun deck pour l'instant : crée ton premier avec « Nouveau deck ».
@@ -152,6 +178,27 @@ export function DeckPage() {
                 combat={d.id === inCombat}
                 draft={hasDraft(draftKey(d.id))}
                 detail={<Fill c={c} />}
+              />
+            );
+          })}
+        </ul>
+        <p className="mt-2 text-xs font-medium text-muted-foreground">Decks de championnat</p>
+        <ul className="flex gap-1 overflow-x-auto pb-2 lg:flex-col lg:overflow-visible lg:pb-0">
+          {(Object.keys(DIVISIONS) as Division[]).map((d) => {
+            const n = (championship.data?.get(d) ?? []).length;
+            return (
+              <NavItem
+                key={d}
+                active={open === CHAMPIONSHIP_PREFIX + d}
+                to={CHAMPIONSHIP_PREFIX + d}
+                label={`${DIVISIONS[d].icon} ${DIVISIONS[d].name.replace('Ceinture ', '')}`}
+                detail={
+                  n === 15 ? (
+                    <ICONS.complete className={`size-3.5 ${TONES.success.text}`} />
+                  ) : (
+                    <span className={TONES.warning.text}>{n}/15</span>
+                  )
+                }
               />
             );
           })}

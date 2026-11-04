@@ -165,7 +165,9 @@ function BeltCard({
             <small>Un défi est en attente.</small>
           ) : !deckReady ? (
             <Button size="sm" variant="outline" asChild>
-              <Link to="/deck">Prépare ton deck {d?.icon ?? ''}</Link>
+              <Link to="/deck" search={{ deck: `ceinture-${b.division}` }}>
+                Prépare ton deck {d?.icon ?? ''}
+              </Link>
             </Button>
           ) : (
             <small>

@@ -210,7 +210,9 @@ function Current({
                   </>
                 ) : !deckReady ? (
                   <Button size="sm" variant="outline" asChild>
-                    <Link to="/deck">Prépare ton deck {division?.icon ?? ''}</Link>
+                    <Link to="/deck" search={{ deck: `ceinture-${t.division}` }}>
+                      Prépare ton deck {division?.icon ?? ''}
+                    </Link>
                   </Button>
                 ) : (
                   <Button size="sm" disabled={join.isPending} onClick={() => join.mutate()}>

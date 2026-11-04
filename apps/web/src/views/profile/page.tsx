@@ -4,6 +4,8 @@
 // A player who never fought gets their empty state instead of a wall of zeros.
 
 import { useQuery } from '@tanstack/react-query';
+import { Cabinet } from '@/components/tournament';
+import { fetchTrophies, tournamentKeys } from '@/data/tournaments';
 import { getRouteApi, Link } from '@tanstack/react-router';
 import { TONES } from '@/lib/tones';
 import { ICONS, type LucideIcon } from '@/lib/icons';
@@ -146,9 +148,22 @@ export function ProfilePage() {
         </>
       )}
 
+      <Trophies player={id} mine={mine} />
+
       {mine && <MyCollection userId={me} opened={s?.boosters_ouverts ?? 0} />}
     </div>
   );
+}
+
+// The trophy cabinet (tournaments): nothing shown while it loads, or if trophies are not installed.
+function Trophies({ player, mine }: { player: string; mine: boolean }) {
+  const trophies = useQuery({
+    queryKey: tournamentKeys.trophies(player),
+    queryFn: () => fetchTrophies(player),
+    enabled: player !== '',
+  });
+  if (!trophies.data) return null;
+  return <Cabinet trophies={trophies.data} mine={mine} player={player} />;
 }
 
 // Wins, draws and losses side by side, in proportion.
