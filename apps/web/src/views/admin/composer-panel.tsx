@@ -180,8 +180,9 @@ export function ComposerPanel({
         </b>
         <span className="text-sm text-muted-foreground">{help}</span>
       </div>
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="flex flex-col gap-1">
+      {/* The preview at a working size (20rem), kept in view while the settings scroll. */}
+      <div className="grid items-start gap-4 md:layout-aside-main-20">
+        <div className="flex flex-col gap-1 md:sticky md:top-4">
           <canvas
             ref={canvas}
             width={cpo.W}
