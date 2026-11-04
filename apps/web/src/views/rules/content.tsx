@@ -14,7 +14,8 @@
 //   - the deck tab is named « Mes decks », as the site names it (a player keeps several), and its
 //     description follows the site's deck page (the combat deck as a mark, the edition mode);
 //   - the daily games are no longer explained one by one: their page has their rules (opened on the
-//     first visit, then behind "?"); the section links to it.
+//     first visit, then behind "?"); the section links to it;
+//   - the tabs are named as the site's pages (« Jouer », « Ceintures », « Tournois », « Échanges »).
 
 import { TONES } from '@/lib/tones';
 import { ICONS, type LucideIcon } from '@/lib/icons';
@@ -183,6 +184,20 @@ export const SECTIONS: Section[] = [
           </>
         ),
       },
+      {
+        title: '\u{1F504} Échanges entre joueurs',
+        body: (
+          <List
+            items={[
+              'Page « Échanges » : choisis un joueur, les cartes que tu donnes et celles que tu veux (5 au plus de chaque côté).',
+              "Chaque carte ajoute sa valeur au pot de fragments (plus la carte est rare, plus elle vaut). Vous remplissez le pot à deux, comme vous voulez ; quand il est plein et que les deux ont accepté, l'échange se fait et les fragments du pot disparaissent.",
+              'Les fragments s’obtiennent en recyclant tes doublons : tu choisis gold ou fragments.',
+              "1 échange par jour, à partir de 7 jours d'ancienneté et 50 boosters ouverts. Une offre expire au bout de 48 h (fragments rendus).",
+              'Une carte donnée qui était dans ton deck en sort : pense à compléter ton deck.',
+            ]}
+          />
+        ),
+      },
     ],
   },
   {
@@ -284,6 +299,190 @@ export const SECTIONS: Section[] = [
     ),
   },
   {
+    id: 'pause',
+    title: 'Jeu en pause',
+    icon: ICONS.play,
+    subtitle: "Pendant les let's play, le jeu n'apparaît pas en live : il se joue sur le site.",
+    blocks: [
+      {
+        title: 'La page « Jouer »',
+        body: "Elle apparaît quand le jeu est en pause. Tu y ouvres tes boosters, récupères ton booster du jour et fais ton combat du jour, avec les mêmes animations qu'en live.",
+      },
+      {
+        title: 'Duel depuis le site',
+        body: 'Défie un joueur précis en écrivant son pseudo : le duel se paie en gold (le prix est fixé par le streamer).',
+      },
+      {
+        title: 'Le championnat',
+        body: 'Il reste réservé au live : les défis et les combats pour le titre se font dans le chat.',
+      },
+    ],
+  },
+  {
+    id: 'championnat',
+    title: 'Le championnat',
+    icon: ICONS.belts,
+    subtitle: 'Trois ceintures, un champion pour chacune. Tout se joue en live.',
+    blocks: [
+      {
+        title: 'Les ceintures',
+        body: (
+          <List
+            items={[
+              'Rare : cartes communes et rares',
+              "Épique : jusqu'aux cartes épiques",
+              'Libre : toutes les raretés',
+              "Un joueur peut être double ou triple champion. En combat, ses ceintures s'affichent autour de sa carte.",
+            ]}
+          />
+        ),
+      },
+      {
+        title: 'Ton deck de championnat',
+        body: (
+          <List
+            items={[
+              'Un par ceinture, dans « Mes decks »',
+              '15 cartes : 5 combattants, 5 magies, 5 pièges',
+              'Les raretés autorisées dépendent de la ceinture',
+            ]}
+          />
+        ),
+      },
+      {
+        title: 'Défier',
+        body: (
+          <List
+            items={[
+              <>
+                <Command>!defi rare</Command> (ou épique, libre) défie le champion de cette ceinture
+              </>,
+              <>
+                Ceinture vacante : ajoute le @ du joueur à affronter, par exemple{' '}
+                <Command>!defi libre @pseudo</Command>
+              </>,
+              <>
+                Le défié répond avec <Command>!accepter</Command> ou <Command>!refuser</Command>,
+                dans les 24 h
+              </>,
+              'Un seul défi en attente par ceinture',
+            ]}
+          />
+        ),
+      },
+      {
+        title: 'Le combat en relais',
+        body: (
+          <List
+            items={[
+              "3 combattants chacun, envoyés l'un après l'autre",
+              'Chaque nouveau combattant arrive avec une nouvelle magie et un nouveau piège, et attaque en premier',
+              'Le combattant resté debout garde ses PV et ses statuts',
+              "Pas de limite de tours : on se bat jusqu'au KO",
+              <>
+                Victoire : <Gold n={500} /> · défaite : <Gold n={150} />
+              </>,
+            ]}
+          />
+        ),
+      },
+      {
+        title: 'Combien de combats ?',
+        body: (
+          <List
+            items={[
+              'Un challenger a droit à 1 combat pour le titre par jour et par ceinture',
+              'Match nul : le combat ne compte pas, le challenger peut redéfier le jour même',
+              "Le champion, lui, défend sa ceinture autant de fois qu'on le défie",
+              "Ses défenses ne comptent pas : s'il perd sa ceinture, il peut la redéfier le jour même pour la récupérer",
+              'Pour une ceinture vacante, les deux joueurs sont limités à 1 combat par jour (sauf match nul)',
+            ]}
+          />
+        ),
+      },
+      {
+        title: 'La vie de champion',
+        body: (
+          <List
+            items={[
+              "Chaque jour où il fait un combat pour le titre, le champion touche une prime à minuit : 90 gold par ceinture, +10 % par jour actif d'affilée, +15 % par ceinture en plus",
+              "Il perd sa ceinture s'il perd un combat pour le titre, à son 3e refus, ou après 7 jours sans combat pour le titre",
+              'La page « Ceintures » montre les champions, les défis en attente et l’histoire des règnes',
+            ]}
+          />
+        ),
+      },
+    ],
+  },
+  {
+    id: 'tournois',
+    title: 'Les tournois',
+    icon: ICONS.tournaments,
+    subtitle: 'Un tableau joué en live, combat après combat.',
+    blocks: [
+      {
+        title: "S'inscrire",
+        body: (
+          <List
+            items={[
+              <>
+                Quand un tournoi est ouvert : <Command>!tournoi</Command> dans le chat, ou le bouton
+                de la page « Tournois »
+              </>,
+              'Il te faut le deck de championnat de la ceinture du thème (Rare, Épique ou Libre)',
+              "Ton deck est figé au moment de l'inscription",
+              <>
+                <Command>!tournoi quitter</Command> pour te retirer avant le début
+              </>,
+              'Tournoi commencé : abandonner est définitif, tes matchs restants sont perdus par forfait, sans trophée de place ni récompense',
+            ]}
+          />
+        ),
+      },
+      {
+        title: 'Format suisse',
+        body: (
+          <List
+            items={[
+              'Des rondes en BO1 : chaque joueur affronte un joueur au même nombre de victoires, jamais deux fois le même',
+              'Nombre impair : un joueur est exempt et marque une victoire (une fois au plus)',
+              'Puis un tableau final à double élimination en BO3 : les premiers du classement commencent dans le winner bracket, les suivants dans le loser bracket',
+              'Perdre dans le winner bracket fait descendre dans le loser bracket, perdre dans le loser bracket élimine',
+              'Finale du loser et grande finale en BO5 ; si le joueur du loser gagne la grande finale, une revanche décide',
+            ]}
+          />
+        ),
+      },
+      {
+        title: 'Élimination directe',
+        body: (
+          <List
+            items={[
+              "Tiré au sort au lancement ; s'il manque des joueurs, certains sont qualifiés d'office au premier tour",
+              'Combats en relais, 3 combattants chacun, comme pour le titre',
+              'BO1 jusqu’aux quarts, BO3 en demi-finale, BO5 en petite finale et en finale',
+              'Un match nul ne compte pour personne : le combat est rejoué',
+              "Pas besoin d'être là : tout se joue tout seul",
+            ]}
+          />
+        ),
+      },
+      {
+        title: 'Trophées et récompenses',
+        body: (
+          <List
+            items={[
+              'Petite finale entre les perdants des demi-finales, pour la 3e place',
+              "Les trois premiers gagnent un trophée, gardé pour toujours dans l'armoire à trophées de leur profil",
+              'Chaque participant reçoit une écharpe du tournoi, rangée dans son armoire',
+              'Les quatre premiers gagnent les récompenses du tournoi (gold, boosters, dos de carte, carte), affichées sur la page « Tournois »',
+            ]}
+          />
+        ),
+      },
+    ],
+  },
+  {
     id: 'economie',
     title: 'Récompenses & économie',
     icon: ICONS.gold,
@@ -320,7 +519,8 @@ export const SECTIONS: Section[] = [
         title: 'Recyclage des doublons',
         body: (
           <>
-            Dans « Ma collection », recycle tes cartes en double en <Gold /> :
+            Dans « Ma collection », recycle tes cartes en double en <Gold /> (ou en fragments, pour
+            les échanges) :
             <Amounts
               rows={[
                 { label: 'Commun', gold: 5 },
