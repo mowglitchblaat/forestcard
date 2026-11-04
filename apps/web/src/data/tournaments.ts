@@ -175,10 +175,8 @@ export const tournamentKeys = {
 
 // ── Places, trophies ──
 
-export const PLACES: Record<
-  number,
-  { label: string; tone: 'gold' | 'silver' | 'bronze' | 'scarf' }
-> = {
+type Place = { label: string; tone: 'gold' | 'silver' | 'bronze' | 'scarf' };
+export const PLACES: Record<number, Place> = {
   0: { label: '🎗️ Participant', tone: 'scarf' },
   1: { label: '🥇 Vainqueur', tone: 'gold' },
   2: { label: '🥈 Finaliste', tone: 'silver' },
@@ -264,7 +262,8 @@ export function swissPreview(
     }
     return o;
   };
-  const put = (m: M | undefined, side: number, x: { a: string; p: string } | false | undefined) => {
+  type Seed = { a: string; p: string } | false | undefined;
+  const put = (m: M | undefined, side: number, x: Seed) => {
     if (!m || !x) return;
     if (side === 0) {
       m.a = x.a;
@@ -372,9 +371,8 @@ export function swissPreview(
   }
   if (p === 0 && l > 0) {
     const real = (x: number) => (ow_(2 * (half - x + 1) - 1) <= w ? 1 : 0);
-    const places = [...Array<number>(half)]
-      .map((_, x) => x + 1)
-      .sort((x, y) => real(x) - real(y) || x - y);
+    const places = Array.from({ length: half }, (_, x) => x + 1);
+    places.sort((x, y) => real(x) - real(y) || x - y);
     for (let i = 1; i <= l; i++) put(at(td[0], places[i - 1] ?? 0, 'loser'), 0, seed(w + i));
   }
   const gf = add({
@@ -417,7 +415,8 @@ export function swissPreview(
     !all.some(
       (f) => !f.fini && ((f.sv === m.id && f.sc === side) || (f.pv === m.id && f.pc === side)),
     );
-  for (let changed = true; changed; ) {
+  let changed = true;
+  while (changed) {
     changed = false;
     for (const m of [...all].sort((x, y) => x.tour - y.tour || x.position - y.position)) {
       if (m.fini) continue;
