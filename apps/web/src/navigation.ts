@@ -13,9 +13,9 @@ const views = (...list: PlayerView[]): NavItem[] => list.map((view) => ({ view }
 
 export const PLAYER_GROUPS: { label: string; items: NavItem[] }[] = [
   { label: 'Stream', items: [{ site: 'live' }] },
-  { label: 'Mes cartes', items: views('collection', 'deck', 'dos') },
+  { label: 'Mes cartes', items: views('collection', 'deck', 'dos', 'echanges') },
   { label: 'Gold', items: views('jeux', 'boutique') },
-  { label: 'Combats', items: views('historique', 'classement') },
+  { label: 'Combats', items: views('historique', 'classement', 'ceintures', 'tournois') },
   {
     label: 'Encyclopédie',
     items: [{ page: 'catalogue' }, { page: 'raretes' }, { page: 'effets' }],

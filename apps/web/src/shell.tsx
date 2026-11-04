@@ -19,6 +19,7 @@ import { AdminSubView } from '@/views/admin/page';
 import { GamesPage } from '@/views/games/page';
 import { ProposalsPage } from '@/views/proposals/page';
 import { ShopPage } from '@/views/shop/page';
+import { TournamentsPage } from '@/views/tournaments/page';
 import { type PlayerView, viewLabel } from '@/views';
 
 // The sidebar's open or collapsed state, as shadcn's provider stores it on every toggle (cookie
@@ -126,6 +127,7 @@ const PORTED: Partial<Record<PlayerView, () => ReactNode>> = {
   boutique: ShopPage,
   propos: ProposalsPage,
   jeux: GamesPage,
+  tournois: TournamentsPage,
 };
 
 export function PlayerPage() {

@@ -13,6 +13,7 @@ import { PlayersAdmin } from './players';
 import { ProposalsAdmin } from './proposals';
 import { RaritiesAdmin } from './rarities';
 import { SettingsAdmin } from './settings';
+import { RewardsAdmin, TournamentsAdmin } from './tournaments';
 import { VotesAdmin } from './votes';
 
 const SUB_VIEWS: Partial<Record<AdminView, () => ReactNode>> = {
@@ -25,6 +26,8 @@ const SUB_VIEWS: Partial<Record<AdminView, () => ReactNode>> = {
   dos: BacksAdmin,
   reglages: SettingsAdmin,
   joueurs: PlayersAdmin,
+  tournois: TournamentsAdmin,
+  recompenses: RewardsAdmin,
   votes: VotesAdmin,
   propos: ProposalsAdmin,
 };
