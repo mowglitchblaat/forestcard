@@ -44,6 +44,8 @@ export const ADMIN_VIEWS = {
   dos: 'Dos de cartes',
   reglages: 'Réglages',
   joueurs: 'Joueurs',
+  tournois: '\u{1F396}\u{FE0F} Tournois',
+  recompenses: '\u{1F381} Récompenses',
   votes: '\u{1F5F3}\u{FE0F} Votes',
   propos: '\u{1F3A8} Propositions',
 } as const;

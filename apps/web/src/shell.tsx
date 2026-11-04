@@ -15,10 +15,11 @@ import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/s
 import { fetchIsAdmin, fetchPlayer, playerKeys, twitchAvatar, twitchNickname } from '@/data/player';
 import { signIn, useSession } from '@/lib/session';
 import { usePageTitle } from '@/page-title';
+import { AdminSubView } from '@/views/admin/page';
 import { GamesPage } from '@/views/games/page';
 import { ProposalsPage } from '@/views/proposals/page';
 import { ShopPage } from '@/views/shop/page';
-import { ADMIN_VIEWS, type PlayerView, plainLabel, viewLabel } from '@/views';
+import { type PlayerView, viewLabel } from '@/views';
 
 // The sidebar's open or collapsed state, as shadcn's provider stores it on every toggle (cookie
 // sidebar_state, components/ui/sidebar.tsx). The provider expects the page to read it back (a
@@ -144,7 +145,7 @@ export function AdminPage() {
   });
   if (isAdmin.data === false) return <Navigate to="/" />;
   if (!isAdmin.data) return <PageSkeleton />;
-  return <Pending title={`Admin · ${plainLabel(ADMIN_VIEWS[sub])}`} />;
+  return <AdminSubView sub={sub} />;
 }
 
 // The page title is in the header (PageHeader).

@@ -89,6 +89,8 @@ const ADMIN_ICONS: Record<AdminView, LucideIcon> = {
   dos: ICONS.backs,
   reglages: ICONS.settings,
   joueurs: ICONS.players,
+  tournois: ICONS.tournaments,
+  recompenses: ICONS.rewards,
   votes: ICONS.votes,
   propos: ICONS.proposals,
 };

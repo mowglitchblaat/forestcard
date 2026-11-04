@@ -32,6 +32,7 @@ export const ADMIN_GROUPS: NavGroup<AdminView>[] = [
     views: ['cartes', 'collections', 'raretes', 'effets', 'boosters', 'dos'],
   },
   { label: 'Admin · Joueurs', views: ['joueurs', 'cadeaux'] },
+  { label: 'Admin · Tournois', views: ['tournois', 'recompenses'] },
   { label: 'Admin · Communauté', views: ['votes', 'propos'] },
   { label: 'Admin · Réglages', views: ['reglages'] },
 ];
