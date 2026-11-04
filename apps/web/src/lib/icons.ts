@@ -29,6 +29,7 @@ import {
   Crosshair,
   Crown,
   Dices,
+  Download,
   ExternalLink,
   Flame,
   Focus,
@@ -169,6 +170,7 @@ export const ICONS = {
   edit: Pencil,
   delete: Trash2,
   upload: Upload,
+  download: Download,
   closed: Lock, // the game closed, the belts' bonuses locked
   add: Plus,
   save: Save,

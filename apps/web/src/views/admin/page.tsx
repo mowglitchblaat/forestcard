@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 import type { AdminView } from '@/views';
 import { BacksAdmin } from './backs';
 import { BoostersAdmin } from './boosters';
+import { CardsAdmin } from './cards';
 import { CollectionsAdmin } from './collections';
 import { EffectsAdmin } from './effects';
 import { GiftsAdmin } from './gifts';
@@ -14,6 +15,7 @@ import { SettingsAdmin } from './settings';
 import { VotesAdmin } from './votes';
 
 const SUB_VIEWS: Partial<Record<AdminView, () => ReactNode>> = {
+  cartes: CardsAdmin,
   collections: CollectionsAdmin,
   boosters: BoostersAdmin,
   effets: EffectsAdmin,
