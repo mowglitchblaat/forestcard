@@ -23,6 +23,7 @@ export const adminKeys = {
   playerCards: (id: string) => ['admin', 'playerCards', id] as const,
   backs: ['admin', 'backs'] as const,
   boosters: ['admin', 'boosters'] as const,
+  boostersFull: ['admin', 'boostersFull'] as const,
   effects: ['admin', 'effects'] as const,
   variants: ['admin', 'variants'] as const,
   cards: ['admin', 'cards'] as const,
@@ -490,4 +491,159 @@ export async function addCustomEffect(
 
 export async function deleteCustomEffect(id: number): Promise<void> {
   await call(supabase.from('effets_perso').delete().eq('id', id));
+}
+
+// ── Boosters ──
+
+const BoosterRow = z.object({
+  id: Num,
+  nom: z.string(),
+  prix: NumOrNull,
+  nb_cartes: NumOrNull,
+  actif: z.boolean().nullable(),
+  quotidien: z.boolean().nullable().optional(),
+  image_path: z.string().nullable().optional(),
+});
+export type BoosterRow = z.infer<typeof BoosterRow>;
+const BoosterCollection = z.object({ type_id: Num, collection_id: Num });
+const BoosterModifier = z.object({ type_id: Num, rarete_id: Num, modif: Num });
+const Featured = z.object({ type_id: Num, carte_id: Num, poids: Num });
+const FeaturedCard = z.object({
+  id: Num,
+  nom: z.string(),
+  raretes: z.object({ nom: z.string(), poids: NumOrNull }).nullable(),
+  collections: z.object({ nom: z.string() }).nullable(),
+});
+export type FeaturedCard = z.infer<typeof FeaturedCard>;
+
+// Where a rarity stands, the highest first (GGEZ above Légendaire), from its name: the legacy
+// page's rangRar. An unknown name comes after, the rarest (by drop weight) first.
+const RANKS = ['ggez', 'legendaire', 'epique', 'rare', 'commun'];
+export function rarityRank(r: { nom: string; poids: number | null } | null): [number, number] {
+  const n = (r?.nom ?? '')
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z]/g, '');
+  const i = RANKS.findIndex((k) => n.includes(k));
+  return [i < 0 ? 9 : i, r?.poids ?? 0];
+}
+
+export type BoostersData = {
+  boosters: BoosterRow[];
+  collections: CollectionRow[];
+  rarities: RarityRow[];
+  links: z.infer<typeof BoosterCollection>[];
+  modifiers: z.infer<typeof BoosterModifier>[];
+  featured: z.infer<typeof Featured>[] | null;
+  featuredError: string;
+  cards: FeaturedCard[];
+};
+
+export async function fetchBoostersAdmin(): Promise<BoostersData> {
+  const [boosters, collections, rarities, links, modifiers] = await Promise.all([
+    call(supabase.from('types_boosters').select('*').order('id')),
+    call(supabase.from('collections').select('id,nom').order('nom')),
+    call(supabase.from('raretes').select('*').order('ordre')),
+    call(supabase.from('boosters_collections').select('*')),
+    call(supabase.from('boosters_modifs').select('*')),
+  ]);
+  const featured = await supabase.from('boosters_vedettes').select('*');
+  let cards: FeaturedCard[] = [];
+  if (!featured.error) {
+    cards = z
+      .array(FeaturedCard)
+      .parse(
+        await call(
+          supabase
+            .from('cartes')
+            .select('id,nom,raretes(nom,poids),collections(nom)')
+            .eq('actif', true),
+        ),
+      )
+      .sort((a, b) => {
+        const x = rarityRank(a.raretes);
+        const y = rarityRank(b.raretes);
+        return x[0] - y[0] || x[1] - y[1] || a.nom.localeCompare(b.nom, 'fr');
+      });
+  }
+  return {
+    boosters: z.array(BoosterRow).parse(boosters),
+    collections: z.array(CollectionRow).parse(collections),
+    rarities: z.array(RarityRow).parse(rarities),
+    links: z.array(BoosterCollection).parse(links),
+    modifiers: z.array(BoosterModifier).parse(modifiers),
+    featured: featured.error ? null : z.array(Featured).parse(featured.data),
+    featuredError: featured.error?.message ?? '',
+    cards,
+  };
+}
+
+export type BoosterForm = {
+  nom: string;
+  prix: number;
+  nb_cartes: number;
+  actif: boolean;
+  quotidien: boolean;
+  image: File | null;
+  collections: number[];
+  modifiers: Record<number, number>;
+  // Up to two featured cards, null when the table is missing.
+  featured: { carte_id: number; poids: number }[] | null;
+};
+
+// Creates (id null) or updates a booster with its collections, drop modifiers and featured cards.
+export async function saveBooster(id: number | null, f: BoosterForm): Promise<number> {
+  const row: Record<string, unknown> = {
+    nom: f.nom,
+    prix: f.prix,
+    nb_cartes: f.nb_cartes,
+    actif: f.actif,
+    quotidien: f.quotidien,
+  };
+  if (f.image) row.image_path = await uploadImage(f.image);
+  let booster = id;
+  if (booster === null) {
+    const created = z
+      .object({ id: Num })
+      .parse(await call(supabase.from('types_boosters').insert(row).select('id').single()));
+    booster = created.id;
+  } else await call(supabase.from('types_boosters').update(row).eq('id', booster));
+  await call(supabase.from('boosters_collections').delete().eq('type_id', booster));
+  if (f.collections.length)
+    await call(
+      supabase
+        .from('boosters_collections')
+        .insert(f.collections.map((c) => ({ type_id: booster, collection_id: c }))),
+    );
+  await call(
+    supabase.from('boosters_modifs').upsert(
+      Object.entries(f.modifiers).map(([rarete, modif]) => ({
+        type_id: booster,
+        rarete_id: Number(rarete),
+        modif,
+      })),
+    ),
+  );
+  if (f.featured) {
+    await call(supabase.from('boosters_vedettes').delete().eq('type_id', booster));
+    const unique = f.featured.filter(
+      (v, i, all) => v.carte_id && all.findIndex((w) => w.carte_id === v.carte_id) === i,
+    );
+    if (unique.length)
+      await call(
+        supabase.from('boosters_vedettes').insert(
+          unique.map((v) => ({
+            type_id: booster,
+            carte_id: v.carte_id,
+            poids: Math.max(0.01, v.poids || 3),
+          })),
+        ),
+      );
+  }
+  return booster;
+}
+
+export async function deleteBooster(id: number): Promise<void> {
+  await call(supabase.from('types_boosters').delete().eq('id', id));
 }

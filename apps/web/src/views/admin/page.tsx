@@ -4,21 +4,25 @@
 import type { ReactNode } from 'react';
 import type { AdminView } from '@/views';
 import { BacksAdmin } from './backs';
+import { BoostersAdmin } from './boosters';
 import { CollectionsAdmin } from './collections';
 import { EffectsAdmin } from './effects';
 import { GiftsAdmin } from './gifts';
 import { PlayersAdmin } from './players';
 import { RaritiesAdmin } from './rarities';
 import { SettingsAdmin } from './settings';
+import { VotesAdmin } from './votes';
 
 const SUB_VIEWS: Partial<Record<AdminView, () => ReactNode>> = {
   collections: CollectionsAdmin,
+  boosters: BoostersAdmin,
   effets: EffectsAdmin,
   raretes: RaritiesAdmin,
   cadeaux: GiftsAdmin,
   dos: BacksAdmin,
   reglages: SettingsAdmin,
   joueurs: PlayersAdmin,
+  votes: VotesAdmin,
 };
 
 export function AdminSubView({ sub }: { sub: AdminView }) {

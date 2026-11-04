@@ -9,6 +9,7 @@ import {
   redirect,
 } from '@tanstack/react-router';
 import { AdminPage, PlayerPage, Shell } from '@/shell';
+import { AdminSearch } from '@/views/admin/search';
 import { BacksPage } from '@/views/backs/page';
 import { BacksSearch } from '@/views/backs/search';
 import { CollectionPage } from '@/views/collection/page';
@@ -172,6 +173,7 @@ export const adminRoute = createRoute({
     },
     stringify: ({ sub }) => ({ sub }),
   },
+  validateSearch: (search) => AdminSearch.parse(search),
   component: AdminPage,
 });
 

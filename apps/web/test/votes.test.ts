@@ -1,7 +1,7 @@
-// Votes: what can be voted on a card, worded as the legacy page, and the results by card.
+// Votes: what can be proposed on a card, worded as the legacy page, and the order of the proposals.
 
 import { expect, test } from 'vite-plus/test';
-import { aggregate, aspectsOf, type ResultRow } from '../src/data/votes.ts';
+import { aspectLabel, aspectsOf, byVotes, mostBacked, type Proposal } from '../src/data/votes.ts';
 
 test('a fighter: ATQ, PV, each passive, the ultimate', () => {
   const keys = aspectsOf({
@@ -28,28 +28,41 @@ test('a magic or a trap: its effect alone', () => {
   expect(trap?.label).toMatch(/^Piège : Piège caché : .*\(jusqu'à 2 fois\)$/);
 });
 
-const row = (r: Partial<ResultRow>): ResultRow => ({
+const proposal = (p: Partial<Proposal>): Proposal => ({
+  id: 1,
   carte_id: 1,
   carte_nom: 'A',
-  aspect: 'atq',
   sens: 'nerf',
-  nb: 1,
-  votants: 1,
-  ...r,
+  aspect: null,
+  commentaire: null,
+  oui: 1,
+  non: 0,
+  mon_avis: null,
+  a_moi: false,
+  cree_le: '2026-11-02T10:00:00Z',
+  ...p,
 });
 
-test('results by card: most voters first, aspects in card order, counts by direction', () => {
-  const list = aggregate([
-    row({ carte_id: 1, carte_nom: 'Ours', aspect: 'ultime', sens: 'up', nb: 2, votants: 2 }),
-    row({ carte_id: 1, carte_nom: 'Ours', aspect: 'atq', sens: 'nerf', nb: 1, votants: 2 }),
-    row({ carte_id: 1, carte_nom: 'Ours', aspect: 'atq', sens: 'rework', nb: 1, votants: 2 }),
-    row({ carte_id: 2, carte_nom: 'Loup', aspect: 'passif:1', sens: 'nerf', nb: 3, votants: 3 }),
-    row({ carte_id: 2, carte_nom: 'Loup', aspect: 'passif:0', sens: 'up', nb: 1, votants: 3 }),
+test('players see the most voted proposals first, then the newest', () => {
+  const list = byVotes([
+    proposal({ id: 1, oui: 1, non: 0 }),
+    proposal({ id: 2, oui: 2, non: 3 }),
+    proposal({ id: 3, oui: 1, non: 0, cree_le: '2026-11-03T10:00:00Z' }),
   ]);
-  expect(list.map((c) => c.name)).toEqual(['Loup', 'Ours']);
-  expect(list[0]?.aspects.map((a) => a.aspect)).toEqual(['passif:0', 'passif:1']);
-  expect(list[1]?.aspects).toEqual([
-    { aspect: 'atq', counts: { nerf: 1, up: 0, rework: 1 } },
-    { aspect: 'ultime', counts: { nerf: 0, up: 2, rework: 0 } },
+  expect(list.map((p) => p.id)).toEqual([2, 3, 1]);
+});
+
+test('the admin sees the most backed: the most yes, then the fewest no', () => {
+  const list = mostBacked([
+    proposal({ id: 1, oui: 3, non: 4 }),
+    proposal({ id: 2, oui: 3, non: 1 }),
+    proposal({ id: 3, oui: 5, non: 9 }),
   ]);
+  expect(list.map((p) => p.id)).toEqual([3, 2, 1]);
+});
+
+test('an aspect: the whole card, its label on the card, or its name', () => {
+  expect(aspectLabel(undefined, null)).toBe('Toute la carte');
+  expect(aspectLabel({ type: 'combattant', atq: 5, pv: 9 }, 'atq')).toBe('ATQ (5)');
+  expect(aspectLabel(undefined, 'passif:1')).toBe('Passif');
 });
