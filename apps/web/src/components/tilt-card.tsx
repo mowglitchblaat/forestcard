@@ -1,7 +1,8 @@
 // A card that leans toward the pointer, with a glare where the pointer is, and turns over to show
 // the player's back, as in the legacy page's card details (.fp, .fi, .tilt, .bk). The tilt is set
 // as CSS variables on the element itself, never through React state: moving the pointer renders
-// nothing. With reduced motion, no tilt, and the card turns over without animation.
+// nothing. The card follows the pointer even with reduced motion (Windows' animations turned off
+// hid it entirely), as on the legacy page; only its turn over loses the animation then.
 
 import { ICONS } from '@/lib/icons';
 import { type PointerEvent, type ReactNode, useEffect, useRef, useState } from 'react';
@@ -34,7 +35,7 @@ export function useTilt(mirrored = false) {
   const ref = useRef<HTMLDivElement>(null);
   const onPointerMove = (e: PointerEvent<HTMLDivElement>) => {
     const el = ref.current;
-    if (!el || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (!el) return;
     const r = e.currentTarget.getBoundingClientRect();
     const px = (e.clientX - r.left) / r.width;
     const py = (e.clientY - r.top) / r.height;
