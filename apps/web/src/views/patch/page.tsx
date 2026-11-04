@@ -183,6 +183,11 @@ function BalanceList({ rows }: { rows: BalanceRow[] }) {
   const images = mirror.data ?? new Set<string>();
   return (
     <ul className="divide-y border-t">
+      {remove.error && (
+        <li role="alert" className="px-4 py-2 text-sm text-destructive">
+          {remove.error.message}
+        </li>
+      )}
       {rows.map((row) => {
         const entry = row.carte_id === null ? undefined : byId.get(row.carte_id);
         return (
@@ -214,6 +219,7 @@ function BalanceList({ rows }: { rows: BalanceRow[] }) {
                 size="icon-sm"
                 variant="destructive-ghost"
                 aria-label="Retirer cette ligne des patch notes"
+                title="Maintiens appuyé pour retirer cette ligne"
                 disabled={remove.isPending}
                 onConfirm={() => remove.mutate(row.id)}
                 className="ml-auto shrink-0"

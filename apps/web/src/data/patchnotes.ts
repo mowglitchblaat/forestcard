@@ -60,8 +60,10 @@ export async function fetchBalance(): Promise<BalanceRow[]> {
 
 // The admin takes a line out of the patch notes.
 export async function deleteBalanceRow(id: number): Promise<void> {
-  const { error } = await supabase.from('equilibrage').delete().eq('id', id);
+  const { data, error } = await supabase.from('equilibrage').delete().eq('id', id).select('id');
   if (error) throw new Error(error.message);
+  // Refused by the database's rules (not admin): nothing deleted, and no error either.
+  if (!data?.length) throw new Error("La ligne n'a pas été retirée (droits d'admin refusés).");
 }
 
 async function latestBalanceId(): Promise<number> {

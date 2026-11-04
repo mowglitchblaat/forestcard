@@ -45,6 +45,7 @@ export function HoldButton({
       disabled={disabled}
       className={cn('relative overflow-hidden select-none', className)}
       aria-description="Maintenir pour confirmer"
+      title={props.title ?? 'Maintiens appuyé pour confirmer'}
       onPointerDown={(e) => {
         if (e.button === 0) start();
       }}
