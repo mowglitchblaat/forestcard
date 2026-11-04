@@ -1745,3 +1745,13 @@ test('copie de statuts : la carte copie les statuts positifs de l\'adversaire', 
   assert.equal(l.mode, 'copy');
   assert.deepEqual(l.copied, ['renvoi']);
 });
+
+test('distorsion : les bonus de l\'adversaire se retournent (double dégâts → malédiction, renvoi affaibli)', () => {
+  const r = combat([C('A', 5, SOLIDE, ULT_STATUTS('distorsion'))],
+    [C('B', 5, SOLIDE), MAG('Furie', { type: 'double_degats', tours: 99 })], { regles: { maxTours: 4, maxProlong: 0 } });
+  const l = r.journal.find(e => e.t === 'statut' && e.k === 'distorsion');
+  assert.ok(l, 'la ligne de la distorsion');
+  assert.deepEqual(l.turned, ['double']);
+  assert.equal(l.loss, 50);
+  assert.ok(r.journal.slice(r.journal.indexOf(l)).some(e => e.k === 'malediction' && e.c === 1), 'B est maudit');
+});

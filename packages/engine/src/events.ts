@@ -629,6 +629,18 @@ export type DomainEvent =
       taken: DispelledStatus[];
       copied: CopiedStatus[];
     }
+  // Distortion (mechanics/status-sharing.ts): `by` turns side's positive statuses against it. loss: the
+  // % of strength the weakened ones lose; turned: rages (now fatigues) and double damages (now
+  // curses); removed: mist, trap immunity.
+  | {
+      type: 'distorted';
+      side: SideIndex;
+      by: SideIndex;
+      loss: number;
+      turned: CopiedStatus[];
+      weakened: CopiedStatus[];
+      removed: CopiedStatus[];
+    }
   | { type: 'statusLostToSwallower'; side: SideIndex; status: DispelledStatus }
   | { type: 'spatOut'; side: SideIndex; target: SideIndex }
   | { type: 'digestionStarted'; side: SideIndex; turns: number }

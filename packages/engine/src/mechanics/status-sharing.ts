@@ -1,4 +1,5 @@
-// Status sharing (November 2026): three effects, for magics, ultimates and traps.
+// Status sharing (November 2026): four effects, for magics, ultimates and traps (the distortion is
+// at the end of this file).
 //   - echange_statuts: the card and its opponent swap their negative statuses.
 //   - partage_statuts: the opponent receives a copy of the card's negative statuses; the card keeps
 //     its own.
@@ -22,11 +23,11 @@ import type { EffectContext, EffectRules } from '../combat/effect-context.ts';
 import type { Side } from '../combat/state.ts';
 import type { CopiedStatus, DispelledStatus } from '../events.ts';
 import { addLevels } from '../model/levels.ts';
-import { atqLostToCurses, type Curse } from './curse.ts';
+import { atqLostToCurses, curse, type Curse } from './curse.ts';
 import type { DamageOverTime } from './dot.ts';
 import type { Bleed } from './bleed.ts';
 import type { Contamination } from './contamination.ts';
-import { type Fatigue, fatiguePct } from './fatigue.ts';
+import { type Fatigue, fatigue, fatiguePct } from './fatigue.ts';
 import type { Fracture } from './fracture.ts';
 import type { Frost } from './frost.ts';
 import type { Rooting } from './rooting.ts';
@@ -258,9 +259,52 @@ export function copyStatusesEffect({ c, o, x }: EffectContext): void {
   });
 }
 
+// Distortion (distorsion): the opponent's positive statuses turn against it. Its mist and trap
+// immunity vanish; its reflects, damage reductions and dodge bonus lose `val` % of their strength
+// (50 by default); each rage becomes a fatigue (the level the rage would leave, 1 at least) and
+// each double damage a curse, for the turns they had left.
+export function distortionEffect({ c, e, o, x }: EffectContext): void {
+  const z = x.status;
+  const loss = e.val == null || e.val === '' ? 50 : Math.min(100, Math.max(0, +e.val || 0));
+  const keep = (n: number) => Math.floor((n * (100 - loss)) / 100);
+  const turned: CopiedStatus[] = [];
+  const weakened: CopiedStatus[] = [];
+  const removed: CopiedStatus[] = [];
+  if (z.mist) {
+    z.mist = null;
+    removed.push('brume');
+  }
+  if (z.trapImmunityTurns > 0) {
+    z.trapImmunityTurns = 0;
+    removed.push('insensible');
+  }
+  if (z.reflects.length) {
+    z.reflects = z.reflects.map((r) => ({ ...r, pct: keep(Number(r.pct) || 0) }));
+    weakened.push('renvoi');
+  }
+  if (z.guards.length) {
+    z.guards = z.guards.map((g) => ({ ...g, value: keep(g.value) }));
+    weakened.push('reduction');
+  }
+  if (z.dodgeBonus > 0) {
+    z.dodgeBonus = keep(z.dodgeBonus);
+    weakened.push('esquive');
+  }
+  const rages = z.rages;
+  const doublings = z.doublings;
+  z.rages = [];
+  z.doublings = [];
+  if (rages.length) turned.push('rage');
+  if (doublings.length) turned.push('double');
+  emit(c, { type: 'distorted', side: id(c, x), by: id(c, o), loss, turned, weakened, removed });
+  rages.forEach((r) => fatigue(c, x, Math.max(1, r.fatigueLevel), r.turns));
+  doublings.forEach((d) => curse(c, x, d.turns));
+}
+
 // Its effects (the registry of effects.ts).
 export const effects = {
   echange_statuts: { run: swapStatusesEffect, once: true, withoutTarget: true },
   partage_statuts: { run: shareStatusesEffect, once: true, withoutTarget: true },
   copie_statuts: { run: copyStatusesEffect, once: true, withoutTarget: true },
+  distorsion: { run: distortionEffect, once: true, withoutTarget: true },
 } satisfies EffectRules;

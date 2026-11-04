@@ -1392,6 +1392,29 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
         },
       };
     }
+    case 'distorted': {
+      const list = (ks: readonly string[]) => ks.map((k) => SHARED_NAMES[k] ?? k).join(', ');
+      const parts = [
+        e.turned.length ? `${list(e.turned)} se retournent contre lui` : '',
+        e.weakened.length ? `${list(e.weakened)} perdent ${e.loss} %` : '',
+        e.removed.length ? `${list(e.removed)} disparaissent` : '',
+      ].filter(Boolean);
+      return {
+        t: 'statut',
+        txt: parts.length
+          ? `${name(e.by)} déforme la réalité de ${name(e.side)} : ${parts.join(' ; ')} !`
+          : `${name(e.by)} tente une distorsion, mais ${name(e.side)} n'a aucun bonus à déformer`,
+        o: {
+          c: e.side,
+          k: 'distorsion',
+          by: e.by,
+          loss: e.loss,
+          turned: e.turned,
+          weakened: e.weakened,
+          removed: e.removed,
+        },
+      };
+    }
     case 'statusLostToSwallower':
       return {
         t: 'finstatut',

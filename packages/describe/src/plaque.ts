@@ -56,6 +56,7 @@ const EFFECT_LABELS: Record<EffectType, (e: Fx) => string> = {
   echange_statuts: () => 'Échange de statuts',
   partage_statuts: () => 'Partage des statuts',
   copie_statuts: () => 'Copie des statuts',
+  distorsion: () => 'Distorsion',
   malediction: () => 'Malédiction',
   saignement: lv('Saignement', 'saignement'),
   souffle: (e) => BREATHS[String(e.statut)] || 'Souffle',

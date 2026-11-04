@@ -85,6 +85,7 @@ const CATEGORY_OF: Record<string, string> = {
   echange_statuts: 'echange',
   partage_statuts: 'echange',
   copie_statuts: 'echange',
+  distorsion: 'echange',
   vol_ultime: 'ultime',
   copie_ultime: 'ultime',
   reset_ultime: 'ultime',

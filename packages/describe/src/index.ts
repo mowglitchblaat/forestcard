@@ -447,6 +447,9 @@ const EFFECT_TEXT: Record<EffectType, (e: Fx, x: EffectContext) => string[]> = {
   copie_statuts: () => [
     "Copie les statuts positifs de l'adversaire (renvoi, réduction des dégâts, double dégâts, rage, esquive, brume, insensible aux pièges)",
   ],
+  distorsion: (e) => [
+    `Distorsion : les bonus de l'adversaire se retournent (rage → fatigue, double dégâts → malédiction ; renvoi, réduction des dégâts et esquive perdent ${e.val === '' || e.val == null ? 50 : nz(e.val)} % ; brume et insensibilité aux pièges disparaissent)`,
+  ],
   malediction: (_, { T, ci }) => [
     `Maudit ${ci} : ${curseTxt} pendant ${trs(T)}, puis l'ATQ revient (chaque malédiction ajoute la sienne)`,
   ],

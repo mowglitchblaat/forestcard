@@ -451,6 +451,10 @@ export const EDITOR_ULTIMATES: { readonly [K in EffectType]?: EditorEntry } = {
   copie_statuts: [
     "Copie les statuts positifs de l'adversaire (renvoi, réduction, double dégâts, rage, esquive, brume, insensible aux pièges)",
   ],
+  distorsion: [
+    "Distorsion : retourne les bonus de l'adversaire (rage → fatigue, double dégâts → malédiction ; renvoi, réduction et esquive perdent X % (50 par défaut) ; brume et insensibilité aux pièges disparaissent)",
+    'val',
+  ],
   annule_attaque: ['Annule la prochaine attaque (rien ne passe)'],
   detonation: [
     "Détonation : fait exploser la brûlure, le poison et le saignement de l'adversaire (X % de leurs dégâts restants d'un coup, + bonus %, + X dégâts bruts de l'explosion ; tue sans réanimation possible)",
@@ -733,6 +737,10 @@ export const EDITOR_MAGICS: { readonly [K in EffectType]?: EditorEntry } = {
   ],
   copie_statuts: [
     "Copie les statuts positifs de l'adversaire sur son combattant (renvoi, réduction, double dégâts, rage, esquive, brume, insensible aux pièges)",
+  ],
+  distorsion: [
+    "Distorsion : retourne les bonus de l'adversaire (rage → fatigue, double dégâts → malédiction ; renvoi, réduction et esquive perdent X % (50 par défaut) ; brume et insensibilité aux pièges disparaissent)",
+    'val',
   ],
   annule_attaque: ["Annule la prochaine attaque de l'adversaire (rien ne passe)"],
   detonation: [

@@ -30,6 +30,7 @@ export const EFFECT_TYPES = [
   'echange_statuts',
   'partage_statuts',
   'copie_statuts',
+  'distorsion',
   'malediction',
   'saignement',
   'souffle',
