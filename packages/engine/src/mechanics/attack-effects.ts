@@ -59,4 +59,5 @@ export const effects = {
   atk_critique: { run: attackEffectGrant },
   atk_foudre: { run: attackEffectGrant },
   atk_headshot: { run: attackEffectGrant },
+  atk_fils: { run: attackEffectGrant },
 } satisfies EffectRules;

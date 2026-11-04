@@ -134,6 +134,10 @@ export type EffectData = {
   // Parasitic link: % of the carrier's heals that goes to the opponent (50 when empty).
   pctlien?: Num;
   nbliens?: Num; // links laid at once (1 when empty)
+  // Threads: how many are laid at once (1 when empty), and the control chance at the threshold
+  // (20 when empty; + filsPas per thread beyond it).
+  nbfils?: Num;
+  pctctrl?: Num;
   // A magic's timing (on its effect): acts from the start of its X-th turn, for X turns.
   magdebut?: Num;
   magduree?: Num;

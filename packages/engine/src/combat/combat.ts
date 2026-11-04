@@ -17,6 +17,7 @@ import { overloadMalus } from '../mechanics/overload.ts';
 import { flushRevives, type TrapRevive } from '../mechanics/revive.ts';
 import { noticeTrigger, type Triggers } from '../mechanics/triggers.ts';
 import { reactToEvent } from '../mechanics/reaction.ts';
+import { puppetFell, type Control, type ControlHost } from '../mechanics/threads.ts';
 import { statusBadges } from './badges.ts';
 import { NO_MAGIC, NO_TRAP, newStatus, normalizePassives, type Side } from './state.ts';
 
@@ -49,6 +50,11 @@ export type Combat = {
   // apart from the card data (shared between combats); the card keeps its identity and its forge
   // follows it (stolen, given back).
   forged: Map<Card, ForgedCard>;
+  // Threads (mechanics/threads.ts): the control running, the one drawn during the turn under way,
+  // and what the combat provides to take one (no control without it).
+  control: Control | null;
+  pendingControl: Side | null;
+  controlHost?: ControlHost;
 };
 
 // A magic or trap forged during the combat: its improved effect, its forge level, the triggers the
@@ -231,6 +237,8 @@ export function createCombat(rules: Rules, seed: number, onEvent: OnEvent): Comb
     held: [],
     triggers: { any: false, traps: false },
     forged: new Map(),
+    control: null,
+    pendingControl: null,
   };
   return combat;
 }
@@ -313,14 +321,37 @@ export function flush(c: Combat): void {
 // A fallen card, in a relay combat (relay.ts): its player's next fighter takes its place now, and what
 // was still aimed at it goes on to the newcomer (the rest of a chained attack, of a missile salvo).
 // Anywhere else, or with nobody left to send: the card itself, still fallen.
-export const standIn = (c: Combat, s: Side): Side => (s.hp <= 0 && c.standIn ? c.standIn(s) : s);
+// A fallen puppet (mechanics/threads.ts) gives way to its puppeteer, in any combat.
+export const standIn = (c: Combat, s: Side): Side => {
+  if (s.hp <= 0 && c.control && c.control.puppet === s) return puppetFell(c, s);
+  return s.hp <= 0 && c.standIn ? c.standIn(s) : s;
+};
 
 // Whether a card is still in play. Always true outside a relay; in a relay, a fallen fighter that gave
 // way to the next one (standIn) has left: nothing applies to it any more (no opponent to find).
 export const inPlay = (c: Combat, s: Side): boolean => c.sides.includes(s);
 
 // Flushes, then tells whether a card is down.
+// A fallen puppet is not a fallen side: its puppeteer comes back (mechanics/threads.ts).
 export function over(c: Combat): boolean {
   flush(c);
+  if (c.control && c.control.puppet.hp <= 0) puppetFell(c, c.control.puppet);
   return c.sides.some((s) => s.hp <= 0);
+}
+
+// What the fighter still standing held on the fighters gone (a relay entry, a control) goes with
+// them: a swallowed card is gone, a purification aimed at it has no target, its magic changes on it
+// have nothing to undo, a card stolen from it for a while stays (nobody to give it back to). Its
+// statuses stay; a delayed damage a gone one laid still strikes, now on behalf of the fighter that
+// took its place.
+export function handOver(c: Combat, s: Side, gone: Side[]): void {
+  const st = s.status;
+  if (st.swallowing && gone.includes(st.swallowing.victim)) st.swallowing = null;
+  if (st.swallowedBy && gone.includes(st.swallowedBy)) st.swallowedBy = null;
+  st.scheduledPurifications = st.scheduledPurifications.filter((p) => !gone.includes(p.target));
+  s.magicDeltas = s.magicDeltas.filter((d) => !('side' in d && gone.includes(d.side)));
+  st.timedThefts = st.timedThefts.filter((t) => !gone.includes(t.owner));
+  st.delayedDamages.forEach((d) => {
+    if (gone.includes(d.source)) d.source = opponent(c, s);
+  });
 }

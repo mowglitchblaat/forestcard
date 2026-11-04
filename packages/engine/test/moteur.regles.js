@@ -1643,3 +1643,73 @@ test('forge : la carte en base n\'est jamais modifiée (combats suivants intacts
   for (let seed = 1; seed <= 10; seed++) combat([fighter, mag], [C('B', 1, SOLIDE)], { seed, regles: { maxTours: 10, maxProlong: 0 } });
   assert.equal(JSON.stringify([mag, fighter]), avant);
 });
+
+// ================= Fils et contrôle (marionnette) =================
+const FILS = { type: 'fils', chance: 100, nbfils: 5, pctctrl: 100 };
+
+test('fils : au seuil de 5 fils, le marionnettiste prend le contrôle, l\'adversaire envoie un autre combattant', () => {
+  const r = combat([C('Marionnettiste', 5, 50, { passif: FILS })], [C('B1', 3, 200), C('B2', 4, 300)], { regles: { maxTours: 6, maxProlong: 0 } });
+  const pose = lignes(r, e => e.k === 'fils');
+  assert.ok(pose.length >= 1);
+  assert.equal(pose[0].n, 5, '5 fils posés');
+  assert.equal(pose[0].of, 5, 'seuil de 5');
+  const ctrl = lignes(r, e => e.t === 'controle');
+  assert.equal(ctrl.length, 1, 'un seul contrôle à la fois');
+  const c = ctrl[0];
+  assert.equal(c.c, 0, 'le camp du marionnettiste');
+  assert.equal(c.from, 1);
+  const marionnette = pose[0].c === 1 ? r.journal[0].joueurs[1].carte : null;
+  assert.equal(c.joueurs[0].carte, marionnette, 'la marionnette combat dans le camp du marionnettiste');
+  assert.equal(c.joueurs[0].pseudo, 'A', 'sous le nom du marionnettiste');
+  assert.notEqual(c.joueurs[1].carte, marionnette, 'l\'adversaire a envoyé un autre combattant');
+  assert.equal(c.pv[1], 200 + 300 - (marionnette === 'B1' ? 200 : 300) , 'le remplaçant arrive avec tous ses PV');
+});
+
+test('fils : le marionnettiste paie 10 % de ses PV max à chaque tour de son camp, sans jamais en mourir', () => {
+  const r = combat([C('M', 5, 30, { passif: FILS })], [C('B1', 1, 200), C('B2', 1, 300)], { regles: { maxTours: 14, maxProlong: 0 } });
+  const cout = lignes(r, e => e.k === 'fils_cout');
+  assert.ok(cout.length >= 2);
+  cout.forEach(e => assert.equal(e.n, 3, '10 % de 30 PV max'));
+  cout.forEach(e => assert.ok(e.hp > 0, 'le coût ne tue jamais'));
+  const fin = lignes(r, e => e.t === 'controle_fin');
+  assert.equal(fin[0].raison, 'unpaid', 'il lâche les fils quand il ne peut plus payer');
+  assert.ok(fin[0].pv[0] > 0 && fin[0].pv[0] <= 3, 'il revient sur le terrain avec ce qui lui reste');
+  assert.equal(lignes(r, e => e.t === 'controle').length, 1, 'sans PV pour payer, plus de contrôle');
+});
+
+test('fils : la marionnette battue se brise, le marionnettiste revient affronter le remplaçant', () => {
+  const r = combat([C('M', 5, 300, { passif: FILS })], [C('B1', 60, 400), C('B2', 1, 20)], { regles: { maxTours: 10, maxProlong: 0 } });
+  const fin = lignes(r, e => e.t === 'controle_fin');
+  assert.equal(fin.length, 1);
+  assert.equal(fin[0].raison, 'defeated');
+  assert.equal(fin[0].joueurs[0].carte, 'M', 'le marionnettiste est de retour');
+  assert.ok(fin[0].pv[0] > 0);
+  const apres = r.journal.slice(r.journal.indexOf(fin[0]) + 1);
+  assert.ok(apres.some(e => e.t === 'tour' && e.c === 0), 'le combat continue : la marionnette brisée ne fait pas perdre son camp');
+});
+
+test('fils : pas de contrôle sans combattant à envoyer (les fils restent)', () => {
+  const r = combat([C('M', 5, 300, { passif: FILS })], [C('B1', 1, 400)], { regles: { maxTours: 3, maxProlong: 0 } });
+  assert.equal(lignes(r, e => e.t === 'controle').length, 0);
+  assert.equal(lignes(r, e => e.k === 'fils').at(-1).n, 15, 'les fils s\'accumulent');
+});
+
+test('fils : en relais, la marionnette ne compte pas dans l\'équipe du marionnettiste et retourne dans la réserve avec ses PV', () => {
+  const r = relais([C('M', 30, 40, { passif: FILS })], [C('B1', 1, 100), C('B2', 1, 50)], { seed: 2, regles: { equipe: 3 } });
+  const ctrl = lignes(r, e => e.t === 'controle');
+  assert.equal(ctrl.length, 1);
+  const entree = lignes(r, e => e.t === 'relais');
+  assert.equal(entree[0].n, 2, 'le remplaçant est le 2e combattant de B');
+  const fin = lignes(r, e => e.t === 'controle_fin');
+  assert.equal(fin[0].raison, 'unpaid');
+  const retour = entree.find(e => e.joueurs[1].carte === ctrl[0].joueurs[0].carte);
+  assert.ok(retour, 'la marionnette revient plus tard pour son joueur');
+  assert.ok(retour.pv[1] < 50, 'avec les PV qu\'il lui restait');
+});
+
+test('fils : en magie (effet fils) et donnés à l\'attaque (atk_fils)', () => {
+  const r = combat([C('A', 1, SOLIDE), MAG('Toile', { type: 'fils', nbfils: 3, pctctrl: 0 })], [C('B', 1, SOLIDE)], { regles: { maxTours: 1, maxProlong: 0 } });
+  assert.equal(lignes(r, e => e.k === 'fils')[0].n, 3);
+  const a = combat([C('A', 1, SOLIDE), MAG('Fils', { type: 'atk_fils', chance: 100, nbfils: 2, pctctrl: 0 })], [C('B', 1, SOLIDE)], { regles: { maxTours: 2, maxProlong: 0 } });
+  assert.deepEqual(lignes(a, e => e.k === 'fils').map(e => e.n), [2, 4]);
+});

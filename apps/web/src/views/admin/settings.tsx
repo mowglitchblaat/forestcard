@@ -139,6 +139,9 @@ const SINGLE_LEVELS: [string, string][] = [
   ['forgeChanceMax', 'Forge : chance, points gagnés au maximum'],
   ['forgePlafondChance', 'Forge : une chance forgée ne dépasse jamais (%)'],
   ['forgeDeclenchement', 'Forge : % de chances de donner un déclenchement à un piège (une fois)'],
+  ['filsSeuil', 'Fils : nombre de fils avant de pouvoir prendre le contrôle'],
+  ['filsPas', 'Fils : % de chances de contrôle en plus par fil au-delà du seuil'],
+  ['filsCout', 'Fils : % des PV max payés par le marionnettiste à chaque tour'],
 ];
 const DEFAULTS = new Map<string, unknown>(Object.entries(DEFAULT_LEVELS));
 

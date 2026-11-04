@@ -288,6 +288,8 @@ const PASSIVE_TEXT: Record<PassiveType, (p: Fx, x: PassiveContext) => string> = 
     `Étreinte maudite : à chaque attaque de l'adversaire, chacune de ses malédictions lui retire ${L.etreinte} ATQ de plus (rendue avec la malédiction)`,
   visee_maintenue: () =>
     `Visée maintenue : quand un de ses ciblages est utilisé, ${L.visee} % de chances de le garder pour le coup suivant`,
+  fils: (p, { c }) =>
+    `${c} % de chances, à chaque coup, de poser ${threadsTxt(p)} sur la cible ; ${controlTxt(p)}`,
   replique: (p) =>
     `Réplique sismique : chaque coup reçu (hors esquive) lui donne une charge ; à 3 charges, la terre frappe l'attaquant (${isEmpty(p.pctatq) ? 50 : nz(p.pctatq)} % de son ATQ, esquivable ; ce n'est pas une attaque)`,
 };
@@ -301,6 +303,12 @@ const linkN = (e: Fx) => Math.max(1, Math.floor(nz(e.nbliens)) || 1);
 const linksTxt = (e: Fx) =>
   linkN(e) > 1 ? `${linkN(e)} liens parasitaires` : 'un lien parasitaire';
 const linkEach = (e: Fx) => (linkN(e) > 1 ? 'par lien ' : '');
+// Threads (mechanics/threads.ts).
+const threadN = (e: Fx) => Math.max(1, Math.floor(nz(e.nbfils)) || 1);
+const threadsTxt = (e: Fx) => (threadN(e) > 1 ? `${threadN(e)} fils` : 'un fil');
+const controlPct = (e: Fx) => (isEmpty(e.pctctrl) ? 20 : Math.min(100, nz(e.pctctrl)));
+const controlTxt = (e: Fx) =>
+  `dès ${L.filsSeuil} fils, ${controlPct(e)} % de chances (+${L.filsPas} % par fil en plus) d'en prendre le contrôle : la carte passe dans son camp et se bat pour lui, l'adversaire envoie un autre combattant ; le marionnettiste quitte le terrain et paie ${L.filsCout} % de ses PV max à chaque tour, jusqu'à ce que la marionnette soit battue ou qu'il ne puisse plus payer`;
 const headshotText = (_e: Fx, c: number) =>
   `${c < 100 ? c + ' % de chances, à chaque coup, de faire' : 'Chaque coup fait'} un HEADSHOT, un coup critique sans tirer la chance de critique : ${critTxt}, avant blocage et réductions`;
 const lossAmt = (v: unknown, u: unknown) => (isEmpty(v) ? '10 %' : `${nz(v)}${upc(u)}`);
@@ -548,6 +556,8 @@ const EFFECT_TEXT: Record<EffectType, (e: Fx, x: EffectContext) => string[]> = {
   surcharge: () => [overloadTxt],
   forge: () => [forgeTxt],
   forge_creation: () => [forgeCreationTxt],
+  fils: (e) => [`Pose ${threadsTxt(e)} sur l'adversaire ; ${controlTxt(e)}`],
+  atk_fils: attackEffect,
   brisure_volonte: () => [willBreakTxt],
   etreinte_maudite: () => [
     `Donne à son combattant l'étreinte maudite : à chaque attaque de l'adversaire, chacune de ses malédictions lui retire ${L.etreinte} ATQ de plus (rendue avec la malédiction)`,

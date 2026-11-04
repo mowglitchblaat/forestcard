@@ -13,6 +13,9 @@ import type { Card, Num } from './model/card.ts';
 
 export type SideIndex = number;
 
+// Why a control ends (mechanics/threads.ts).
+export type ControlEndReason = 'defeated' | 'unpaid' | 'end';
+
 // Read-only view of the combat, valid during the onEvent call only.
 export type SideView = {
   readonly pseudo: string;
@@ -308,6 +311,30 @@ export type DomainEvent =
       to: number;
     }
   | { type: 'forgeIdle'; side: SideIndex }
+  // Threads and control (mechanics/threads.ts). side: the card the threads are laid on; threads: its
+  // total now; of: the threshold from which a control can be taken.
+  | { type: 'threadsLaid'; side: SideIndex; count: number; threads: number; of: number }
+  // The puppeteer (side) takes the opponent's fighter (puppet, now on side `side`); the opponent
+  // (from) sends another fighter (now on side `from`). threads: the threads it took.
+  | { type: 'controlTaken'; side: SideIndex; from: SideIndex; puppet: Card; threads: number }
+  // The puppeteer, off the field, pays the threads at the start of its side's turn.
+  | {
+      type: 'puppeteerPaid';
+      side: SideIndex;
+      puppeteer: Card;
+      amount: number;
+      hp: number;
+      maxHp: number;
+    }
+  // The control ends: the puppet fell, or the puppeteer can no longer pay, or the combat ends.
+  // The puppeteer is back on side `side`; a puppet still standing goes back to its player (from).
+  | {
+      type: 'controlEnded';
+      side: SideIndex;
+      from: SideIndex;
+      puppet: Card;
+      reason: ControlEndReason;
+    }
   | {
       type: 'forgeCreated';
       side: SideIndex;

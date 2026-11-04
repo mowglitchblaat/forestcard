@@ -44,6 +44,7 @@ export const CATEGORY_LABELS: Record<string, string> = {
   vent: 'Cisaillement / coups critiques',
   foudre: 'Marque de foudre',
   forge: 'Forge',
+  fils: 'Fils / contrôle',
   autre: 'Autres',
 };
 // Category (legend colour) of each effect and passive type.
@@ -139,6 +140,7 @@ const CATEGORY_OF: Record<string, string> = {
   visee_maintenue: 'headshot',
   forge: 'forge',
   forge_creation: 'forge',
+  fils: 'fils',
 };
 export const categoryOf = (t: unknown): string =>
   CATEGORY_OF[String(t).replace(/^atk_/, '')] || 'autre';
@@ -190,5 +192,6 @@ export const CATEGORY_STYLES: Record<
   vent: { background: '#e0f2fe', color: '#075985', border: '1px solid #38bdf8' },
   foudre: { background: '#1e1b4b', color: '#fde047', border: '1px solid #facc15' },
   forge: { background: '#44260f', color: '#fdba74', border: '1px solid #ea580c' },
+  fils: { background: '#2e1065', color: '#f5d0fe', border: '1px solid #c026d3' },
   autre: { background: '#6b7280', color: '#fff' },
 };

@@ -16,7 +16,6 @@ import {
   createCombat,
   disableEmptySlots,
   emit,
-  id,
   newSide,
   over,
   type Combat,
@@ -24,6 +23,7 @@ import {
 import { TURN } from './combat/moments.ts';
 import { settleMagicCancellations } from './mechanics/magic-cancel.ts';
 import { revealMagic } from './mechanics/magic-timing.ts';
+import { endControl, payControl, takeControl } from './mechanics/threads.ts';
 import { triggersOf } from './mechanics/triggers.ts';
 import type { Side } from './combat/state.ts';
 import type { OnEvent } from './events.ts';
@@ -57,11 +57,31 @@ export function simulate(
   c.sides.forEach(disableEmptySlots);
 
   const first = c.random() < 0.5 ? 0 : 1;
-  const order: Side[] = [c.sides[first] as Side, c.sides[1 - first] as Side];
+  // The turn order, by side: a side's card may change during a period (a control, threads.ts).
+  const order = [first, 1 - first];
+  const cards = () => order.map((i) => c.sides[i] as Side);
   // Cards already played by each player (avoided during overtimes).
   const used: Card[][] = c.sides.map((s) => [s.fighter, s.magic, s.trap]);
+  const players = [pA, pB];
+  // A control (mechanics/threads.ts): the player whose fighter is taken sends a fighter of its deck
+  // not played yet, with a new magic and trap; a puppet still standing leaves the combat.
+  c.controlHost = {
+    canReplace: (i) =>
+      (players[i] as Player).deck.some(
+        (card) => card.type === 'combattant' && !(used[i] as Card[]).includes(card),
+      ),
+    replace: (i) => {
+      const s = c.sides[i] as Side;
+      const next = newSide(c, players[i] as Player, used[i], [s.fighter, s.magic, s.trap]);
+      (used[i] as Card[]).push(next.fighter, next.magic, next.trap);
+      disableEmptySlots(next);
+      return next;
+    },
+    entered: (_i, s) => revealMagics(c, [s]),
+    giveBack: () => {},
+  };
   emit(c, { type: 'combatStarted', first });
-  revealMagics(c, order);
+  revealMagics(c, cards());
 
   // Overtime: at the last round, if no card fell, each player draws 3 new cards from their deck (1
   // fighter, 1 magic, 1 trap) and the combat goes on, until a KO. After rules.maxProlong overtimes (3
@@ -73,24 +93,31 @@ export function simulate(
     for (c.round = 1; c.round <= rules.maxTours && !over(c); c.round++) {
       // A fallen card ends the round: before each turn, and between two steps of a turn.
       sides: for (let oi = 0; oi < 2; oi++) {
-        const a = order[oi] as Side;
         if (over(c)) break;
+        const side = order[oi] as number;
+        payControl(c, side);
+        const a = c.sides[side] as Side;
         emit(c, {
           type: 'turnStarted',
-          side: id(c, a),
+          side,
           turn: turnOffset + (c.round - 1) * 2 + oi + 1,
         });
         for (let i = 0; i < TURN.length; i++) {
           if (i > 0 && over(c)) break sides;
+          if (!c.sides.includes(a)) break; // a puppet that fell: its turn ends with it
           (TURN[i] as (typeof TURN)[number])(c, a);
         }
+        // a control drawn during the turn is taken once it is done (no flush otherwise: the order of
+        // the pending effects is behaviour)
+        if (c.pendingControl && !over(c)) takeControl(c);
       }
     }
     if (over(c) || period >= maxOvertimes) break;
+    endControl(c, 'end');
+    c.pendingControl = null;
     period++;
     turnOffset += rules.maxTours * 2;
     c.round = 0;
-    const players = [pA, pB];
     [0, 1].forEach((i) => {
       const previous = c.sides[i] as Side;
       const next = newSide(c, players[i] as Player, used[i], [
@@ -102,13 +129,12 @@ export function simulate(
       c.sides[i] = next;
       disableEmptySlots(next);
     });
-    order[0] = c.sides[first] as Side;
-    order[1] = c.sides[1 - first] as Side;
     c.pendingRevives = [];
     c.pendingEffects = [];
     emit(c, { type: 'overtimeStarted', period, first });
-    revealMagics(c, order);
+    revealMagics(c, cards());
   }
+  endControl(c, 'end');
 
   const dead = c.sides.map((s) => s.hp <= 0);
   const [s0, s1] = c.sides as [Side, Side];

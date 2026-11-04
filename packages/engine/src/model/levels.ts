@@ -63,6 +63,10 @@ export type StatusLevels = {
   forgeChanceMax: number;
   forgePlafondChance: number; // a forged chance never goes over this
   forgeDeclenchement: number; // trap: % of chances that the forge gives one trigger more (once)
+  // Threads (mechanics/threads.ts).
+  filsSeuil: number; // threads a card must carry before a control can be taken
+  filsPas: number; // % of control chance gained per thread beyond the threshold
+  filsCout: number; // % of the puppeteer's max HP paid at each turn of its side
 };
 
 export const DEFAULT_LEVELS: StatusLevels = {
@@ -103,6 +107,9 @@ export const DEFAULT_LEVELS: StatusLevels = {
   forgeChanceMax: 8,
   forgePlafondChance: 90,
   forgeDeclenchement: 15,
+  filsSeuil: 5,
+  filsPas: 15,
+  filsCout: 10,
 };
 
 export const MAX_LEVEL = 3;

@@ -38,6 +38,7 @@ import { effects as theft } from '../mechanics/theft.ts';
 import { effects as transcendence } from '../mechanics/transcendence.ts';
 import { effects as trapImmunity } from '../mechanics/trap-immunity.ts';
 import { effects as knell } from '../mechanics/knell.ts';
+import { effects as threads } from '../mechanics/threads.ts';
 import { effects as headshot } from '../mechanics/headshot.ts';
 import { effects as guard } from '../mechanics/guard.ts';
 import { effects as insect } from '../mechanics/insect.ts';
@@ -100,6 +101,7 @@ export const rules = (): Record<EffectType, EffectRule> =>
     ...venom,
     ...overload,
     ...forge,
+    ...threads,
     ...programming,
     ...purification,
     ...rage,

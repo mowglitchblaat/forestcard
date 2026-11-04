@@ -150,6 +150,11 @@ export const EDITOR_FIELDS = {
     "Lien parasitaire : % des soins du porteur qui partent chez l'adversaire (50 par défaut)",
     'n',
   ],
+  nbfils: ['Fils : nombre de fils posés (1 par défaut)', 'n'],
+  pctctrl: [
+    'Fils : % de chances de prendre le contrôle au seuil (20 par défaut ; + le pas par fil en plus, Réglages > Niveaux)',
+    'n',
+  ],
   matq: ['Mutation niveau I : ATQ en plus (unité ci-dessous)', 'n'],
   mpv: ['Mutation niveau I : PV en plus (unité ci-dessous)', 'n'],
   mreduc: ['Mutation niveau II : réduction des dégâts subis (%)', 'n'],
@@ -423,6 +428,12 @@ export const EDITOR_PASSIVES: Record<PassiveType, EditorEntry> = {
   visee_maintenue: [
     '🎯 Visée maintenue (Ciblage) : quand un ciblage de la carte est utilisé, X % de chances de le garder pour le coup suivant, encore et encore (valeur dans Réglages > Niveaux)',
   ],
+  fils: [
+    '🎭 Fils (Contrôle) : à X % de chances, chaque coup pose X fils ; au seuil (5 fils), X % de chances de prendre le contrôle de la carte, + par fil en plus (seuil, pas et coût dans Réglages > Niveaux)',
+    'chance',
+    'nbfils',
+    'pctctrl',
+  ],
 };
 
 export const EDITOR_ULTIMATES: { readonly [K in EffectType]?: EditorEntry } = {
@@ -687,6 +698,11 @@ export const EDITOR_ULTIMATES: { readonly [K in EffectType]?: EditorEntry } = {
   ],
   verrouillage_total: [
     "🎯 Verrouillage total (Ciblage) : verrouille l'adversaire : les 3 prochains coups du combattant sur lui sont des headshots (sans limite de tours)",
+  ],
+  fils: [
+    "🎭 Fils (Contrôle) : pose X fils sur l'adversaire ; au seuil (5 fils), X % de chances de prendre le contrôle de sa carte, + par fil en plus (seuil, pas et coût dans Réglages > Niveaux)",
+    'nbfils',
+    'pctctrl',
   ],
 };
 
@@ -1057,6 +1073,17 @@ export const EDITOR_MAGICS: { readonly [K in EffectType]?: EditorEntry } = {
   ],
   etreinte_maudite: [
     "💀 Étreinte maudite (Malédiction) : donne l'étreinte maudite à son combattant (à chaque attaque de l'adversaire, chacune de ses malédictions lui retire X ATQ de plus). Magie : tant qu'elle agit ; piège : jusqu'à la fin du combat",
+  ],
+  fils: [
+    "🎭 Fils (Contrôle) : pose X fils sur l'adversaire ; au seuil (5 fils), X % de chances de prendre le contrôle de sa carte, + par fil en plus (seuil, pas et coût dans Réglages > Niveaux)",
+    'nbfils',
+    'pctctrl',
+  ],
+  atk_fils: [
+    'Attaque de base : X % de chances, à chaque coup, de poser X fils (contrôle au seuil : X % de chances, + par fil en plus)',
+    'chance',
+    'nbfils',
+    'pctctrl',
   ],
 };
 

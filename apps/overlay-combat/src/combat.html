@@ -211,6 +211,11 @@ canvas.fx.solide{box-shadow:inset 0 0 30px 8px rgba(120,113,108,.75)}
 #tbracket .tbx{margin:1.6vh 0 .6vh;color:#fdba74}
 #tbracket .tbw{font-size:5.4vh;font-weight:900;color:#fcd34d;text-shadow:0 0 2vh #f59e0b,0 0 3px #000;animation:beltpop .9s cubic-bezier(.2,1.4,.4,1)}
 .forgeb{position:absolute;right:-4%;top:32%;z-index:7;display:flex;align-items:center;gap:.2vw;padding:.25vh .55vw;border-radius:999px;background:linear-gradient(180deg,#5a2d0c,#2b1406);border:2px solid #ea580c;color:#fdba74;font-weight:900;font-size:1.7vh;line-height:1;box-shadow:0 0 .8vw rgba(234,88,12,.75);pointer-events:none}
+/* Fils (contrôle) : la main de marionnettiste, paume vers le bas, au-dessus de la carte contrôlée, ses fils tendus jusqu'à la carte */
+.ctrlb{position:absolute;left:50%;top:-4.4vh;z-index:7;transform:translateX(-50%);font-size:3.4vh;line-height:1;pointer-events:none;filter:drop-shadow(0 0 .6vw #c026d3);animation:ctrlb 2.4s ease-in-out infinite}
+.ctrlb i{display:block;font-style:normal;transform:rotate(180deg)}
+.ctrlb::after{content:'';position:absolute;left:50%;top:3.2vh;width:2.6vw;height:4.6vh;transform:translateX(-50%);background:repeating-linear-gradient(90deg,rgba(240,171,252,.9) 0 1px,transparent 1px .55vw);-webkit-mask:linear-gradient(#000,rgba(0,0,0,.35));mask:linear-gradient(#000,rgba(0,0,0,.35))}
+@keyframes ctrlb{0%,100%{margin-top:0}50%{margin-top:-.6vh}}
 .forgeb b{color:#fff7ed;font-size:1.8vh}.forgeb.sm{right:-10%;top:-8%;font-size:1.2vh;padding:.15vh .4vw;border-width:1px}.forgeb.sm b{font-size:1.3vh}
 .forgeb.pop{animation:forgepop .7s cubic-bezier(.2,1.6,.4,1)}@keyframes forgepop{0%{transform:scale(.2) rotate(-40deg)}60%{transform:scale(1.35) rotate(10deg)}100%{transform:none}}
 .belt.pop,#beltmid.pop{animation:beltpop .9s cubic-bezier(.2,1.4,.4,1),beltlueur 2.6s ease-in-out .9s infinite}
@@ -1329,7 +1334,7 @@ function maj(e){[0,1].forEach(i=>{const p=$('#p'+i);p.querySelector('.bar i').st
 // STATUTS PORTÉS (champ `etats` du journal : [statut, nombre] par carte) : une pastille par statut, son niveau en chiffre romain
 // (ou son nombre : malédictions, lames, courant, PV du bouclier) ; la pastille grossit quand le niveau monte ; l'aura suit le niveau
 const ROM=['','I','II','III'],ET={poison:['☠️','#22c55e',1],brulure:['🔥','#f97316',1],saignement:['🩸','#ef4444',1],fatigue:['💤','#94a3b8',1],fracture:['🦴','#fde68a',1],glas:['🔔','#a78bfa',1],gel:['❄️','#7dd3fc',1],foudre:['⚡','#facc15',1],brume:['🌫️','#e2e8f0',1],
- malediction:['💀','#c084fc',2],lames:['🌪️','#a5f3fc',2],courant:['🌬️','#bae6fd',2],bouclier:['🪨','#d6b88a',3],embrasement:['🌋','#fb923c',0],fureur:['💢','#f97316',2],sangsue:['🧛','#86efac',0],surcharge:['🔌','#facc15',0],charge:['🔋','#fde047',2],cible:['🎯','#ff3b30',2],etourdi:['💫','#facc15',0],contamination:['🧪','#a3e635',0],faiblesse:['💧','#60a5fa',0],enracinement:['🌿','#4ade80',0]};
+ malediction:['💀','#c084fc',2],lames:['🌪️','#a5f3fc',2],courant:['🌬️','#bae6fd',2],bouclier:['🪨','#d6b88a',3],embrasement:['🌋','#fb923c',0],fureur:['💢','#f97316',2],sangsue:['🧛','#86efac',0],surcharge:['🔌','#facc15',0],charge:['🔋','#fde047',2],cible:['🎯','#ff3b30',2],fils:['🪡','#e879f9',3],etourdi:['💫','#facc15',0],contamination:['🧪','#a3e635',0],faiblesse:['💧','#60a5fa',0],enracinement:['🌿','#4ade80',0]};
 function etats(e){[0,1].forEach(i=>{const box=$('#p'+i+' .etats'),card=$('#p'+i+' .card');if(!box)return;const L=(e.etats&&e.etats[i])||[],prev=box._v||{},now={};
  const html=L.filter(([k])=>ET[k]).map(([k,n])=>{now[k]=n;const [ic,col,m]=ET[k],v=m===1?ROM[n]||'':m===2?(n>0?'×'+n:''):m===3?String(n):'',cl=['et'];if(m===1&&n>=2)cl.push('n'+Math.min(3,n));
   if(!(k in prev))cl.push('new');else if(n>prev[k])cl.push('up');return `<div class="${cl.join(' ')}" style="--ec:${col}">${ic}${v?`<b>${v}</b>`:''}</div>`}).join(''),sig=JSON.stringify(now);
@@ -1590,6 +1595,44 @@ function forgeBadge(c,slot,n){const el=slot==='fighter'?$('#p'+c+' .cw'):$((slot
 function nForgeCreation(c,piege){nfxStart();const b=nbox(c);if(!b)return;for(let i=0;i<3;i++)setTimeout(()=>{nshards(b.cx,b.cy,18,'#fb923c',.3,9);nshake(c,.4)},i*230);setTimeout(()=>{nring(b.cx,b.cy,b.w*.2,b.w*.95,'rgba(253,224,71,.85)',5,30);nglow(b.cx,b.cy,26,'#fde047',4,14,50,0,.8);nflash(c,'#fde047',600)},700);flot(c,piege?'PIÈGE FORGÉ !':'MAGIE FORGÉE !','#fde047','big')}
 function nEtreinte(c){nfxStart();const b=nbox(c);if(b)nring(b.cx,b.cy,b.w*.9,b.w*.35,'rgba(168,85,247,.85)',5,34);flot(c,'Étreinte maudite','#c084fc')}
 function nEtreinteSerre(c){nfxStart();const b=nbox(c);if(b)nring(b.cx,b.cy,b.w*.7,b.w*.3,'rgba(168,85,247,.7)',4,24)}
+// FILS (contrôle) : des fils de marionnette descendent du haut de l'écran et s'accrochent à la carte (la pastille 🪡 compte les fils)
+function nFils(c,n,of,quiet){const B=rc(c),k=Math.max(2,Math.min(7,n));addFx(1.5,(x,t)=>{const a=Math.min(1,t/.2)*Math.min(1,(1.5-t)/.45),d=1-Math.pow(1-Math.min(1,t/.65),3);x.lineWidth=1.4;
+  for(let i=0;i<k;i++){const fx=B.x+B.w*(.14+.72*i/(k-1)),yb=B.y+B.h*(.08+.06*Math.sin(i*1.7)),y=yb*d,sw=Math.sin(t*6+i)*B.w*.02*(1-d);
+   x.strokeStyle=`rgba(240,171,252,${.85*a})`;x.beginPath();x.moveTo(fx+sw*3,0);x.quadraticCurveTo(fx+sw*2,y*.5,fx,y);x.stroke();if(d>.95){x.fillStyle=`rgba(232,121,249,${a})`;x.beginPath();x.arc(fx,y,2.6,0,7);x.fill()}}});
+ if(!quiet)flot(c,n>=(of||5)?'🪡 '+n+' fils':'🪡 Fils '+n+'/'+(of||5),'#e879f9',n>=(of||5)?'big':'')}
+// La main du marionnettiste (DOM) au-dessus de la carte contrôlée, tant que le contrôle dure
+function ctrlBadge(c,on){const el=$('#p'+c+' .cw');if(!el)return;let b=el.querySelector(':scope>.ctrlb');if(!on){if(b)b.remove();return}if(!b){b=document.createElement('span');b.className='ctrlb';b.innerHTML='<i>🖐️</i>';el.appendChild(b)}}
+// Le combattant d'un camp change sans toucher à sa magie ni à son piège (contrôle) : la carte face visible
+function changerCombattant(i,j){const p=$('#p'+i),cw=p&&p.querySelector('.cw');if(!cw)return;const im=j.imageCombat||j.image,t=tierRar(j.rar),col=(j.rar&&j.rar.couleur)||'#888';
+ cw.outerHTML=`<div class="cw${t!=='co'?' rr rr-'+t:''}" style="--g:${col}"><div class="card" ${im?`style="background-image:url('${urlImg(im)}')"`:''}>${im?'':j.carte}${t==='ep'||t==='lg'||t==='ul'?'<span class="shn"></span>':''}${j.imageCombat?'<span class="sv sva" data-v=""></span><span class="sv svp" data-v=""></span>':''}</div>${beltsHtml(i)}<div class="etats"></div></div>`;
+ const nm=p.querySelector('.nm');if(nm)nm.textContent=j.carte;JOUEURS[i]={...(JOUEURS[i]||{}),...j}}
+// Un camp reçoit un nouveau combattant (avec sa magie et son piège), du centre de l'écran, qui se retourne
+async function arrivee(i,j){const p=$('#p'+i);if(!p)return;const vieux=[...document.querySelectorAll('#p'+i+' .cw, #p'+i+' .mini')];
+ vieux.forEach((el,n)=>el.animate([{opacity:1},{transform:`translateY(${30+n%3*8}px) scale(.8)`,opacity:0}],{duration:500,delay:(n%3)*80,easing:'ease-in',fill:'forwards'}));await wait(600);
+ panneau(i,j);const sc=$('#scene').getBoundingClientRect(),cx=sc.left+sc.width/2,cy=sc.top+sc.height*.45;
+ await Promise.all([$('#p'+i+' .cw'),$('#m'+i),$('#g'+i)].map((el,n)=>{if(!el)return null;const r=el.getBoundingClientRect(),dx=cx-(r.left+r.width/2),dy=cy-(r.top+r.height/2);
+  return el.animate([{transform:`translate(${dx}px,${dy}px) scale(.25) rotate(${i?18:-18}deg)`,opacity:0},{offset:.25,opacity:1},{transform:'none',opacity:1}],{duration:700,delay:n*320,easing:'cubic-bezier(.2,.8,.3,1)',fill:'backwards'}).finished.catch(()=>{})}));
+ await wait(300);await retourner($('#p'+i+' .card'),()=>{const d=$('#p'+i+' .dosf');if(d)d.remove()})}
+// PRISE DE CONTRÔLE : la main apparaît au-dessus de la carte adverse, les fils se tendent ; le marionnettiste se retire dans l'ombre,
+// la marionnette traverse l'écran et prend sa place (sa magie et son piège restent) ; l'adversaire envoie un autre combattant
+// (en relais, c'est la ligne « relais » qui suit qui le fait entrer)
+async function marionnette(e,suivante){const i=e.c,f=e.from;if(i==null||f==null)return;
+ nFils(f,e.n||5,e.n||5,true);ctrlBadge(f,true);nflash(f,'#e879f9',700);flot(f,'MARIONNETTE !','#e879f9','big');await wait(1300);
+ const a=$('#p'+i+' .cw'),b=$('#p'+f+' .cw');
+ if(a)await a.animate([{opacity:1,filter:'none'},{opacity:0,transform:'translateY(-6vh) scale(.85)',filter:'brightness(.3)'}],{duration:650,easing:'ease-in',fill:'forwards'}).finished.catch(()=>{});
+ const ra=a&&a.getBoundingClientRect(),rb=b&&b.getBoundingClientRect();
+ if(b){b.style.visibility='hidden';const k=b.querySelector('.card');if(k)k.dataset.brisee='1'}
+ changerCombattant(i,e.joueurs[i]);ctrlBadge(i,true);maj(e);const n=$('#p'+i+' .cw');
+ if(n&&ra&&rb)await n.animate([{transform:`translate(${rb.left-ra.left}px,${rb.top-ra.top}px)`},{offset:.5,transform:`translate(${(rb.left-ra.left)/2}px,${(rb.top-ra.top)/2-60}px) rotate(${i?-8:8}deg)`},{transform:'none'}],{duration:1100,easing:'cubic-bezier(.4,0,.2,1)'}).finished.catch(()=>{});
+ nflash(i,'#e879f9',600);await wait(400);
+ if(!(suivante&&suivante.t==='relais'&&suivante.c===f)){await arrivee(f,e.joueurs[f]);maj(e)}}
+// FIN DU CONTRÔLE : la marionnette battue se brise, ou ses fils se relâchent et elle repart vers son joueur ; le marionnettiste revient de l'ombre
+async function finControle(e){const i=e.c,f=e.from;if(i==null)return;ctrlBadge(i,false);const k=$('#p'+i+' .cw .card'),cw=$('#p'+i+' .cw');
+ if(e.raison==='defeated'){if(k&&k.dataset.cendre!=='1'&&k.dataset.brisee!=='1'&&!coupee(i)){briser(i);await wait(2400)}else await wait(500)}
+ else if(cw){flot(i,'Les fils lâchent','#e879f9');const B=rc(i),T=f!=null?rc(f):B;await cw.animate([{transform:'none',opacity:1},{transform:`translate(${(T.cx-B.cx)*.6}px,-8vh) rotate(${i?-14:14}deg) scale(.7)`,opacity:0}],{duration:900,easing:'ease-in',fill:'forwards'}).finished.catch(()=>{})}
+ changerCombattant(i,e.joueurs[i]);maj(e);const n=$('#p'+i+' .cw');
+ if(n)await n.animate([{transform:'translateY(-7vh) scale(.85)',opacity:0,filter:'brightness(.3)'},{transform:'none',opacity:1,filter:'none'}],{duration:700,easing:'cubic-bezier(.2,.8,.3,1)'}).finished.catch(()=>{});
+ flot(i,'De retour !','#f0abfc','big');await wait(700)}
 Object.assign(NK,{
  'statut:lames':e=>nLamesPose(e.c,e.n),'statut:cisaillement':e=>nCisaille(e.c,false),'statut:lames_esquivees':e=>nCisaille(e.c,true),
  'statut:foudre':e=>nFoudre(e.c,e.n||1),'statut:foudre_coup':e=>nFoudreCoup(e.cible!=null?e.cible:1-e.c,e.n),'statut:foudre_rebond':e=>nRebond(e.c,e.s,e.r),'finstatut:foudre':()=>{},
@@ -1603,6 +1646,7 @@ Object.assign(NK,{
  'statut:sangsue_soin':e=>nSangsue(e.c,e.cible),'statut:injection':e=>nInjection(e.c,e.by!=null?e.by:1-e.c,e.r),
  'statut:surcharge':e=>nSurcharge(e.c),'finstatut:surcharge':()=>{},'statut:volt':e=>nVolt(e.c,e.n,e.plein),'statut:decharge':e=>nDecharge(e.c),
  'statut:brisure':e=>nBrisure(e.c,!/rien à briser/.test(e.txt||'')),'statut:etreinte':e=>nEtreinte(e.c),
+ 'statut:fils':e=>nFils(e.c,e.n,e.of),'statut:fils_cout':e=>flot(e.c,'🎭 Marionnettiste -'+e.n+' PV ('+e.hp+'/'+e.m+')','#e879f9'),
  'statut:forge':e=>{nForge(e.c,e.n,e.s,e.m);forgeBadge(e.c,e.s,e.n)},'statut:forge_vide':e=>flot(e.c,'Plus rien à forger','#fdba74'),'statut:forge_creation':e=>{nForgeCreation(e.c,e.s==='piege');forgeBadge(e.c,e.s==='piege'?'trap':'magic',0)}});
 async function jouer(res){
  file.push(res);if(enCours)return;enCours=true;
@@ -1610,12 +1654,14 @@ async function jouer(res){
   if(!TEST&&!DEMO)await chargerVitesse();journalRecap=R;TOURNOI=R.tournoi||null;if(TOURNOI&&TOURNOI.premiere&&TOURNOI.tableau)await tableauTournoi(TOURNOI.tableau,{actif:TOURNOI.match,ms:6500});/* tournoi : le tableau avant le 1er combat du match */$('#log').innerHTML='';let detoAvant=-1;
   for(let ix=0;ix<R.journal.length;ix++){const e=R.journal[ix];
    $('#ban').className=e.t;$('#ban').textContent=e.txt;$('#log').innerHTML+=e.txt+'<br>';$('#log').scrollTop=1e5;
-   if(e.t==='debut'||e.t==='prolongation'||e.t==='relais')chargerZones(e.joueurs);
+   if(e.t==='debut'||e.t==='prolongation'||e.t==='relais'||e.t==='controle'||e.t==='controle_fin')chargerZones(e.joueurs);
    try{allumerEffets(e)}catch(_){}
    if(e.t==='debut'){beltsDebut(R);EQUIPE=e.equipe?[{n:1,of:e.equipe},{n:1,of:e.equipe}]:[null,null];st={};fxL.length=0;fxAll.forEach(s=>s());fxAll.clear();JOUEURS=[];[0,1].forEach(i=>$('#p'+i).classList.remove('actif','idle'));e.joueurs.forEach((j,i)=>panneau(i,j));titreBan(e.joueurs);$('#scene').classList.add('on');maj(e);await wait(2200);   // les 3 dos de chaque joueur, puis les combattants se retournent
     await Promise.all([0,1].map(i=>retourner($('#p'+i+' .card'),()=>{const d=$('#p'+i+' .dosf');if(d)d.remove()})));await wait(900);continue}
    if(e.t==='prolongation'){await prolongation(e);continue}
    if(e.t==='relais'){await relais(e);continue}
+   if(e.t==='controle'){await marionnette(e,R.journal[ix+1]);continue}   // fils : prise de contrôle
+   if(e.t==='controle_fin'){await finControle(e);continue}
    if(e.t==='tour'){const jp=e.c!=null&&JOUEURS[e.c];$('#tour').textContent=e.txt+(jp?' · Au tour de '+jp.pseudo:'');[0,1].forEach(i=>{const p=$('#p'+i);if(p){p.classList.toggle('actif',i===e.c);p.classList.toggle('idle',e.c!=null&&i!==e.c)}});await wait(700);continue}
    const card=e.c!=null?$('#p'+e.c+' .card'):null;
    if(e.t==='attaque'){card.classList.add('atk');await wait(450);card.classList.remove('atk');continue}
@@ -1848,6 +1894,8 @@ if(DEMO){
   ['Foudre','Accumulateur : 3 charges, puis décharge',async c=>{for(let n=1;n<=3;n++){nVolt(c,n,n===3);await wait(700)}nDecharge(c)},3200],
   ['Forge','Forge : amélioration (3 coups de marteau, le marteau et son niveau sur la carte)',async c=>{for(let n=1;n<=3;n++){nForge(c,n);forgeBadge(c,'fighter',n);await wait(1300)}forgeBadge(c,'fighter',0)},4200],
   ['Forge','Forge de création : une nouvelle magie',async c=>{nForgeCreation(c,false)},2400],
+  ['Fils','Fils : les fils s\'accrochent (1, 3, puis 5)',async c=>{for(const n of[1,3,5]){nFils(c,n,5);await wait(1200)}},4000],
+  ['Fils','Contrôle : la main du marionnettiste au-dessus de la carte',async c=>{nFils(c,5,5,true);ctrlBadge(c,true);nflash(c,'#e879f9',700);flot(c,'MARIONNETTE !','#e879f9','big');await wait(2600);ctrlBadge(c,false)},3400,null,null,true],
   ['Terre','Sédimentation : couches, bouclier, il encaisse',async c=>{for(let n=1;n<=3;n++){nCouche(c,n);await wait(600)}nBouclierPierre(c,24);NP[c].bouclier=24;nfxStart();await wait(1200);nBouclierEncaisse(c,10);await wait(900);NP[c].bouclier=0},4400],
   ['Terre','Réplique sismique',async c=>{for(let n=1;n<=3;n++){nChargeTerre(c,n);await wait(500)}await nReplique(c,1-c,false)},3000],
   ['Enracinement','Épineux (les racines enserrent la carte)',async c=>{nRacines(c,'epineux');nRacinesSync(c,true);await wait(2800);nRacinesSync(c,false)},3600],

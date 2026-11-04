@@ -28,6 +28,7 @@ import { rootingOnHit } from '../mechanics/rooting.ts';
 import { shearOnHit } from '../mechanics/blades.ts';
 import { lightningOnHit } from '../mechanics/lightning.ts';
 import { parasiteOnHit } from '../mechanics/parasite.ts';
+import { threadsOnHit } from '../mechanics/threads.ts';
 
 // What an attack carries from one step to the next (the legacy engine's local variables).
 export type Attack = {
@@ -112,6 +113,7 @@ export const LAID_ON_HIT: Record<string, (c: Combat, q: EffectData, d: Side) => 
   contamination: contaminationOnHit,
   cisaillement: shearOnHit,
   foudre: lightningOnHit,
+  fils: threadsOnHit,
 };
 
 // A strike that landed: the statuses given by passives and by basic attack effects, in the order the

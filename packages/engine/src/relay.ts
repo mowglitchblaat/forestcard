@@ -25,6 +25,7 @@ import {
   disableEmptySlots,
   emit,
   flush,
+  handOver,
   id,
   newSide,
   opponent,
@@ -33,6 +34,7 @@ import { TURN } from './combat/moments.ts';
 import type { Side } from './combat/state.ts';
 import { settleMagicCancellations } from './mechanics/magic-cancel.ts';
 import { revealMagic } from './mechanics/magic-timing.ts';
+import { endControl, payControl, puppetFell, takeControl } from './mechanics/threads.ts';
 import { triggersOf } from './mechanics/triggers.ts';
 import type { OnEvent } from './events.ts';
 import type { Card, Player } from './model/card.ts';
@@ -74,22 +76,53 @@ export function simulateRelay(
   const canSend = (i: number) => fielded[i]! < team && fielded[i]! < (fighters[i] ?? 0);
   // The players who sent a fighter during the turn under way.
   const entered = new Set<number>();
+  // A puppet given back to its player (mechanics/threads.ts) waits in its reserve with the HP it had.
+  const reserve = new Map<Card, number>();
+  // The next fighter of a player (with a new magic and trap), counted among its fighters.
+  const next = (i: number, s: Side): Side => {
+    const n = newSide(c, players[i] as Player, used[i], [s.fighter, s.magic, s.trap]);
+    (used[i] as Card[]).push(n.fighter, n.magic, n.trap);
+    disableEmptySlots(n);
+    const hp = reserve.get(n.fighter);
+    if (hp !== undefined) {
+      reserve.delete(n.fighter);
+      n.hp = Math.min(n.maxHp, hp);
+    }
+    fielded[i]!++;
+    entered.add(i);
+    return n;
+  };
+  const announce = (i: number, n: Side) => {
+    emit(c, { type: 'fighterEntered', side: i, index: fielded[i]!, of: team });
+    revealMagics(c, [n]);
+  };
   // A fallen fighter (after what was pending: a revive, a trap) gives way to its player's next one.
+  // A fallen puppet gives way to its puppeteer.
   c.standIn = (s: Side): Side => {
+    if (c.control && c.control.puppet === s) return puppetFell(c, s);
     flush(c);
     const i = c.sides.indexOf(s);
     if (s.hp > 0 || i < 0 || !canSend(i)) return s;
-    const next = newSide(c, players[i] as Player, used[i], [s.fighter, s.magic, s.trap]);
-    (used[i] as Card[]).push(next.fighter, next.magic, next.trap);
-    c.sides[i] = next;
-    disableEmptySlots(next);
-    fielded[i]!++;
-    entered.add(i);
+    const n = next(i, s);
+    c.sides[i] = n;
     const standing = c.sides[1 - i] as Side;
     if (standing.hp > 0) handOver(c, standing, [s]);
-    emit(c, { type: 'fighterEntered', side: i, index: fielded[i]!, of: team });
-    revealMagics(c, [next]);
-    return next;
+    announce(i, n);
+    return n;
+  };
+  // A control: the player whose fighter is taken sends its next one; the puppet does not count
+  // among the puppeteer's fighters, and goes back to its player's reserve if it is still standing.
+  c.controlHost = {
+    canReplace: canSend,
+    replace: (i) => next(i, c.sides[i] as Side),
+    entered: announce,
+    giveBack: (i, puppet) => {
+      fielded[i]!--;
+      const u = used[i] as Card[];
+      const k = u.indexOf(puppet.fighter);
+      if (k >= 0) u.splice(k, 1);
+      reserve.set(puppet.fighter, puppet.hp);
+    },
   };
   // After a turn: what is pending, then the fallen give way. Whether someone is still down (the end).
   const settle = (): boolean => {
@@ -98,7 +131,8 @@ export function simulateRelay(
     return c.sides.some((s) => s.hp <= 0);
   };
 
-  let order: Side[] = [c.sides[first] as Side, c.sides[1 - first] as Side];
+  // The turn order, by side: a side's card may change during a duel (a control, threads.ts).
+  let order = [first, 1 - first];
   let turn = 0;
   duels: for (;;) {
     entered.clear();
@@ -112,8 +146,10 @@ export function simulateRelay(
         break;
       }
       for (let oi = 0; oi < 2; oi++) {
-        const a = order[oi] as Side;
-        emit(c, { type: 'turnStarted', side: id(c, a), turn: ++turn });
+        const side = order[oi] as number;
+        payControl(c, side);
+        const a = c.sides[side] as Side;
+        emit(c, { type: 'turnStarted', side, turn: ++turn });
         for (let i = 0; i < TURN.length; i++) {
           if (i > 0) {
             flush(c);
@@ -125,6 +161,7 @@ export function simulateRelay(
           (TURN[i] as (typeof TURN)[number])(c, a);
         }
         if (settle()) break duels;
+        if (c.pendingControl) takeControl(c);
         if (entered.size) break;
       }
       if (entered.size) break;
@@ -143,9 +180,10 @@ export function simulateRelay(
     c.round = 0;
     c.pendingRevives = [];
     c.pendingEffects = [];
-    const one = entered.size === 1 ? (c.sides[[...entered][0]!] as Side) : null;
-    order = one ? [one, opponent(c, one)] : [c.sides[first] as Side, c.sides[1 - first] as Side];
+    const one = entered.size === 1 ? [...entered][0]! : null;
+    order = one !== null ? [one, 1 - one] : [first, 1 - first];
   }
+  endControl(c, 'end');
 
   const out = [0, 1].map(
     (i) =>
@@ -176,21 +214,5 @@ function revealMagics(c: ReturnType<typeof createCombat>, order: Side[]): void {
     ) {
       revealMagic(c, s);
     }
-  });
-}
-
-// What the fighter still standing held on the fallen one goes with it: a swallowed card is gone,
-// a purification aimed at it has no target, its magic changes on it have nothing to undo, a card
-// stolen from it for a while stays (nobody to give it back to). Its statuses stay; a delayed damage the fallen one
-// laid still strikes, now on behalf of the fighter that took its place.
-function handOver(c: ReturnType<typeof createCombat>, s: Side, gone: Side[]): void {
-  const st = s.status;
-  if (st.swallowing && gone.includes(st.swallowing.victim)) st.swallowing = null;
-  if (st.swallowedBy && gone.includes(st.swallowedBy)) st.swallowedBy = null;
-  st.scheduledPurifications = st.scheduledPurifications.filter((p) => !gone.includes(p.target));
-  s.magicDeltas = s.magicDeltas.filter((d) => !('side' in d && gone.includes(d.side)));
-  st.timedThefts = st.timedThefts.filter((t) => !gone.includes(t.owner));
-  st.delayedDamages.forEach((d) => {
-    if (gone.includes(d.source)) d.source = opponent(c, s);
   });
 }

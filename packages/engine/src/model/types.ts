@@ -90,6 +90,8 @@ export const EFFECT_TYPES = [
   'etreinte_maudite',
   'forge',
   'forge_creation',
+  'fils',
+  'atk_fils',
 ] as const;
 export type EffectType = (typeof EFFECT_TYPES)[number];
 
@@ -145,6 +147,7 @@ export const PASSIVE_TYPES = [
   'visee_maintenue',
   'forge',
   'forge_creation',
+  'fils',
 ] as const;
 export type PassiveType = (typeof PASSIVE_TYPES)[number];
 

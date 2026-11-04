@@ -182,6 +182,11 @@ export const TRIGGER_FACT: { [K in EventType]: Classify<K> | null } = {
   venomInjected: null,
   overloaded: null,
   forged: null,
+  // Threads are marks, not statuses; the control and its cost are facts of no trigger.
+  threadsLaid: null,
+  controlTaken: null,
+  puppeteerPaid: null,
+  controlEnded: null,
   forgeIdle: null,
   forgeCreated: null,
   overloadEnded: null,

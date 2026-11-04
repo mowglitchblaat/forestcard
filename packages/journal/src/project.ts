@@ -550,6 +550,39 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
         txt: `${name(e.side)} frappe l'enclume, mais plus rien n'est à forger`,
         o: { c: e.side, k: 'forge_vide' },
       };
+    // ── Threads and control (mechanics/threads.ts) ──
+    case 'threadsLaid':
+      return {
+        t: 'statut',
+        txt:
+          (e.count > 1
+            ? `${e.count} fils s'accrochent à ${name(e.side)}`
+            : `Un fil s'accroche à ${name(e.side)}`) + ` (${e.threads}/${e.of})`,
+        o: { c: e.side, k: 'fils', n: e.threads, of: e.of },
+      };
+    case 'controlTaken':
+      return {
+        t: 'controle',
+        txt: `MARIONNETTE ! ${pseudo(e.side)} prend le contrôle de ${e.puppet.nom} ! ${pseudo(e.from)} envoie ${name(e.from)} au combat`,
+        o: { c: e.side, from: e.from, n: e.threads, joueurs: players() },
+      };
+    case 'puppeteerPaid':
+      return {
+        t: 'statut',
+        txt: `${e.puppeteer.nom} tire les fils dans l'ombre : -${e.amount} PV (${e.hp}/${e.maxHp})`,
+        o: { c: e.side, k: 'fils_cout', n: e.amount, hp: e.hp, m: e.maxHp },
+      };
+    case 'controlEnded':
+      return {
+        t: 'controle_fin',
+        txt:
+          e.reason === 'defeated'
+            ? `La marionnette ${e.puppet.nom} est brisée : ${name(e.side)} revient sur le terrain`
+            : e.reason === 'unpaid'
+              ? `${name(e.side)} n'a plus la force de tirer les fils : ${e.puppet.nom} retourne auprès de ${pseudo(e.from)}, ${name(e.side)} revient sur le terrain`
+              : `Les fils se relâchent : ${e.puppet.nom} retourne auprès de ${pseudo(e.from)}, ${name(e.side)} revient sur le terrain`,
+        o: { c: e.side, from: e.from, raison: e.reason, joueurs: players() },
+      };
     case 'forgeCreated':
       return {
         t: 'statut',
