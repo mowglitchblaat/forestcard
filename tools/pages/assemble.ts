@@ -16,7 +16,7 @@ const OUT = join(ROOT, '_site');
 // The cutover (docs/guides/bascule-site.md): false, the author's page is the site and the React
 // site is on trial at nouveau.html; true, the React site is served at index.html (and still at
 // nouveau.html, for the links already shared), the author's page stays at ancien.html. Back: false.
-const REACT_SITE: boolean = false;
+const REACT_SITE: boolean = true;
 
 // Served URL (relative to the site root) → source in the repository.
 const FILES: [url: string, source: string][] = [

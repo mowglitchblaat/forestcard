@@ -1,6 +1,6 @@
 # Bascule du site : de la page de l'auteur au site React
 
-Le site React (`apps/web`) tourne en test à `/nouveau.html`, à côté de la page actuelle (`apps/site`, servie à `/index.html`). Ce guide dit ce qui a été rattrapé, ce qui reste à vérifier, puis les gestes de la bascule et du retour en arrière.
+Basculé le 4 novembre 2026 : le site React (`apps/web`) est servi à `/index.html` (et `/nouveau.html`), la page de l'auteur à `/ancien.html`. Ce guide dit ce qui a été rattrapé, ce qui reste à vérifier, puis les gestes de la bascule et du retour en arrière.
 
 Point de départ (4 novembre 2026) : le site React avait été synchronisé avec la page de l'auteur le 19 octobre (`5fabe1b`). Depuis, la page avait reçu 66 modifications et les migrations 33 à 56. Tout est rattrapé le 4 novembre ; ce qui suit est l'état ligne par ligne.
 
