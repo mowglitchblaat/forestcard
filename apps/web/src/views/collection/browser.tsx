@@ -1,6 +1,7 @@
 // The card grid shared by "Ma collection", the encyclopedia's catalogue and the deck page: a toolbar
 // (search, filters, sort, all kept in the address), an image-first grid in one section per card
-// type, and the selected card's details beside the grid (in a side panel on small screens).
+// type, and the selected card opened big in a window with its details (in a side panel when
+// picking cards for a deck).
 // Pick mode (the deck page): a click puts the card in or out of the deck, a magnifier opens its
 // details, always in a side panel (the deck takes the space beside the grid).
 
@@ -16,13 +17,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
 import { Toggle } from '@/components/ui/toggle';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { CARD_TYPES, type CardType, type CollectionEntry } from '@/data/cards';
 import { imageUrl } from '@/data/images';
 import type { Prices } from '@/data/recycling';
-import { useMediaQuery } from '@/hooks/use-media-query';
 import { rarityRank } from '@/lib/rarity';
 import { CardDetails, CardImage } from './details';
 import { collectionOf, filterEntries, num, sortEntries, TYPE_LABELS } from './model';
@@ -59,7 +60,6 @@ export function CardBrowser({
   prices?: Prices;
   pick?: Pick;
 }) {
-  const wide = useMediaQuery('(min-width: 1024px)') && !pick;
   // One section per card type (fighters, magics, traps), each sorted; `shown` follows the
   // sections' order, so previous / next walk the grid as it is displayed.
   const sections = useMemo(() => {
@@ -87,6 +87,7 @@ export function CardBrowser({
       maxPv={Math.max(1, ...entries.map((e) => num(e.card.pv)))}
       prices={prices}
       onStep={step}
+      large={!pick}
     />
   );
 
@@ -99,7 +100,7 @@ export function CardBrowser({
         count={shown.length}
         duplicates={!!prices}
       />
-      <div className={`grid items-start gap-6 ${pick ? '' : 'lg:layout-main-aside-22'}`}>
+      <div className="grid items-start gap-6">
         <div
           className="flex flex-col gap-8"
           onKeyDown={(e) => {
@@ -134,15 +135,7 @@ export function CardBrowser({
           })}
           {!shown.length && <p className="text-muted-foreground">Aucune carte ne correspond.</p>}
         </div>
-        {wide ? (
-          <aside className="sticky top-4 max-h-viewport-inset overflow-y-auto rounded-xl border bg-card p-4 text-card-foreground">
-            {details ?? (
-              <p className="text-sm text-muted-foreground">
-                Choisis une carte pour voir ses détails.
-              </p>
-            )}
-          </aside>
-        ) : (
+        {pick ? (
           <Sheet open={!!selected} onOpenChange={(o) => !o && set({ card: undefined })}>
             <SheetContent className="overflow-y-auto">
               <SheetTitle className="sr-only">{selected?.card.nom}</SheetTitle>
@@ -150,6 +143,15 @@ export function CardBrowser({
               <div className="p-4">{details}</div>
             </SheetContent>
           </Sheet>
+        ) : (
+          // The collection: the card opens big, its details beside it, as on the legacy page.
+          <Dialog open={!!selected} onOpenChange={(o) => !o && set({ card: undefined })}>
+            <DialogContent className="max-h-dialog overflow-y-auto sm:max-w-4xl">
+              <DialogTitle className="sr-only">{selected?.card.nom}</DialogTitle>
+              <DialogDescription className="sr-only">Détails de la carte</DialogDescription>
+              {details}
+            </DialogContent>
+          </Dialog>
         )}
       </div>
     </>

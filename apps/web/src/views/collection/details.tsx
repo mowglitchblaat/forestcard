@@ -70,6 +70,7 @@ export function CardDetails({
   maxPv,
   prices,
   onStep,
+  large = false,
 }: {
   entry: CollectionEntry;
   image: string | null;
@@ -78,6 +79,8 @@ export function CardDetails({
   // None in the catalogue: no copies, nothing to recycle.
   prices?: Prices;
   onStep: ((step: 1 | -1) => void) | null;
+  // In the collection's big window: the card large on one side, its details on the other.
+  large?: boolean;
 }) {
   const { card, variant, quantite } = entry;
   const gain = prices ? gainOf(entry, prices) : null;
@@ -97,39 +100,43 @@ export function CardDetails({
       ? `Dos équipé : ${inUse.nom}`
       : 'Dos standard du jeu';
 
-  return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-2">
-        <Button
-          variant="ghost"
-          size="icon"
-          aria-label="Carte précédente"
-          disabled={!onStep}
-          onClick={() => onStep?.(-1)}
-        >
-          <ICONS.previous />
-        </Button>
-        <h2 className="text-center text-lg font-semibold">{card.nom}</h2>
-        <Button
-          variant="ghost"
-          size="icon"
-          aria-label="Carte suivante"
-          disabled={!onStep}
-          onClick={() => onStep?.(1)}
-        >
-          <ICONS.next />
-        </Button>
-      </div>
-      <div className="mx-auto w-full max-w-64">
-        {/* A new card per entry: each one opens face up. */}
-        <TiltCard
-          key={variant.id}
-          front={<CardImage entry={entry} image={image} />}
-          back={back}
-          backName={backName}
-          glow={card.raretes.couleur ?? '#888'}
-        />
-      </div>
+  const nav = (
+    <div className="flex items-center justify-between gap-2">
+      <Button
+        variant="ghost"
+        size="icon"
+        aria-label="Carte précédente"
+        disabled={!onStep}
+        onClick={() => onStep?.(-1)}
+      >
+        <ICONS.previous />
+      </Button>
+      <h2 className="text-center text-lg font-semibold">{card.nom}</h2>
+      <Button
+        variant="ghost"
+        size="icon"
+        aria-label="Carte suivante"
+        disabled={!onStep}
+        onClick={() => onStep?.(1)}
+      >
+        <ICONS.next />
+      </Button>
+    </div>
+  );
+  const picture = (
+    <div className={`mx-auto w-full ${large ? 'max-w-sm' : 'max-w-64'}`}>
+      {/* A new card per entry: each one opens face up. */}
+      <TiltCard
+        key={variant.id}
+        front={<CardImage entry={entry} image={image} />}
+        back={back}
+        backName={backName}
+        glow={card.raretes.couleur ?? '#888'}
+      />
+    </div>
+  );
+  const info = (
+    <>
       <div className="flex flex-wrap items-center justify-center gap-2 text-sm">
         <RarityBadge entry={entry} />
         <span className="text-muted-foreground">{meta.join(' · ')}</span>
@@ -159,6 +166,22 @@ export function CardDetails({
           offered={!!prices && fragmentsOffered(prices)}
         />
       )}
+    </>
+  );
+
+  return large ? (
+    <div className="flex flex-col gap-4">
+      {nav}
+      <div className="grid items-start gap-6 md:grid-cols-2">
+        {picture}
+        <div className="flex flex-col gap-4">{info}</div>
+      </div>
+    </div>
+  ) : (
+    <div className="flex flex-col gap-4">
+      {nav}
+      {picture}
+      {info}
     </div>
   );
 }
