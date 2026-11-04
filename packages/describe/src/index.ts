@@ -158,14 +158,14 @@ const ELEMENTS = ['brulure', 'gel', 'malediction', 'poison', 'saignement', 'fati
 // A leveled status takes the effect's level (`niveau`), else the level of its old value (`sval`).
 const elementText = (el: string, v: number, e: Fx): string | undefined =>
   (
-    {
+    ({
       brulure: burnTxt({ niveau: e.niveau, pctpv: v }),
       gel: `gel ${v} % d'attaque annulée`,
       malediction: `malédiction ${curseTxt}`,
       poison: poisonTxt({ niveau: e.niveau, degtour: v }),
       saignement: bleedTxt({ niveau: e.niveau, pctpv: v }),
       fatigue: fatigueTxt({ niveau: e.niveau, fatval: v }),
-    } as Record<string, string>
+    }) as Record<string, string>
   )[el];
 
 // The riposte of a block (bloque_attaque), once, on the first strike it blocks.
@@ -440,6 +440,13 @@ const EFFECT_TEXT: Record<EffectType, (e: Fx, x: EffectContext) => string[]> = {
   ],
   echange_pv: () => ["Échange ses PV avec ceux de l'adversaire"],
   echange_tout: () => ["Échange ATQ et PV avec l'adversaire"],
+  echange_statuts: () => ["Échange ses statuts négatifs avec ceux de l'adversaire"],
+  partage_statuts: () => [
+    "Partage ses statuts négatifs : l'adversaire en reçoit une copie (elle garde les siens)",
+  ],
+  copie_statuts: () => [
+    "Copie les statuts positifs de l'adversaire (renvoi, réduction des dégâts, double dégâts, rage, esquive, brume, insensible aux pièges)",
+  ],
   malediction: (_, { T, ci }) => [
     `Maudit ${ci} : ${curseTxt} pendant ${trs(T)}, puis l'ATQ revient (chaque malédiction ajoute la sienne)`,
   ],

@@ -444,6 +444,13 @@ export const EDITOR_ULTIMATES: { readonly [K in EffectType]?: EditorEntry } = {
   soin: ['Se soigne', 'val', 'u'],
   vol_vie: ['Vole de la vie', 'val'],
   echange_atq: ["Échange l'attaque avec l'adversaire"],
+  echange_pv: ["Échange les PV (et PV max) avec l'adversaire"],
+  echange_tout: ["Échange l'ATQ et les PV (et PV max) avec l'adversaire"],
+  echange_statuts: ["Échange ses statuts négatifs avec ceux de l'adversaire"],
+  partage_statuts: ["Partage ses statuts négatifs : l'adversaire en reçoit une copie"],
+  copie_statuts: [
+    "Copie les statuts positifs de l'adversaire (renvoi, réduction, double dégâts, rage, esquive, brume, insensible aux pièges)",
+  ],
   annule_attaque: ['Annule la prochaine attaque (rien ne passe)'],
   detonation: [
     "Détonation : fait exploser la brûlure, le poison et le saignement de l'adversaire (X % de leurs dégâts restants d'un coup, + bonus %, + X dégâts bruts de l'explosion ; tue sans réanimation possible)",
@@ -717,6 +724,16 @@ export const EDITOR_MAGICS: { readonly [K in EffectType]?: EditorEntry } = {
   pv_mod: ['Modifie les PV max (négatif = baisse)', 'cible', 'val', 'u'],
   soin: ['Soigne son combattant', 'val', 'u'],
   degats: ["Dégâts directs à l'adversaire", 'val'],
+  echange_atq: ["Échange l'ATQ de son combattant avec celle de l'adversaire"],
+  echange_pv: ["Échange les PV (et PV max) de son combattant avec ceux de l'adversaire"],
+  echange_tout: ["Échange l'ATQ et les PV (et PV max) de son combattant avec ceux de l'adversaire"],
+  echange_statuts: ["Échange les statuts négatifs de son combattant avec ceux de l'adversaire"],
+  partage_statuts: [
+    "Partage les statuts négatifs de son combattant : l'adversaire en reçoit une copie",
+  ],
+  copie_statuts: [
+    "Copie les statuts positifs de l'adversaire sur son combattant (renvoi, réduction, double dégâts, rage, esquive, brume, insensible aux pièges)",
+  ],
   annule_attaque: ["Annule la prochaine attaque de l'adversaire (rien ne passe)"],
   detonation: [
     "Détonation : fait exploser la brûlure, le poison et le saignement de l'adversaire (X % de leurs dégâts restants d'un coup, + bonus %, + X dégâts bruts de l'explosion ; tue sans réanimation possible)",
@@ -1108,4 +1125,4 @@ export const EDITOR_CONDITIONS: Record<TrapConditionType, EditorEntry> = {
 };
 
 // Effects the engine runs that the editor does not offer: they only come from the random effect.
-export const NOT_EDITABLE: readonly EffectType[] = ['echange_pv', 'echange_tout'];
+export const NOT_EDITABLE: readonly EffectType[] = [];

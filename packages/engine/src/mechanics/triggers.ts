@@ -223,6 +223,7 @@ export const TRIGGER_FACT: { [K in EventType]: Classify<K> | null } = {
   swallowFailed: null,
   swallowed: null,
   statusesTransferred: null,
+  statusesShared: null,
   statusLostToSwallower: null,
   spatOut: null,
   digestionStarted: null,

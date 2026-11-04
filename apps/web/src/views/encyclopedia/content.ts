@@ -79,6 +79,11 @@ export const EFFECT_GROUPS: EffectGroup[] = [
         preview: 'echange',
       },
       {
+        label: 'Échange, partage et copie de statuts',
+        types: ['echange_statuts', 'partage_statuts', 'copie_statuts'],
+        target: 'both',
+      },
+      {
         label: 'Exécution',
         types: ['execution', 'execution_direct'],
         target: 'opponent',

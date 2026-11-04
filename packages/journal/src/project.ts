@@ -115,6 +115,26 @@ const RANDOM_EFFECT_LABELS: Record<RandomEffectKey, string> = {
   attackChain: 'Attaque de base : enchaînement',
 };
 
+// The statuses a status sharing moves or copies (statusesShared), as the journal names them.
+const SHARED_NAMES: Record<string, string> = {
+  poison: 'poison',
+  brulure: 'brûlure',
+  malediction: 'malédiction',
+  saignement: 'saignement',
+  gel: 'gel',
+  fatigue: 'fatigue',
+  fracture: 'fracture',
+  enracinement: 'enracinement',
+  contamination: 'contamination',
+  renvoi: 'renvoi',
+  reduction: 'réduction des dégâts',
+  double: 'double dégâts',
+  rage: 'rage',
+  esquive: 'esquive',
+  brume: 'brume',
+  insensible: 'insensible aux pièges',
+};
+
 const ATTACK_EFFECT_VERBS: Record<string, string> = {
   fatigue: 'fatiguer',
   enchainement: 'enchaîner les frappes',
@@ -1344,6 +1364,34 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
         txt: `Les statuts de ${name(e.from)} passent à ${name(e.side)}, plus forts (un niveau de plus) !`,
         o: { c: e.side, k: 'av_transfert', from: e.from, ks: e.kinds },
       };
+    case 'statusesShared': {
+      const list = (ks: readonly string[]) => ks.map((k) => SHARED_NAMES[k] ?? k).join(', ');
+      const txt =
+        e.mode === 'swap'
+          ? e.given.length || e.taken.length
+            ? `${name(e.side)} et ${name(e.with)} échangent leurs statuts négatifs${e.given.length ? ` (${list(e.given)} passent à ${name(e.with)})` : ''}${e.taken.length ? ` (${list(e.taken)} passent à ${name(e.side)})` : ''} !`
+            : `${name(e.side)} veut échanger les statuts négatifs, mais aucun n'en a`
+          : e.mode === 'share'
+            ? e.given.length
+              ? `${name(e.side)} partage ses statuts négatifs avec ${name(e.with)} (${list(e.given)}) !`
+              : `${name(e.side)} n'a aucun statut négatif à partager`
+            : e.copied.length
+              ? `${name(e.side)} copie les statuts de ${name(e.with)} (${list(e.copied)}) !`
+              : `${name(e.with)} n'a aucun statut à copier`;
+      return {
+        t: 'statut',
+        txt,
+        o: {
+          c: e.side,
+          k: 'partage_statuts',
+          with: e.with,
+          mode: e.mode,
+          given: e.given,
+          taken: e.taken,
+          copied: e.copied,
+        },
+      };
+    }
     case 'statusLostToSwallower':
       return {
         t: 'finstatut',

@@ -1713,3 +1713,35 @@ test('fils : en magie (effet fils) et donnés à l\'attaque (atk_fils)', () => {
   const a = combat([C('A', 1, SOLIDE), MAG('Fils', { type: 'atk_fils', chance: 100, nbfils: 2, pctctrl: 0 })], [C('B', 1, SOLIDE)], { regles: { maxTours: 2, maxProlong: 0 } });
   assert.deepEqual(lignes(a, e => e.k === 'fils').map(e => e.n), [2, 4]);
 });
+
+// Échange, partage et copie de statuts (novembre 2026).
+const ULT_STATUTS = (type) => ({ ultime: { type, apres_tours: 3, utilisations: 1 } });
+const POISON_B = { passif: { type: 'poison', chance: 100, degtour: 2, tours: 99 } };
+const ligneStatuts = r => r.journal.find(e => e.t === 'statut' && e.k === 'partage_statuts');
+const poisonSur = (r, depuis, c) => r.journal.slice(depuis).some(e => e.t === 'degats' && e.k === 'poison' && e.c === c);
+
+test('échange de statuts : les statuts négatifs passent à l\'adversaire, les siens à la carte', () => {
+  const r = combat([C('A', 5, SOLIDE, ULT_STATUTS('echange_statuts'))], [C('B', 5, SOLIDE, POISON_B)], { regles: { maxTours: 4, maxProlong: 0 } });
+  const l = ligneStatuts(r);
+  assert.ok(l, 'la ligne de l\'échange');
+  assert.equal(l.mode, 'swap');
+  assert.deepEqual(l.given, ['poison']);
+  assert.ok(poisonSur(r, r.journal.indexOf(l), 1), 'B subit le poison après l\'échange');
+});
+
+test('partage de statuts : l\'adversaire reçoit une copie, la carte garde les siens', () => {
+  const r = combat([C('A', 5, SOLIDE, ULT_STATUTS('partage_statuts'))], [C('B', 5, SOLIDE, POISON_B)], { regles: { maxTours: 4, maxProlong: 0 } });
+  const l = ligneStatuts(r);
+  assert.equal(l.mode, 'share');
+  assert.deepEqual(l.given, ['poison']);
+  const i = r.journal.indexOf(l);
+  assert.ok(poisonSur(r, i, 1), 'B est empoisonné');
+  assert.ok(poisonSur(r, i, 0), 'A l\'est toujours');
+});
+
+test('copie de statuts : la carte copie les statuts positifs de l\'adversaire', () => {
+  const r = combat([C('A', 5, SOLIDE, ULT_STATUTS('copie_statuts'))], [C('B', 5, SOLIDE), MAG('Miroir', { type: 'renvoi', val: 50, tours: 99 })], { regles: { maxTours: 4, maxProlong: 0 } });
+  const l = ligneStatuts(r);
+  assert.equal(l.mode, 'copy');
+  assert.deepEqual(l.copied, ['renvoi']);
+});

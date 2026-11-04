@@ -81,6 +81,16 @@ export type DispelledStatus =
   | 'foudre'
   | 'annule';
 
+// A positive status copied from the opponent (mechanics/status-sharing.ts).
+export type CopiedStatus =
+  | 'renvoi'
+  | 'reduction'
+  | 'double'
+  | 'rage'
+  | 'esquive'
+  | 'brume'
+  | 'insensible';
+
 // Why an attack, max HP or ATQ changed.
 export type StatCause =
   | 'effect' // atq_mod / pv_mod: signed amount
@@ -607,6 +617,18 @@ export type DomainEvent =
   | { type: 'swallowFailed'; side: SideIndex; target: SideIndex; ratio: number }
   | { type: 'swallowed'; side: SideIndex; target: SideIndex }
   | { type: 'statusesTransferred'; side: SideIndex; from: SideIndex; kinds: DispelledStatus[] }
+  // Status sharing (mechanics/status-sharing.ts): side plays the effect against `with`. given: the
+  // negative statuses side passes on (swap) or copies (share) to `with`; taken: those it takes from
+  // `with` (swap); copied: the positive statuses of `with` copied on side (copy).
+  | {
+      type: 'statusesShared';
+      side: SideIndex;
+      with: SideIndex;
+      mode: 'swap' | 'share' | 'copy';
+      given: DispelledStatus[];
+      taken: DispelledStatus[];
+      copied: CopiedStatus[];
+    }
   | { type: 'statusLostToSwallower'; side: SideIndex; status: DispelledStatus }
   | { type: 'spatOut'; side: SideIndex; target: SideIndex }
   | { type: 'digestionStarted'; side: SideIndex; turns: number }
