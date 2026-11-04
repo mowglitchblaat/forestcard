@@ -58,6 +58,12 @@ export async function fetchBalance(): Promise<BalanceRow[]> {
   return z.array(BalanceRow).parse(data);
 }
 
+// The admin takes a line out of the patch notes.
+export async function deleteBalanceRow(id: number): Promise<void> {
+  const { error } = await supabase.from('equilibrage').delete().eq('id', id);
+  if (error) throw new Error(error.message);
+}
+
 async function latestBalanceId(): Promise<number> {
   const { data, error } = await supabase
     .from('equilibrage')

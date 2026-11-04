@@ -191,7 +191,13 @@ function CombatRow({
         <span className="ml-auto text-xs text-muted-foreground">{date(c.cree_le)}</span>
       </div>
       <div className="text-xs text-muted-foreground">
-        {c.mode === 'payant' ? 'Duel' : 'Combat du jour'}
+        {c.mode === 'payant'
+          ? 'Duel'
+          : c.mode === 'titre'
+            ? '\u{1F947} Combat pour le titre'
+            : c.mode === 'tournoi'
+              ? '\u{1F396}\u{FE0F} Tournoi'
+              : 'Combat du jour'}
         {c.tours != null && ` · ${c.tours} tour${c.tours > 1 ? 's' : ''}`} ·{' '}
         <Gold n={c.gain ?? 0} sign />
       </div>

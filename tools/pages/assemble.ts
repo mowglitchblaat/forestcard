@@ -13,9 +13,15 @@ import { join, resolve } from 'node:path';
 const ROOT = resolve(import.meta.dirname, '..', '..');
 const OUT = join(ROOT, '_site');
 
+// The cutover (docs/guides/bascule-site.md): false, the author's page is the site and the React
+// site is on trial at nouveau.html; true, the React site is served at index.html (and still at
+// nouveau.html, for the links already shared), the author's page stays at ancien.html. Back: false.
+const REACT_SITE: boolean = false;
+
 // Served URL (relative to the site root) → source in the repository.
 const FILES: [url: string, source: string][] = [
-  ['index.html', 'apps/site/dist/index.html'],
+  ['index.html', REACT_SITE ? 'apps/web/dist/index.html' : 'apps/site/dist/index.html'],
+  ['ancien.html', 'apps/site/dist/index.html'],
   ['combat.html', 'apps/overlay-combat/dist/combat.html'],
   ['catalogue.html', 'apps/catalogue/dist/catalogue.html'],
   ['overlay.html', 'apps/overlay-boosters/src/overlay.html'],

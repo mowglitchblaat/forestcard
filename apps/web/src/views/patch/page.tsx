@@ -4,11 +4,12 @@
 // removes the dot on its sidebar entry. The votes, a tab here on the legacy page, have their own
 // page (views/votes); the admin's delete button (tranche 4) is not here yet.
 
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getRouteApi, Link } from '@tanstack/react-router';
 import { TONES } from '@/lib/tones';
 import { ICONS } from '@/lib/icons';
 import { useEffect, useMemo, useState } from 'react';
+import { HoldButton } from '@/components/hold-button';
 import { PageSkeleton } from '@/components/skeletons';
 import { Badge } from '@/components/ui/badge';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -16,13 +17,16 @@ import { cardKeys, type CollectionEntry, fetchGameCardsFull } from '@/data/cards
 import { fetchMirror, imageKeys, imageUrl } from '@/data/images';
 import {
   type BalanceRow,
+  deleteBalanceRow,
   fetchBalance,
   fetchPatchNotes,
   type PatchNote,
   patchNotesKeys,
 } from '@/data/patchnotes';
 import { usePatchNotesFingerprint } from '@/data/patchnotes-query';
+import { fetchIsAdmin, playerKeys } from '@/data/player';
 import { markSeen, SEEN_KEYS } from '@/lib/seen';
+import { useSession } from '@/lib/session';
 import { catalogueEntries } from '@/views/encyclopedia/model';
 import { cardsTouched, changeView, dayLabel, type FeedDay, feed, isNew, latestDay } from './model';
 import { PATCH_FILTERS, type PatchFilter } from './search';
@@ -155,6 +159,17 @@ function Note({ note }: { note: PatchNote }) {
 
 // Each row with the card's image and a link to it in the catalogue, when the card is still active.
 function BalanceList({ rows }: { rows: BalanceRow[] }) {
+  const me = useSession()?.user.id ?? '';
+  const isAdmin = useQuery({
+    queryKey: playerKeys.isAdmin(me),
+    queryFn: fetchIsAdmin,
+    enabled: me !== '',
+  });
+  const client = useQueryClient();
+  const remove = useMutation({
+    mutationFn: deleteBalanceRow,
+    onSettled: () => client.invalidateQueries({ queryKey: patchNotesKeys.balance }),
+  });
   const cards = useQuery({ queryKey: cardKeys.gameCardsFull, queryFn: fetchGameCardsFull });
   const mirror = useQuery({
     queryKey: imageKeys.mirror,
@@ -194,6 +209,18 @@ function BalanceList({ rows }: { rows: BalanceRow[] }) {
                 ))}
               </ul>
             </div>
+            {isAdmin.data && (
+              <HoldButton
+                size="icon-sm"
+                variant="destructive-ghost"
+                aria-label="Retirer cette ligne des patch notes"
+                disabled={remove.isPending}
+                onConfirm={() => remove.mutate(row.id)}
+                className="ml-auto shrink-0"
+              >
+                <ICONS.delete />
+              </HoldButton>
+            )}
           </li>
         );
       })}
