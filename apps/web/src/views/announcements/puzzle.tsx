@@ -22,13 +22,8 @@ import { useSession } from '@/lib/session';
 
 const plural = (n: number, word: string) => `${n} ${word}${n > 1 ? 's' : ''}`;
 
-// The board's custom properties: its grid, its proportions, its picture.
-const boardVars = (p: Puzzle, picture: string) => ({
-  '--cols': p.cols,
-  '--rows': p.lignes,
-  '--ratio': p.ratio && p.ratio > 0 ? p.ratio : 1,
-  '--puzzle-img': `url("${picture}")`,
-});
+// The board's proportions (width / height of the picture).
+const ratioOf = (p: Puzzle) => (p.ratio && p.ratio > 0 ? p.ratio : 1);
 
 function Piece({ piece, cols }: { piece: number; cols: number }) {
   const { col, row } = pieceAt(piece, cols);
@@ -108,7 +103,12 @@ export function PuzzleGame({
       ) : (
         <div
           className="puzzle-board grid w-full overflow-hidden rounded-lg border bg-muted"
-          style={boardVars(p, picture)}
+          style={{
+            '--cols': p.cols,
+            '--rows': p.lignes,
+            '--ratio': ratioOf(p),
+            '--puzzle-img': `url("${picture}")`,
+          }}
         >
           {Array.from({ length: total }, (_, cell) =>
             placed.has(cell) ? (
@@ -145,7 +145,15 @@ export function PuzzleGame({
               {hand.data ? 'Tu as posé toutes tes pièces du jour. Reviens demain !' : 'Pioche…'}
             </small>
           ) : (
-            <div className="flex flex-wrap gap-2" style={boardVars(p, picture)}>
+            <div
+              className="flex flex-wrap gap-2"
+              style={{
+                '--cols': p.cols,
+                '--rows': p.lignes,
+                '--ratio': ratioOf(p),
+                '--puzzle-img': `url("${picture}")`,
+              }}
+            >
               {pieces.map((piece) => (
                 <button
                   key={piece}
