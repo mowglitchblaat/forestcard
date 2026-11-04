@@ -12,7 +12,7 @@ export type NavItem = { view: PlayerView } | { page: EncyclopediaPage } | { site
 const views = (...list: PlayerView[]): NavItem[] => list.map((view) => ({ view }));
 
 export const PLAYER_GROUPS: { label: string; items: NavItem[] }[] = [
-  { label: 'Stream', items: [{ site: 'live' }] },
+  { label: 'Stream', items: [{ site: 'jouer' }, { site: 'live' }] },
   { label: 'Mes cartes', items: views('collection', 'deck', 'dos', 'echanges') },
   { label: 'Gold', items: views('jeux', 'boutique') },
   { label: 'Combats', items: views('historique', 'classement', 'ceintures', 'tournois') },

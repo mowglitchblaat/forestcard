@@ -8,11 +8,14 @@ import { Navigate, Outlet, getRouteApi } from '@tanstack/react-router';
 import type { Session } from '@supabase/supabase-js';
 import { type ReactNode, useState } from 'react';
 import { AppSidebar } from '@/components/app-sidebar';
+import { GiftNotes } from '@/components/gift-notes';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { fetchGameState, gameStateKey } from '@/data/admin';
 import { fetchIsAdmin, fetchPlayer, playerKeys, twitchAvatar, twitchNickname } from '@/data/player';
+import { TONES } from '@/lib/tones';
 import { signIn, useSession } from '@/lib/session';
 import { usePageTitle } from '@/page-title';
 import { AdminSubView } from '@/views/admin/page';
@@ -39,8 +42,16 @@ export function Shell() {
   return <SignedIn session={session} />;
 }
 
+// The sign-in came back with an error: a suspended account (auth.users.banned_until) says so.
+function signInError(): string {
+  const params = new URLSearchParams(`${location.search}&${location.hash.slice(1)}`);
+  return params.get('error_description') ?? params.get('error') ?? '';
+}
+
 function SignedOut() {
   const [signingIn, setSigningIn] = useState(false);
+  const [error] = useState(signInError);
+  const banned = /banned|bann/i.test(error);
   return (
     <main className="mx-auto max-w-5xl p-4">
       <div className="flex justify-end gap-2">
@@ -56,7 +67,15 @@ function SignedOut() {
           {signingIn ? 'Connexion…' : 'Se connecter avec Twitch'}
         </Button>
       </div>
-      <p className="mt-4">Connecte-toi avec ton compte Twitch pour voir ta collection.</p>
+      {banned ? (
+        <p role="alert" className="mt-4">
+          <b>⚠️ Activité suspecte détectée sur ce compte.</b>
+          <br />
+          Ton accès au site est suspendu. Prends contact avec un fondateur pour en parler.
+        </p>
+      ) : (
+        <p className="mt-4">Connecte-toi avec ton compte Twitch pour voir ta collection.</p>
+      )}
     </main>
   );
 }
@@ -85,9 +104,11 @@ function SignedIn({ session }: { session: Session }) {
       />
       <SidebarInset>
         <PageHeader />
+        <ClosedBanner />
         <div className="flex-1 p-4">
           <Outlet />
         </div>
+        <GiftNotes />
       </SidebarInset>
     </SidebarProvider>
   );
@@ -109,6 +130,18 @@ function PageHeader() {
         <ThemeToggle />
       </div>
     </header>
+  );
+}
+
+// The game closed everywhere (40-jeu-ferme.sql): said above every page, as the legacy page did.
+function ClosedBanner() {
+  const game = useQuery({ queryKey: gameStateKey, queryFn: fetchGameState, staleTime: 60_000 });
+  if (!game.data?.closed) return null;
+  return (
+    <div className={`border-b px-4 py-2 text-sm ${TONES.danger.box}`}>
+      🔒 Le jeu est fermé pour le moment : collection, decks, boutique et jeux du jour restent
+      ouverts.
+    </div>
   );
 }
 

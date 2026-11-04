@@ -44,6 +44,7 @@ import {
   shopKeys,
   STOCK_REFRESH,
 } from '@/data/shop';
+import { fetchGameState, gameStateKey } from '@/data/admin';
 import { useSession } from '@/lib/session';
 import {
   countdown,
@@ -143,7 +144,7 @@ export function AppSidebar({
                   ) : 'page' in item ? (
                     <EncyclopediaLink key={item.page} page={item.page} />
                   ) : (
-                    <SiteLink key={item.site} page={item.site} />
+                    <SiteLink key={item.site} page={item.site} isAdmin={isAdmin} />
                   ),
                 )}
               </SidebarMenu>
@@ -213,10 +214,18 @@ function EncyclopediaLink({ page }: { page: EncyclopediaPage }) {
   );
 }
 
-const SITE_ICONS: Record<SitePage, LucideIcon> = { live: ICONS.live, votes: ICONS.votes };
+const SITE_ICONS: Record<SitePage, LucideIcon> = {
+  jouer: ICONS.play,
+  live: ICONS.live,
+  votes: ICONS.votes,
+};
 
-function SiteLink({ page }: { page: SitePage }) {
+function SiteLink({ page, isAdmin }: { page: SitePage; isAdmin: boolean }) {
+  const game = useQuery({ queryKey: gameStateKey, queryFn: fetchGameState, staleTime: 60_000 });
   const Icon = SITE_ICONS[page];
+  // « Jouer » only while the game is paused on the site; the admin always sees it, to test.
+  if (page === 'jouer' && !isAdmin && (!game.data || game.data.live || game.data.closed))
+    return null;
   const label = SITE_PAGES[page];
   return (
     <SidebarMenuItem>

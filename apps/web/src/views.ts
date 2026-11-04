@@ -30,6 +30,7 @@ export type EncyclopediaPage = keyof typeof ENCYCLOPEDIA_PAGES;
 
 // Pages of the site alone, not in the legacy page.
 export const SITE_PAGES = {
+  jouer: 'Jouer',
   live: 'Le live',
   votes: 'Votes',
 } as const;
