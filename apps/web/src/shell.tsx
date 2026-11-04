@@ -16,6 +16,8 @@ import { fetchIsAdmin, fetchPlayer, playerKeys, twitchAvatar, twitchNickname } f
 import { signIn, useSession } from '@/lib/session';
 import { usePageTitle } from '@/page-title';
 import { AdminSubView } from '@/views/admin/page';
+import { BeltsPage } from '@/views/belts/page';
+import { ExchangesPage } from '@/views/exchanges/page';
 import { GamesPage } from '@/views/games/page';
 import { ProposalsPage } from '@/views/proposals/page';
 import { ShopPage } from '@/views/shop/page';
@@ -128,6 +130,8 @@ const PORTED: Partial<Record<PlayerView, () => ReactNode>> = {
   propos: ProposalsPage,
   jeux: GamesPage,
   tournois: TournamentsPage,
+  ceintures: BeltsPage,
+  echanges: ExchangesPage,
 };
 
 export function PlayerPage() {
