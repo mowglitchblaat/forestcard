@@ -7,7 +7,7 @@ import { CollectionSearch } from '@/views/collection/search';
 
 export const NEW_DECK = 'nouveau';
 
-export const DeckSearch = CollectionSearch.omit({ dup: true }).extend({
+export const DeckSearch = CollectionSearch.omit({ dup: true, own: true }).extend({
   deck: z.string().optional().catch(undefined),
   nom: z.string().optional().catch(undefined),
   mode: z.enum(['edition']).optional().catch(undefined),

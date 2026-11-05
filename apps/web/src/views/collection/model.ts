@@ -25,7 +25,8 @@ export function filterEntries(entries: CollectionEntry[], s: CollectionSearch): 
       (!s.type || e.card.type === s.type) &&
       (!s.group || collectionOf(e) === s.group) &&
       (!s.rarity || e.card.raretes.nom === s.rarity) &&
-      (!s.dup || e.quantite > 1),
+      (!s.dup || e.quantite > 1) &&
+      (!s.own || (s.own === 'oui') === e.quantite > 0),
   );
 }
 

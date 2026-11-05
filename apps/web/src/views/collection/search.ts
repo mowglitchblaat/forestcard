@@ -13,6 +13,10 @@ export const SORTS = {
 } as const;
 export type Sort = keyof typeof SORTS;
 
+// Owned or missing cards (the collection shows the missing versions greyed).
+export const OWNED = { oui: 'Possédées', non: 'Manquantes' } as const;
+export type Owned = keyof typeof OWNED;
+
 const optional = <T extends z.ZodType>(schema: T) => schema.optional().catch(undefined);
 
 export const CollectionSearch = z.object({
@@ -21,6 +25,7 @@ export const CollectionSearch = z.object({
   group: optional(z.string()),
   rarity: optional(z.string()),
   dup: optional(z.boolean()),
+  own: optional(z.enum(['oui', 'non'])),
   sort: optional(z.enum(Object.keys(SORTS) as [Sort, ...Sort[]])),
   card: optional(z.number()),
 });

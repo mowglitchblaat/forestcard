@@ -27,7 +27,7 @@ import type { Prices } from '@/data/recycling';
 import { rarityRank, tierOf } from '@/lib/rarity';
 import { CardDetails, CardImage } from './details';
 import { collectionOf, filterEntries, num, sortEntries, TYPE_LABELS } from './model';
-import { type CollectionSearch, type Sort, SORTS } from './search';
+import { type CollectionSearch, OWNED, type Owned, type Sort, SORTS } from './search';
 
 const TYPE_ICONS: Record<CardType, LucideIcon> = {
   combattant: ICONS.fighter,
@@ -319,7 +319,14 @@ function Toolbar({
   const rarities = [
     ...new Map(entries.map((e) => [e.card.raretes.nom, e.card.raretes])).values(),
   ].sort((a, b) => rarityRank(a)[0] - rarityRank(b)[0] || rarityRank(a)[1] - rarityRank(b)[1]);
-  const filtered = !!(search.q || search.type || search.group || search.rarity || search.dup);
+  const filtered = !!(
+    search.q ||
+    search.type ||
+    search.group ||
+    search.rarity ||
+    search.dup ||
+    search.own
+  );
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -348,6 +355,15 @@ function Toolbar({
         all="Toutes les raretés"
         onChange={(v) => set({ rarity: v })}
       />
+      {duplicates && (
+        <Choice
+          label="Possession"
+          value={search.own}
+          options={Object.entries(OWNED)}
+          all="Toutes les cartes"
+          onChange={(v) => set({ own: v as Owned | undefined })}
+        />
+      )}
       {duplicates && (
         <Toggle
           variant="outline"
@@ -386,6 +402,7 @@ function Toolbar({
               group: undefined,
               rarity: undefined,
               dup: undefined,
+              own: undefined,
             })
           }
         >

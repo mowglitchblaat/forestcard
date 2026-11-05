@@ -120,7 +120,7 @@ const rulesRoute = createRoute({
 const catalogueRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: 'encyclopedie/catalogue',
-  validateSearch: (search) => CollectionSearch.omit({ dup: true }).parse(search),
+  validateSearch: (search) => CollectionSearch.omit({ dup: true, own: true }).parse(search),
   component: CataloguePage,
 });
 
