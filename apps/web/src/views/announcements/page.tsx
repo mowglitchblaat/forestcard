@@ -95,9 +95,7 @@ export function AnnouncementCard({
         )}
         {a.texte && <p className="whitespace-pre-line">{a.texte}</p>}
         {a.type === 'vote' && <VoteOptions announcement={a} images={images} />}
-        {a.type === 'puzzle' && a.puzzle && picture && (
-          <PuzzleGame announcement={a} picture={picture} />
-        )}
+        {a.type === 'puzzle' && a.puzzle && <PuzzleGame announcement={a} images={images} />}
         {children}
       </CardContent>
     </Card>

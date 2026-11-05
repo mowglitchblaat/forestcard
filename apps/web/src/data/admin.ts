@@ -179,7 +179,7 @@ export async function clearWarnings(
 const UnusedImage = z.object({ chemin: z.string().nullable(), octets: NumOrNull });
 const Path = z.string().nullable().optional();
 export async function fetchUnusedImages(): Promise<{ paths: string[]; bytes: number }> {
-  const [unused, drawings, tournaments, trophies, announcements, options, ...lore] =
+  const [unused, drawings, tournaments, trophies, announcements, options, puzzle, ...lore] =
     await Promise.all([
       call(supabase.rpc('admin_images_inutilisees')),
       call(supabase.from('variantes_carte').select('dessin_path').not('dessin_path', 'is', null)),
@@ -187,9 +187,12 @@ export async function fetchUnusedImages(): Promise<{ paths: string[]; bytes: num
       call(supabase.from('trophees').select('image')),
       call(supabase.from('annonces').select('image_path')),
       call(supabase.from('annonces_options').select('image_path')),
+      // the puzzles' pieces and blurred backgrounds (63-puzzle-pieces-secretes.sql)
+      call(supabase.from('annonces_puzzle_images').select('image_path:image')),
       ...['lore_chapitres', 'lore_carte', 'lore_lieux', 'evenements', 'evenements_options'].map(
         (t) => call(supabase.from(t).select('image_path')),
       ),
+      call(supabase.from('annonces').select('image_path:puzzle_fond')),
     ]);
   const kept = new Set<string>();
   const keep = (path: string | null | undefined) => {
@@ -203,7 +206,9 @@ export async function fetchUnusedImages(): Promise<{ paths: string[]; bytes: num
   for (const t of z.array(z.object({ image: Path })).parse(trophies)) keep(t.image);
   for (const a of z
     .array(z.object({ image_path: Path }))
-    .parse([announcements, options, ...lore].flatMap((rows) => z.array(z.unknown()).parse(rows))))
+    .parse(
+      [announcements, options, puzzle, ...lore].flatMap((rows) => z.array(z.unknown()).parse(rows)),
+    ))
     keep(a.image_path);
   const list = z
     .array(UnusedImage)

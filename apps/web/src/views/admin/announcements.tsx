@@ -1,7 +1,9 @@
 // Admin · Annonces (58-annonces.sql): publish a plain announcement (title, text, picture) or a vote
 // (options, each with its picture: the next collection, say), then close or reopen a vote, or
 // delete an announcement. The admin sees the counts at any time. Or a shared puzzle (59-puzzle.sql):
-// a picture, its grid (columns × rows) and the pieces each player gets a day.
+// a picture, its grid (columns × rows) and the pieces each player gets a day. The picture is cut here,
+// in the browser, into one small image per piece (63-puzzle-pieces-secretes.sql); « Redécouper »
+// cuts a published puzzle again, its placed pieces keeping their cells.
 
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -17,6 +19,7 @@ import {
   createAnnouncement,
   deleteAnnouncement,
   fetchAnnouncements,
+  recutPuzzle,
   setAnnouncementOpen,
 } from '@/data/announcements';
 import { ICONS } from '@/lib/icons';
@@ -128,7 +131,9 @@ export function AnnouncementsAdmin() {
               <small className="text-muted-foreground sm:col-span-3">
                 {draft.cols * draft.lignes || 0} pièces. Puzzle commun : chaque joueur reçoit ses
                 pièces du jour et les pose à leur place ; l'image se révèle au fil des pièces, et le
-                puzzle se ferme tout seul à la dernière.
+                puzzle se ferme tout seul à la dernière. Au 3e essai raté de la journée, un joueur
+                attend 3 heures. L'image est découpée ici en une petite image par pièce (patiente un
+                peu à la publication) et l'originale reste privée.
               </small>
             </div>
           )}
@@ -230,6 +235,22 @@ export function AnnouncementsAdmin() {
                       ? 'Rouvrir le vote'
                       : 'Rouvrir le puzzle'}
                 </Button>
+              )}
+              {a.type === 'puzzle' && a.puzzle?.source && (
+                <HoldButton
+                  size="sm"
+                  variant="outline"
+                  disabled={action.pending}
+                  onConfirm={() =>
+                    action.run(async () => {
+                      await recutPuzzle(a);
+                      return `« ${a.titre} » redécoupé : les pièces posées restent à leur place.`;
+                    })
+                  }
+                >
+                  <ICONS.puzzle />
+                  {action.pending ? 'Découpe…' : 'Redécouper'}
+                </HoldButton>
               )}
               <HoldButton
                 size="sm"
