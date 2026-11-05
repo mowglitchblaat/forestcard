@@ -28,7 +28,7 @@ type Row = {
   effet: Record<string, unknown> | null;
   collections: { nom: string } | null;
   raretes: { nom: string; poids: number | null } | null;
-  variantes_carte: { nom: string | null; image_path: string | null }[];
+  variantes_carte: { nom: string | null; image_path: string | null; dessin_path?: string | null }[];
 };
 
 const TYPES: Record<string, string> = { combattant: 'Combattant', magie: 'Magie', piege: 'Piège' };
@@ -78,9 +78,14 @@ export function visitorPages(rows: Row[], mirror: Set<string>) {
       ...(s.meta ? { quand: s.meta } : {}),
       textes: s.items.map((i) => i.text),
     })),
+    // per version: the finished card, and the bare drawing (no frame, plaque nor numbers) when kept
     images: c.variantes_carte
-      .filter((v) => v.image_path)
-      .map((v) => ({ version: v.nom || 'Standard', url: image(v.image_path as string) })),
+      .filter((v) => v.image_path || v.dessin_path)
+      .map((v) => ({
+        version: v.nom || 'Standard',
+        url: v.image_path ? image(v.image_path) : null,
+        dessin: v.dessin_path ? image(v.dessin_path) : null,
+      })),
     poids: c.raretes?.poids ?? 1e9,
   }));
   // Collections by name, the basic cards last; in each, the rarest first, then by name.
@@ -113,7 +118,7 @@ ${list
   .map(
     (c) => `<article>
 <h3>${esc(c.nom)}</h3>
-<p><b>${esc(c.type)}</b>${c.rarete ? ` · rareté ${esc(c.rarete)}` : ''}${c.atq !== null ? ` · ATQ ${c.atq} · PV ${c.pv}` : ''}</p>
+<p><b>${esc(c.type)}</b> · collection ${esc(c.collection)}${c.rarete ? ` · rareté ${esc(c.rarete)}` : ''}${c.atq !== null ? ` · ATQ ${c.atq} · PV ${c.pv}` : ''}</p>
 ${c.description ? `<p><i>${esc(c.description)}</i></p>` : ''}
 ${c.effets
   .map(
@@ -121,7 +126,12 @@ ${c.effets
       `<p><b>${esc(s.titre)}</b>${'quand' in s && s.quand ? ` (${esc(s.quand)})` : ''} :</p><ul>${s.textes.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>`,
   )
   .join('\n')}
-${c.images.length ? `<p>${c.images.map((i) => `<a href="${esc(i.url)}">Image ${esc(i.version)}</a>`).join(' · ')}</p>\n<p>${c.images.map((i) => `<img src="${esc(i.url)}" alt="${esc(`${c.nom} (${i.version})`)}" loading="lazy" width="200">`).join(' ')}</p>` : ''}
+${c.images
+  .map(
+    (i) =>
+      `<p>Version ${esc(i.version)} : ${[i.url ? `<a href="${esc(i.url)}">carte finie</a>` : '', i.dessin ? `<a href="${esc(i.dessin)}">dessin seul (image de base)</a>` : ''].filter(Boolean).join(' · ')}</p>\n<p>${[i.url ? `<img src="${esc(i.url)}" alt="${esc(`${c.nom} (${i.version}, carte finie)`)}" loading="lazy" width="200">` : '', i.dessin ? `<img src="${esc(i.dessin)}" alt="${esc(`${c.nom} (${i.version}, dessin seul)`)}" loading="lazy" width="200">` : ''].join(' ')}</p>`,
+  )
+  .join('\n')}
 </article>`,
   )
   .join('\n')}
@@ -133,7 +143,7 @@ ${c.images.length ? `<p>${c.images.map((i) => `<a href="${esc(i.url)}">Image ${e
 <style>body{font-family:system-ui,sans-serif;max-width:60rem;margin:auto;padding:1rem;line-height:1.5;background:#fff;color:#111}article{border-top:1px solid #ddd;padding:.5rem 0}img{border-radius:8px;margin:2px}</style>
 </head><body>
 <h1>Forest Card · toutes les cartes</h1>
-<p>Mode visiteur : toutes les cartes publiées du jeu, par collection, avec leurs statistiques, le texte de leurs effets et les liens de leurs images. Version JSON : <a href="visiteur.json">visiteur.json</a>. Mis à jour le ${esc(new Date().toLocaleString('fr-FR', { timeZone: 'Europe/Paris' }))}.</p>
+<p>Mode visiteur : toutes les cartes publiées du jeu, par collection, avec leurs statistiques, le texte de leurs effets et les liens de leurs images : la carte finie, et le dessin seul (l'image de base, sans cadre ni écriteau) quand il est gardé. Version JSON : <a href="visiteur.json">visiteur.json</a>. Mis à jour le ${esc(new Date().toLocaleString('fr-FR', { timeZone: 'Europe/Paris' }))}.</p>
 <p>${cards.length} cartes · collections : ${collections.map((n) => `<a href="#${esc(n)}">${esc(n)}</a>`).join(' · ')}</p>
 ${collections.map(section).join('\n')}
 </body></html>
