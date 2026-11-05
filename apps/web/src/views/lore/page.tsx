@@ -61,7 +61,6 @@ export function LorePage() {
     <Tabs
       value={tab}
       onValueChange={(v) => void navigate({ search: { onglet: v as LoreTab }, replace: true })}
-      className="flex flex-col gap-4"
     >
       <TabsList>
         <TabsTrigger value="evenements">
