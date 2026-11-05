@@ -1,5 +1,34 @@
 [
   {
+    "date": "2026-11-05",
+    "intro": "Le nouveau site prend la relève, avec des annonces, un puzzle commun, le lore du monde et une nouvelle mécanique de contrôle : les Fils.",
+    "groupes": [
+      {
+        "titre": "Combat",
+        "points": [
+          "Fils : en accumulant des fils sur une carte adverse, on peut en prendre le contrôle et la faire se battre pour soi, en payant une part de ses PV à chaque tour.",
+          "Nouveaux effets : Distorsion (les bonus de l’adversaire se retournent contre lui), échange, partage ou copie de statuts, et croissance limitée (ATQ et PV qui montent régulièrement, un nombre de fois fixé).",
+          "Championnat : plus de défi pendant un combat pour le titre ni en rafale ; après trois avertissements, une semaine sans combat de ceinture."
+        ]
+      },
+      {
+        "titre": "Collection et deck",
+        "points": [
+          "Une carte de la collection s’ouvre en grand et s’incline, avec ses effets de rareté (halo, reflet, holographique), et un filtre montre les cartes possédées ou manquantes.",
+          "Recyclage des cartes en gold ou en fragments par rareté, et les decks de championnat (Rare, Épique, Libre) arrivent dans Mes decks."
+        ]
+      },
+      {
+        "titre": "Site",
+        "points": [
+          "Le nouveau site devient la page principale, avec les tournois, les ceintures, les échanges, les votes et une page Jouer quand le jeu est en pause.",
+          "Nouvel onglet Annonces : nouvelles, votes avec images, et un puzzle commun où chacun pose ses pièces du jour pour révéler l’image.",
+          "Découvrez le Lore (histoire en chapitres, carte du monde et ses lieux, événements) et l’Encyclopédie de tous les effets du jeu avec leur animation."
+        ]
+      }
+    ]
+  },
+  {
     "date": "2026-11-03",
     "intro": "Une nouvelle mécanique arrive : la Forge, pour renforcer ses cartes en plein combat.",
     "groupes": [
