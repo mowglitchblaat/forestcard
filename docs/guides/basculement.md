@@ -26,7 +26,6 @@ Les adresses publiques ne changent pas : les sources OBS, `MIROIR_URL` et les li
 | `/combat.html` | `combat.html` | `apps/overlay-combat/dist/combat.html` (généré) |
 | `/catalogue.html` | `catalogue.html` | `apps/catalogue/dist/catalogue.html` (généré) |
 | `/edge/swift-responder.ts` | (nouveau) | `apps/edge/dist/swift-responder.ts` (généré) : le fichier de l'edge à coller dans Supabase |
-| `/visiteur.html`, `/visiteur.json` | (nouveau) | écrits par `tools/pages/visitor.ts` à chaque publication (et chaque nuit) : toutes les cartes publiées, lisibles sans connexion (`cartes_publiques`, `61-visiteur.sql`), pour un assistant qui lit le web |
 | `/overlay.html` | `overlay.html` | `apps/overlay-boosters/src/overlay.html` |
 | `/patchnotes.json` | `patchnotes.json` | `apps/site/public/patchnotes.json` |
 | `/cadres/` | `cadres/` | `assets/cadres/` |

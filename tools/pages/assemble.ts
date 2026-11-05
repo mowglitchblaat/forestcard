@@ -9,7 +9,6 @@
 
 import { cpSync, existsSync, mkdirSync, rmSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { writeVisitorPages } from './visitor.ts';
 
 const ROOT = resolve(import.meta.dirname, '..', '..');
 const OUT = join(ROOT, '_site');
@@ -61,6 +60,3 @@ for (const [url, source] of [...FILES, ...OPTIONAL]) {
   cpSync(join(ROOT, source), join(OUT, url), { recursive: true });
   console.log(`${url} <- ${source}`);
 }
-
-// The visitor pages (visiteur.html, visiteur.json): every published card, readable without signing in.
-await writeVisitorPages(OUT, ROOT);
