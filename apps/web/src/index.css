@@ -459,6 +459,15 @@
   grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
   aspect-ratio: var(--ratio);
 }
+/* The whole picture behind the board, very blurred: a hint of the colours and shapes, mostly at the
+   start. Scaled up so the blur does not fade at the edges (the board clips it). */
+@utility puzzle-ghost {
+  background-image: var(--puzzle-img);
+  background-size: 100% 100%;
+  filter: blur(28px) saturate(1.3);
+  opacity: 0.5;
+  transform: scale(1.15);
+}
 @utility puzzle-cell {
   aspect-ratio: calc(var(--ratio) * var(--rows) / var(--cols));
 }

@@ -2,7 +2,7 @@
 // shows the pieces placed by everyone; each player gets a few pieces a day (their hand) and drops
 // each one on a cell, by dragging it or by picking it then the cell (phones). The right cell places
 // it for everyone; a wrong one sends it back to the hand, to try again. Once the last piece is
-// placed, the whole picture shows.
+// placed, the whole picture shows. Behind the board, the picture very blurred guides the first pieces.
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -27,7 +27,12 @@ const ratioOf = (p: Puzzle) => (p.ratio && p.ratio > 0 ? p.ratio : 1);
 
 function Piece({ piece, cols }: { piece: number; cols: number }) {
   const { col, row } = pieceAt(piece, cols);
-  return <span className="puzzle-piece block size-full" style={{ '--col': col, '--row': row }} />;
+  return (
+    <span
+      className="puzzle-piece relative block size-full"
+      style={{ '--col': col, '--row': row }}
+    />
+  );
 }
 
 export function PuzzleGame({
@@ -102,7 +107,7 @@ export function PuzzleGame({
         <img src={picture} alt="" className="w-full rounded-lg" />
       ) : (
         <div
-          className="puzzle-board grid w-full overflow-hidden rounded-lg border bg-muted"
+          className="puzzle-board relative grid w-full overflow-hidden rounded-lg border bg-muted"
           style={{
             '--cols': p.cols,
             '--rows': p.lignes,
@@ -110,6 +115,7 @@ export function PuzzleGame({
             '--puzzle-img': `url("${picture}")`,
           }}
         >
+          <span aria-hidden className="puzzle-ghost pointer-events-none absolute inset-0" />
           {Array.from({ length: total }, (_, cell) =>
             placed.has(cell) ? (
               <Piece key={cell} piece={cell} cols={p.cols} />
@@ -125,7 +131,7 @@ export function PuzzleGame({
                   e.preventDefault();
                   drop(cell, held);
                 }}
-                className="border border-dashed border-border/50 transition enabled:cursor-pointer enabled:hover:bg-primary/15"
+                className="relative border border-dashed border-border/50 transition enabled:cursor-pointer enabled:hover:bg-primary/15"
               />
             ),
           )}
