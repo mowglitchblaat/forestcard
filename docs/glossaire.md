@@ -175,7 +175,7 @@ Clés de `PASSIVE_TYPES`, lues par le moteur au moment indiqué.
 | `transcendance` | transcendance tenue dès le début du combat | `transcendence.ts` |
 | `aleatoire` | effet aléatoire tous les X tours | `random.ts` |
 | `soin_tour` | soin à chaque tour | `healing.ts` |
-| `atq_tours`, `pv_tours` | ATQ / PV max en hausse tous les X tours | `stats.ts` |
+| `atq_tours`, `pv_tours` | ATQ / PV max en hausse tous les X tours ; avec `fois`, X hausses au plus sur tout le combat (vide : sans limite) | `stats.ts` |
 | `purification` | purification tous les X tours, X fois au plus, s'il y a un statut à retirer | `purification.ts` |
 | `evite_mort` | évite la mort une fois | `avoid-death.ts` |
 | `detonation` | à chaque coup, `chance` % de faire détoner les statuts de la cible (comme l'effet `detonation`), avant de poser les nouveaux statuts du coup | `detonation.ts` |

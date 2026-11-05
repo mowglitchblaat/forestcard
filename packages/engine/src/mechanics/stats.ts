@@ -50,17 +50,36 @@ export function swapAllEffect({ c, o, x }: EffectContext): void {
   emit(c, { type: 'statsSwapped', side: id(c, o), with: id(c, x), what: 'all' });
 }
 
-// "Every turn" passive: ATQ grows every X rounds.
+// Its part of a card's status (combat/state.ts): how many times each growth passive (by its index
+// in the card's passives) has grown.
+export type StatsState = { growths: Record<number, number> };
+export const statsState = (): StatsState => ({ growths: {} });
+
+// A growth with a limit (`fois`: how many times it grows in the whole combat; empty = no limit):
+// true while it may still grow, and counts this growth.
+function grows(s: Side, p: EffectData): boolean {
+  const max = parseInt(String(p.fois), 10) || 0;
+  if (max <= 0) return true;
+  const i = s.passives.indexOf(p);
+  const done = s.status.growths[i] || 0;
+  if (done >= max) return false;
+  s.status.growths[i] = done + 1;
+  return true;
+}
+
+// "Every turn" passive: ATQ grows every X rounds (X times at most, with `fois`).
 export function atqGrowth(c: Combat, s: Side, p: EffectData): void {
   if (c.round % raw(p.tours) !== 0) return;
+  if (!grows(s, p)) return;
   const gain = amount(p, s.atq);
   s.atq += gain;
   emit(c, { type: 'statChanged', side: id(c, s), stat: 'atq', delta: gain, cause: 'growth' });
 }
 
-// "Every turn" passive: max HP (and HP) grow every X rounds.
+// "Every turn" passive: max HP (and HP) grow every X rounds (X times at most, with `fois`).
 export function maxHpGrowth(c: Combat, s: Side, p: EffectData): void {
   if (c.round % raw(p.tours) !== 0) return;
+  if (!grows(s, p)) return;
   const gain = amount(p, s.maxHp);
   s.maxHp += gain;
   s.hp += gain;

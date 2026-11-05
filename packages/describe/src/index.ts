@@ -45,6 +45,8 @@ const trs = (t: number) => `${t} tour${t > 1 ? 's' : ''}`;
 const sgn = (v: number) => (v > 0 ? '+' : '') + v;
 const upc = (u: unknown) => (u === 'pct' ? ' %' : '');
 const tousT = (t: number) => (t > 1 ? `tous les ${t} tours` : 'à chaque tour');
+// A growth's limit (`fois`), if any.
+const growthLimit = (p: Fx) => (nz(p.fois) > 0 ? `, ${nz(p.fois)} fois au plus` : '');
 const ciblT = (e: Fx) => ((e.ciblem || e.cible) === 'soi' ? 'sa propre carte' : "l'adversaire");
 const isEmpty = (v: unknown) => v == null || v === '';
 
@@ -226,8 +228,8 @@ const PASSIVE_TEXT: Record<PassiveType, (p: Fx, x: PassiveContext) => string> = 
     `Se soigne de ${v}${p.u === 'pct' ? ' % des PV max' : ' PV'} à chaque tour`,
   renvoi: (p, { v }) =>
     p.u === 'pct' ? `Renvoie ${v} % des dégâts reçus` : `Renvoie ${v} dégâts à chaque coup reçu`,
-  atq_tours: (p, { v, t }) => `ATQ +${v}${upc(p.u)} ${tousT(t)}`,
-  pv_tours: (p, { v, t }) => `PV max +${v}${upc(p.u)} ${tousT(t)}`,
+  atq_tours: (p, { v, t }) => `ATQ +${v}${upc(p.u)} ${tousT(t)}${growthLimit(p)}`,
+  pv_tours: (p, { v, t }) => `PV max +${v}${upc(p.u)} ${tousT(t)}${growthLimit(p)}`,
   multi_frappe: (p, { c }) => `${c} % de chances de frapper ${nz(p.frappes)} fois par tour`,
   reduc_degats: (p, { c, v }) => `${c} % de chances de réduire les dégâts reçus de ${v}${upc(p.u)}`,
   bonus_frappe: (p, { v }) =>

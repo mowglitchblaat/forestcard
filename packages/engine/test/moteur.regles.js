@@ -1785,3 +1785,12 @@ test('gag : posé à l\'attaque (passif)', () => {
   const r = combat([C('A', 5, SOLIDE, { passif: { type: 'gag', chance: 100, tours: 5 } })], [C('B', 5, SOLIDE)], { regles: { maxTours: 3, maxProlong: 0 } });
   assert.ok(r.journal.some(e => e.t === 'statut' && e.k === 'gag' && e.c === 1), 'B est piégé');
 });
+
+test('croissance limitée : pv_tours et atq_tours s\'arrêtent après « fois » augmentations', () => {
+  const r = combat([C('Colosse', 1, SOLIDE, { passif: { briques: [{ type: 'pv_tours', tours: 1, val: 10, fois: 2 }, { type: 'atq_tours', tours: 1, val: 1, fois: 3 }] } })], [C('B', 1, SOLIDE)], { regles: { maxTours: 6, maxProlong: 0 } });
+  const hausses = s => r.journal.filter(e => e.t === 'stat' && e.c === 0 && e.s === s && e.d > 0).length;
+  assert.equal(hausses('PV max'), 2);
+  assert.equal(hausses('ATQ'), 3);
+  const libre = combat([C('Colosse', 1, SOLIDE, { passif: { type: 'pv_tours', tours: 1, val: 10 } })], [C('B', 1, SOLIDE)], { regles: { maxTours: 6, maxProlong: 0 } });
+  assert.equal(libre.journal.filter(e => e.t === 'stat' && e.c === 0 && e.d > 0).length, 6, 'sans « fois », à chaque tour');
+});
