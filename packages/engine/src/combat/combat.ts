@@ -269,7 +269,20 @@ function deliver(c: Combat, event: DomainEvent, view: CombatView | null): void {
   else c.onEvent(event, view ?? c.liveView);
 }
 
+// The fields of an event naming a card in play (forged's from / to are values, not cards).
+const SIDE_FIELDS = ['side', 'from', 'to', 'with', 'by', 'target', 'defender'] as const;
+
+// An event about a card off the field (a fighter replaced during a control, whose magic is undone
+// later): id() is -1 for it. Nothing to show nor to react to: it is dropped.
+const offField = (event: DomainEvent): boolean =>
+  event.type !== 'forged' &&
+  SIDE_FIELDS.some((k) => {
+    const v = (event as Record<string, unknown>)[k];
+    return typeof v === 'number' && v < 0;
+  });
+
 export function emit(c: Combat, event: DomainEvent): void {
+  if (offField(event)) return;
   deliver(c, event, null);
   // Even during a hold: the legacy hook runs when a line is written, not when it is shown.
   if (c.triggers.any) noticeTrigger(c, event);

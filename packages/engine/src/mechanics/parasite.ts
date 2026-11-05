@@ -8,7 +8,7 @@
 // chances on each hit, LAID_ON_HIT), the insect mutation at level III. A negative status: a mist
 // takes it, a molt removes it.
 
-import { emit, id, opponent, roll, round, type Combat } from '../combat/combat.ts';
+import { emit, id, inPlay, opponent, roll, round, type Combat } from '../combat/combat.ts';
 import type { EffectContext, EffectRules } from '../combat/effect-context.ts';
 import type { Flow } from '../combat/flow.ts';
 import type { Side } from '../combat/state.ts';
@@ -96,7 +96,8 @@ export function sharedParts(c: Combat, s: Side, n: number): Share[] {
   const parts = new Map<Side, Share>();
   let left = n;
   for (const w of ways) {
-    if (w.to.hp <= 0) continue;
+    // a card off the field (a puppeteer during its control, a fighter that left) gets nothing
+    if (w.to.hp <= 0 || !inPlay(c, w.to)) continue;
     const a = Math.min(left, round((n * w.pct) / 100));
     if (a <= 0) continue;
     left -= a;
