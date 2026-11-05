@@ -61,7 +61,8 @@ export function PuzzleGame({
   const [held, setHeld] = useState<string | null>(null);
   const [message, setMessage] = useState<{ text: string; wrong: boolean } | null>(null);
   const blockedUntil = hand.data?.bloque_jusqua ?? null;
-  const blocked = !!blockedUntil && new Date(blockedUntil) > new Date();
+  // the server sends it only while it runs
+  const blocked = !!blockedUntil;
   const place = useMutation({
     mutationFn: ({ token, cell }: { token: string; cell: number }) =>
       placePuzzlePiece(a.id, token, cell),

@@ -259,12 +259,12 @@ export async function createAnnouncement(d: AnnouncementDraft): Promise<void> {
   const between = (n: number, lo: number, hi: number) =>
     Math.min(hi, Math.max(lo, Math.round(n) || lo));
   const cols = between(d.cols, 2, 20);
-  const rows = between(d.lignes, 2, 20);
+  const lines = between(d.lignes, 2, 20);
   const puzzle =
     d.type === 'puzzle' && d.image
       ? {
           puzzle_cols: cols,
-          puzzle_lignes: rows,
+          puzzle_lignes: lines,
           puzzle_jour: between(d.parJour, 1, 50),
           puzzle_ratio: await ratioOf(d.image),
         }
@@ -281,8 +281,8 @@ export async function createAnnouncement(d: AnnouncementDraft): Promise<void> {
           texte: d.texte.trim(),
           image_path,
           ...puzzle,
-          // closed until cut, so nobody draws pieces without their images
-          ...(d.type === 'puzzle' ? { ouvert: false } : {}),
+          // a puzzle stays closed until cut, so nobody draws pieces without their images
+          ouvert: d.type !== 'puzzle',
         })
         .select('id')
         .single(),
@@ -290,7 +290,7 @@ export async function createAnnouncement(d: AnnouncementDraft): Promise<void> {
   );
   if (d.type === 'puzzle' && d.image) {
     const source = await uploadSource(d.image);
-    await cutAndStore(created.id, d.image, cols, rows, source);
+    await cutAndStore(created.id, d.image, cols, lines, source);
     await setAnnouncementOpen(created.id, true);
   }
   const rows = [];
