@@ -1,5 +1,5 @@
 // Admin · Réglages (the legacy page's aReglages): the game switch (live, paused on the site, closed),
-// the belts' bonus lock, the combats' speed and daily limits, the status levels read by the edge
+// the belts' bonus lock, the championship tools (vacate a belt, clear warnings), the combats' speed and daily limits, the status levels read by the edge
 // function, the combats' gains and the Bounty event, recycling and exchange prices, and the storage
 // clean-up. Every value lives in reglages_jeu (key → text), read by swift-responder and the overlay.
 //
@@ -36,6 +36,7 @@ import {
   type Settings,
 } from '@/data/admin';
 import { ICONS } from '@/lib/icons';
+import { ChampionshipAdmin } from './championship';
 import { AdminError, AdminSection, Choice, Field, NoticeView, useAction } from './kit';
 
 const clamp = (
@@ -318,6 +319,8 @@ function SettingsForms({ v }: { v: Settings }) {
           <NoticeView notice={lock.notice} />
         </form>
       </AdminSection>
+
+      <ChampionshipAdmin />
 
       <AdminSection
         title="⏱️ Combats"

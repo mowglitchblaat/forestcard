@@ -144,6 +144,34 @@ export async function resetDailyCombats(): Promise<void> {
   await call(supabase.rpc('admin_reset_combats_jour'));
 }
 
+// Championship tools (62-admin-ceintures-avertissements.sql): vacate a belt, and the players with
+// warnings still counting or a deprivation running, whose warnings the admin can clear.
+export async function vacateBelt(division: string): Promise<string> {
+  const who = await call(supabase.rpc('admin_ceinture_vacante', { p_division: division }));
+  return z.string().parse(who);
+}
+
+const SanctionRow = z.object({
+  joueur: z.string(),
+  pseudo: z.string().nullable(),
+  avertissements: Num,
+  prive_jusqua: z.string().nullable(),
+});
+export type SanctionRow = z.infer<typeof SanctionRow>;
+export async function fetchTitleSanctions(): Promise<SanctionRow[]> {
+  return z.array(SanctionRow).parse(await call(supabase.rpc('admin_titre_sanctions')));
+}
+
+const Cleared = z.object({ avertissements: Num, privations: Num });
+export async function clearWarnings(
+  player: string,
+  deprivation: boolean,
+): Promise<{ warnings: number; deprivations: number }> {
+  const args = { p_joueur: player, p_privation: deprivation };
+  const r = Cleared.parse(await call(supabase.rpc('admin_retirer_avertissements', args)));
+  return { warnings: r.avertissements, deprivations: r.privations };
+}
+
 // Images of the storage used by no card (active or not), booster, back or proposal
 // (20-images-inutilisees.sql). Never listed, even when that function lists them: the composed
 // cards' bare drawings still in use, and the tournaments' images (cups, scarves, the trophies given

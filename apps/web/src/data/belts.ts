@@ -217,13 +217,15 @@ export function beltStory(state: BeltsState, division: string): StoryBlock[] {
           ? { icon: '🏳️', text: '3e refus de défi : la ceinture lui est retirée', at: end }
           : r.raison === 'abandon'
             ? { icon: '🏳️', text: 'Rend sa ceinture, qui devient vacante', at: end }
-            : r.raison === 'inactivite'
-              ? {
-                  icon: '⏳',
-                  text: '7 jours sans combat pour le titre : la ceinture lui est retirée',
-                  at: end,
-                }
-              : { icon: '⚔️', text: `Battu par ${lost ? other(lost, r.joueur) : '?'}`, at: end },
+            : r.raison === 'admin'
+              ? { icon: '🛠️', text: 'Ceinture remise en jeu par l’admin', at: end }
+              : r.raison === 'inactivite'
+                ? {
+                    icon: '⏳',
+                    text: '7 jours sans combat pour le titre : la ceinture lui est retirée',
+                    at: end,
+                  }
+                : { icon: '⚔️', text: `Battu par ${lost ? other(lost, r.joueur) : '?'}`, at: end },
       );
     }
     out.push({ kind: 'reign', reign: r, lines });
