@@ -31,6 +31,8 @@ export const EFFECT_TYPES = [
   'partage_statuts',
   'copie_statuts',
   'distorsion',
+  'gag',
+  'atk_gag',
   'malediction',
   'saignement',
   'souffle',
@@ -152,6 +154,7 @@ export const PASSIVE_TYPES = [
   'forge',
   'forge_creation',
   'fils',
+  'gag',
 ] as const;
 export type PassiveType = (typeof PASSIVE_TYPES)[number];
 

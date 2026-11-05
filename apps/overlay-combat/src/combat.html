@@ -254,6 +254,22 @@ canvas.fx.solide{box-shadow:inset 0 0 30px 8px rgba(120,113,108,.75)}
 .exfl{font-size:44px;color:#a78bfa;text-shadow:0 0 18px #7c3aed;animation:exrot 1.2s ease-in-out infinite alternate}
 @keyframes exrot{from{transform:scale(1)}to{transform:scale(1.25)}}
 .exan.swap .ea .exls{transform:translateX(var(--dx,260px))}.exan.swap .eb .exls{transform:translateX(calc(-1 * var(--dx,260px)))}.exan.swap .exls{z-index:1}
+.gagfx{position:absolute;left:50%;top:40%;z-index:13;pointer-events:none;font-size:16vh;line-height:1;transform:translate(-50%,-50%);filter:drop-shadow(0 .8vh 1.2vh #000)}
+.gagfx.marteau{transform-origin:85% 85%;animation:gagMarteau 1.1s cubic-bezier(.5,0,.6,1.4) forwards}
+@keyframes gagMarteau{0%{transform:translate(-10%,-120%) rotate(-80deg);opacity:0}35%{transform:translate(-10%,-120%) rotate(-95deg);opacity:1}55%{transform:translate(-30%,-55%) rotate(25deg)}65%{transform:translate(-30%,-55%) rotate(10deg) scale(1.1,.9)}85%{opacity:1}100%{transform:translate(-30%,-55%) rotate(15deg);opacity:0}}
+.gagfx.tnt{top:62%;animation:gagMeche 1s steps(2) forwards}
+@keyframes gagMeche{0%,100%{transform:translate(-50%,-50%) rotate(-6deg)}50%{transform:translate(-50%,-50%) rotate(6deg)}}
+.gagfx.boum{font-size:30vh;animation:gagBoum .9s ease-out forwards}
+@keyframes gagBoum{0%{transform:translate(-50%,-50%) scale(.2);opacity:1}40%{transform:translate(-50%,-50%) scale(1.25);opacity:1}100%{transform:translate(-50%,-50%) scale(1.5);opacity:0}}
+.gagfx.banane{top:80%;animation:gagBanane 1.2s ease-out forwards}
+@keyframes gagBanane{0%{transform:translate(120%,-50%) rotate(0);opacity:0}25%{transform:translate(-50%,-50%) rotate(-20deg);opacity:1}60%{transform:translate(-50%,-50%) rotate(-20deg)}100%{transform:translate(-160%,-80%) rotate(-340deg);opacity:0}}
+.gagfx.enclume{width:22vh;height:16vh;font-size:0;animation:gagEnclume 1s cubic-bezier(.6,0,1,.6) forwards}
+.gagfx.enclume svg{width:100%;height:100%}
+@keyframes gagEnclume{0%{transform:translate(-50%,-260%);opacity:1}55%{transform:translate(-50%,-50%) scale(1)}65%{transform:translate(-50%,-40%) scale(1.15,.8)}85%{opacity:1;transform:translate(-50%,-45%)}100%{opacity:0;transform:translate(-50%,-45%)}}
+.card.glisse{animation:gagGlisse .9s ease-in-out}
+@keyframes gagGlisse{30%{transform:rotate(-14deg) translateX(-3vh)}60%{transform:rotate(10deg) translateY(2vh)}}
+.card.ecrase{animation:gagEcrase .7s ease-out}
+@keyframes gagEcrase{30%{transform:scale(1.08,.72) translateY(6%)}100%{transform:none}}
 </style></head><body>
 <div id="scene"><div class="p" id="p0"></div>
 <div id="mid"><div id="tour"></div><div id="ban"></div></div><div class="p" id="p1"></div></div>
@@ -1334,7 +1350,7 @@ function maj(e){[0,1].forEach(i=>{const p=$('#p'+i);p.querySelector('.bar i').st
 // STATUTS PORTÉS (champ `etats` du journal : [statut, nombre] par carte) : une pastille par statut, son niveau en chiffre romain
 // (ou son nombre : malédictions, lames, courant, PV du bouclier) ; la pastille grossit quand le niveau monte ; l'aura suit le niveau
 const ROM=['','I','II','III'],ET={poison:['☠️','#22c55e',1],brulure:['🔥','#f97316',1],saignement:['🩸','#ef4444',1],fatigue:['💤','#94a3b8',1],fracture:['🦴','#fde68a',1],glas:['🔔','#a78bfa',1],gel:['❄️','#7dd3fc',1],foudre:['⚡','#facc15',1],brume:['🌫️','#e2e8f0',1],
- malediction:['💀','#c084fc',2],lames:['🌪️','#a5f3fc',2],courant:['🌬️','#bae6fd',2],bouclier:['🪨','#d6b88a',3],embrasement:['🌋','#fb923c',0],fureur:['💢','#f97316',2],sangsue:['🧛','#86efac',0],surcharge:['🔌','#facc15',0],charge:['🔋','#fde047',2],cible:['🎯','#ff3b30',2],fils:['🪡','#e879f9',3],etourdi:['💫','#facc15',0],contamination:['🧪','#a3e635',0],faiblesse:['💧','#60a5fa',0],enracinement:['🌿','#4ade80',0]};
+ malediction:['💀','#c084fc',2],lames:['🌪️','#a5f3fc',2],courant:['🌬️','#bae6fd',2],bouclier:['🪨','#d6b88a',3],embrasement:['🌋','#fb923c',0],fureur:['💢','#f97316',2],sangsue:['🧛','#86efac',0],surcharge:['🔌','#facc15',0],charge:['🔋','#fde047',2],cible:['🎯','#ff3b30',2],fils:['🪡','#e879f9',3],gag:['🤡','#f472b6',0],etourdi:['💫','#facc15',0],contamination:['🧪','#a3e635',0],faiblesse:['💧','#60a5fa',0],enracinement:['🌿','#4ade80',0]};
 function etats(e){[0,1].forEach(i=>{const box=$('#p'+i+' .etats'),card=$('#p'+i+' .card');if(!box)return;const L=(e.etats&&e.etats[i])||[],prev=box._v||{},now={};
  const html=L.filter(([k])=>ET[k]).map(([k,n])=>{now[k]=n;const [ic,col,m]=ET[k],v=m===1?ROM[n]||'':m===2?(n>0?'×'+n:''):m===3?String(n):'',cl=['et'];if(m===1&&n>=2)cl.push('n'+Math.min(3,n));
   if(!(k in prev))cl.push('new');else if(n>prev[k])cl.push('up');return `<div class="${cl.join(' ')}" style="--ec:${col}">${ic}${v?`<b>${v}</b>`:''}</div>`}).join(''),sig=JSON.stringify(now);
@@ -1357,6 +1373,14 @@ function bourseBounty(parts){const tot=(parts[0]||0)+(parts[1]||0);if(!tot)retur
      {transform:`translate(${cx-12+dx}px,${cy-12+dy}px) scale(.3)`,opacity:0}],{duration:900+Math.random()*300,delay:dl,easing:'cubic-bezier(.3,.6,.5,1)',fill:'forwards'});
     setTimeout(()=>pc.remove(),dl+1400)}});
   setTimeout(()=>{sac.animate([{opacity:1},{opacity:0,transform:`translate(${sx}px,${sy+30}px) scale(.7)`}],{duration:500,fill:'forwards'}).onfinish=()=>sac.remove()},1700)},950)}
+// GAG (collection Toon) : un marteau qui s'abat, une TNT qui explose, une peau de banane, une enclume ; un effet par gag, posé sur le panneau de la carte
+const ENCLUME='<svg viewBox="0 0 120 80"><path d="M6 8h92c0 10 8 16 20 18v6H94v10c-6 2-10 6-12 12h10v18H28V54h10c-2-6-6-10-14-12V30C14 26 6 18 6 8z" fill="#3f3f46" stroke="#18181b" stroke-width="4"/><path d="M14 12h76" stroke="#a1a1aa" stroke-width="4" stroke-linecap="round"/></svg>';
+function gagEl(c,cls,html){const P=$('#p'+c);if(!P)return null;const d=document.createElement('div');d.className='gagfx '+cls;d.innerHTML=html;P.appendChild(d);return d}
+async function gagFx(c,k){const card=$('#p'+c+' .card'),flash=cls=>{if(!card)return;card.classList.remove(cls);void card.offsetWidth;card.classList.add(cls);setTimeout(()=>card.classList.remove(cls),1000)};
+ if(k==='marteau'){const d=gagEl(c,'marteau','🔨');await wait(560);flash('ecrase');flot(c,'BONK !','#fde047','big');await wait(650);if(d)d.remove();return}
+ if(k==='tnt'){const d=gagEl(c,'tnt','🧨');await wait(950);if(d)d.remove();const b=gagEl(c,'boum','💥');flash('hit');flot(c,'BOUM !','#fb923c','big');await wait(950);if(b)b.remove();return}
+ if(k==='banane'){const d=gagEl(c,'banane','🍌');await wait(300);flash('glisse');flot(c,'OUPS !','#fde047','big');await wait(950);if(d)d.remove();return}
+ if(k==='enclume'){const d=gagEl(c,'enclume',ENCLUME);await wait(560);flash('ecrase');flot(c,'CLONK !','#d4d4d8','big');await wait(600);if(d)d.remove();return}}
 function flot(i,txt,col,cls){const d=document.createElement('div');d.className='fl'+(cls?' '+cls:'');d.textContent=txt;d.style.color=col;const P=$('#p'+i);P.appendChild(d);
  // le texte reste dans l'écran : trop large → police réduite, trop près d'un bord → recentré vers l'intérieur
  try{const K=1.35,W=innerWidth,m=W*.015,maxW=Math.min(W-2*m,Math.max(P.getBoundingClientRect().width*1.7,W*.32)),w=d.scrollWidth*K;   // K : grossissement maximal de l'animation
@@ -1676,6 +1700,8 @@ async function jouer(res){
    else if(e.t==='protege')ailes(e.c);
    else if(e.t==='reanim_mort'){document.querySelectorAll('#p'+e.c+' .card canvas.fx').forEach(k=>k.remove());Object.keys(st).filter(k=>k.startsWith(String(e.c))).forEach(k=>st[k]=0);{const k=$('#p'+e.c+' .cw .card');if(k)k.dataset.brisee='1'}if(coupee(e.c))await wait(900);else{briser(e.c);await wait(3100)}}   // brisee : si son piège de réanimation est contré, elle reste brisée (pas de 2e destruction à la fin)   // exécutée : déjà coupée en deux, pas de 2e destruction
    else if(e.t==='reanim'){{const k=$('#p'+e.c+' .cw .card');if(k)delete k.dataset.brisee}reforme(e.c);flot(e.c,'+'+e.n,'#4ade80');await wait(2100)}
+   else if(e.t==='statut'&&e.k==='gag'){flot(e.c,'🤡 GAG !','#f472b6','big');await wait(900)}   // gag (collection Toon) posé
+   else if(e.t==='statut'&&e.k&&e.k.indexOf('gag_')===0){await gagFx(e.c,e.k.slice(4))}   // un gag se déclenche : marteau, TNT, peau de banane, enclume
    else if(e.t==='statut'&&e.k==='rage'){statut(e.c,'rage',true);colere(e.c);flot(e.c,'RAGE !','#ef4444','big');await wait(1000)}
    else if(e.t==='statut'&&e.k==='embrasement'){if(!st[e.c+'rage_emb']){st[e.c+'rage_emb']=1;statut(e.c,'rage',true)}nEmbrase(e.c);flot(e.c,'EMBRASEMENT !','#fb923c','big');await wait(1000)}   // embrasement : l'aura de feu de la rage, tant qu'il dure
    else if(e.t==='finstatut'&&e.k==='embrasement'){if(st[e.c+'rage_emb']){delete st[e.c+'rage_emb'];statut(e.c,'rage',false)}nEteint(e.c,e.s);if(e.s&&e.s!=='time')await wait(700)}

@@ -1755,3 +1755,33 @@ test('distorsion : les bonus de l\'adversaire se retournent (double dégâts →
   assert.equal(l.loss, 50);
   assert.ok(r.journal.slice(r.journal.indexOf(l)).some(e => e.k === 'malediction' && e.c === 1), 'B est maudit');
 });
+
+// Gag (collection Toon, novembre 2026).
+const GAG = (x = {}) => ({ type: 'gag', tours: 99, marteau: 0, tnt: 0, banane: 0, ...x });
+const gagLignes = (r, k) => r.journal.filter(e => e.t === 'statut' && e.k === 'gag_' + k);
+
+test('gag : le marteau frappe la carte piégée à la place de son attaque', () => {
+  const r = combat([C('A', 5, SOLIDE), MAG('Farce', GAG({ marteau: 100, marteaupct: 50 }))], [C('B', 20, SOLIDE)], { regles: { maxTours: 3, maxProlong: 0 } });
+  assert.ok(gagLignes(r, 'marteau').length >= 2, 'le marteau à chaque attaque');
+  assert.ok(gagLignes(r, 'marteau').every(e => e.c === 1));
+  assert.ok(r.journal.some(e => e.t === 'degats' && e.k === 'gag' && e.c === 1 && e.n === 10), '50 % de son ATQ');
+  assert.equal(r.journal.filter(e => e.t === 'degats' && e.c === 0 && !e.k).length, 0, 'A ne prend aucun coup');
+});
+
+test('gag : la TNT remplace l\'ultime (dégâts bruts, ultime perdu)', () => {
+  const r = combat([C('A', 1, SOLIDE), MAG('Farce', GAG({ tnt: 100 }))], [C('B', 1, SOLIDE, { ultime: { type: 'degats', val: 50, apres_tours: 2, utilisations: 1 } })], { regles: { maxTours: 4, maxProlong: 0 } });
+  assert.equal(gagLignes(r, 'tnt').length, 1);
+  assert.ok(r.journal.some(e => e.t === 'degats' && e.k === 'gag' && e.c === 1 && e.n === 15));
+  assert.ok(!r.journal.some(e => e.t === 'degats' && e.c === 0 && e.n === 50), 'l\'ultime ne fait rien');
+});
+
+test('gag : la peau de banane, quand la carte piégée esquive', () => {
+  const r = combat([C('A', 20, SOLIDE), MAG('Farce', GAG({ banane: 100, bananepct: 50 }))], [C('B', 1, SOLIDE, { passif: { type: 'esquive', chance: 100 } })], { regles: { maxTours: 2, maxProlong: 0, plafondEsquive: 100 } });
+  assert.ok(gagLignes(r, 'banane').length >= 1);
+  assert.ok(r.journal.some(e => e.t === 'degats' && e.k === 'gag' && e.c === 1 && e.n === 10), '50 % de l\'ATQ de l\'attaquant');
+});
+
+test('gag : posé à l\'attaque (passif)', () => {
+  const r = combat([C('A', 5, SOLIDE, { passif: { type: 'gag', chance: 100, tours: 5 } })], [C('B', 5, SOLIDE)], { regles: { maxTours: 3, maxProlong: 0 } });
+  assert.ok(r.journal.some(e => e.t === 'statut' && e.k === 'gag' && e.c === 1), 'B est piégé');
+});

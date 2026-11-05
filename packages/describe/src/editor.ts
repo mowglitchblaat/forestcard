@@ -151,6 +151,18 @@ export const EDITOR_FIELDS = {
     'n',
   ],
   nbfils: ['Fils : nombre de fils posés (1 par défaut)', 'n'],
+  marteau: ['Gag : chance du marteau quand il attaque (%, 30 par défaut)', 'n'],
+  marteaupct: ['Gag : dégâts du marteau, en % de son ATQ (30 par défaut)', 'n'],
+  tnt: ['Gag : chance de la TNT quand il lance son ultime (%, 30 par défaut)', 'n'],
+  tntdeg: ['Gag : dégâts bruts de la TNT (15 par défaut)', 'n'],
+  banane: [
+    'Gag : chance de la peau de banane ou de l’enclume quand il esquive ou bloque (%, 25 par défaut)',
+    'n',
+  ],
+  bananepct: [
+    'Gag : dégâts de la banane ou de l’enclume, en % des dégâts évités (75 par défaut)',
+    'n',
+  ],
   pctctrl: [
     'Fils : % de chances de prendre le contrôle au seuil (20 par défaut ; + le pas par fil en plus, Réglages > Niveaux)',
     'n',
@@ -434,6 +446,17 @@ export const EDITOR_PASSIVES: Record<PassiveType, EditorEntry> = {
     'nbfils',
     'pctctrl',
   ],
+  gag: [
+    '🤡 Gag (Toon) : à X % de chances, chaque coup pose un gag pour X tours : son attaque peut se retourner contre lui (marteau), son ultime exploser (TNT), son esquive ou son blocage le faire glisser (banane, enclume)',
+    'chance',
+    'tours',
+    'marteau',
+    'marteaupct',
+    'tnt',
+    'tntdeg',
+    'banane',
+    'bananepct',
+  ],
 };
 
 export const EDITOR_ULTIMATES: { readonly [K in EffectType]?: EditorEntry } = {
@@ -714,6 +737,16 @@ export const EDITOR_ULTIMATES: { readonly [K in EffectType]?: EditorEntry } = {
     "🎭 Fils (Contrôle) : pose X fils sur l'adversaire ; au seuil (5 fils), X % de chances de prendre le contrôle de sa carte, + par fil en plus (seuil, pas et coût dans Réglages > Niveaux)",
     'nbfils',
     'pctctrl',
+  ],
+  gag: [
+    '🤡 Gag (Toon) : pose un gag sur l’adversaire pour X tours : son attaque peut se retourner contre lui (marteau), son ultime exploser (TNT), son esquive ou son blocage le faire glisser (banane, enclume)',
+    'tours',
+    'marteau',
+    'marteaupct',
+    'tnt',
+    'tntdeg',
+    'banane',
+    'bananepct',
   ],
 };
 
@@ -1109,6 +1142,27 @@ export const EDITOR_MAGICS: { readonly [K in EffectType]?: EditorEntry } = {
     'chance',
     'nbfils',
     'pctctrl',
+  ],
+  gag: [
+    '🤡 Gag (Toon) : pose un gag sur l’adversaire pour X tours : son attaque peut se retourner contre lui (marteau), son ultime exploser (TNT), son esquive ou son blocage le faire glisser (banane, enclume)',
+    'tours',
+    'marteau',
+    'marteaupct',
+    'tnt',
+    'tntdeg',
+    'banane',
+    'bananepct',
+  ],
+  atk_gag: [
+    'Attaque de base : X % de chances, à chaque coup, de poser un gag (X tours ; marteau, TNT, banane)',
+    'chance',
+    'tours',
+    'marteau',
+    'marteaupct',
+    'tnt',
+    'tntdeg',
+    'banane',
+    'bananepct',
   ],
 };
 

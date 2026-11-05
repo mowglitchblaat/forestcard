@@ -133,6 +133,7 @@ const SHARED_NAMES: Record<string, string> = {
   esquive: 'esquive',
   brume: 'brume',
   insensible: 'insensible aux pièges',
+  gag: 'gag',
 };
 
 const ATTACK_EFFECT_VERBS: Record<string, string> = {
@@ -167,6 +168,7 @@ const MISTED_ART: Record<MistedStatus, string> = {
   parasite: 'le lien parasitaire',
   rooting: "l'enracinement",
   contamination: 'la contamination',
+  gag: 'le gag',
 };
 
 // Explosion mark, written as an escape: the source stays emoji-free.
@@ -254,6 +256,7 @@ const STATUS_ENDED: Record<StatusKind, [string, (name: string) => string]> = {
   solid: ['solide', (n) => `${n} n'est plus solidifié`],
   contamination: ['contamination', (n) => `La contamination de ${n} se dissipe`],
   weakness: ['faiblesse', (n) => `${n} n'est plus affaibli`],
+  gag: ['gag', (n) => `Le gag de ${n} est fini`],
 };
 
 // Rooting variants (mechanics/rooting.ts in the engine).
@@ -743,6 +746,8 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
             txt: `${name(c)} subit ${n} (saignement)`,
             o: { c, n, k: 'saignement' },
           };
+        case 'gag':
+          return { t: 'degats', txt: `${name(c)} subit ${n} dégâts (gag)`, o: { c, n, k: 'gag' } };
         case 'selfFracture':
           return {
             t: 'degats',
@@ -1392,6 +1397,23 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
         },
       };
     }
+    case 'gagged':
+      return {
+        t: 'statut',
+        txt: `${name(e.side)} est piégé par un gag${e.stacked ? ' (encore plus longtemps)' : ''} : marteau ${e.hammer} %, TNT ${e.tnt} %, peau de banane ${e.banana} % (${turns(e.turns)}) !`,
+        o: { c: e.side, k: 'gag' },
+      };
+    case 'gagSprung':
+      return {
+        t: 'statut',
+        txt: {
+          marteau: `GAG ! Un marteau géant s'abat sur ${name(e.side)} au lieu de son attaque !`,
+          tnt: `GAG ! Une TNT explose sous ${name(e.side)} : son ultime part en fumée !`,
+          banane: `GAG ! ${name(e.side)} esquive… et glisse sur une peau de banane !`,
+          enclume: `GAG ! ${name(e.side)} bloque… et une enclume lui tombe dessus !`,
+        }[e.gag],
+        o: { c: e.side, k: `gag_${e.gag}` },
+      };
     case 'distorted': {
       const list = (ks: readonly string[]) => ks.map((k) => SHARED_NAMES[k] ?? k).join(', ');
       const parts = [

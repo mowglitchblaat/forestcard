@@ -9,6 +9,7 @@
 //   - reduction (passive reduc_degats): each passive, with its chance, takes a share off a strike,
 //     a breath or a missile; a strike reduced to 0 counts as blocked.
 
+import { gagOnBlock } from './gag.ts';
 import type { Attack } from '../combat/attack.ts';
 import { amount, emit, id, over, raw, roll, type Combat } from '../combat/combat.ts';
 import type { EffectContext, EffectRules } from '../combat/effect-context.ts';
@@ -115,6 +116,8 @@ export function blockOrReduce(c: Combat, at: Attack, st: Strike): StrikeFlow {
     st.n = 0;
     emit(c, { type: 'attackBlocked', side: ia, defender: idd });
     if (st.shielded) return undefined; // a shield took it all: nothing for the block to riposte to
+    // a gagged card: an anvil falls on it, for a share of what it blocked (mechanics/gag.ts)
+    if (gagOnBlock(c, at, n) && (d.hp <= 0 || over(c))) return 'stop';
     const r = at.riposte;
     at.riposte = null; // once, on the first strike it blocks
     riposte(c, d, a, n, r);

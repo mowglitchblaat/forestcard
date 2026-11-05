@@ -37,6 +37,7 @@ export const hasPurifiableStatus = (z: Status) =>
   z.fatigues.length ||
   z.rootings.length ||
   !!z.contamination ||
+  !!z.gag ||
   !!z.lightning ||
   z.nextAttackCancelled > 0 ||
   z.nextAttackBlocked > 0;
@@ -53,6 +54,7 @@ export function purify(c: Combat, t: Side, silent?: boolean): void {
   z.fractures.forEach(() => removed.push('fracture'));
   z.rootings.forEach(() => removed.push('enracinement'));
   if (z.contamination) removed.push('contamination');
+  if (z.gag) removed.push('gag');
   if (liftLightning(t)) removed.push('foudre');
   if (knellPurified(c, t)) removed.push('glas');
   const attackWasCancelled = z.nextAttackCancelled > 0 || z.nextAttackBlocked > 0;
@@ -67,6 +69,7 @@ export function purify(c: Combat, t: Side, silent?: boolean): void {
   z.fatigues = [];
   z.rootings = [];
   z.contamination = null;
+  z.gag = null;
   z.nextAttackCancelled = 0;
   z.nextAttackBlocked = 0;
   if (!silent)

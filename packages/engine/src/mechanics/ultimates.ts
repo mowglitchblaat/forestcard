@@ -3,6 +3,7 @@
 // uses (utilisations); a programmed ultimate is one more slot (mechanics/programming.ts). An inhibiting rooting holds them until it ends (mechanics/rooting.ts). Effects: steal the opponent's (vol_ultime), copy it (copie_ultime: the
 // opponent keeps its own), reset a card's (reset_ultime).
 
+import { gagTnt } from './gag.ts';
 import { emit, id, opponent, over, raw, type Combat } from '../combat/combat.ts';
 import type { EffectContext, EffectRules } from '../combat/effect-context.ts';
 import { applyEffect } from '../combat/effects.ts';
@@ -58,6 +59,11 @@ export function ultimate(c: Combat, s: Side): Flow {
         drawn: pg.drawn,
       });
     else emit(c, { type: 'ultimateTriggered', side: id(c, s) });
+    // a gagged card: a TNT goes off instead of its ultimate (mechanics/gag.ts)
+    if (gagTnt(c, s)) {
+      if (over(c)) break;
+      continue;
+    }
     const previousSource = c.source;
     c.source = 'ultime';
     applyEffect(c, u, s, opponent(c, s));

@@ -138,6 +138,13 @@ export type EffectData = {
   // (20 when empty; + filsPas per thread beyond it).
   nbfils?: Num;
   pctctrl?: Num;
+  // Gag (mechanics/gag.ts): each gag's chance and strength (empty: 30, 30, 30, 15, 25, 75).
+  marteau?: Num;
+  marteaupct?: Num;
+  tnt?: Num;
+  tntdeg?: Num;
+  banane?: Num;
+  bananepct?: Num;
   // A magic's timing (on its effect): acts from the start of its X-th turn, for X turns.
   magdebut?: Num;
   magduree?: Num;

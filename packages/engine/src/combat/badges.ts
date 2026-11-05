@@ -31,7 +31,8 @@ export type BadgeKey =
   | 'surcharge'
   | 'charge'
   | 'cible'
-  | 'fils';
+  | 'fils'
+  | 'gag';
 
 export type StatusBadge = { readonly key: BadgeKey; readonly n: number };
 
@@ -70,5 +71,6 @@ export function statusBadges(s: Side): StatusBadge[] {
   add('charge', st.voltCharges, st.voltCharges > 0 || st.charged);
   add('cible', st.targeted ? st.targeted.uses : 0, !!st.targeted);
   add('fils', st.threads);
+  add('gag', 0, !!st.gag && st.gag.turns > 0);
   return out;
 }

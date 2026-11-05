@@ -32,6 +32,7 @@ import { effects as reflect } from '../mechanics/reflect.ts';
 import { effects as revive } from '../mechanics/revive.ts';
 import { effects as solidification } from '../mechanics/solidification.ts';
 import { effects as stats } from '../mechanics/stats.ts';
+import { effects as gag } from '../mechanics/gag.ts';
 import { effects as statusSharing } from '../mechanics/status-sharing.ts';
 import { effects as stun } from '../mechanics/stun.ts';
 import { effects as swallow } from '../mechanics/swallow.ts';
@@ -111,6 +112,7 @@ export const rules = (): Record<EffectType, EffectRule> =>
     ...revive,
     ...solidification,
     ...stats,
+    ...gag,
     ...statusSharing,
     ...stun,
     ...swallow,

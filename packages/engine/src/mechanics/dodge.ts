@@ -3,11 +3,12 @@
 // (plafondEsquive).
 
 import type { Attack } from '../combat/attack.ts';
-import { emit, id, roll, type Combat } from '../combat/combat.ts';
+import { emit, id, over, roll, type Combat } from '../combat/combat.ts';
 import type { EffectContext, EffectRules } from '../combat/effect-context.ts';
 import type { StrikeFlow } from '../combat/flow.ts';
 import type { Side } from '../combat/state.ts';
 import { frostDodgeMalus } from './frost.ts';
+import { gagOnDodge } from './gag.ts';
 
 // Its part of a card's status (combat/state.ts).
 export type DodgeState = {
@@ -35,9 +36,12 @@ export function dodges(c: Combat, d: Side): boolean {
 }
 
 // Each strike, first: a dodge cancels the strike and its effects.
-export function dodge(c: Combat, { d, idd }: Attack): StrikeFlow {
+export function dodge(c: Combat, at: Attack): StrikeFlow {
+  const { d, idd } = at;
   if (dodges(c, d)) {
     emit(c, { type: 'dodged', side: idd });
+    // a gagged card slips on a banana: it takes a share of the strike anyway (mechanics/gag.ts)
+    if (gagOnDodge(c, at) && (d.hp <= 0 || over(c))) return 'stop';
     return 'next';
   }
   return undefined;

@@ -77,6 +77,7 @@ import { lightningStrike } from '../mechanics/lightning.ts';
 import { blazeEnd } from '../mechanics/blaze.ts';
 import { leechEnd } from '../mechanics/venom.ts';
 import { discharge, dischargeStrike, overloadEnd } from '../mechanics/overload.ts';
+import { gagEnd, gagHammer } from '../mechanics/gag.ts';
 
 type TurnStep = Step<Side>;
 
@@ -103,6 +104,7 @@ const CAN_ATTACK: AttackStep[] = [
   digesting,
   stunned, // a stun always skips the attack, before cancellation
   cancelled,
+  gagHammer, // a gag: the hammer comes down on the attacker instead (mechanics/gag.ts)
   blockedAttack, // not a stop: the attack happens at 0 damage
   frozen, // glaciation (no attack, the ice shatters), or a draw: cancelled
 ];
@@ -188,6 +190,7 @@ const END_OF_TURN: TurnStep[] = [
   moltWatch, // 2 turns ending with a negative status: the molt starts
   mutationQuiet, // 4 turns without one: one level of mutation more
   guardsEnd,
+  gagEnd,
   magicDurationEnd, // a magic with a duration is spent
 ];
 

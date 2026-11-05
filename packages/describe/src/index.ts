@@ -290,6 +290,8 @@ const PASSIVE_TEXT: Record<PassiveType, (p: Fx, x: PassiveContext) => string> = 
     `Visée maintenue : quand un de ses ciblages est utilisé, ${L.visee} % de chances de le garder pour le coup suivant`,
   fils: (p, { c }) =>
     `${c} % de chances, à chaque coup, de poser ${threadsTxt(p)} sur la cible ; ${controlTxt(p)}`,
+  gag: (p, { c }) =>
+    `${c} % de chances, à chaque coup, de poser un gag sur la cible (${gagTxt(p)})`,
   replique: (p) =>
     `Réplique sismique : chaque coup reçu (hors esquive) lui donne une charge ; à 3 charges, la terre frappe l'attaquant (${isEmpty(p.pctatq) ? 50 : nz(p.pctatq)} % de son ATQ, esquivable ; ce n'est pas une attaque)`,
 };
@@ -304,6 +306,10 @@ const linksTxt = (e: Fx) =>
   linkN(e) > 1 ? `${linkN(e)} liens parasitaires` : 'un lien parasitaire';
 const linkEach = (e: Fx) => (linkN(e) > 1 ? 'par lien ' : '');
 // Threads (mechanics/threads.ts).
+// A gag's text (mechanics/gag.ts in the engine): its turns, then each gag's chance and strength.
+const gagN = (v: unknown, fallback: number) => (isEmpty(v) ? fallback : nz(v));
+const gagTxt = (e: Fx) =>
+  `${trs(gagN(e.tours, 3))} : ${gagN(e.marteau, 30)} % qu'un marteau le frappe à la place de son attaque (${gagN(e.marteaupct, 30)} % de son ATQ), ${gagN(e.tnt, 30)} % qu'une TNT remplace son ultime (${gagN(e.tntdeg, 15)} dégâts bruts), ${gagN(e.banane, 25)} % de glisser quand il esquive ou bloque (${gagN(e.bananepct, 75)} % des dégâts évités)`;
 const threadN = (e: Fx) => Math.max(1, Math.floor(nz(e.nbfils)) || 1);
 const threadsTxt = (e: Fx) => (threadN(e) > 1 ? `${threadN(e)} fils` : 'un fil');
 const controlPct = (e: Fx) => (isEmpty(e.pctctrl) ? 20 : Math.min(100, nz(e.pctctrl)));
@@ -568,6 +574,8 @@ const EFFECT_TEXT: Record<EffectType, (e: Fx, x: EffectContext) => string[]> = {
   forge_creation: () => [forgeCreationTxt],
   fils: (e) => [`Pose ${threadsTxt(e)} sur l'adversaire ; ${controlTxt(e)}`],
   atk_fils: attackEffect,
+  gag: (e) => [`Pose un gag sur l'adversaire (${gagTxt(e)})`],
+  atk_gag: attackEffect,
   brisure_volonte: () => [willBreakTxt],
   etreinte_maudite: () => [
     `Donne à son combattant l'étreinte maudite : à chaque attaque de l'adversaire, chacune de ses malédictions lui retire ${L.etreinte} ATQ de plus (rendue avec la malédiction)`,

@@ -119,6 +119,8 @@ const EFFECT_LABELS: Record<EffectType, (e: Fx) => string> = {
   forge_creation: () => 'Forge de création',
   fils: () => 'Fils',
   atk_fils: () => 'Coup marionnettiste',
+  gag: () => 'Gag',
+  atk_gag: () => 'Coup farceur',
   brisure_volonte: () => 'Brisure de volonté',
   verrouillage_total: () => 'Verrouillage total',
   etreinte_maudite: () => 'Étreinte maudite',
@@ -174,6 +176,7 @@ const PASSIVE_LABELS: Record<PassiveType, (p: Fx) => string> = {
   forge: () => 'Forge',
   forge_creation: () => 'Forge de création',
   fils: () => 'Fils',
+  gag: () => 'Gag',
   etreinte_maudite: () => 'Étreinte maudite',
   visee_maintenue: () => 'Visée maintenue',
 };

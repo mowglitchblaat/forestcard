@@ -2,6 +2,7 @@
 // strike's damage and hit, and the statuses an attack lays, dispatched to their mechanics. The
 // steps' order lives in moments.ts; the steps themselves, in mechanics/.
 
+import { gagOnHit } from '../mechanics/gag.ts';
 import { bleedOnHit } from '../mechanics/bleed.ts';
 import { countHit, useCounterBonus } from '../mechanics/counter.ts';
 import { curseOnHit } from '../mechanics/curse.ts';
@@ -114,6 +115,7 @@ export const LAID_ON_HIT: Record<string, (c: Combat, q: EffectData, d: Side) => 
   cisaillement: shearOnHit,
   foudre: lightningOnHit,
   fils: threadsOnHit,
+  gag: gagOnHit,
 };
 
 // A strike that landed: the statuses given by passives and by basic attack effects, in the order the

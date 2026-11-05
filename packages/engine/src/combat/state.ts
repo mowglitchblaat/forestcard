@@ -51,6 +51,7 @@ import { type VenomState, venomState } from '../mechanics/venom.ts';
 import { type OverloadState, overloadState } from '../mechanics/overload.ts';
 import { type ForgeState, forgeState } from '../mechanics/forge.ts';
 import { type ThreadsState, threadsState } from '../mechanics/threads.ts';
+import { type GagState, gagState } from '../mechanics/gag.ts';
 import type { Card, EffectData, Num } from '../model/card.ts';
 
 // An ultimate held by a card: its own, or one stolen or copied from the opponent.
@@ -115,7 +116,8 @@ export type Status = { turnsPlayed: number } & RageState &
   VenomState &
   OverloadState &
   ForgeState &
-  ThreadsState;
+  ThreadsState &
+  GagState;
 
 export type Side = {
   pseudo: string;
@@ -220,4 +222,5 @@ export const newStatus = (passives: EffectData[]): Status => ({
   ...overloadState(),
   ...forgeState(),
   ...threadsState(),
+  ...gagState(),
 });

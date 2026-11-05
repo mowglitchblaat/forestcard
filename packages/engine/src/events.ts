@@ -49,7 +49,8 @@ export type StatusKind =
   | 'fatigue'
   | 'solid'
   | 'contamination'
-  | 'weakness';
+  | 'weakness'
+  | 'gag';
 
 // A negative status a mist takes (mechanics/mist.ts).
 export type MistedStatus =
@@ -64,7 +65,8 @@ export type MistedStatus =
   | 'fatigue'
   | 'parasite'
   | 'rooting'
-  | 'contamination';
+  | 'contamination'
+  | 'gag';
 
 // A status removed by a purification, or moved away by a swallow (legacy keys, shown as such).
 export type DispelledStatus =
@@ -79,6 +81,7 @@ export type DispelledStatus =
   | 'enracinement'
   | 'contamination'
   | 'foudre'
+  | 'gag'
   | 'annule';
 
 // A positive status copied from the opponent (mechanics/status-sharing.ts).
@@ -119,6 +122,7 @@ export type DamageCause =
   | 'burn'
   | 'bleed'
   | 'selfFracture'
+  | 'gag' // a gag played on the gagged card (mechanics/gag.ts)
   | 'attack'
   | 'reflect'
   | 'execution'
@@ -629,6 +633,17 @@ export type DomainEvent =
       taken: DispelledStatus[];
       copied: CopiedStatus[];
     }
+  // Gag (mechanics/gag.ts): laid on side; one of its gags plays (hammer, TNT, banana, anvil).
+  | {
+      type: 'gagged';
+      side: SideIndex;
+      stacked: boolean;
+      turns: number;
+      hammer: number;
+      tnt: number;
+      banana: number;
+    }
+  | { type: 'gagSprung'; side: SideIndex; gag: 'marteau' | 'tnt' | 'banane' | 'enclume' }
   // Distortion (mechanics/status-sharing.ts): `by` turns side's positive statuses against it. loss: the
   // % of strength the weakened ones lose; turned: rages (now fatigues) and double damages (now
   // curses); removed: mist, trap immunity.

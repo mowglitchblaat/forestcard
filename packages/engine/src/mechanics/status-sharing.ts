@@ -7,7 +7,7 @@
 //     keeps them.
 //
 // Negative statuses moved: poison, burn, curse, bleed, frost, fatigue, fracture, rooting,
-// contamination (the ones a purification removes, except the knell, the lightning and a cancelled
+// contamination, gag (the ones a purification removes, except the knell, the lightning and a cancelled
 // attack, which belong to the card that laid them). Stun stays where it is. Positive statuses
 // copied: reflect, damage reduction (guard), double damage, rage, dodge bonus, mist, trap immunity.
 //
@@ -30,6 +30,7 @@ import type { Contamination } from './contamination.ts';
 import { type Fatigue, fatigue, fatiguePct } from './fatigue.ts';
 import type { Fracture } from './fracture.ts';
 import type { Frost } from './frost.ts';
+import type { Gag } from './gag.ts';
 import type { Rooting } from './rooting.ts';
 
 // The negative statuses of a card, as data to place on a card.
@@ -42,6 +43,7 @@ type Negatives = {
   fractures: Fracture[];
   rootings: Rooting[];
   contamination: Contamination | null;
+  gag: Gag | null;
 };
 
 // A copy of s's negative statuses (curses not yet taken, fatigues without their loss).
@@ -56,6 +58,7 @@ function negativesOf(s: Side): Negatives {
     fractures: z.fractures.map((f) => ({ ...f })),
     rootings: z.rootings.map((r) => ({ ...r })),
     contamination: z.contamination ? { ...z.contamination } : null,
+    gag: z.gag ? { ...z.gag } : null,
   };
 }
 
@@ -71,6 +74,7 @@ function kindsOf(n: Negatives): DispelledStatus[] {
       ...(n.fractures.length ? (['fracture'] as const) : []),
       ...(n.rootings.length ? (['enracinement'] as const) : []),
       ...(n.contamination ? (['contamination'] as const) : []),
+      ...(n.gag ? (['gag'] as const) : []),
     ]),
   ];
 }
@@ -88,6 +92,7 @@ function clearNegatives(c: Combat, s: Side): void {
   z.fractures = [];
   z.rootings = [];
   z.contamination = null;
+  z.gag = null;
   if (curseBack > 0) {
     s.atq += curseBack;
     emit(c, {
@@ -155,6 +160,21 @@ function placeNegatives(c: Combat, s: Side, n: Negatives): void {
     z.contamination = {
       turns: Math.max(z.contamination?.turns ?? 0, n.contamination.turns),
     };
+  if (n.gag) {
+    const g = n.gag;
+    const now = z.gag;
+    z.gag = now
+      ? {
+          turns: Math.max(now.turns, g.turns),
+          hammer: Math.max(now.hammer, g.hammer),
+          hammerPct: Math.max(now.hammerPct, g.hammerPct),
+          tnt: Math.max(now.tnt, g.tnt),
+          tntDamage: Math.max(now.tntDamage, g.tntDamage),
+          banana: Math.max(now.banana, g.banana),
+          bananaPct: Math.max(now.bananaPct, g.bananaPct),
+        }
+      : { ...g };
+  }
   n.fatigues.forEach((f) => {
     let now = z.fatigues[0];
     if (!now) {
