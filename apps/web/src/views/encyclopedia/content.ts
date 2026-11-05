@@ -32,6 +32,12 @@ export const EFFECT_GROUPS: EffectGroup[] = [
       },
       { label: 'Rage', types: ['rage'], target: 'self', preview: 'rage' },
       { label: 'Fatigue', types: ['fatigue'], target: 'opponent', preview: 'fatigue' },
+      {
+        label: 'Glas',
+        types: ['glas', 'glas_effet', 'atk_glas'],
+        target: 'opponent',
+        preview: 'glas',
+      },
     ],
   },
   {
@@ -54,6 +60,19 @@ export const EFFECT_GROUPS: EffectGroup[] = [
         preview: 'evite_mort',
       },
       { label: 'Réanimation', types: ['reanimation'], target: 'self', preview: 'reanimation' },
+      {
+        label: 'Solidification',
+        types: ['solidification'],
+        target: 'self',
+        preview: 'solidification',
+      },
+      {
+        label: 'Attaque annulée',
+        types: ['annule_attaque', 'bloque_attaque'],
+        target: 'self',
+        preview: 'annule',
+      },
+      { label: 'Insensible aux pièges', types: ['insensible_piege'], target: 'self' },
     ],
   },
   {
@@ -96,6 +115,153 @@ export const EFFECT_GROUPS: EffectGroup[] = [
         preview: 'avalage',
       },
       { label: 'Effets aléatoires', types: ['aleatoire'], target: 'both' },
+      {
+        label: 'Dégâts directs',
+        types: ['degats', 'degats_tours'],
+        target: 'opponent',
+        preview: 'degats',
+      },
+      {
+        label: "Hausse et baisse d'ATQ ou de PV",
+        types: ['atq_mod', 'pv_mod', 'atq_tours', 'pv_tours'],
+        target: 'both',
+        preview: 'stats',
+      },
+      { label: 'Dégâts doublés', types: ['double_degats'], target: 'self' },
+      { label: 'Bonus de frappe', types: ['bonus_frappe'], target: 'self' },
+      {
+        label: 'Détonation et missiles',
+        types: ['detonation', 'atk_detonation', 'missiles'],
+        target: 'opponent',
+        preview: 'detonation',
+      },
+      { label: 'Souffle', types: ['souffle'], target: 'opponent', preview: 'souffle' },
+      { label: 'Destruction de magie ou de piège', types: ['detruire'], target: 'opponent' },
+      { label: 'Équiper une carte du deck', types: ['equiper'], target: 'self' },
+      { label: 'Annule les magies', types: ['annule_magies'], target: 'both' },
+      { label: "Relance de l'ultime", types: ['reset_ultime'], target: 'self' },
+      {
+        label: 'Programmation',
+        types: ['programmation'],
+        target: 'self',
+        preview: 'programmation',
+      },
+    ],
+  },
+  {
+    title: 'Ciblage',
+    effects: [
+      {
+        label: 'Headshot',
+        types: ['headshot', 'atk_headshot', 'visee_maintenue'],
+        target: 'opponent',
+        preview: 'headshot',
+      },
+      {
+        label: 'Ciblage et verrouillage',
+        types: ['ciblage', 'verrouillage_total'],
+        target: 'opponent',
+        preview: 'ciblage',
+      },
+    ],
+  },
+  {
+    title: 'Insectes et parasites',
+    effects: [
+      { label: 'Lien parasitaire', types: ['lien_parasite'], target: 'both', preview: 'lien' },
+      { label: 'Mutation insecte', types: ['mutation'], target: 'self', preview: 'mutation' },
+      { label: 'Mue', types: ['mue', 'mue_forcee'], target: 'self', preview: 'mue' },
+      { label: 'Réaction', types: ['reaction'], target: 'self' },
+      { label: 'Brume', types: ['brume'], target: 'self', preview: 'brume' },
+    ],
+  },
+  {
+    title: 'Éléments',
+    intro:
+      'Chaque élément a ses mécaniques : le Vent tranche et frappe en critique, la Foudre marque et rebondit, la Terre se protège et riposte, les racines enserrent, l’Eau contamine, le Feu s’embrase.',
+    effects: [
+      {
+        label: 'Cisaillement',
+        types: ['cisaillement', 'atk_cisaillement'],
+        target: 'opponent',
+        preview: 'cisaillement',
+      },
+      {
+        label: 'Coup critique',
+        types: ['critique', 'atk_critique', 'courant_ascendant'],
+        target: 'opponent',
+        preview: 'critique',
+      },
+      {
+        label: 'Marque de foudre',
+        types: ['foudre', 'marque_foudre', 'atk_foudre'],
+        target: 'opponent',
+        preview: 'foudre',
+      },
+      { label: 'Surcharge', types: ['surcharge'], target: 'self', preview: 'surcharge' },
+      { label: 'Accumulateur', types: ['accumulateur'], target: 'self', preview: 'accumulateur' },
+      {
+        label: 'Sédimentation',
+        types: ['sedimentation'],
+        target: 'self',
+        preview: 'sedimentation',
+      },
+      { label: 'Réplique sismique', types: ['replique'], target: 'opponent', preview: 'replique' },
+      {
+        label: 'Enracinement',
+        types: ['enracinement', 'atk_enracinement'],
+        target: 'opponent',
+        preview: 'enracinement',
+      },
+      {
+        label: 'Contamination',
+        types: ['contamination', 'atk_contamination'],
+        target: 'opponent',
+        preview: 'contamination',
+      },
+      { label: 'Embrasement', types: ['embrasement'], target: 'self', preview: 'embrasement' },
+      {
+        label: 'Fureur incandescente',
+        types: ['fureur_incandescente'],
+        target: 'self',
+        preview: 'fureur',
+      },
+    ],
+  },
+  {
+    title: 'Compétences de poison et de malédiction',
+    effects: [
+      { label: 'Sangsue toxique', types: ['sangsue_toxique'], target: 'self', preview: 'sangsue' },
+      {
+        label: 'Injection virulente',
+        types: ['injection_virulente'],
+        target: 'opponent',
+        preview: 'injection',
+      },
+      {
+        label: 'Étreinte maudite',
+        types: ['etreinte_maudite'],
+        target: 'opponent',
+        preview: 'etreinte',
+      },
+      {
+        label: 'Brisure de volonté',
+        types: ['brisure_volonte'],
+        target: 'opponent',
+        preview: 'brisure',
+      },
+    ],
+  },
+  {
+    title: 'Forge et fils',
+    effects: [
+      { label: 'Forge', types: ['forge', 'forge_creation'], target: 'self', preview: 'forge' },
+      {
+        label: 'Fils et contrôle (marionnette)',
+        types: ['fils', 'atk_fils'],
+        target: 'opponent',
+        preview: 'fils',
+      },
     ],
   },
   {
