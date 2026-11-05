@@ -45,6 +45,7 @@ import {
   STOCK_REFRESH,
 } from '@/data/shop';
 import { fetchGameState, gameStateKey } from '@/data/admin';
+import { EVENTS_REFRESH, eventTodo, fetchEvents, loreKeys } from '@/data/lore';
 import {
   ANNOUNCEMENTS_REFRESH,
   announcementIds,
@@ -102,6 +103,7 @@ const ADMIN_ICONS: Record<AdminView, LucideIcon> = {
   tournois: ICONS.tournaments,
   recompenses: ICONS.rewards,
   annonces: ICONS.announcements,
+  lore: ICONS.lore,
   votes: ICONS.votes,
   propos: ICONS.proposals,
 };
@@ -224,6 +226,7 @@ function EncyclopediaLink({ page }: { page: EncyclopediaPage }) {
 const SITE_ICONS: Record<SitePage, LucideIcon> = {
   jouer: ICONS.play,
   annonces: ICONS.announcements,
+  lore: ICONS.lore,
   live: ICONS.live,
   votes: ICONS.votes,
 };
@@ -242,12 +245,30 @@ function SiteLink({ page, isAdmin }: { page: SitePage; isAdmin: boolean }) {
           <span className="relative">
             <Icon />
             {page === 'annonces' && <AnnouncementsDot />}
+            {page === 'lore' && <LoreDot />}
           </span>
           <span>{label}</span>
         </Link>
       </SidebarMenuButton>
     </SidebarMenuItem>
   );
+}
+
+// An open event the player has not joined (blue), or a result not seen yet (yellow).
+function LoreDot() {
+  const list = useQuery({
+    queryKey: loreKeys.events,
+    queryFn: fetchEvents,
+    staleTime: EVENTS_REFRESH,
+    refetchInterval: 5 * EVENTS_REFRESH,
+    retry: false,
+  }).data;
+  const todo = list ? eventTodo(list) : null;
+  return todo === 'news' ? (
+    <NewDot kind="news" />
+  ) : todo === 'todo' ? (
+    <NewDot kind="event" />
+  ) : null;
 }
 
 // Announcements not seen yet (yellow), or an open vote not answered yet (blue).
@@ -366,6 +387,7 @@ const DOTS = {
   rules: { ring: TONES.info.border, fill: TONES.info.fill, label: 'Pas encore lu' },
   todo: { ring: TONES.info.border, fill: TONES.info.fill, label: "Encore à jouer aujourd'hui" },
   stock: { ring: TONES.info.border, fill: TONES.info.fill, label: 'Des boosters à ouvrir en live' },
+  event: { ring: TONES.info.border, fill: TONES.info.fill, label: 'Un événement attend ton aide' },
   vote: { ring: TONES.info.border, fill: TONES.info.fill, label: 'Un vote attend ta voix' },
   news: { ring: TONES.new.border, fill: TONES.new.fill, label: 'Du nouveau' },
 };

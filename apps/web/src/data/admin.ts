@@ -151,14 +151,18 @@ export async function resetDailyCombats(): Promise<void> {
 const UnusedImage = z.object({ chemin: z.string().nullable(), octets: NumOrNull });
 const Path = z.string().nullable().optional();
 export async function fetchUnusedImages(): Promise<{ paths: string[]; bytes: number }> {
-  const [unused, drawings, tournaments, trophies, announcements, options] = await Promise.all([
-    call(supabase.rpc('admin_images_inutilisees')),
-    call(supabase.from('variantes_carte').select('dessin_path').not('dessin_path', 'is', null)),
-    call(supabase.from('tournois').select('trophee,trophee_2,trophee_3,echarpe')),
-    call(supabase.from('trophees').select('image')),
-    call(supabase.from('annonces').select('image_path')),
-    call(supabase.from('annonces_options').select('image_path')),
-  ]);
+  const [unused, drawings, tournaments, trophies, announcements, options, ...lore] =
+    await Promise.all([
+      call(supabase.rpc('admin_images_inutilisees')),
+      call(supabase.from('variantes_carte').select('dessin_path').not('dessin_path', 'is', null)),
+      call(supabase.from('tournois').select('trophee,trophee_2,trophee_3,echarpe')),
+      call(supabase.from('trophees').select('image')),
+      call(supabase.from('annonces').select('image_path')),
+      call(supabase.from('annonces_options').select('image_path')),
+      ...['lore_chapitres', 'lore_carte', 'lore_lieux', 'evenements', 'evenements_options'].map(
+        (t) => call(supabase.from(t).select('image_path')),
+      ),
+    ]);
   const kept = new Set<string>();
   const keep = (path: string | null | undefined) => {
     if (path) kept.add(path);
@@ -171,7 +175,7 @@ export async function fetchUnusedImages(): Promise<{ paths: string[]; bytes: num
   for (const t of z.array(z.object({ image: Path })).parse(trophies)) keep(t.image);
   for (const a of z
     .array(z.object({ image_path: Path }))
-    .parse([...z.array(z.unknown()).parse(announcements), ...z.array(z.unknown()).parse(options)]))
+    .parse([announcements, options, ...lore].flatMap((rows) => z.array(z.unknown()).parse(rows))))
     keep(a.image_path);
   const list = z
     .array(UnusedImage)

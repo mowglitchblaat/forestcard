@@ -32,6 +32,7 @@ export type EncyclopediaPage = keyof typeof ENCYCLOPEDIA_PAGES;
 export const SITE_PAGES = {
   jouer: 'Jouer',
   annonces: 'Annonces',
+  lore: 'Lore',
   live: 'Le live',
   votes: 'Votes',
 } as const;
@@ -52,6 +53,7 @@ export const ADMIN_VIEWS = {
   tournois: '\u{1F396}\u{FE0F} Tournois',
   recompenses: '\u{1F381} Récompenses',
   annonces: '\u{1F4E3} Annonces',
+  lore: '\u{1F3F0} Lore',
   votes: '\u{1F5F3}\u{FE0F} Votes',
   propos: '\u{1F3A8} Propositions',
 } as const;
