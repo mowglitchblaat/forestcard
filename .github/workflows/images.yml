@@ -36,8 +36,8 @@ jobs:
           git commit -q -m "Images : copie depuis Supabase"
           git pull -q --rebase && git push -q
           echo "changed=true" >> "$GITHUB_OUTPUT"
-  # A push made with the workflow token does not trigger pages.yml: call it explicitly.
+  # A push made with the workflow token does not trigger pages.yml: call it explicitly. Every night,
+  # even without new images: the visitor pages (visiteur.html) follow the cards.
   pages:
     needs: copier
-    if: needs.copier.outputs.changed == 'true'
     uses: ./.github/workflows/pages.yml
