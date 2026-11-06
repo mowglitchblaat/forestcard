@@ -712,7 +712,7 @@
   mask-image: var(--fog-mask);
   mask-size: 100% 100%;
   mask-repeat: no-repeat;
-  background: radial-gradient(ellipse at 50% 45%, rgb(30 40 62 / 0.55), rgb(14 20 34 / 0.82));
+  background: radial-gradient(ellipse at 50% 45%, rgb(30 40 62 / 0.72), rgb(14 20 34 / 0.9));
 }
 /* The clouds move by transform (handled by the graphics card, no repaint of the map): each layer
    is larger than the map by one tile and slides by exactly one tile per loop, seamlessly. */
@@ -722,7 +722,7 @@
   height: calc(100% + 420px);
   background-image: var(--fog-tile);
   background-size: 420px 420px;
-  opacity: 0.85;
+  opacity: 0.95;
   will-change: transform;
   animation: lore-fog-drift 60s linear infinite;
 }
@@ -732,7 +732,7 @@
   height: calc(100% + 720px);
   background-image: var(--fog-tile);
   background-size: 720px 720px;
-  opacity: 0.6;
+  opacity: 0.8;
   will-change: transform;
   animation: lore-fog-drift-slow 110s linear infinite;
 }

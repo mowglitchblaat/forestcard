@@ -92,7 +92,7 @@ function cloudTile(size = 256): string {
       data.data[i] = shade;
       data.data[i + 1] = shade + 4;
       data.data[i + 2] = shade + 12;
-      data.data[i + 3] = Math.max(0, Math.min(255, (v - 0.2) * 420));
+      data.data[i + 3] = Math.max(0, Math.min(255, (v - 0.08) * 460));
     }
   ctx.putImageData(data, 0, 0);
   return canvas.toDataURL('image/png');
@@ -208,7 +208,7 @@ async function build(
       fresh = f.toDataURL('image/png');
     }
   }
-  // the hover glow of each place: its silhouette in gold, blurred (shown by fading its opacity)
+  // the hover glow of each place: a golden ring around its silhouette (shown by fading its opacity)
   const glows = new Map<number, string>();
   for (const place of new Set(hits.map((x) => x.place))) {
     const g = document.createElement('canvas');
@@ -216,7 +216,12 @@ async function build(
     g.height = h;
     const gctx = g.getContext('2d');
     if (!gctx) continue;
-    soft(gctx, paint(new Set([place]), [255, 214, 120]), Math.max(2, Math.round(w / 140)));
+    const silhouette = paint(new Set([place]), [255, 214, 120]);
+    soft(gctx, silhouette, Math.max(3, Math.round(w / 110)));
+    // a ring: the inside is cut out, so the glow can sit above the layers (whose opaque parts would
+    // hide a glow placed behind them) without veiling the drawing
+    gctx.globalCompositeOperation = 'destination-out';
+    gctx.drawImage(silhouette, 0, 0);
     glows.set(place, g.toDataURL('image/png'));
   }
   return { mask: mask.toDataURL('image/png'), fresh, hits, glows };
@@ -356,15 +361,6 @@ export function WorldMap() {
               })
             }
           />
-          {[...(built?.glows ?? [])].map(([place, glow]) => (
-            <img
-              key={`glow-${place}`}
-              src={glow}
-              alt=""
-              draggable={false}
-              className={`lore-glow pointer-events-none absolute inset-0 size-full ${hover === place || opened?.id === place ? 'opacity-100' : 'opacity-0'}`}
-            />
-          ))}
           {layers.map((l) => (
             <img
               key={l.id}
@@ -372,6 +368,15 @@ export function WorldMap() {
               alt=""
               draggable={false}
               className={`lore-layer pointer-events-none absolute inset-0 size-full ${fresh.has(l.place) && !lifting ? 'opacity-0' : 'opacity-100'}`}
+            />
+          ))}
+          {[...(built?.glows ?? [])].map(([place, glow]) => (
+            <img
+              key={`glow-${place}`}
+              src={glow}
+              alt=""
+              draggable={false}
+              className={`lore-glow pointer-events-none absolute inset-0 size-full ${hover === place || opened?.id === place ? 'opacity-100' : 'opacity-0'}`}
             />
           ))}
           {built && (
