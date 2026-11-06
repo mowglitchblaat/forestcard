@@ -1,7 +1,9 @@
 // Copie les images des cartes de Supabase vers le dossier img/ du site (servi par GitHub Pages).
 // Lancé chaque nuit par .github/workflows/images.yml (ou à la main : onglet Actions → « Copie des images » → Run workflow).
-// Seules les images utilisées (variantes de cartes, boosters, dos) sont copiées, et une seule fois chacune :
-// les noms de fichiers sont uniques, une image déjà copiée n'est jamais retéléchargée.
+// Seules les images utilisées (chemins_images : cartes actives, boosters, dos, lore public) sont copiées, et une
+// seule fois chacune : les noms de fichiers sont uniques, une image déjà copiée n'est jamais retéléchargée.
+// Les images qui ne sont plus utilisées (carte refaite, image remplacée, carte désactivée) sont retirées de img/
+// pour garder le site léger, seulement quand la liste vient bien de chemins_images (jamais sur une liste partielle).
 // img/liste.json = liste des images disponibles sur GitHub ; le site s'en sert pour savoir où aller les chercher.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -61,7 +63,22 @@ for (const p of [...chemins].sort()) {
 }
 
 fs.mkdirSync(DOSSIER, { recursive: true });
-// la liste reprend tout ce qui est déjà dans img/ (même si une table n'a pas pu être lue cette fois) : les noms ne sont jamais réutilisés
+
+// 3) ménage : retire de img/ les images que chemins_images ne cite plus. Garde-fous : la liste doit venir de
+// chemins_images (pas d'une lecture partielle des tables), compter au moins 50 images, et le ménage ne doit pas
+// retirer plus de 90 % des fichiers d'un coup (une base vide ou illisible ne vide jamais le site).
+const presents = fs.readdirSync(DOSSIER, { recursive: true }).map(f => f.split(path.sep).join('/'))
+  .filter(f => f !== 'liste.json' && f !== 'rapport.json' && fs.statSync(path.join(DOSSIER, f)).isFile());
+const obsoletes = presents.filter(f => !chemins.has(f));
+rapport.retirees = 0;
+if (viaRpc && chemins.size >= 50 && obsoletes.length <= presents.length * 0.9) {
+  let octets = 0;
+  for (const f of obsoletes) { const fichier = path.join(DOSSIER, f); octets += fs.statSync(fichier).size; fs.unlinkSync(fichier); }
+  rapport.retirees = obsoletes.length;
+  if (obsoletes.length) console.log('−', obsoletes.length, 'image(s) inutilisée(s) retirée(s),', Math.round(octets / 1048576) + ' Mo');
+} else if (obsoletes.length) console.warn('ménage sauté par sécurité :', obsoletes.length, 'image(s) non citée(s) gardée(s)');
+
+// la liste reprend tout ce qui est encore dans img/ (même si une table n'a pas pu être lue cette fois) : les noms ne sont jamais réutilisés
 const tout = fs.readdirSync(DOSSIER, { recursive: true }).map(f => f.split(path.sep).join('/'))
   .filter(f => f !== 'liste.json' && f !== 'rapport.json' && fs.statSync(path.join(DOSSIER, f)).isFile());
 fs.writeFileSync(path.join(DOSSIER, 'liste.json'), JSON.stringify([...new Set([...tout, ...dispo])].sort()));

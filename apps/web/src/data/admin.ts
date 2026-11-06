@@ -172,13 +172,23 @@ export async function clearWarnings(
   return { warnings: r.avertissements, deprivations: r.privations };
 }
 
-// Images of the storage used by no card (active or not), booster, back or proposal
-// (20-images-inutilisees.sql). Never listed, even when that function lists them: the composed
-// cards' bare drawings still in use, and the tournaments' images (cups, scarves, the trophies given
-// to players). If one of those lists cannot be read, nothing is listed.
-const UnusedImage = z.object({ chemin: z.string().nullable(), octets: NumOrNull });
+// Images of the storage (public `cartes`, players' `propositions`) cited by no column of the
+// database (65-images-inutilisees-generique.sql). Never listed either, a second safety net: the
+// composed cards' bare drawings still in use, the tournaments' images (cups, scarves, the trophies
+// given to players), the announcements', puzzles' and lore's. If one of those lists cannot be read,
+// nothing is listed.
+const UnusedImage = z.object({
+  chemin: z.string().nullable(),
+  octets: NumOrNull,
+  bucket: z.string().nullable().optional(),
+});
 const Path = z.string().nullable().optional();
-export async function fetchUnusedImages(): Promise<{ paths: string[]; bytes: number }> {
+export type UnusedImages = {
+  paths: string[];
+  bytes: number;
+  byBucket: Record<string, string[]>;
+};
+export async function fetchUnusedImages(): Promise<UnusedImages> {
   const [unused, drawings, tournaments, trophies, announcements, options, puzzle, ...lore] =
     await Promise.all([
       call(supabase.rpc('admin_images_inutilisees')),
@@ -218,13 +228,28 @@ export async function fetchUnusedImages(): Promise<{ paths: string[]; bytes: num
   const list = z
     .array(UnusedImage)
     .parse(unused)
-    .filter(
-      (x): x is { chemin: string; octets: number | null } => !!x.chemin && !kept.has(x.chemin),
-    );
+    .flatMap((x) => (x.chemin && !kept.has(x.chemin) ? [{ ...x, chemin: x.chemin }] : []));
+  const byBucket: Record<string, string[]> = {};
+  for (const x of list) (byBucket[x.bucket ?? 'cartes'] ??= []).push(x.chemin);
   return {
     paths: list.map((x) => x.chemin),
     bytes: list.reduce((sum, x) => sum + (x.octets ?? 0), 0),
+    byBucket,
   };
+}
+
+// Deletes the unused images, each from its own storage. Returns how many were deleted.
+export async function removeUnusedImages(found: UnusedImages): Promise<number> {
+  let n = 0;
+  for (const [bucket, paths] of Object.entries(found.byBucket)) {
+    if (bucket === 'cartes') n += await removeImages(paths);
+    else if (bucket === 'propositions') {
+      for (let i = 0; i < paths.length; i += 100)
+        await call(supabase.storage.from(bucket).remove(paths.slice(i, i + 100)));
+      n += paths.length;
+    }
+  }
+  return n;
 }
 
 export async function removeImages(paths: string[]): Promise<number> {

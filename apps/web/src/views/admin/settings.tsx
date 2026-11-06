@@ -29,7 +29,8 @@ import {
   checkTitleLock,
   fetchSettings,
   fetchUnusedImages,
-  removeImages,
+  removeUnusedImages,
+  type UnusedImages,
   resetDailyCombats,
   saveSettings,
   setting,
@@ -211,7 +212,7 @@ function SettingsForms({ v }: { v: Settings }) {
   const exchanges = useAction();
   const images = useAction();
   const tests = useAction();
-  const [unused, setUnused] = useState<{ paths: string[]; bytes: number } | null>(null);
+  const [unused, setUnused] = useState<UnusedImages | null>(null);
 
   const closed = setting(v, 'jeu_ferme', 0) === '1';
   const live = !closed && setting(v, 'jeu_live', 1) !== '0';
@@ -905,7 +906,7 @@ function SettingsForms({ v }: { v: Settings }) {
 
       <AdminSection
         title="🧹 Images inutilisées"
-        description="Fait le ménage dans le stockage Supabase : les images qui ne servent à aucune carte (active ou désactivée), booster, dos ni proposition. Les dessins seuls des cartes composées encore utilisés, et les images des tournois, ne sont jamais supprimés."
+        description="Fait le ménage dans le stockage Supabase : les images (cartes, propositions des joueurs) que plus rien ne cite dans la base. Tout ce qui sert quelque part (cartes actives ou désactivées, boosters, dos, propositions, tournois, annonces, puzzles, lore, dessins…) est gardé, et une image envoyée il y a moins d'une heure aussi."
       >
         <div className="flex flex-wrap gap-2">
           <Button
@@ -929,7 +930,7 @@ function SettingsForms({ v }: { v: Settings }) {
               disabled={images.pending}
               onConfirm={() =>
                 images.run(async () => {
-                  const n = await removeImages(unused.paths);
+                  const n = await removeUnusedImages(unused);
                   setUnused(null);
                   return `${n} image(s) supprimée(s), ${(unused.bytes / 1048576).toFixed(1)} Mo libérés.`;
                 })
