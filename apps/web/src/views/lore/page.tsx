@@ -111,20 +111,22 @@ function Story() {
       {chapters.data.map((ch, i) => {
         const picture = img(ch.image_path);
         return (
-          <Card
+          <div
             key={ch.id}
             id={`chapitre-${ch.id}`}
-            className={`scroll-mt-4 ${ch.id === chapitre ? 'ring-2 ring-primary' : ''}`}
+            className={`scroll-mt-4 rounded-xl ${ch.id === chapitre ? 'ring-2 ring-primary' : ''}`}
           >
-            <CardHeader>
-              <CardDescription>Chapitre {i + 1}</CardDescription>
-              <CardTitle>{ch.titre}</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-4">
-              {picture && <img src={picture} alt="" className="w-full rounded-lg" />}
-              <p className="whitespace-pre-line">{ch.texte}</p>
-            </CardContent>
-          </Card>
+            <Card>
+              <CardHeader>
+                <CardDescription>Chapitre {i + 1}</CardDescription>
+                <CardTitle>{ch.titre}</CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-4">
+                {picture && <img src={picture} alt="" className="w-full rounded-lg" />}
+                <p className="whitespace-pre-line">{ch.texte}</p>
+              </CardContent>
+            </Card>
+          </div>
         );
       })}
     </div>
