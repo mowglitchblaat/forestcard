@@ -11,7 +11,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { type MouseEvent, type PointerEvent, useEffect, useState } from 'react';
+import { type MouseEvent, type PointerEvent, useEffect, useRef, useState } from 'react';
 import { PageSkeleton } from '@/components/skeletons';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
@@ -48,7 +48,12 @@ const isCommon = (name: string) =>
 const SCALE = 0.25;
 
 type Hit = { place: number; width: number; height: number; alpha: Uint8ClampedArray };
-type Built = { mask: string; fresh: string | null; hits: Hit[]; glows: Map<number, string> };
+type Built = {
+  mask: HTMLCanvasElement;
+  fresh: HTMLCanvasElement | null;
+  hits: Hit[];
+  glows: Map<number, string>;
+};
 
 const loadImage = (src: string) =>
   new Promise<HTMLImageElement>((done, fail) => {
@@ -60,12 +65,12 @@ const loadImage = (src: string) =>
   });
 
 // A seamless cloud texture (periodic value noise, a few octaves), drawn once.
-function cloudTile(size = 256): string {
+function cloudTile(size = 256): HTMLCanvasElement {
   const canvas = document.createElement('canvas');
   canvas.width = size;
   canvas.height = size;
   const ctx = canvas.getContext('2d');
-  if (!ctx) return '';
+  if (!ctx) return canvas;
   const data = ctx.createImageData(size, size);
   const octaves = [4, 8, 16, 32];
   const grids = octaves.map((g) => Array.from({ length: g * g }, () => Math.random()));
@@ -101,7 +106,7 @@ function cloudTile(size = 256): string {
       data.data[i + 3] = Math.max(0, Math.min(255, (v - 0.08) * 460));
     }
   ctx.putImageData(data, 0, 0);
-  return canvas.toDataURL('image/png');
+  return canvas;
 }
 
 // Reads the layers once: their alpha for the hover test, and the fog's mask (opaque where the fog
@@ -124,7 +129,8 @@ async function build(
   read.width = w;
   read.height = h;
   const rctx = read.getContext('2d', { willReadFrequently: true });
-  if (!rctx) return { mask: '', fresh: null, hits: [], glows: new Map() };
+  if (!rctx)
+    return { mask: document.createElement('canvas'), fresh: null, hits: [], glows: new Map() };
   let basePx: Uint8ClampedArray | null = null;
   if (base) {
     rctx.drawImage(base, 0, 0, w, h);
@@ -203,7 +209,7 @@ async function build(
     mctx.filter = 'none';
     soft(mctx, paint(null, [255, 255, 255]), Math.round(w / 70));
   }
-  let fresh: string | null = null;
+  let fresh: HTMLCanvasElement | null = null;
   if (freshPlaces.size) {
     const f = document.createElement('canvas');
     f.width = w;
@@ -211,7 +217,7 @@ async function build(
     const fctx = f.getContext('2d');
     if (fctx) {
       soft(fctx, paint(freshPlaces, [255, 255, 255]), Math.round(w / 70));
-      fresh = f.toDataURL('image/png');
+      fresh = f;
     }
   }
   // the hover glow of each place: a golden ring around its silhouette (shown by fading its opacity)
@@ -230,7 +236,7 @@ async function build(
     gctx.drawImage(silhouette, 0, 0);
     glows.set(place, g.toDataURL('image/png'));
   }
-  return { mask: mask.toDataURL('image/png'), fresh, hits, glows };
+  return { mask, fresh, hits, glows };
 }
 
 // The place under a point of the map (0..1), topmost layer first.
@@ -245,6 +251,93 @@ const placeAt = (hits: Hit[], u: number, v: number): number | null => {
   }
   return null;
 };
+
+// The fog, painted in one small canvas (half the map's size, stretched: the fog is soft anyway)
+// about 15 times a second: a dark veil, two layers of clouds drifting at different speeds, cut by
+// the mask (white where the fog stays). A place revealed since the last visit adds its own mask,
+// fading out over 3 seconds. Paused while the page is hidden or the map is off screen, and still
+// for those who ask for less motion: a video playing beside it stays smooth.
+function Fog({ built }: { built: Built }) {
+  const ref = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const canvas = ref.current;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx) return;
+    const w = built.mask.width * 2;
+    const h = built.mask.height * 2;
+    canvas.width = w;
+    canvas.height = h;
+    const tile = cloudTile();
+    const pattern = ctx.createPattern(tile, 'repeat');
+    const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // the fresh places' mask, fading: 1 → 0 over 3 s, after 0.7 s
+    const start = performance.now();
+    const freshAlpha = (now: number) =>
+      built.fresh ? Math.max(0, Math.min(1, 1 - (now - start - 700) / 3000)) : 0;
+    const mixed = document.createElement('canvas');
+    mixed.width = built.mask.width;
+    mixed.height = built.mask.height;
+    const both = built.fresh ? mixed.getContext('2d') : null;
+    const veil = ctx.createRadialGradient(w / 2, h * 0.45, 0, w / 2, h * 0.45, w * 0.7);
+    veil.addColorStop(0, 'rgb(30 40 62 / 0.72)');
+    veil.addColorStop(1, 'rgb(14 20 34 / 0.9)');
+    const draw = (now: number) => {
+      const t = still ? 0 : now / 1000;
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = veil;
+      ctx.fillRect(0, 0, w, h);
+      if (pattern) {
+        // fast layer: tiles of a fifth of the width, a tile every 60 s ; slow one: wider, 110 s
+        for (const [scale, period, alpha, dx, dy] of [
+          [w / 5 / 256, 60, 0.95, 1, 1],
+          [w / 3 / 256, 110, 0.8, 1, -1],
+        ] as const) {
+          const size = 256 * scale;
+          const shift = ((t / period) % 1) * size;
+          pattern.setTransform(new DOMMatrix([scale, 0, 0, scale, shift * dx, shift * dy]));
+          ctx.globalAlpha = alpha;
+          ctx.fillStyle = pattern;
+          ctx.fillRect(0, 0, w, h);
+        }
+        ctx.globalAlpha = 1;
+      }
+      // keep the fog only where the mask is
+      ctx.globalCompositeOperation = 'destination-in';
+      const k = freshAlpha(now);
+      if (k > 0 && built.fresh && both) {
+        both.globalAlpha = 1;
+        both.clearRect(0, 0, built.mask.width, built.mask.height);
+        both.drawImage(built.mask, 0, 0);
+        both.globalAlpha = k;
+        both.drawImage(built.fresh, 0, 0);
+        ctx.drawImage(both.canvas, 0, 0, w, h);
+      } else ctx.drawImage(built.mask, 0, 0, w, h);
+    };
+    let frame = 0;
+    let last = 0;
+    let visible = true;
+    const loop = (now: number) => {
+      frame = requestAnimationFrame(loop);
+      if (!visible || document.hidden || now - last < 66) return;
+      last = now;
+      draw(now);
+    };
+    draw(performance.now());
+    const watch = new IntersectionObserver(([e]) => {
+      visible = !!e?.isIntersecting;
+    });
+    watch.observe(canvas);
+    if (!still || built.fresh) frame = requestAnimationFrame(loop);
+    return () => {
+      cancelAnimationFrame(frame);
+      watch.disconnect();
+    };
+  }, [built]);
+  return (
+    <canvas ref={ref} aria-hidden className="pointer-events-none absolute inset-0 size-full" />
+  );
+}
 
 // What the players see, even for the admin (who also gets the hidden places): the revealed places,
 // their public layers, and each layer's address.
@@ -281,8 +374,6 @@ export function WorldMap() {
   const [built, setBuilt] = useState<Built | null>(null);
   const [fresh, setFresh] = useState<Set<number>>(new Set());
   const [lifting, setLifting] = useState(false);
-  // drawn once, on the first render
-  const [tile] = useState(cloudTile);
   const [hover, setHover] = useState<number | null>(null);
   const [menu, setMenu] = useState<{ place: Place; x: number; y: number } | null>(null);
   const [details, setDetails] = useState<Place | null>(null);
@@ -393,26 +484,7 @@ export function WorldMap() {
               className={`lore-glow pointer-events-none absolute inset-0 size-full ${hover === place || opened?.id === place ? 'opacity-100' : 'opacity-0'}`}
             />
           ))}
-          {built && (
-            <div
-              aria-hidden
-              className="lore-fog pointer-events-none absolute inset-0"
-              style={{ '--fog-mask': `url("${built.mask}")`, '--fog-tile': `url("${tile}")` }}
-            >
-              <span className="lore-fog-clouds absolute" />
-              <span className="lore-fog-clouds-slow absolute" />
-            </div>
-          )}
-          {built?.fresh && (
-            <div
-              aria-hidden
-              className={`lore-fog pointer-events-none absolute inset-0 transition-opacity duration-3000 ease-out ${lifting ? 'opacity-0' : 'opacity-100'}`}
-              style={{ '--fog-mask': `url("${built.fresh}")`, '--fog-tile': `url("${tile}")` }}
-            >
-              <span className="lore-fog-clouds absolute" />
-              <span className="lore-fog-clouds-slow absolute" />
-            </div>
-          )}
+          {built && <Fog built={built} />}
           {pins.map((p) => (
             <button
               key={p.id}

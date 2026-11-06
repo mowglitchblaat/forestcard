@@ -704,72 +704,18 @@
   }
 }
 
-/* Lore > Carte (64-lore-carte-calques.sql): the fog over the world map, opaque where its mask is
-   (--fog-mask: the whole map but a soft hole around each revealed layer, drawn by world-map.tsx),
-   two layers of a seamless cloud texture (--fog-tile) drifting at different speeds. */
-@utility lore-fog {
-  overflow: hidden;
-  mask-image: var(--fog-mask);
-  mask-size: 100% 100%;
-  mask-repeat: no-repeat;
-  background: radial-gradient(ellipse at 50% 45%, rgb(30 40 62 / 0.72), rgb(14 20 34 / 0.9));
-}
-/* The clouds move by transform (handled by the graphics card, no repaint of the map): each layer
-   is larger than the map by one tile and slides by exactly one tile per loop, seamlessly. */
-@utility lore-fog-clouds {
-  inset: -420px auto auto -420px;
-  width: calc(100% + 420px);
-  height: calc(100% + 420px);
-  background-image: var(--fog-tile);
-  background-size: 420px 420px;
-  opacity: 0.95;
-  will-change: transform;
-  animation: lore-fog-drift 60s linear infinite;
-}
-@utility lore-fog-clouds-slow {
-  inset: -720px auto auto -720px;
-  width: calc(100% + 720px);
-  height: calc(100% + 720px);
-  background-image: var(--fog-tile);
-  background-size: 720px 720px;
-  opacity: 0.8;
-  will-change: transform;
-  animation: lore-fog-drift-slow 110s linear infinite;
-}
-@keyframes lore-fog-drift {
-  from {
-    transform: translate(0, 0);
-  }
-  to {
-    transform: translate(420px, 420px);
-  }
-}
-@keyframes lore-fog-drift-slow {
-  from {
-    transform: translate(0, 720px);
-  }
-  to {
-    transform: translate(720px, 0);
-  }
-}
-/* A revealed layer fades in when its place is revealed; its glow (a blurred golden silhouette drawn
+/* Lore > Carte (64-lore-carte-calques.sql): the fog is a canvas (world-map.tsx, Fog). A revealed
+   layer fades in when its place is revealed; its glow (a blurred golden silhouette drawn
    once) fades in on hover: opacity only, cheap. The admin's selected place keeps a CSS glow. */
 @utility lore-layer {
   transition: opacity 2.4s ease-out;
 }
 @utility lore-glow {
   transition: opacity 0.2s ease-out;
-  will-change: opacity;
 }
 @utility lore-layer-lit {
   filter: drop-shadow(0 0 6px rgb(255 226 140 / 0.95)) drop-shadow(0 0 14px rgb(255 200 90 / 0.6))
     brightness(1.12);
-}
-@media (prefers-reduced-motion: reduce) {
-  .lore-fog-clouds,
-  .lore-fog-clouds-slow {
-    animation: none;
-  }
 }
 
 /* The story's reader (views/lore/chapter-reader.tsx): the header picture fades into the window's
