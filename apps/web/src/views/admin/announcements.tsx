@@ -1,7 +1,8 @@
 // Admin · Annonces (58-annonces.sql): publish a plain announcement (title, text, picture) or a vote
 // (options, each with its picture: the next collection, say), then close or reopen a vote, or
 // delete an announcement. The admin sees the counts at any time. Or a shared puzzle (59-puzzle.sql):
-// a picture, its grid (columns × rows) and the pieces each player gets a day. The picture is cut here,
+// a picture, its grid (columns × rows) and the pieces each player gets a day; under a puzzle, its
+// players (pieces to give for today, misses to clear: ./puzzle-players.tsx). The picture is cut here,
 // in the browser, into one small image per piece (63-puzzle-pieces-secretes.sql); « Redécouper »
 // cuts a published puzzle again, its placed pieces keeping their cells.
 
@@ -25,6 +26,7 @@ import {
 import { ICONS } from '@/lib/icons';
 import { AnnouncementCard } from '@/views/announcements/page';
 import { AdminError, AdminSection, Field, NoticeView, useAction } from './kit';
+import { PuzzlePlayers } from './puzzle-players';
 
 const emptyDraft = (): AnnouncementDraft => ({
   type: 'annonce',
@@ -252,6 +254,7 @@ export function AnnouncementsAdmin() {
                   {action.pending ? 'Découpe…' : 'Redécouper'}
                 </HoldButton>
               )}
+              {a.type === 'puzzle' && <PuzzlePlayers id={a.id} />}
               <HoldButton
                 size="sm"
                 variant="destructive-ghost"

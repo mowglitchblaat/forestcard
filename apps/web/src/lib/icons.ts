@@ -194,6 +194,7 @@ export const ICONS = {
   copied: CopyCheck,
   flip: SquareCenterlineDashedHorizontal, // turn a card over
   replay: RotateCcw, // play an animation again
+  reset: RotateCcw, // put a counter back to zero (the puzzle's misses)
   recenter: Focus,
   rework: RefreshCw, // a balance vote
   externalLink: ExternalLink,

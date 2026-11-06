@@ -311,3 +311,35 @@ export async function setAnnouncementOpen(id: number, open: boolean): Promise<vo
 export async function deleteAnnouncement(id: number): Promise<void> {
   await call(supabase.from('annonces').delete().eq('id', id));
 }
+
+// ── Admin: the puzzle's players (69-admin-puzzle-joueurs.sql) ──
+
+const PuzzlePlayer = z.object({
+  joueur: z.string(),
+  pseudo: z.string().nullable(),
+  aujourdhui: Num,
+  total: Num,
+  quota: Num,
+  erreurs: Num,
+  bloque_jusqua: z.string().nullable(),
+});
+export type PuzzlePlayer = z.infer<typeof PuzzlePlayer>;
+export const puzzlePlayersKey = (id: number) => [...announcementKeys.all, 'players', id] as const;
+
+// Every player who drew, placed or missed a piece: today's pieces on today's hand, misses, block.
+export async function fetchPuzzlePlayers(id: number): Promise<PuzzlePlayer[]> {
+  return z
+    .array(PuzzlePlayer)
+    .parse(await call(supabase.rpc('admin_puzzle_joueurs', { p_annonce: id })));
+}
+
+// Gives a player n more pieces for today (on top of the daily ones). Returns today's bonus.
+export async function givePuzzlePieces(id: number, player: string, n: number): Promise<number> {
+  const args = { p_annonce: id, p_joueur: player, p_pieces: n };
+  return Num.parse(await call(supabase.rpc('admin_puzzle_bonus', args)));
+}
+
+// Clears a player's misses of the day and lifts their block.
+export async function resetPuzzleMisses(id: number, player: string): Promise<void> {
+  await call(supabase.rpc('admin_puzzle_reset_essais', { p_annonce: id, p_joueur: player }));
+}
