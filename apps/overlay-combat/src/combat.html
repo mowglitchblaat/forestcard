@@ -2006,7 +2006,7 @@ if(DEMO){
   const info=c=>{if(!c)return'Choix au hasard parmi les cartes chargées';const u=c.ultime;let x=`Passif : ${fmtE(c.passif)}<br>Ultime : ${fmt(u)}`;
    if(u&&u.type&&!u.apres_tours&&!u.sur_carte&&!u.udecl)x+=' <b style="color:#fca5a5">⚠ aucun déclencheur : ne se lancera jamais</b>';
    else if(u&&u.sur_carte&&!u.apres_tours&&!u.udecl)x+=' <b style="color:#fcd34d">(seulement quand un piège se déclenche)</b>';return x};
-  const REEL={cartes:[],magies:[],pieges:[]},poolC=()=>{const r=$('#rrf')?$('#rrf').value:'';return r?REEL.cartes.filter(c=>c.rarete===r):REEL.cartes},pick=v=>v===''?(l=>l[Math.floor(Math.random()*l.length)])(poolC()):REEL.cartes.find(c=>String(c.id)===v);
+  const REEL={cartes:[],magies:[],pieges:[],versions:[]},poolC=()=>{const r=$('#rrf')?$('#rrf').value:'';return r?REEL.cartes.filter(c=>c.rarete===r):REEL.cartes},pick=v=>v===''?(l=>l[Math.floor(Math.random()*l.length)])(poolC()):/^v\d+$/.test(v)?REEL.versions[+v.slice(1)]:REEL.cartes.find(c=>String(c.id)===v);
   const TOUS=()=>[...REEL.cartes,...REEL.magies,...REEL.pieges],rndl=l=>l.length?l[Math.floor(Math.random()*l.length)]:null;
   // magie / piège : '' = aucun, 'r' = au hasard, sinon id de la carte
   const pickX=(v,l)=>v===''?null:v==='r'?rndl(l):l.find(c=>String(c.id)===v)||null;
@@ -2027,10 +2027,13 @@ if(DEMO){
     if(error)throw error;
     const all=(data||[]).map(c=>{const vs=c.variantes_carte||[],v=vs.find(x=>x.nom==='Standard')||vs[0]||{};const rr=Array.isArray(c.raretes)?c.raretes[0]:c.raretes;return{rarete:(rr&&rr.nom)||'—',rar:rr||null,id:c.id,type:c.type,nom:c.nom,atq:c.atq,pv:c.pv,actif:c.actif,passif:c.passif,ultime:c.ultime,effet:c.effet,image:v.image_path||null,imageCombat:v.image_combat||null}});
     REEL.cartes=all.filter(c=>c.type==='combattant');REEL.magies=all.filter(c=>c.type==='magie');REEL.pieges=all.filter(c=>c.type==='piege');
+    // versions alternatives des combattants (FULLEG, FULLEP, Seazer édition…) : choisissables à part, pour voir leurs chiffres en direct
+    REEL.versions=(data||[]).filter(c=>c.type==='combattant').flatMap(c=>(c.variantes_carte||[]).filter(x=>x.nom!=='Standard'&&x.image_path).map(x=>({...all.find(a=>a.id===c.id),version:x.nom,image:x.image_path,imageCombat:x.image_combat||null}))).sort((a,b)=>a.nom.localeCompare(b.nom,'fr'));
     if(!REEL.cartes.length){vide('Aucune carte lue (non connecté ?)');$('#rst').innerHTML='Aucun combattant lu. Si tu en as créé, il faut être connecté sur le site.'+IOS+RB;return}
     const o='<option value="">🎲 Au hasard</option>'+REEL.cartes.map(c=>`<option value="${c.id}">${c.nom} · ${c.rarete} — ATQ ${c.atq} · PV ${c.pv}${c.actif?'':' (non publiée)'}</option>`).join('');
+    const ov=REEL.versions.length?'<optgroup label="Versions alternatives">'+REEL.versions.map((c,k)=>`<option value="v${k}">${c.nom} · ${c.version} — ATQ ${c.atq} · PV ${c.pv}</option>`).join('')+'</optgroup>':'';
     const lab=c=>`<option value="${c.id}">${c.nom}${c.actif?'':' (non publiée)'}</option>`,om='<option value="">— Aucune magie —</option><option value="r">🎲 Magie au hasard</option>'+REEL.magies.map(lab).join(''),op='<option value="">— Aucun piège —</option><option value="r">🎲 Piège au hasard</option>'+REEL.pieges.map(lab).join('');
-    $('#ra').innerHTML=o;$('#rb').innerHTML=o;$('#rma').innerHTML=om;$('#rmb').innerHTML=om;$('#rpa').innerHTML=op;$('#rpb').innerHTML=op;
+    $('#ra').innerHTML=o+ov;$('#rb').innerHTML=o+ov;$('#rma').innerHTML=om;$('#rmb').innerHTML=om;$('#rpa').innerHTML=op;$('#rpb').innerHTML=op;
     $('#rst').textContent=REEL.cartes.length+' combattant(s), '+REEL.magies.length+' magie(s), '+REEL.pieges.length+' piège(s) chargé(s). Choisis pour chaque joueur (toi à gauche, le bot à droite) ou laisse au hasard.';refresh();wrInit();
    }catch(e){vide('Cartes non chargées');$('#rst').innerHTML='Impossible de lire les cartes : '+(e.message||e)+IOS+RB}};
   document.head.appendChild(sc);
