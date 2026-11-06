@@ -2,7 +2,8 @@
 // a drifting fog, except around the revealed places' layers (transparent images the size of the map,
 // laid on it). Hovering a layer lights it up; a click opens the place's menu: its collection (the
 // collection page filtered on it), the boosters of its collection (to the shop) and its chapter of
-// the story. A place revealed since the player's last visit lifts its fog in front of them.
+// the story, read right there (./chapter-reader.tsx). A place revealed since the player's last
+// visit lifts its fog in front of them.
 // The fog's holes, the hover glow and the hover test come from what each layer really adds to the
 // map: its transparency, minus the parts that copy the blank map (a layer cut out of a finished map
 // carries sea and land around its drawing), read once in a canvas (the images are served with
@@ -16,9 +17,10 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover';
 import { fetchMirror, imageKeys, imageUrl } from '@/data/images';
-import { fetchWorldMap, loreKeys, type Place } from '@/data/lore';
+import { fetchChapters, fetchWorldMap, loreKeys, type Place } from '@/data/lore';
 import { fetchContents, fetchShop, shopKeys } from '@/data/shop';
 import { ICONS } from '@/lib/icons';
+import { ChapterReader } from './chapter-reader';
 
 // The places a player has seen revealed (this browser): a new one lifts its fog once.
 const SEEN_KEY = 'fc-lore-lieux-vus';
@@ -264,6 +266,7 @@ export function WorldMap() {
   });
   const shop = useQuery({ queryKey: shopKeys.offers, queryFn: fetchShop });
   const contents = useQuery({ queryKey: shopKeys.contents, queryFn: fetchContents });
+  const chapters = useQuery({ queryKey: loreKeys.chapters, queryFn: fetchChapters });
   const images = mirror.data ?? new Set<string>();
   const img = (path: string | null) => imageUrl(path, images);
 
@@ -280,6 +283,7 @@ export function WorldMap() {
   const [menu, setMenu] = useState<{ place: Place; x: number; y: number } | null>(null);
   const [details, setDetails] = useState<Place | null>(null);
   const [boostersOpen, setBoostersOpen] = useState(false);
+  const [reading, setReading] = useState<number | null>(null);
 
   // Reads the layers again when the map, the places or the image addresses change.
   useEffect(() => {
@@ -329,7 +333,7 @@ export function WorldMap() {
         ),
       )
     : [];
-  const chapter = opened?.chapitre_id ?? null;
+  const chapterIndex = (chapters.data ?? []).findIndex((c) => c.id === opened?.chapitre_id);
 
   return (
     <div className="flex flex-col gap-3">
@@ -485,12 +489,18 @@ export function WorldMap() {
                     })}
                   </div>
                 )}
-                {chapter !== null && (
-                  <Button asChild variant="ghost" size="sm" className="justify-start">
-                    <Link to="/lore" search={{ onglet: 'histoire', chapitre: chapter }}>
-                      <ICONS.lore />
-                      Lore
-                    </Link>
+                {chapterIndex >= 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="justify-start"
+                    onClick={() => {
+                      setReading(chapterIndex);
+                      setMenu(null);
+                    }}
+                  >
+                    <ICONS.lore />
+                    Lore
                   </Button>
                 )}
                 {(opened.image_path || opened.texte.length > 140) && (
@@ -515,6 +525,12 @@ export function WorldMap() {
       <p className="text-sm text-muted-foreground">
         Clique sur un lieu de la carte. Le brouillard cache ce qui n'a pas encore été découvert…
       </p>
+      <ChapterReader
+        chapters={chapters.data ?? []}
+        index={reading}
+        onIndex={setReading}
+        img={img}
+      />
       <Dialog open={!!details} onOpenChange={(o) => !o && setDetails(null)}>
         <DialogContent className="max-h-dialog overflow-y-auto sm:max-w-lg">
           <DialogTitle>{details?.nom}</DialogTitle>

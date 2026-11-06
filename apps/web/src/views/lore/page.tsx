@@ -1,5 +1,6 @@
-// The lore (60-lore.sql): three tabs. Story: the chapters, in order (the one in the address is
-// brought into view). Map: the interactive world map (./world-map.tsx). Events: a defence (each player places
+// The lore (60-lore.sql): three tabs. Story: the chapters as cards, each opening in the reader
+// (./chapter-reader.tsx; the one in the address opens by itself). Map: the interactive world map
+// (./world-map.tsx), whose places open their chapter in the same reader. Events: a defence (each player places
 // one of their fighters; the chance of success is the whole community's) or a vote (each player
 // votes for an option, the most voted is sent). Once an event is resolved, the player who took part
 // sees the draw played out the first time they open it.
@@ -30,6 +31,7 @@ import { ICONS } from '@/lib/icons';
 import { useSession } from '@/lib/session';
 import { TONES } from '@/lib/tones';
 import { LORE_TABS, type LoreTab } from './search';
+import { ChapterReader, paragraphsOf } from './chapter-reader';
 import { WorldMap } from './world-map';
 
 const route = getRouteApi('/lore');
@@ -95,41 +97,56 @@ function Story() {
   const chapters = useQuery({ queryKey: loreKeys.chapters, queryFn: fetchChapters });
   const img = useImages();
   const { chapitre } = route.useSearch();
-  const loaded = !!chapters.data;
-  useEffect(() => {
-    if (!loaded || chapitre === undefined) return;
-    document
-      .getElementById(`chapitre-${chapitre}`)
-      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, [loaded, chapitre]);
+  const navigate = route.useNavigate();
   if (chapters.error) return <p className="text-destructive">{chapters.error.message}</p>;
   if (!chapters.data) return <PageSkeleton />;
   if (!chapters.data.length)
     return <p className="text-muted-foreground">L'histoire n'a pas encore commencé…</p>;
+  const list = chapters.data;
+  // the chapter open in the reader lives in the address, so a place of the map can link to it
+  const index = chapitre === undefined ? null : list.findIndex((c) => c.id === chapitre);
+  const show = (i: number | null) =>
+    void navigate({
+      search: (s) => ({ ...s, chapitre: i === null ? undefined : list[i]?.id }),
+      replace: true,
+    });
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-      {chapters.data.map((ch, i) => {
-        const picture = img(ch.image_path);
-        return (
-          <div
-            key={ch.id}
-            id={`chapitre-${ch.id}`}
-            className={`scroll-mt-4 rounded-xl ${ch.id === chapitre ? 'ring-2 ring-primary' : ''}`}
-          >
-            <Card>
-              <CardHeader>
-                <CardDescription>Chapitre {i + 1}</CardDescription>
-                <CardTitle>{ch.titre}</CardTitle>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-4">
-                {picture && <img src={picture} alt="" className="w-full rounded-lg" />}
-                <p className="whitespace-pre-line">{ch.texte}</p>
-              </CardContent>
-            </Card>
-          </div>
-        );
-      })}
-    </div>
+    <>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {list.map((ch, i) => {
+          const picture = img(ch.image_path);
+          return (
+            <button
+              key={ch.id}
+              type="button"
+              onClick={() => show(i)}
+              className="cursor-pointer rounded-xl text-left transition hover:-translate-y-0.5"
+            >
+              <Card className="h-full overflow-hidden pt-0">
+                {picture ? (
+                  <img src={picture} alt="" className="aspect-video w-full object-cover" />
+                ) : (
+                  <span className="block aspect-video w-full bg-muted" />
+                )}
+                <CardHeader>
+                  <CardDescription>Chapitre {i + 1}</CardDescription>
+                  <CardTitle>{ch.titre}</CardTitle>
+                  <p className="line-clamp-2 text-sm text-muted-foreground">
+                    {paragraphsOf(ch.texte)[0]}
+                  </p>
+                </CardHeader>
+              </Card>
+            </button>
+          );
+        })}
+      </div>
+      <ChapterReader
+        chapters={list}
+        index={index !== null && index >= 0 ? index : null}
+        onIndex={show}
+        img={img}
+      />
+    </>
   );
 }
 
