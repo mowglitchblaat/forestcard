@@ -3,8 +3,10 @@
 // laid on it). Hovering a layer lights it up; a click opens the place's menu: its collection (the
 // collection page filtered on it), the boosters of its collection (to the shop) and its chapter of
 // the story. A place revealed since the player's last visit lifts its fog in front of them.
-// The fog's holes and the hover test come from the layers' own transparency, read once in a canvas
-// (the images are served with CORS). A place without a layer is a pin.
+// The fog's holes, the hover glow and the hover test come from what each layer really adds to the
+// map: its transparency, minus the parts that copy the blank map (a layer cut out of a finished map
+// carries sea and land around its drawing), read once in a canvas (the images are served with
+// CORS). A place without a layer is a pin.
 
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
@@ -40,7 +42,7 @@ const writeSeen = (ids: number[]) => {
 const SCALE = 0.25;
 
 type Hit = { place: number; width: number; height: number; alpha: Uint8ClampedArray };
-type Built = { mask: string; fresh: string | null; hits: Hit[] };
+type Built = { mask: string; fresh: string | null; hits: Hit[]; glows: Map<number, string> };
 
 const loadImage = (src: string) =>
   new Promise<HTMLImageElement>((done, fail) => {
@@ -100,6 +102,7 @@ function cloudTile(size = 256): string {
 // stays, a soft hole around every layer, the frame of the map always clear). `fresh`: the mask of
 // the places revealed since the last visit only, for the fog that lifts in front of the player.
 async function build(
+  baseUrl: string,
   layers: { place: number; url: string }[],
   freshPlaces: Set<number>,
   width: number,
@@ -107,28 +110,69 @@ async function build(
 ): Promise<Built> {
   const w = Math.round(width * SCALE);
   const h = Math.round(height * SCALE);
-  const images = await Promise.all(
-    layers.map(async (l) => ({ ...l, img: await loadImage(l.url).catch(() => null) })),
-  );
-  const hits: Hit[] = [];
+  const [base, ...images] = await Promise.all([
+    loadImage(baseUrl).catch(() => null),
+    ...layers.map((l) => loadImage(l.url).catch(() => null)),
+  ]);
   const read = document.createElement('canvas');
   read.width = w;
   read.height = h;
   const rctx = read.getContext('2d', { willReadFrequently: true });
-  for (const l of images) {
-    if (!l.img || !rctx) continue;
+  if (!rctx) return { mask: '', fresh: null, hits: [], glows: new Map() };
+  let basePx: Uint8ClampedArray | null = null;
+  if (base) {
+    rctx.drawImage(base, 0, 0, w, h);
+    basePx = rctx.getImageData(0, 0, w, h).data;
+  }
+  // each layer's own part: its alpha, faded where its colour is the blank map's
+  const hits: Hit[] = [];
+  layers.forEach((l, k) => {
+    const img = images[k];
+    if (!img) return;
     rctx.clearRect(0, 0, w, h);
-    rctx.drawImage(l.img, 0, 0, w, h);
+    rctx.drawImage(img, 0, 0, w, h);
     const px = rctx.getImageData(0, 0, w, h).data;
     const alpha = new Uint8ClampedArray(w * h);
-    for (let i = 0; i < alpha.length; i++) alpha[i] = px[i * 4 + 3] ?? 0;
+    for (let i = 0; i < alpha.length; i++) {
+      const a = px[i * 4 + 3] ?? 0;
+      if (!a) continue;
+      let own = 1;
+      if (basePx) {
+        const diff = Math.max(
+          Math.abs((px[i * 4] ?? 0) - (basePx[i * 4] ?? 0)),
+          Math.abs((px[i * 4 + 1] ?? 0) - (basePx[i * 4 + 1] ?? 0)),
+          Math.abs((px[i * 4 + 2] ?? 0) - (basePx[i * 4 + 2] ?? 0)),
+        );
+        own = Math.min(1, Math.max(0, (diff - 22) / 40));
+      }
+      alpha[i] = a * own;
+    }
     hits.push({ place: l.place, width: w, height: h, alpha });
-  }
-  const holes = (ctx: CanvasRenderingContext2D, only?: Set<number>) => {
-    ctx.filter = `blur(${Math.round(w / 90)}px)`;
-    for (const l of images)
-      if (l.img && (!only || only.has(l.place)))
-        for (let k = 0; k < 3; k++) ctx.drawImage(l.img, 0, 0, w, h);
+  });
+  // a canvas of the places' own parts, in a colour (white for the fog's holes, gold for a glow)
+  const paint = (places: Set<number> | null, rgb: [number, number, number]) => {
+    const c = document.createElement('canvas');
+    c.width = w;
+    c.height = h;
+    const ctx = c.getContext('2d');
+    if (!ctx) return c;
+    const data = ctx.createImageData(w, h);
+    for (const hit of hits)
+      if (!places || places.has(hit.place))
+        for (let i = 0; i < hit.alpha.length; i++) {
+          const a = hit.alpha[i] ?? 0;
+          if (a <= (data.data[i * 4 + 3] ?? 0)) continue;
+          data.data[i * 4] = rgb[0];
+          data.data[i * 4 + 1] = rgb[1];
+          data.data[i * 4 + 2] = rgb[2];
+          data.data[i * 4 + 3] = a;
+        }
+    ctx.putImageData(data, 0, 0);
+    return c;
+  };
+  const soft = (ctx: CanvasRenderingContext2D, source: HTMLCanvasElement, radius: number) => {
+    ctx.filter = `blur(${radius}px)`;
+    for (let k = 0; k < 4; k++) ctx.drawImage(source, 0, 0);
     ctx.filter = 'none';
   };
   const mask = document.createElement('canvas');
@@ -139,19 +183,19 @@ async function build(
     mctx.fillStyle = '#fff';
     mctx.fillRect(0, 0, w, h);
     mctx.globalCompositeOperation = 'destination-out';
-    // the frame, the title (top left) and the compass (bottom right) stay clear, softly
-    const edge = Math.round(w * 0.012);
-    mctx.fillRect(0, 0, w, edge);
-    mctx.fillRect(0, h - edge, w, edge);
-    mctx.fillRect(0, 0, edge, h);
-    mctx.fillRect(w - edge, 0, edge, h);
+    // the frame, the title (top left) and the compass (bottom right) stay clear, with soft edges
     mctx.filter = `blur(${Math.round(w / 60)}px)`;
+    const edge = Math.round(w * 0.012);
+    mctx.fillRect(-edge, -edge, w + 2 * edge, 2 * edge);
+    mctx.fillRect(-edge, h - edge, w + 2 * edge, 2 * edge);
+    mctx.fillRect(-edge, -edge, 2 * edge, h + 2 * edge);
+    mctx.fillRect(w - edge, -edge, 2 * edge, h + 2 * edge);
     mctx.beginPath();
     mctx.ellipse(w * 0.085, h * 0.065, w * 0.11, h * 0.09, 0, 0, Math.PI * 2);
     mctx.ellipse(w * 0.965, h * 0.9, w * 0.05, h * 0.11, 0, 0, Math.PI * 2);
     mctx.fill();
     mctx.filter = 'none';
-    holes(mctx);
+    soft(mctx, paint(null, [255, 255, 255]), Math.round(w / 70));
   }
   let fresh: string | null = null;
   if (freshPlaces.size) {
@@ -160,11 +204,22 @@ async function build(
     f.height = h;
     const fctx = f.getContext('2d');
     if (fctx) {
-      holes(fctx, freshPlaces);
+      soft(fctx, paint(freshPlaces, [255, 255, 255]), Math.round(w / 70));
       fresh = f.toDataURL('image/png');
     }
   }
-  return { mask: mask.toDataURL('image/png'), fresh, hits };
+  // the hover glow of each place: its silhouette in gold, blurred (shown by fading its opacity)
+  const glows = new Map<number, string>();
+  for (const place of new Set(hits.map((x) => x.place))) {
+    const g = document.createElement('canvas');
+    g.width = w;
+    g.height = h;
+    const gctx = g.getContext('2d');
+    if (!gctx) continue;
+    soft(gctx, paint(new Set([place]), [255, 214, 120]), Math.max(2, Math.round(w / 140)));
+    glows.set(place, g.toDataURL('image/png'));
+  }
+  return { mask: mask.toDataURL('image/png'), fresh, hits, glows };
 }
 
 // The place under a point of the map (0..1), topmost layer first.
@@ -230,7 +285,9 @@ export function WorldMap() {
     // the very first visit lifts nothing: everything already there is just there
     const newly = new Set(seen ? ids.filter((id) => !seen.includes(id)) : []);
     let alive = true;
-    void build(shown.layers, newly, size.width, size.height).then((b) => {
+    const baseUrl = imageUrl(map.data.image, mirror.data ?? new Set());
+    if (!baseUrl) return;
+    void build(baseUrl, shown.layers, newly, size.width, size.height).then((b) => {
       if (!alive) return;
       setBuilt(b);
       setFresh(newly);
@@ -299,13 +356,22 @@ export function WorldMap() {
               })
             }
           />
+          {[...(built?.glows ?? [])].map(([place, glow]) => (
+            <img
+              key={`glow-${place}`}
+              src={glow}
+              alt=""
+              draggable={false}
+              className={`lore-glow pointer-events-none absolute inset-0 size-full ${hover === place || opened?.id === place ? 'opacity-100' : 'opacity-0'}`}
+            />
+          ))}
           {layers.map((l) => (
             <img
               key={l.id}
               src={l.url}
               alt=""
               draggable={false}
-              className={`lore-layer pointer-events-none absolute inset-0 size-full ${hover === l.place || opened?.id === l.place ? 'lore-layer-lit' : ''} ${fresh.has(l.place) && !lifting ? 'opacity-0' : 'opacity-100'}`}
+              className={`lore-layer pointer-events-none absolute inset-0 size-full ${fresh.has(l.place) && !lifting ? 'opacity-0' : 'opacity-100'}`}
             />
           ))}
           {built && (
@@ -314,8 +380,8 @@ export function WorldMap() {
               className="lore-fog pointer-events-none absolute inset-0"
               style={{ '--fog-mask': `url("${built.mask}")`, '--fog-tile': `url("${tile}")` }}
             >
-              <span className="lore-fog-clouds absolute inset-0" />
-              <span className="lore-fog-clouds lore-fog-clouds-slow absolute inset-0" />
+              <span className="lore-fog-clouds absolute" />
+              <span className="lore-fog-clouds-slow absolute" />
             </div>
           )}
           {built?.fresh && (
@@ -324,8 +390,8 @@ export function WorldMap() {
               className={`lore-fog pointer-events-none absolute inset-0 transition-opacity duration-3000 ease-out ${lifting ? 'opacity-0' : 'opacity-100'}`}
               style={{ '--fog-mask': `url("${built.fresh}")`, '--fog-tile': `url("${tile}")` }}
             >
-              <span className="lore-fog-clouds absolute inset-0" />
-              <span className="lore-fog-clouds lore-fog-clouds-slow absolute inset-0" />
+              <span className="lore-fog-clouds absolute" />
+              <span className="lore-fog-clouds-slow absolute" />
             </div>
           )}
           {pins.map((p) => (
