@@ -211,12 +211,23 @@ export async function deleteCard(id: number): Promise<void> {
   if (paths?.length) await supabase.storage.from('cartes').remove(paths);
 }
 
+// The live ATQ / PV numbers' style in combat, per version (66-chiffres-versions.sql): null = from
+// the version's name (FULLEG → gold, FULLEP → violet, Seazer → seazer, else standard).
+export const NUMBER_STYLES = {
+  standard: 'Standard (rouge et bleu)',
+  or: 'Or métallique',
+  violet: 'Violet métallique',
+  seazer: 'Seazer (blanc, lueur rouge)',
+} as const;
+export type NumberStyle = keyof typeof NUMBER_STYLES;
+
 export async function addVariant(
   cardId: number,
   nom: string,
   poids: number,
   file: File,
   combatFile: File | null,
+  chiffres: NumberStyle | null = null,
 ): Promise<void> {
   const image_path = await uploadImage(file);
   const image_combat = combatFile ? await uploadImage(combatFile) : null;
@@ -226,9 +237,39 @@ export async function addVariant(
       nom,
       image_path,
       poids,
+      chiffres,
       ...(image_combat ? { image_combat } : {}),
     }),
   );
+}
+
+const AltVersion = z.object({
+  id: Num,
+  nom: z.string(),
+  chiffres: z.string().nullable(),
+  cartes: z.object({ nom: z.string(), type: z.string() }),
+});
+export type AltVersion = z.infer<typeof AltVersion>;
+
+// The fighters' alternative versions, for their numbers' style.
+export async function fetchAltVersions(): Promise<AltVersion[]> {
+  return z
+    .array(AltVersion)
+    .parse(
+      await call(
+        supabase
+          .from('variantes_carte')
+          .select('id,nom,chiffres,cartes!inner(nom,type)')
+          .neq('nom', 'Standard')
+          .eq('cartes.type', 'combattant')
+          .order('nom'),
+      ),
+    )
+    .sort((a, b) => a.cartes.nom.localeCompare(b.cartes.nom, 'fr'));
+}
+
+export async function setNumberStyle(id: number, chiffres: NumberStyle | null): Promise<void> {
+  await call(supabase.from('variantes_carte').update({ chiffres }).eq('id', id));
 }
 
 // ── Balance notes (equilibrage): what changed on a card, in words, for the patch notes ──

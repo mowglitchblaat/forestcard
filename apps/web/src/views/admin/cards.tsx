@@ -40,6 +40,10 @@ import {
 } from '@/data/admin';
 import {
   addVariant,
+  fetchAltVersions,
+  NUMBER_STYLES,
+  type NumberStyle,
+  setNumberStyle,
   type CardRow,
   type CardWrite,
   createCard,
@@ -142,6 +146,7 @@ export function CardsAdmin() {
         lists={lists}
       />
       <VariantForm cards={cards.data} />
+      <VersionNumbers />
       <Regenerate />
       <CardList cards={cards.data} collections={collections.data.list} />
     </div>
@@ -653,6 +658,7 @@ function VariantForm({ cards }: { cards: { id: number; nom: string }[] }) {
   const [card, setCard] = useState(String(cards[0]?.id ?? ''));
   const [name, setName] = useState('');
   const [weight, setWeight] = useState(10);
+  const [numbers, setNumbers] = useState('');
   return (
     <AdminSection
       title="Ajouter une version alternative"
@@ -687,6 +693,9 @@ function VariantForm({ cards }: { cards: { id: number; nom: string }[] }) {
         <Field label="Image combat sans chiffres (facultatif)">
           <Input ref={combat} type="file" accept="image/*" className="w-60" />
         </Field>
+        <Field label="Chiffres en combat">
+          <NumberStyleSelect value={numbers} onChange={setNumbers} />
+        </Field>
         <Button
           disabled={action.pending}
           onClick={() => {
@@ -700,6 +709,7 @@ function VariantForm({ cards }: { cards: { id: number; nom: string }[] }) {
                 weight,
                 image,
                 combat.current?.files?.[0] ?? null,
+                (numbers || null) as NumberStyle | null,
               );
               setName('');
               if (file.current) file.current.value = '';
@@ -711,6 +721,66 @@ function VariantForm({ cards }: { cards: { id: number; nom: string }[] }) {
           <ICONS.add />
           Ajouter la version
         </Button>
+      </div>
+      <NoticeView notice={action.notice} />
+    </AdminSection>
+  );
+}
+
+function NumberStyleSelect({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <NativeSelect
+      value={value}
+      disabled={disabled}
+      onChange={(e) => onChange(e.target.value)}
+      className="w-56"
+    >
+      <option value="">Auto (selon le nom)</option>
+      {Object.entries(NUMBER_STYLES).map(([k, label]) => (
+        <option key={k} value={k}>
+          {label}
+        </option>
+      ))}
+    </NativeSelect>
+  );
+}
+
+// The live ATQ / PV numbers' style in combat, version by version (66-chiffres-versions.sql).
+function VersionNumbers() {
+  const versions = useQuery({ queryKey: ['admin', 'altVersions'], queryFn: fetchAltVersions });
+  const action = useAction();
+  return (
+    <AdminSection
+      title="🔢 Chiffres en combat des versions alternatives"
+      description="Le style des chiffres ATQ / PV en direct pendant le combat. Auto : or pour les FULLEG, violet pour les FULLEP, style Seazer pour les « Seazer édition », standard sinon. Sur les versions or et violet, le chiffre imprimé est recouvert d'un médaillon et le chiffre en direct se pose dessus ; le style Seazer demande une image de combat sans chiffres."
+    >
+      {versions.error && <AdminError error={versions.error} />}
+      <div className="flex flex-col gap-2">
+        {(versions.data ?? []).map((v) => (
+          <div key={v.id} className="flex flex-wrap items-center gap-3 text-sm">
+            <span className="min-w-56">
+              <b>{v.cartes.nom}</b> <span className="text-muted-foreground">· {v.nom}</span>
+            </span>
+            <NumberStyleSelect
+              value={v.chiffres ?? ''}
+              disabled={action.pending}
+              onChange={(next) =>
+                action.run(async () => {
+                  await setNumberStyle(v.id, (next || null) as NumberStyle | null);
+                  return `${v.cartes.nom} · ${v.nom} : chiffres enregistrés.`;
+                })
+              }
+            />
+          </div>
+        ))}
       </div>
       <NoticeView notice={action.notice} />
     </AdminSection>

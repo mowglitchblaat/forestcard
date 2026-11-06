@@ -25,6 +25,21 @@ body.obs{background:transparent}
 .sv{--sl:5%;--sr:5%;--sb:1.5%;--ss:3.6vw;position:absolute;z-index:5;bottom:var(--sb);font-size:var(--ss);font-weight:900;line-height:1;pointer-events:none;text-shadow:0 0 .35vw #fff,0 0 .35vw #fff,0 0 .15vw #fff}
 .sv::before{content:attr(data-v)}.sva{left:var(--sl);color:#e0303c}.svp{right:var(--sr);color:#4747d6}
 .sv.pls{animation:svp .5s}@keyframes svp{40%{transform:scale(1.4)}}.sub{font-size:1.7vh;opacity:.8}
+/* Chiffres des versions alternatives (66-chiffres-versions.sql, styleChiffres) : centrés sur la place des chiffres de l'image
+   (--chl / --chr / --chy : centres en % de la carte, --chd : diamètre du médaillon), taille en % de la largeur de la carte.
+   or / violet : un médaillon métallique recouvre le chiffre imprimé, le chiffre en direct se pose dessus ; seazer : blanc net dans les losanges. */
+.card.ch-or,.card.ch-violet,.card.ch-seazer{container-type:inline-size}
+.card[class*=ch-] .sv{left:auto;right:auto;bottom:auto;top:var(--chy);translate:-50% -50%;font-size:var(--chs,11cqw);text-align:center;white-space:nowrap}
+.card[class*=ch-] .sva{left:var(--chl)}.card[class*=ch-] .svp{left:var(--chr)}
+.chc{position:absolute;z-index:4;top:var(--chy);width:var(--chd);aspect-ratio:1;translate:-50% -50%;border-radius:50%;pointer-events:none}
+.chc.chl{left:var(--chl)}.chc.chr{left:var(--chr)}
+.ch-or .chc{background:radial-gradient(circle at 50% 38%,#6b4a10,#3a2604 62%,#8a6414 80%,#f4d27a 92%,#7a560e);box-shadow:0 0 .4vw #000a inset}
+.ch-violet .chc{background:radial-gradient(circle at 50% 38%,#4c1a78,#22083d 62%,#7a2fbf 80%,#e6b8ff 92%,#5b1d92);box-shadow:0 0 .4vw #000a inset}
+.ch-or .sv,.ch-violet .sv{font-family:Cinzel,Georgia,'Times New Roman',serif;font-weight:900;text-shadow:none}
+.ch-or .sv::before{background:linear-gradient(180deg,#ffffff 0%,#fff1b8 30%,#ffd24a 55%,#f0a91a 72%,#fff3c2 100%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-stroke:.2cqw #7a4e05;filter:drop-shadow(0 0 .8cqw #ffcf4a99) drop-shadow(0 .3cqw .4cqw #000)}
+.ch-violet .sv::before{background:linear-gradient(180deg,#ffffff 0%,#fbe3ff 30%,#e39bff 55%,#b65cf0 72%,#fbe9ff 100%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-stroke:.2cqw #4a1475;filter:drop-shadow(0 0 .8cqw #d48cff99) drop-shadow(0 .3cqw .4cqw #000)}
+.ch-seazer .sv{color:#fff;font-family:'Arial Black',system-ui,sans-serif;font-weight:900;-webkit-text-stroke:.3cqw #120608;text-shadow:0 0 .8cqw #e11d2a,0 0 2cqw #7f0a12}
+.ch-or .sva.b-rage::before,.ch-violet .sva.b-rage::before,.ch-or .sva.b-x2::before,.ch-violet .sva.b-x2::before{filter:drop-shadow(0 0 1cqw #ff3b2f)}
 /* ATQ boostée temporairement (valeur finale affichée) : rage = braise rouge qui pulse, ATQ ×2 = reflet doré, les deux = rage ; petite flèche ▲ */
 .sva.b-rage{color:#ff4a24}.sva.b-x2{color:#ffd23f}.sva.b-rage::after,.sva.b-x2::after{content:'▲';font-size:.42em;vertical-align:.9em;margin-left:.08em}
 .sva.b-rage{-webkit-text-stroke:.12vw #a3121c;text-shadow:0 0 .4vw #ff3b2f,0 0 1vw #e01e1e;animation:bRage 1.1s ease-in-out infinite}
@@ -336,6 +351,26 @@ function chargerZones(joueurs){ZONES=[null,null];const ids=[...new Set((joueurs|
    const v=V.find(x=>x.carte_id==f),pq=!f?'carte sans identifiant':!v?'version Standard introuvable':!v.compo||!v.compo.zones?'pas de zones : refais ses images (« Refaire toutes »)':!(v.compo.zones||[]).length?'pas de zones : refais ses images (« Refaire toutes »)':!ZONES[i].f?'l\'image affichée n\'est pas celle de la version Standard (version alternative ?)':'';
    DIAG(`Effets lumineux · ${j.carte} : ${ZONES[i].f?ZONES[i].f.length+' ligne(s) prêtes':'rien — '+pq}`)})}).catch(e=>DIAG('lecture des cartes impossible : '+e.message)),
   new Promise(r=>setTimeout(r,2500))])}
+// Chiffres ATQ / PV des versions alternatives (66-chiffres-versions.sql) : le style de la version affichée (or, violet, seazer ;
+// standard = rien ne change), lu avec la clé publique par chiffres_cartes. Placés sur l'emplacement des chiffres de l'image
+// (fractions de l'image, puis converties selon son format : l'image couvre la carte 5/7).
+let DERNIER_MAJ=null;const CHIF=new Map(),FORMATS=new Map();
+const CHIF_PLACE={or:{l:.152,r:.85,y:.882,d:.15,s:.115},violet:{l:.152,r:.85,y:.882,d:.15,s:.115},seazer:{l:.15,r:.85,y:.9,d:0,s:.1}};
+function chargerChiffres(joueurs){const ids=[...new Set((joueurs||[]).map(j=>(j.ids||[])[0]).filter(x=>x!=null))];if(!ids.length)return Promise.resolve();
+ return Promise.race([fetch(SB_REST+'rpc/chiffres_cartes',{method:'POST',headers:{apikey:SB_KEY,'Content-Type':'application/json'},body:JSON.stringify({p_ids:ids})})
+  .then(r=>r.ok?r.json():[]).then(L=>{(L||[]).forEach(v=>{if(v.image_path)CHIF.set(v.image_path,v.style);if(v.image_combat)CHIF.set(v.image_combat,v.style)});[0,1].forEach(styleChiffres)}).catch(()=>{}),
+  new Promise(r=>setTimeout(r,2500))])}
+const formatImage=src=>FORMATS.get(src)||(FORMATS.set(src,new Promise(ok=>{const im=new Image();im.onload=()=>ok(im.naturalWidth/im.naturalHeight||.714);im.onerror=()=>ok(.714);im.src=src})),FORMATS.get(src));
+async function styleChiffres(i){const j=JOUEURS[i],card=$('#p'+i+' .cw .card');if(!j||!card)return;
+ const im=j.imageCombat||j.image,style=im&&CHIF.get(im),P=CHIF_PLACE[style];if(!P||(style==='seazer'&&!j.imageCombat))return;
+ if((style==='or'||style==='violet')&&!document.getElementById('police-chiffres')){const l=document.createElement('link');l.id='police-chiffres';l.rel='stylesheet';l.href='https://fonts.googleapis.com/css2?family=Cinzel:wght@900&display=swap';document.head.appendChild(l)}
+ const r=await formatImage(urlImg(im)),A=5/7,sx=r<A?1:r/A,sy=r<A?A/r:1;   // taille de l'image affichée, en fraction de la carte
+ if(card!==$('#p'+i+' .cw .card'))return;
+ const X=f=>((f-.5)*sx+.5)*100+'%',Y=f=>((f-.5)*sy+.5)*100+'%';
+ card.classList.add('ch-'+style);card.style.setProperty('--chl',X(P.l));card.style.setProperty('--chr',X(P.r));card.style.setProperty('--chy',Y(P.y));
+ card.style.setProperty('--chd',P.d*sx*100+'cqw');card.style.setProperty('--chs',P.s*sx*100+'cqw');
+ if(P.d&&!card.querySelector('.chc'))card.insertAdjacentHTML('beforeend','<span class="chc chl"></span><span class="chc chr"></span>');
+ if(!card.querySelector('.sva')){card.insertAdjacentHTML('beforeend','<span class="sv sva" data-v=""></span><span class="sv svp" data-v=""></span>');if(DERNIER_MAJ)maj(DERNIER_MAJ)}}
 // zone d'une ligne (fraction de l'image 1488 × 2070) → position dans l'élément (image en « cover »)
 function lueurZone(el,z){if(!el)return;const W=el.clientWidth,H=el.clientHeight;if(!W||!H)return;const A=1488/2070,iw=W/H>A?W:H*A,ih=W/H>A?W/A:H,ox=(W-iw)/2,oy=(H-ih)/2;
  const d=document.createElement('div'),col=z.ult?'#ff2a2a':(z.col&&/^#/.test(z.col)?z.col:'#fde68a');d.className='zl';
@@ -439,7 +474,7 @@ function panneau(i,j){const im=j.imageCombat||j.image,t=tierRar(j.rar),col=(j.ra
  <div class="nm">${j.carte}</div><div class="bar"><i></i></div><div class="pv"></div>
  <div class="mp"><div class="mw"><div class="mini${magV?' vide':' back dos mag'}" id="m${i}" ${magV?mini(j.magieImg):`style="${dosCSS(j)}"`}>${magV?(j.magieImg?'':j.magie):(j.dos?'':'?')}</div><small>Magie</small></div>
  <div class="mw"><div class="mini back${/^Aucun/.test(j.piege)?' vide':''}${j.dos?' dos':''}" id="g${i}" ${j.dos?`style="background-image:url('${urlImg(j.dos)}')"`:''}>${j.dos?'':'?'}</div><small>Piège</small></div></div>`;
- secoursImg(i,j)}
+ secoursImg(i,j);styleChiffres(i)}
 // Image du combattant qui ne charge pas (miroir GitHub, Supabase, cache d'OBS) : on retente sur Supabase, puis l'image complète, puis le nom de la carte
 function secoursImg(i,j){const im=j.imageCombat||j.image;if(!im)return;const essais=[urlImg(im),STORAGE+im,j.imageCombat&&j.image?urlImg(j.image):'',j.imageCombat&&j.image?STORAGE+j.image:''].filter((u,n,a)=>u&&a.indexOf(u)===n);
  const essai=n=>{const k=$('#p'+i+' .card');if(!k||JOUEURS[i]!==j)return;if(n>=essais.length){k.style.backgroundImage='';k.querySelectorAll('.sv').forEach(x=>x.remove());k.insertBefore(document.createTextNode(j.carte||''),k.firstChild);return}
@@ -1341,7 +1376,7 @@ function aureole(c,o={}){const K=rc(c),W=K.w,cx=K.cx;
 const FXK=new Set(['brulure','etourdi','malediction','saignement','rage','fatigue','gel','solide','transc','poison']);
 function statut(c,k,on){if(!FXK.has(k))return;const key=c+k;st[key]=Math.max(0,(st[key]||0)+(on?1:-1));const card=$('#p'+c+' .card'),f=card.querySelector('canvas.fx.'+k);
  if(st[key]>0&&!f)fxStart(card,k);else if(!st[key]&&f){f._stop();f.remove()}}
-function maj(e){[0,1].forEach(i=>{const p=$('#p'+i);p.querySelector('.bar i').style.width=Math.max(0,e.pv[i]/e.max[i]*100)+'%';
+function maj(e){DERNIER_MAJ=e;[0,1].forEach(i=>{const p=$('#p'+i);p.querySelector('.bar i').style.width=Math.max(0,e.pv[i]/e.max[i]*100)+'%';
  // ATQ boostée (rage, ATQ ×2, ×4…) : la valeur finale d'un coup est affichée tant que l'effet dure (champ `boost` du journal)
  const b=e.boost&&e.boost[i],rg=b?+b[0]||0:0,nx=b?+b[1]||0:0,x2=nx>0,atq=rg||x2?Math.max(0,e.atq[i]*2**nx+rg):e.atq[i];   // b[1] : dégâts doublés en cours (ils se cumulent : ×2, ×4…)
  p.querySelector('.pv').textContent=`${Math.max(0,e.pv[i])} / ${e.max[i]} PV · ATQ ${atq}`;
@@ -1629,7 +1664,7 @@ function ctrlBadge(c,on){const el=$('#p'+c+' .cw');if(!el)return;let b=el.queryS
 // Le combattant d'un camp change sans toucher à sa magie ni à son piège (contrôle) : la carte face visible
 function changerCombattant(i,j){const p=$('#p'+i),cw=p&&p.querySelector('.cw');if(!cw)return;const im=j.imageCombat||j.image,t=tierRar(j.rar),col=(j.rar&&j.rar.couleur)||'#888';
  cw.outerHTML=`<div class="cw${t!=='co'?' rr rr-'+t:''}" style="--g:${col}"><div class="card" ${im?`style="background-image:url('${urlImg(im)}')"`:''}>${im?'':j.carte}${t==='ep'||t==='lg'||t==='ul'?'<span class="shn"></span>':''}${j.imageCombat?'<span class="sv sva" data-v=""></span><span class="sv svp" data-v=""></span>':''}</div>${beltsHtml(i)}<div class="etats"></div></div>`;
- const nm=p.querySelector('.nm');if(nm)nm.textContent=j.carte;JOUEURS[i]={...(JOUEURS[i]||{}),...j}}
+ const nm=p.querySelector('.nm');if(nm)nm.textContent=j.carte;JOUEURS[i]={...(JOUEURS[i]||{}),...j};styleChiffres(i)}
 // Un camp reçoit un nouveau combattant (avec sa magie et son piège), du centre de l'écran, qui se retourne
 async function arrivee(i,j){const p=$('#p'+i);if(!p)return;const vieux=[...document.querySelectorAll('#p'+i+' .cw, #p'+i+' .mini')];
  vieux.forEach((el,n)=>el.animate([{opacity:1},{transform:`translateY(${30+n%3*8}px) scale(.8)`,opacity:0}],{duration:500,delay:(n%3)*80,easing:'ease-in',fill:'forwards'}));await wait(600);
@@ -1678,7 +1713,7 @@ async function jouer(res){
   if(!TEST&&!DEMO)await chargerVitesse();journalRecap=R;TOURNOI=R.tournoi||null;if(TOURNOI&&TOURNOI.premiere&&TOURNOI.tableau)await tableauTournoi(TOURNOI.tableau,{actif:TOURNOI.match,ms:6500});/* tournoi : le tableau avant le 1er combat du match */$('#log').innerHTML='';let detoAvant=-1;
   for(let ix=0;ix<R.journal.length;ix++){const e=R.journal[ix];
    $('#ban').className=e.t;$('#ban').textContent=e.txt;$('#log').innerHTML+=e.txt+'<br>';$('#log').scrollTop=1e5;
-   if(e.t==='debut'||e.t==='prolongation'||e.t==='relais'||e.t==='controle'||e.t==='controle_fin')chargerZones(e.joueurs);
+   if(e.t==='debut'||e.t==='prolongation'||e.t==='relais'||e.t==='controle'||e.t==='controle_fin'){chargerZones(e.joueurs);chargerChiffres(e.joueurs)}
    try{allumerEffets(e)}catch(_){}
    if(e.t==='debut'){beltsDebut(R);EQUIPE=e.equipe?[{n:1,of:e.equipe},{n:1,of:e.equipe}]:[null,null];st={};fxL.length=0;fxAll.forEach(s=>s());fxAll.clear();JOUEURS=[];[0,1].forEach(i=>$('#p'+i).classList.remove('actif','idle'));e.joueurs.forEach((j,i)=>panneau(i,j));titreBan(e.joueurs);$('#scene').classList.add('on');maj(e);await wait(2200);   // les 3 dos de chaque joueur, puis les combattants se retournent
     await Promise.all([0,1].map(i=>retourner($('#p'+i+' .card'),()=>{const d=$('#p'+i+' .dosf');if(d)d.remove()})));await wait(900);continue}
