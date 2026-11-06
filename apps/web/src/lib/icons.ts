@@ -31,6 +31,7 @@ import {
   Crown,
   Dices,
   Download,
+  Eraser,
   ExternalLink,
   Flag,
   Flame,
@@ -50,7 +51,6 @@ import {
   Link,
   Lock,
   LogOut,
-  type LucideIcon,
   Map as WorldMap,
   MapPin,
   Medal,
@@ -94,11 +94,12 @@ import {
   TrendingUp,
   Trophy,
   Tv,
+  type LucideIcon,
   Upload,
   User,
   UserRound,
-  UserX,
   Users,
+  UserX,
   Vote,
   WalletCards,
   WandSparkles,
@@ -194,7 +195,7 @@ export const ICONS = {
   copied: CopyCheck,
   flip: SquareCenterlineDashedHorizontal, // turn a card over
   replay: RotateCcw, // play an animation again
-  reset: RotateCcw, // put a counter back to zero (the puzzle's misses)
+  reset: Eraser, // put a counter back to zero (the puzzle's misses)
   recenter: Focus,
   rework: RefreshCw, // a balance vote
   externalLink: ExternalLink,
