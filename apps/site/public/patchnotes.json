@@ -1,5 +1,31 @@
 [
   {
+    "date": "2026-11-06",
+    "intro": "Le Lore s’ouvre sur une carte du monde à explorer, et les versions alternatives montrent enfin leurs chiffres en combat.",
+    "groupes": [
+      {
+        "titre": "Combat",
+        "points": [
+          "Les versions alternatives des combattants (or, violet, Seazer) affichent maintenant leur ATQ et leurs PV en direct pendant le combat."
+        ]
+      },
+      {
+        "titre": "Site",
+        "points": [
+          "Carte du monde interactive dans le Lore : le brouillard se lève sur chaque lieu révélé, et un clic sur un lieu mène à sa collection, à ses boosters et à son chapitre.",
+          "Nouveau lecteur de chapitres, avec image en en-tête, lettrine et passage direct au chapitre précédent ou suivant.",
+          "Puzzle commun plus juste : une pièce ne dit plus où elle va, et 3 essais ratés donnent 3 h d’attente ; au ticket à gratter, la couleur d’une case n’apparaît qu’une fois grattée."
+        ]
+      },
+      {
+        "titre": "Admin",
+        "points": [
+          "Championnat : rendre une ceinture vacante et retirer les avertissements d’un joueur, plus le réglage du style des chiffres de chaque version de carte et un ménage des images inutilisées plus sûr."
+        ]
+      }
+    ]
+  },
+  {
     "date": "2026-11-05",
     "intro": "Le nouveau site prend la relève, avec des annonces, un puzzle commun, le lore du monde et une nouvelle mécanique de contrôle : les Fils.",
     "groupes": [
