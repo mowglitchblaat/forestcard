@@ -125,7 +125,8 @@ function Recycler({
       : { copies: gain.copies, gold: gain.gold, fragments: gain.fragments };
   return (
     <div className="relative flex flex-col gap-2">
-      {offered && gain.copies > 0 && (
+      {/* always shown, even with nothing to recycle yet: hidden, players thought fragments were gone */}
+      {offered && (
         <ToggleGroup
           type="single"
           variant="outline"
@@ -162,7 +163,7 @@ function Recycler({
           ? `Tu gardes toujours 1 exemplaire de ${one ? 'la carte' : 'chaque carte'}.${offered ? ' Les fragments servent aux échanges.' : ''}`
           : one
             ? 'Aucun doublon de cette carte.'
-            : 'Aucun doublon à recycler pour ces raretés.'}
+            : 'Aucun doublon à recycler pour ces raretés : coche d’autres raretés au-dessus.'}
       </p>
       {done && <Recycled key={run.submittedAt} result={done} />}
       {run.error && (
