@@ -743,13 +743,16 @@ function Ticket({ state: s }: { state: DailyGames['ticket'] }) {
             {grid.map((k, i) => {
               const c = TICKET_CELLS[k] ?? { label: k, colour: 'var(--muted-foreground)', gold: 0 };
               const won = allSeen && k === s.gagnant;
+              // the cell's colour (its frame and tint) only once scratched: the frame sits around
+              // the scratch layer, so drawn earlier it gave the rarity away
+              const shown = over || revealed.has(i);
               return (
                 <div
                   key={i}
-                  className={`relative flex aspect-5/7 flex-col items-center justify-center gap-1 overflow-hidden rounded-md border-2 cell-tint text-xs font-semibold ${
-                    allSeen && !won ? 'opacity-70' : ''
-                  } ${won ? 'cell-glow' : ''}`}
-                  style={{ '--cell': c.colour }}
+                  className={`relative flex aspect-5/7 flex-col items-center justify-center gap-1 overflow-hidden rounded-md border-2 text-xs font-semibold ${
+                    shown ? 'cell-tint' : 'border-border'
+                  } ${allSeen && !won ? 'opacity-70' : ''} ${won ? 'cell-glow' : ''}`}
+                  style={shown ? { '--cell': c.colour } : undefined}
                 >
                   <span className="text-xl text-(--cell)" aria-hidden>
                     {k === 'booster' ? E.booster : '\u{25C6}'}

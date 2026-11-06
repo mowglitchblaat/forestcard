@@ -775,7 +775,7 @@
 /* The story's reader (views/lore/chapter-reader.tsx): the header picture fades into the window's
    background under the title, and the first paragraph opens on a large initial. */
 @utility lore-reader-fade {
-  background: linear-gradient(to bottom, transparent 35%, var(--background) 96%);
+  background: linear-gradient(to bottom, transparent 35%, var(--popover) 96%);
 }
 @utility lore-reader-first {
   &::first-letter {

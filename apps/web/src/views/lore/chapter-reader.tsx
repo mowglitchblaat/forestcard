@@ -33,24 +33,26 @@ export function ChapterReader({
   const next = index !== null && index < chapters.length - 1 ? index + 1 : null;
   return (
     <Dialog open={!!ch} onOpenChange={(o) => !o && onIndex(null)}>
-      <DialogContent className="max-h-dialog gap-0 overflow-y-auto p-0 sm:max-w-2xl">
+      <DialogContent className="max-h-dialog overflow-y-auto sm:max-w-2xl">
         {ch && index !== null && (
           <>
-            <div className="relative">
+            <div className="relative -mx-4 -mt-4 overflow-hidden rounded-t-xl">
               {picture ? (
                 <img src={picture} alt="" className="block aspect-video w-full object-cover" />
               ) : (
-                <div className="aspect-[3/1] w-full bg-muted" />
+                <div className="h-28 w-full bg-muted" />
               )}
               <div className="lore-reader-fade absolute inset-0" />
               <div className="absolute inset-x-0 bottom-0 flex flex-col gap-1 px-6 pb-4">
-                <DialogDescription className="text-xs tracking-widest uppercase">
-                  Chapitre {index + 1}
+                <DialogDescription>
+                  <span className="text-xs tracking-widest uppercase">Chapitre {index + 1}</span>
                 </DialogDescription>
-                <DialogTitle className="text-2xl sm:text-3xl">{ch.titre}</DialogTitle>
+                <DialogTitle>
+                  <span className="text-2xl sm:text-3xl">{ch.titre}</span>
+                </DialogTitle>
               </div>
             </div>
-            <div className="flex flex-col gap-4 px-6 pt-4 pb-6 leading-relaxed sm:px-10">
+            <div className="flex flex-col gap-4 px-2 pb-2 text-base leading-relaxed sm:px-6">
               {paragraphs.map((p, i) => (
                 <p key={i} className={`whitespace-pre-line ${i === 0 ? 'lore-reader-first' : ''}`}>
                   {p}
@@ -58,7 +60,7 @@ export function ChapterReader({
               ))}
             </div>
             {(previous !== null || next !== null) && (
-              <div className="flex items-center justify-between gap-2 border-t px-4 py-3">
+              <div className="-mx-4 -mb-4 flex items-center justify-between gap-2 border-t px-4 py-3">
                 {previous !== null ? (
                   <Button variant="ghost" size="sm" onClick={() => onIndex(previous)}>
                     <ICONS.previous />
