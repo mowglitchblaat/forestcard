@@ -395,7 +395,7 @@ export const SECTIONS: Section[] = [
               'Match nul : le combat ne compte pas, le challenger peut redéfier le jour même',
               "Le champion, lui, défend sa ceinture autant de fois qu'on le défie",
               "Ses défenses ne comptent pas : s'il perd sa ceinture, il peut la redéfier le jour même pour la récupérer",
-              'Pour une ceinture vacante, les deux joueurs sont limités à 1 combat par jour (sauf match nul)',
+              'Un combat pour une ceinture vacante ne compte pas dans ton combat du jour',
             ]}
           />
         ),
