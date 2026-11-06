@@ -1,6 +1,7 @@
 // Admin · Lore (60-lore.sql): the events (a defence with its key and harmful fighters, or a vote with
 // its options and their chances; the reward card and its chance), the world map (its image, and its
-// places, placed with a click on the map) and the story's chapters.
+// places, placed with a click on the map, with their layers, hidden until revealed:
+// 64-lore-carte-calques.sql) and the story's chapters.
 
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -17,10 +18,12 @@ import { adminKeys, fetchCollections, fetchVariants, variantLabel } from '@/data
 import { fetchCardList } from '@/data/admin-cards';
 import { fetchMirror, imageKeys, imageUrl } from '@/data/images';
 import {
+  addLayers,
   type Chapter,
   createEvent,
   deleteChapter,
   deleteEvent,
+  deleteLayer,
   deletePlace,
   endEventNow,
   type EventDraft,
@@ -28,11 +31,14 @@ import {
   fetchEvents,
   fetchWorldMap,
   loreKeys,
+  type Layer,
   type Place,
   type PlaceDraft,
+  privateLayerUrls,
   saveChapter,
   saveMapImage,
   savePlace,
+  setPlaceRevealed,
 } from '@/data/lore';
 import { ICONS } from '@/lib/icons';
 import { EventCard, MapPins } from '@/views/lore/page';
@@ -431,50 +437,79 @@ const emptyPlace = (): PlaceDraft => ({
   nom: '',
   texte: '',
   collection_id: null,
+  chapitre_id: null,
   x: 50,
   y: 50,
   image: null,
 });
 
+// The world map (64-lore-carte-calques.sql): the blank map, then the places. A place has layers
+// (transparent images the size of the map) and is born hidden: its layers wait in the private
+// storage; revealing it moves them to the public one and lifts the fog for the players. The preview
+// shows every layer, the hidden places' faded.
 function MapAdmin() {
   const map = useQuery({ queryKey: loreKeys.map, queryFn: fetchWorldMap });
   const collections = useQuery({ queryKey: adminKeys.collections, queryFn: fetchCollections });
+  const chapters = useQuery({ queryKey: loreKeys.chapters, queryFn: fetchChapters });
   const mirror = useQuery({
     queryKey: imageKeys.mirror,
     queryFn: fetchMirror,
     staleTime: Infinity,
   });
+  const hiddenPaths = (map.data?.places ?? []).flatMap((pl) =>
+    pl.lore_calques.filter((l) => l.prive).map((l) => l.image_path),
+  );
+  const signed = useQuery({
+    queryKey: [...loreKeys.map, 'private', hiddenPaths.join('|')],
+    queryFn: () => privateLayerUrls(hiddenPaths),
+    enabled: hiddenPaths.length > 0,
+    staleTime: 50 * 60 * 1000,
+  });
   const act = useAction();
   const [editing, setEditing] = useState<number | null>(null);
   const [p, setP] = useState(emptyPlace);
+  const [pending, setPending] = useState<File[]>([]);
   const [form, setForm] = useState(0);
-  const error = map.error ?? collections.error;
+  const [size, setSize] = useState<{ width: number; height: number } | null>(null);
+  const error = map.error ?? collections.error ?? chapters.error;
   if (error) return <AdminError error={error} />;
-  if (!map.data || !collections.data) return <PageSkeleton />;
-  const picture = imageUrl(map.data.image, mirror.data ?? new Set<string>());
+  if (!map.data || !collections.data || !chapters.data) return <PageSkeleton />;
+  const images = mirror.data ?? new Set<string>();
+  const picture = imageUrl(map.data.image, images);
+  const places = map.data.places;
+  const current = places.find((pl) => pl.id === editing) ?? null;
+  const layerUrl = (l: Layer) =>
+    l.prive ? (signed.data?.get(l.image_path) ?? null) : imageUrl(l.image_path, images);
   const edit = (place: Place) => {
     setEditing(place.id);
     setP({
       nom: place.nom,
       texte: place.texte,
       collection_id: place.collection_id,
+      chapitre_id: place.chapitre_id,
       x: place.x,
       y: place.y,
       image: null,
     });
+    setPending([]);
     setForm(form + 1);
   };
   const reset = () => {
     setEditing(null);
     setP(emptyPlace());
+    setPending([]);
     setForm(form + 1);
+  };
+  const needMap = () => {
+    if (!size) throw new Error('Envoie d’abord la carte de base.');
+    return size;
   };
   return (
     <AdminSection
       title="Carte du monde"
-      description="Envoie l'illustration de la carte, puis clique dessus pour placer un lieu (ou clique sur un lieu pour le modifier)."
+      description="Envoie la carte vierge, puis crée les lieux : clique sur la carte pour placer le nom d'un lieu, ajoute ses calques (PNG transparents exactement de la taille de la carte) et révèle-le quand tu veux. Un lieu caché, et ses calques, ne sont jamais envoyés aux joueurs."
     >
-      <Field label="Image de la carte">
+      <Field label="Carte de base (la carte vierge)">
         <Input
           type="file"
           accept="image/*"
@@ -490,7 +525,7 @@ function MapAdmin() {
       </Field>
       {picture && (
         <div
-          className="relative cursor-crosshair"
+          className="relative cursor-crosshair overflow-hidden rounded-xl"
           onClick={(e) => {
             const r = e.currentTarget.getBoundingClientRect();
             setP({
@@ -500,8 +535,31 @@ function MapAdmin() {
             });
           }}
         >
-          <img src={picture} alt="" className="w-full rounded-xl" />
-          <MapPins places={map.data.places} onPick={edit} picked={editing} />
+          <img
+            src={picture}
+            alt=""
+            className="block w-full"
+            onLoad={(e) =>
+              setSize({
+                width: e.currentTarget.naturalWidth,
+                height: e.currentTarget.naturalHeight,
+              })
+            }
+          />
+          {places.flatMap((pl) =>
+            pl.lore_calques.map((l) => {
+              const src = layerUrl(l);
+              return src ? (
+                <img
+                  key={l.id}
+                  src={src}
+                  alt=""
+                  className={`lore-layer pointer-events-none absolute inset-0 size-full ${pl.revele ? '' : 'opacity-45'} ${pl.id === editing ? 'lore-layer-lit' : ''}`}
+                />
+              ) : null;
+            }),
+          )}
+          <MapPins places={places} onPick={edit} picked={editing} />
           <span
             style={{ '--x': `${p.x}%`, '--y': `${p.y}%` }}
             className="pointer-events-none absolute top-(--y) left-(--x) -translate-x-1/2 -translate-y-1/2"
@@ -510,11 +568,32 @@ function MapAdmin() {
           </span>
         </div>
       )}
+      {places.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {places.map((pl) => (
+            <Button
+              key={pl.id}
+              size="sm"
+              variant={pl.id === editing ? 'default' : 'outline'}
+              onClick={() => edit(pl)}
+            >
+              {pl.nom}
+              <Badge variant={pl.revele ? 'success' : 'secondary'}>
+                {pl.revele ? 'Révélé' : 'Caché'}
+              </Badge>
+              {pl.lore_calques.length > 0 && (
+                <small className="text-muted-foreground">{pl.lore_calques.length} calque(s)</small>
+              )}
+            </Button>
+          ))}
+        </div>
+      )}
       <div key={form} className="flex flex-col gap-3 rounded-lg border p-3">
         <b className="text-sm">
-          {editing === null ? 'Nouveau lieu' : 'Modifier le lieu'} (position : {p.x} % · {p.y} %)
+          {current ? `Modifier « ${current.nom} »` : 'Nouveau lieu'} (nom affiché à : {p.x} % ·{' '}
+          {p.y} %)
         </b>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-3">
           <Field label="Nom du lieu">
             <Input value={p.nom} onChange={(e) => setP({ ...p, nom: e.target.value })} />
           </Field>
@@ -533,6 +612,21 @@ function MapAdmin() {
               ))}
             </NativeSelect>
           </Field>
+          <Field label="Chapitre du lore">
+            <NativeSelect
+              value={p.chapitre_id ?? ''}
+              onChange={(e) =>
+                setP({ ...p, chapitre_id: e.target.value ? Number(e.target.value) : null })
+              }
+            >
+              <option value="">—</option>
+              {chapters.data.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.titre}
+                </option>
+              ))}
+            </NativeSelect>
+          </Field>
         </div>
         <Field label="Texte">
           <Textarea
@@ -541,28 +635,96 @@ function MapAdmin() {
             onChange={(e) => setP({ ...p, texte: e.target.value })}
           />
         </Field>
-        <Field label="Image du lieu (facultative)">
+        <Field label="Image du lieu (facultative, dans « En savoir plus »)">
           <Input
             type="file"
             accept="image/*"
             onChange={(e) => setP({ ...p, image: e.target.files?.[0] ?? null })}
           />
         </Field>
+        <Field label="Ajouter des calques (PNG transparents, taille de la carte)">
+          <Input
+            type="file"
+            accept="image/png,image/webp"
+            multiple
+            onChange={(e) => setPending([...(e.target.files ?? [])])}
+          />
+        </Field>
+        {current && current.lore_calques.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {current.lore_calques.map((l, i) => {
+              const src = layerUrl(l);
+              return (
+                <div key={l.id} className="flex flex-col items-center gap-1 rounded-md border p-1">
+                  <span className="relative block aspect-video w-32 overflow-hidden rounded bg-muted">
+                    {picture && (
+                      <img src={picture} alt="" className="absolute inset-0 size-full opacity-30" />
+                    )}
+                    {src && <img src={src} alt="" className="absolute inset-0 size-full" />}
+                  </span>
+                  <small>Calque {i + 1}</small>
+                  <HoldButton
+                    size="sm"
+                    variant="destructive-ghost"
+                    disabled={act.pending}
+                    onConfirm={() =>
+                      act.run(async () => {
+                        await deleteLayer(l);
+                        return 'Calque supprimé.';
+                      })
+                    }
+                  >
+                    <ICONS.delete />
+                    Retirer
+                  </HoldButton>
+                </div>
+              );
+            })}
+          </div>
+        )}
         <div className="flex flex-wrap gap-2">
           <Button
             disabled={act.pending}
             onClick={() =>
               act.run(async () => {
-                await savePlace(editing, p);
-                reset();
-                return 'Lieu enregistré.';
+                if (pending.length) needMap();
+                const id = await savePlace(editing, p);
+                const place = places.find((pl) => pl.id === id) ?? {
+                  id,
+                  revele: false,
+                  lore_calques: [],
+                };
+                const added = pending.length ? await addLayers(place, pending, needMap()) : 0;
+                setEditing(id);
+                setPending([]);
+                setForm(form + 1);
+                return added
+                  ? `Lieu enregistré, ${added} calque(s) ajouté(s).`
+                  : 'Lieu enregistré.';
               })
             }
           >
             <ICONS.save />
             Enregistrer le lieu
           </Button>
-          {editing !== null && (
+          {current && (
+            <HoldButton
+              variant={current.revele ? 'outline' : 'default'}
+              disabled={act.pending}
+              onConfirm={() =>
+                act.run(async () => {
+                  await setPlaceRevealed(current, !current.revele);
+                  return current.revele
+                    ? `« ${current.nom} » est de nouveau caché.`
+                    : `« ${current.nom} » est révélé : le brouillard se lève pour les joueurs.`;
+                })
+              }
+            >
+              <ICONS.worldMap />
+              {current.revele ? 'Cacher (maintenir)' : 'Révéler (maintenir)'}
+            </HoldButton>
+          )}
+          {current && (
             <>
               <Button variant="outline" onClick={reset}>
                 Nouveau lieu
@@ -572,7 +734,7 @@ function MapAdmin() {
                 disabled={act.pending}
                 onConfirm={() =>
                   act.run(async () => {
-                    await deletePlace(editing);
+                    await deletePlace(current);
                     reset();
                     return 'Lieu supprimé.';
                   })

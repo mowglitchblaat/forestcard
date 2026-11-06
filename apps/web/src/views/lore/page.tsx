@@ -1,5 +1,5 @@
-// The lore (60-lore.sql): three tabs. Story: the chapters, in order. Map: the world map and its
-// places (each tied to a collection), a place opens on a click. Events: a defence (each player places
+// The lore (60-lore.sql): three tabs. Story: the chapters, in order (the one in the address is
+// brought into view). Map: the interactive world map (./world-map.tsx). Events: a defence (each player places
 // one of their fighters; the chance of success is the whole community's) or a vote (each player
 // votes for an option, the most voted is sent). Once an event is resolved, the player who took part
 // sees the draw played out the first time they open it.
@@ -20,7 +20,6 @@ import {
   EVENTS_REFRESH,
   fetchChapters,
   fetchEvents,
-  fetchWorldMap,
   joinEvent,
   type LoreEvent,
   loreKeys,
@@ -31,6 +30,7 @@ import { ICONS } from '@/lib/icons';
 import { useSession } from '@/lib/session';
 import { TONES } from '@/lib/tones';
 import { LORE_TABS, type LoreTab } from './search';
+import { WorldMap } from './world-map';
 
 const route = getRouteApi('/lore');
 
@@ -94,6 +94,14 @@ export function LorePage() {
 function Story() {
   const chapters = useQuery({ queryKey: loreKeys.chapters, queryFn: fetchChapters });
   const img = useImages();
+  const { chapitre } = route.useSearch();
+  const loaded = !!chapters.data;
+  useEffect(() => {
+    if (!loaded || chapitre === undefined) return;
+    document
+      .getElementById(`chapitre-${chapitre}`)
+      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [loaded, chapitre]);
   if (chapters.error) return <p className="text-destructive">{chapters.error.message}</p>;
   if (!chapters.data) return <PageSkeleton />;
   if (!chapters.data.length)
@@ -103,7 +111,11 @@ function Story() {
       {chapters.data.map((ch, i) => {
         const picture = img(ch.image_path);
         return (
-          <Card key={ch.id}>
+          <Card
+            key={ch.id}
+            id={`chapitre-${ch.id}`}
+            className={`scroll-mt-4 ${ch.id === chapitre ? 'ring-2 ring-primary' : ''}`}
+          >
             <CardHeader>
               <CardDescription>Chapitre {i + 1}</CardDescription>
               <CardTitle>{ch.titre}</CardTitle>
@@ -155,37 +167,6 @@ export function MapPins({
         </button>
       ))}
     </>
-  );
-}
-
-function WorldMap() {
-  const map = useQuery({ queryKey: loreKeys.map, queryFn: fetchWorldMap });
-  const img = useImages();
-  const [open, setOpen] = useState<Place | null>(null);
-  if (map.error) return <p className="text-destructive">{map.error.message}</p>;
-  if (!map.data) return <PageSkeleton />;
-  const picture = img(map.data.image);
-  if (!picture)
-    return <p className="text-muted-foreground">La carte du monde n'a pas encore été dessinée…</p>;
-  const placePicture = open ? img(open.image_path) : null;
-  return (
-    <div className="flex flex-col gap-3">
-      <div className="relative">
-        <img src={picture} alt="Carte du monde" className="w-full rounded-xl" />
-        <MapPins places={map.data.places} onPick={setOpen} />
-      </div>
-      <p className="text-sm text-muted-foreground">Clique sur un lieu pour en savoir plus.</p>
-      <Dialog open={!!open} onOpenChange={(o) => !o && setOpen(null)}>
-        <DialogContent className="max-h-dialog overflow-y-auto sm:max-w-lg">
-          <DialogTitle>{open?.nom}</DialogTitle>
-          {open?.collections && (
-            <DialogDescription>Collection : {open.collections.nom}</DialogDescription>
-          )}
-          {placePicture && <img src={placePicture} alt="" className="w-full rounded-lg" />}
-          {open?.texte && <p className="text-sm whitespace-pre-line">{open.texte}</p>}
-        </DialogContent>
-      </Dialog>
-    </div>
   );
 }
 

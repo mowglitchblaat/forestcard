@@ -4,7 +4,7 @@
 // badged ("Nouveau", "Prix : 300 → 250"). Buying writes: gold and stock are re-read after.
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link } from '@tanstack/react-router';
+import { getRouteApi, Link } from '@tanstack/react-router';
 import { TONES } from '@/lib/tones';
 import { ICONS } from '@/lib/icons';
 import { useEffect, useState } from 'react';
@@ -33,6 +33,8 @@ import { listMark, markSeen, SEEN_KEYS } from '@/lib/seen';
 import { fetchGameState, gameStateKey } from '@/data/admin';
 import { useSession } from '@/lib/session';
 
+const view = getRouteApi('/$view');
+
 export function ShopPage() {
   const userId = useSession()?.user.id ?? '';
   const client = useQueryClient();
@@ -56,6 +58,15 @@ export function ShopPage() {
     staleTime: Infinity,
   });
   const [bought, setBought] = useState<string | null>(null);
+  // a booster asked in the address (from the lore's map): brought into view once the shop is shown
+  const wanted = view.useSearch().booster;
+  const ready = !!offers.data;
+  useEffect(() => {
+    if (!ready || wanted === undefined) return;
+    document
+      .getElementById(`booster-${wanted}`)
+      ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [ready, wanted]);
   const buy = useMutation({
     mutationFn: (b: BoosterType) => buyBooster(b.id),
     onSuccess: (_, b) => setBought(b.nom),
@@ -155,22 +166,27 @@ export function ShopPage() {
         )}
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {sorted.map((b) => (
-            <Offer
+            <div
               key={b.id}
-              booster={b}
-              image={imageUrl(b.image_path, images)}
-              gold={gold}
-              change={offerChange(seenBefore, b)}
-              contents={contents.data?.filter((r) => r.type_id === b.id) ?? []}
-              featured={featured.data?.filter((f) => f.type_id === b.id) ?? []}
-              images={images}
-              busy={buy.isPending}
-              buying={buy.isPending && buy.variables?.id === b.id}
-              onBuy={() => {
-                setBought(null);
-                buy.mutate(b);
-              }}
-            />
+              id={`booster-${b.id}`}
+              className={`scroll-mt-4 rounded-xl ${b.id === wanted ? 'ring-2 ring-primary' : ''}`}
+            >
+              <Offer
+                booster={b}
+                image={imageUrl(b.image_path, images)}
+                gold={gold}
+                change={offerChange(seenBefore, b)}
+                contents={contents.data?.filter((r) => r.type_id === b.id) ?? []}
+                featured={featured.data?.filter((f) => f.type_id === b.id) ?? []}
+                images={images}
+                busy={buy.isPending}
+                buying={buy.isPending && buy.variables?.id === b.id}
+                onBuy={() => {
+                  setBought(null);
+                  buy.mutate(b);
+                }}
+              />
+            </div>
           ))}
         </div>
       </section>

@@ -35,6 +35,7 @@ import { PlayPage } from '@/views/play/page';
 import { AnnouncementsPage } from '@/views/announcements/page';
 import { LorePage } from '@/views/lore/page';
 import { LoreSearch } from '@/views/lore/search';
+import { ViewSearch } from '@/views/shop/search';
 import { VotesPage } from '@/views/votes/page';
 import { VotesSearch } from '@/views/votes/search';
 import {
@@ -184,6 +185,7 @@ export const viewRoute = createRoute({
     },
     stringify: ({ view }) => ({ view }),
   },
+  validateSearch: (search) => ViewSearch.parse(search),
   component: PlayerPage,
 });
 
