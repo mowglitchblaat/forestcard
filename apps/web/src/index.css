@@ -703,3 +703,57 @@
     opacity: 0.7;
   }
 }
+
+/* Lore > Carte (64-lore-carte-calques.sql): the fog over the world map, opaque where its mask is
+   (--fog-mask: the whole map but a soft hole around each revealed layer, drawn by world-map.tsx),
+   two layers of a seamless cloud texture (--fog-tile) drifting at different speeds. */
+@utility lore-fog {
+  mask-image: var(--fog-mask);
+  mask-size: 100% 100%;
+  mask-repeat: no-repeat;
+  background: radial-gradient(ellipse at 50% 45%, rgb(30 40 62 / 0.55), rgb(14 20 34 / 0.82));
+}
+@utility lore-fog-clouds {
+  background-image: var(--fog-tile);
+  background-size: 420px 420px;
+  opacity: 0.85;
+  animation: lore-fog-drift 90s linear infinite;
+}
+@utility lore-fog-clouds-slow {
+  background-size: 720px 720px;
+  opacity: 0.6;
+  animation: lore-fog-drift-slow 160s linear infinite;
+}
+/* each loop moves a whole number of tiles: seamless */
+@keyframes lore-fog-drift {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 840px 420px;
+  }
+}
+@keyframes lore-fog-drift-slow {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: -720px 720px;
+  }
+}
+/* A revealed layer: fades in when its place is revealed, lights up when hovered or opened. */
+@utility lore-layer {
+  transition:
+    opacity 2.4s ease-out,
+    filter 0.25s ease-out;
+}
+@utility lore-layer-lit {
+  filter: drop-shadow(0 0 6px rgb(255 226 140 / 0.95)) drop-shadow(0 0 14px rgb(255 200 90 / 0.6))
+    brightness(1.12);
+}
+@media (prefers-reduced-motion: reduce) {
+  .lore-fog-clouds,
+  .lore-fog-clouds-slow {
+    animation: none;
+  }
+}

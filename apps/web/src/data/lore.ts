@@ -1,12 +1,13 @@
 // The lore (60-lore.sql): the story's chapters, the world map (an image and its places, each tied to
-// a collection) and the events. An event is a defence (each player places one of their fighters:
+// a collection; 64-lore-carte-calques.sql: each place has layers, transparent images the size of the
+// map, and stays hidden, layers in the private storage, until the admin reveals it) and the events. An event is a defence (each player places one of their fighters:
 // key fighters add a lot, once each; the others a little; harmful ones take some away) or a vote
 // (each player votes for an option with its own chance). One draw at the end decides; on success,
 // each participant has a chance to get the reward card. The site resolves the events past their
 // end when it lists them (evenements_resoudre).
 
 import { z } from 'zod';
-import { call, uploadImage } from '@/data/admin';
+import { call, lighten, removeImages, uploadImage } from '@/data/admin';
 import { supabase } from '@/lib/supabase';
 
 const Num = z.union([z.number(), z.string()]).transform(Number);
@@ -66,32 +67,53 @@ export async function deleteChapter(id: number): Promise<void> {
 
 // ── World map ──
 
+const Layer = z.object({
+  id: Num,
+  image_path: z.string(),
+  prive: z.boolean(),
+  ordre: Num,
+});
+export type Layer = z.infer<typeof Layer>;
+
 const Place = z.object({
   id: Num,
   nom: z.string(),
   texte: z.string(),
   image_path: z.string().nullable(),
   collection_id: NumOrNull,
+  chapitre_id: NumOrNull,
+  revele: z.boolean(),
   x: Num,
   y: Num,
   collections: z.object({ nom: z.string() }).nullable(),
+  lore_calques: z.array(Layer),
 });
 export type Place = z.infer<typeof Place>;
 
+// The map and its places: a player gets the revealed places and their public layers only (the
+// database filters), the admin gets everything.
 export async function fetchWorldMap(): Promise<{ image: string | null; places: Place[] }> {
   const [map, places] = await Promise.all([
     call(supabase.from('lore_carte').select('image_path').eq('id', 1).maybeSingle()),
     call(
       supabase
         .from('lore_lieux')
-        .select('id,nom,texte,image_path,collection_id,x,y,collections(nom)')
+        .select(
+          'id,nom,texte,image_path,collection_id,chapitre_id,revele,x,y,collections(nom),lore_calques(id,image_path,prive,ordre)',
+        )
         .order('id'),
     ),
   ]);
   return {
     image:
       z.object({ image_path: z.string().nullable() }).nullable().parse(map)?.image_path ?? null,
-    places: z.array(Place).parse(places),
+    places: z
+      .array(Place)
+      .parse(places)
+      .map((p) => ({
+        ...p,
+        lore_calques: [...p.lore_calques].sort((a, b) => a.ordre - b.ordre || a.id - b.id),
+      })),
   };
 }
 
@@ -104,27 +126,129 @@ export type PlaceDraft = {
   nom: string;
   texte: string;
   collection_id: number | null;
+  chapitre_id: number | null;
   x: number;
   y: number;
   image: File | null;
 };
 
-export async function savePlace(id: number | null, d: PlaceDraft): Promise<void> {
+// Creates or updates a place; a new place is born hidden. Returns its id.
+export async function savePlace(id: number | null, d: PlaceDraft): Promise<number> {
   if (!d.nom.trim()) throw new Error('Donne un nom au lieu.');
   const row: Record<string, unknown> = {
     nom: d.nom.trim(),
     texte: d.texte,
     collection_id: d.collection_id,
+    chapitre_id: d.chapitre_id,
     x: Math.min(100, Math.max(0, d.x)),
     y: Math.min(100, Math.max(0, d.y)),
   };
   if (d.image) row.image_path = await upload(d.image);
-  if (id === null) await call(supabase.from('lore_lieux').insert(row));
-  else await call(supabase.from('lore_lieux').update(row).eq('id', id));
+  const saved =
+    id === null
+      ? await call(supabase.from('lore_lieux').insert(row).select('id').single())
+      : await call(supabase.from('lore_lieux').update(row).eq('id', id).select('id').single());
+  return z.object({ id: Num }).parse(saved).id;
 }
 
-export async function deletePlace(id: number): Promise<void> {
-  await call(supabase.from('lore_lieux').delete().eq('id', id));
+// ── Layers: the private storage (lore-secret) while their place is hidden, the public one after ──
+
+const SECRET = 'lore-secret';
+const CACHE_ONE_YEAR = '31536000';
+const bucketOf = (l: { prive: boolean }) => (l.prive ? SECRET : 'cartes');
+
+async function storeLayer(blob: Blob, hidden: boolean): Promise<string> {
+  const path = hidden ? `${crypto.randomUUID()}.webp` : `lore/calques/${crypto.randomUUID()}.webp`;
+  const type = blob.type || 'image/webp';
+  const options = hidden
+    ? { contentType: type }
+    : { contentType: type, cacheControl: CACHE_ONE_YEAR };
+  await call(supabase.storage.from(hidden ? SECRET : 'cartes').upload(path, blob, options));
+  return path;
+}
+
+async function removeLayerFile(l: { prive: boolean; image_path: string }): Promise<void> {
+  if (l.prive) await call(supabase.storage.from(SECRET).remove([l.image_path]));
+  else await removeImages([l.image_path]);
+}
+
+const sizeOf = async (file: Blob) => {
+  const bitmap = await createImageBitmap(file);
+  const size = { width: bitmap.width, height: bitmap.height };
+  bitmap.close();
+  return size;
+};
+
+// Adds layers to a place: each must be exactly the map's size (or it would not line up), and goes
+// to the private storage unless the place is already revealed.
+export async function addLayers(
+  place: { id: number; revele: boolean; lore_calques: Layer[] },
+  files: File[],
+  map: { width: number; height: number },
+): Promise<number> {
+  for (const file of files) {
+    const s = await sizeOf(file);
+    if (s.width !== map.width || s.height !== map.height)
+      throw new Error(
+        `« ${file.name} » fait ${s.width} × ${s.height} px, la carte ${map.width} × ${map.height} : un calque doit avoir exactement la taille de la carte.`,
+      );
+  }
+  let ordre = Math.max(-1, ...place.lore_calques.map((l) => l.ordre));
+  for (const file of files) {
+    ordre += 1;
+    const blob = await lighten(file, 8000, 0.92);
+    const image_path = await storeLayer(blob, !place.revele);
+    await call(
+      supabase
+        .from('lore_calques')
+        .insert({ lieu_id: place.id, image_path, prive: !place.revele, ordre }),
+    );
+  }
+  return files.length;
+}
+
+export async function deleteLayer(l: Layer): Promise<void> {
+  await removeLayerFile(l);
+  await call(supabase.from('lore_calques').delete().eq('id', l.id));
+}
+
+// Moves a layer to the public (shown) or private (hidden) storage.
+async function moveLayer(l: Layer, hidden: boolean): Promise<void> {
+  if (l.prive === hidden) return;
+  const blob = z
+    .instanceof(Blob)
+    .parse(await call(supabase.storage.from(bucketOf(l)).download(l.image_path)));
+  const image_path = await storeLayer(blob, hidden);
+  await call(supabase.from('lore_calques').update({ image_path, prive: hidden }).eq('id', l.id));
+  await removeLayerFile(l);
+}
+
+// Reveals a place (its layers move to the public storage first) or hides it again (it disappears
+// for the players first, then its layers go back to the private storage).
+export async function setPlaceRevealed(place: Place, revealed: boolean): Promise<void> {
+  if (revealed) {
+    for (const l of place.lore_calques) await moveLayer(l, false);
+    await call(supabase.from('lore_lieux').update({ revele: true }).eq('id', place.id));
+  } else {
+    await call(supabase.from('lore_lieux').update({ revele: false }).eq('id', place.id));
+    for (const l of place.lore_calques) await moveLayer(l, true);
+  }
+}
+
+// The admin's preview of hidden layers: short-lived links to the private storage.
+export async function privateLayerUrls(paths: string[]): Promise<Map<string, string>> {
+  if (!paths.length) return new Map();
+  const signed = z
+    .array(z.object({ path: z.string().nullable(), signedUrl: z.string().nullable() }))
+    .parse(await call(supabase.storage.from(SECRET).createSignedUrls(paths, 3600)));
+  return new Map(
+    signed.flatMap((s) => (s.path && s.signedUrl ? [[s.path, s.signedUrl] as const] : [])),
+  );
+}
+
+export async function deletePlace(place: Place): Promise<void> {
+  for (const l of place.lore_calques) await removeLayerFile(l);
+  await call(supabase.from('lore_lieux').delete().eq('id', place.id));
 }
 
 // ── Events ──

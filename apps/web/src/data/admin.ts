@@ -189,9 +189,14 @@ export async function fetchUnusedImages(): Promise<{ paths: string[]; bytes: num
       call(supabase.from('annonces_options').select('image_path')),
       // the puzzles' pieces and blurred backgrounds (63-puzzle-pieces-secretes.sql)
       call(supabase.from('annonces_puzzle_images').select('image_path:image')),
-      ...['lore_chapitres', 'lore_carte', 'lore_lieux', 'evenements', 'evenements_options'].map(
-        (t) => call(supabase.from(t).select('image_path')),
-      ),
+      ...[
+        'lore_chapitres',
+        'lore_carte',
+        'lore_lieux',
+        'lore_calques',
+        'evenements',
+        'evenements_options',
+      ].map((t) => call(supabase.from(t).select('image_path'))),
       call(supabase.from('annonces').select('image_path:puzzle_fond')),
     ]);
   const kept = new Set<string>();
