@@ -40,6 +40,10 @@ const writeSeen = (ids: number[]) => {
   }
 };
 
+// A rarity named common (« Commune »), whatever its case and accents.
+const isCommon = (name: string) =>
+  name.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().startsWith('commun');
+
 // The canvases work at a quarter of the map's size: enough for a soft fog edge and the hover test.
 const SCALE = 0.25;
 
@@ -326,10 +330,16 @@ export function WorldMap() {
   const pins = places.filter((p) => p.lore_calques.length === 0);
   const hovered = placeOf(hover);
   const opened = menu?.place ?? null;
+  // the boosters that give the place's collection from the rare cards up: the commons of every
+  // collection are in every booster, so counting them listed them all
   const boosters = opened?.collection_id
     ? (shop.data ?? []).filter((b) =>
         (contents.data ?? []).some(
-          (r) => r.type_id === b.id && r.collection_id === opened.collection_id,
+          (r) =>
+            r.type_id === b.id &&
+            r.collection_id === opened.collection_id &&
+            !isCommon(r.rarete_nom) &&
+            r.nb > 0,
         ),
       )
     : [];
