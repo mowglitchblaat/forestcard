@@ -74,6 +74,8 @@ const emptyEvent = (): EventDraft => ({
   fin: defaultEnd(),
   recompense_variante_id: null,
   recompense_pct: 40,
+  attaquant_variante_id: null,
+  lieu_id: null,
   base_pct: 0,
   cle_pct: 20,
   autre_pct: 2,
@@ -94,15 +96,17 @@ function EventsAdmin() {
   const variants = useQuery({ queryKey: adminKeys.variants, queryFn: fetchVariants });
   const cards = useQuery({ queryKey: adminKeys.cards, queryFn: fetchCardList });
   const collections = useQuery({ queryKey: adminKeys.collections, queryFn: fetchCollections });
+  const map = useQuery({ queryKey: loreKeys.map, queryFn: fetchWorldMap });
   const add = useAction();
   const action = useAction();
   const [d, setD] = useState(emptyEvent);
   const [form, setForm] = useState(0);
   const set = (patch: Partial<EventDraft>) => setD({ ...d, ...patch });
 
-  const error = events.error ?? variants.error ?? cards.error ?? collections.error;
+  const error = events.error ?? variants.error ?? cards.error ?? collections.error ?? map.error;
   if (error) return <AdminError error={error} />;
-  if (!events.data || !variants.data || !cards.data || !collections.data) return <PageSkeleton />;
+  if (!events.data || !variants.data || !cards.data || !collections.data || !map.data)
+    return <PageSkeleton />;
   const fighters = cards.data.filter((c) => c.type === 'combattant');
   const nameOf = (id: number) => fighters.find((c) => c.id === id)?.nom ?? `#${id}`;
 
@@ -194,6 +198,39 @@ function EventsAdmin() {
               onChange={(e) => set({ image: e.target.files?.[0] ?? null })}
             />
           </Field>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Carte qui attaque (boss, facultatif)">
+              <NativeSelect
+                value={d.attaquant_variante_id ?? ''}
+                onChange={(e) =>
+                  set({ attaquant_variante_id: e.target.value ? Number(e.target.value) : null })
+                }
+              >
+                <option value="">— Aucune —</option>
+                {variants.data
+                  .filter((v) => v.cartes.type === 'combattant')
+                  .map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {variantLabel(v)}
+                    </option>
+                  ))}
+              </NativeSelect>
+            </Field>
+            <Field label="Lieu attaqué (fond : la carte du lore zoomée dessus)">
+              <NativeSelect
+                value={d.lieu_id ?? ''}
+                onChange={(e) => set({ lieu_id: e.target.value ? Number(e.target.value) : null })}
+              >
+                <option value="">— Toute la carte —</option>
+                {map.data.places.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.nom}
+                    {p.revele ? '' : ' (caché : les joueurs verront toute la carte)'}
+                  </option>
+                ))}
+              </NativeSelect>
+            </Field>
+          </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label="Carte récompense (une version précise)">
               <NativeSelect

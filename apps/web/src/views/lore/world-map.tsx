@@ -340,8 +340,8 @@ function Fog({ built }: { built: Built }) {
 }
 
 // What the players see, even for the admin (who also gets the hidden places): the revealed places,
-// their public layers, and each layer's address.
-function visible(places: Place[], img: (path: string | null) => string | null) {
+// their public layers, and each layer's address. Also the boss scene's background (./event-scene.tsx).
+export function visible(places: Place[], img: (path: string | null) => string | null) {
   const shown = places
     .filter((p) => p.revele)
     .map((p) => ({ ...p, lore_calques: p.lore_calques.filter((l) => !l.prive) }));

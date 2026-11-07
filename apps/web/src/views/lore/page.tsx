@@ -32,6 +32,7 @@ import { useSession } from '@/lib/session';
 import { TONES } from '@/lib/tones';
 import { LORE_TABS, type LoreTab } from './search';
 import { ChapterReader, paragraphsOf } from './chapter-reader';
+import { EventScene, hasScene, type SceneOutcome } from './event-scene';
 import { WorldMap } from './world-map';
 
 const route = getRouteApi('/lore');
@@ -296,10 +297,18 @@ export function EventCard({
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
-        {picture && <img src={picture} alt="" className="w-full rounded-lg" />}
+        {hasScene(e) ? (
+          <EventScene event={e} />
+        ) : (
+          picture && <img src={picture} alt="" className="w-full rounded-lg" />
+        )}
         {e.texte && <p className="whitespace-pre-line">{e.texte}</p>}
         <Reward event={e} />
-        {e.type === 'defense' ? <Defence event={e} owned={owned} /> : <VoteOptions event={e} />}
+        {e.type === 'defense' ? (
+          <Defence event={e} owned={owned} scene={hasScene(e)} />
+        ) : (
+          <VoteOptions event={e} />
+        )}
         {!open && (
           <p className="text-sm">
             {e.participants === 0
@@ -342,7 +351,16 @@ function Reward({ event: e }: { event: LoreEvent }) {
   );
 }
 
-function Defence({ event: e, owned }: { event: LoreEvent; owned: CollectionEntry[] }) {
+// scene: the boss scene above already shows the barrier (the chance) and the defence line.
+function Defence({
+  event: e,
+  owned,
+  scene,
+}: {
+  event: LoreEvent;
+  owned: CollectionEntry[];
+  scene: boolean;
+}) {
   const client = useQueryClient();
   const img = useImages();
   const [picking, setPicking] = useState(false);
@@ -370,7 +388,7 @@ function Defence({ event: e, owned }: { event: LoreEvent; owned: CollectionEntry
           Chaque joueur place un de ses combattants. Combattant clé : +{e.cle_pct} % (une seule fois
           chacun) · autre combattant : +{e.autre_pct} % · combattant nuisible : −{e.nuisible_pct} %.
         </span>
-        {e.chance !== null && open && (
+        {e.chance !== null && open && !scene && (
           <span className="flex items-center gap-2">
             <b>Chance de réussite actuelle : {e.chance} %</b>
             <span className="w-48">
@@ -516,82 +534,116 @@ function VoteOptions({ event: e }: { event: LoreEvent }) {
   );
 }
 
+// With a boss scene: the boss's charge and the line's shake, before the verdict (index.css,
+// --animate-boss-charge and --animate-line-shake last 1.1 s and 1.3 s).
+const CLASH_MS = 1500;
+
 // The result played out: the destiny's die rolls, lands on its number against the chance, then the
 // verdict and the reward. Once closed, it is marked seen (it does not play again by itself).
 function Reveal({ event: e, onClose }: { event: LoreEvent; onClose: () => void }) {
   const client = useQueryClient();
   const img = useImages();
-  const [phase, setPhase] = useState<'roll' | 'verdict'>('roll');
+  // With a boss scene, the clash plays between the draw and the verdict.
+  const scene = hasScene(e);
+  const [phase, setPhase] = useState<'roll' | 'clash' | 'verdict'>('roll');
   const [shown, setShown] = useState(1);
   const chance = e.chance_finale ?? 0;
   useEffect(() => {
     let k = 0;
+    const later: ReturnType<typeof setTimeout>[] = [];
     const t = setInterval(() => {
       k++;
       setShown(1 + Math.floor(Math.random() * 100));
       if (k >= 26) {
         clearInterval(t);
         setShown(e.tirage ?? 100);
-        setTimeout(() => setPhase('verdict'), 900);
+        later.push(
+          setTimeout(() => {
+            if (scene) {
+              setPhase('clash');
+              later.push(setTimeout(() => setPhase('verdict'), CLASH_MS));
+            } else setPhase('verdict');
+          }, 900),
+        );
       }
     }, 70);
-    return () => clearInterval(t);
-  }, [e.tirage]);
+    return () => {
+      clearInterval(t);
+      later.forEach(clearTimeout);
+    };
+  }, [e.tirage, scene]);
+  const outcome: SceneOutcome =
+    phase === 'roll' ? 'idle' : phase === 'clash' ? 'clash' : e.reussi ? 'won' : 'lost';
   const close = () => {
     if (!e.vu)
       void markEventSeen(e.id).then(() => client.invalidateQueries({ queryKey: loreKeys.events }));
     onClose();
   };
   const reward = img(e.recompense_image);
+  const body = (
+    <>
+      <DialogTitle>{e.titre}</DialogTitle>
+      <DialogDescription>
+        {e.participants === 0
+          ? 'Personne n’a répondu à l’appel.'
+          : `Chance de réussite : ${chance} %. Le destin doit tirer ${chance} ou moins.`}
+      </DialogDescription>
+      {scene && <EventScene event={e} outcome={outcome} />}
+      <div className="flex flex-col items-center gap-4 py-4 text-center">
+        <ICONS.dailyGames
+          className={`size-12 ${phase === 'roll' ? 'animate-spin' : 'animate-in zoom-in-50'}`}
+        />
+        <span className="text-6xl font-black tabular-nums">{shown}</span>
+        <div className="w-64 max-w-full">
+          <Progress value={chance} />
+        </div>
+        {phase === 'verdict' && (
+          <div className="flex flex-col items-center gap-3 animate-in fade-in-0 zoom-in-50 duration-500">
+            {e.reussi ? (
+              <b className={`text-4xl ${TONES.success.text}`}>VICTOIRE !</b>
+            ) : (
+              <b className="text-4xl text-destructive">DÉFAITE…</b>
+            )}
+            {scene && e.participants > 0 && (
+              <span className="font-medium">
+                {e.reussi
+                  ? `La défense a tenu : ${e.attaquant_nom ?? 'l’attaque'} est repoussé${e.attaquant_nom ? '' : 'e'} !`
+                  : 'Les défenseurs sont tombés…'}
+              </span>
+            )}
+            {e.reussi &&
+              (e.ma_recompense ? (
+                <>
+                  {reward && (
+                    <img
+                      src={reward}
+                      alt=""
+                      className="aspect-5/7 w-40 rounded-lg object-cover shadow-xl animate-in spin-in-12 zoom-in-50 duration-700"
+                    />
+                  )}
+                  <span>
+                    Tu reçois <b>{e.recompense_nom}</b> ! Elle est dans ta collection.
+                  </span>
+                </>
+              ) : (
+                <span className="text-muted-foreground">
+                  La victoire est là, mais la carte ne t'a pas choisi cette fois.
+                </span>
+              ))}
+            {!e.reussi && <span className="text-muted-foreground">Aucune récompense.</span>}
+            <Button onClick={close}>Fermer</Button>
+          </div>
+        )}
+      </div>
+    </>
+  );
   return (
     <Dialog open onOpenChange={(o) => !o && close()}>
-      <DialogContent className="max-h-dialog overflow-y-auto sm:max-w-md">
-        <DialogTitle>{e.titre}</DialogTitle>
-        <DialogDescription>
-          {e.participants === 0
-            ? 'Personne n’a répondu à l’appel.'
-            : `Chance de réussite : ${chance} %. Le destin doit tirer ${chance} ou moins.`}
-        </DialogDescription>
-        <div className="flex flex-col items-center gap-4 py-4 text-center">
-          <ICONS.dailyGames
-            className={`size-12 ${phase === 'roll' ? 'animate-spin' : 'animate-in zoom-in-50'}`}
-          />
-          <span className="text-6xl font-black tabular-nums">{shown}</span>
-          <div className="w-64 max-w-full">
-            <Progress value={chance} />
-          </div>
-          {phase === 'verdict' && (
-            <div className="flex flex-col items-center gap-3 animate-in fade-in-0 zoom-in-50 duration-500">
-              {e.reussi ? (
-                <b className={`text-4xl ${TONES.success.text}`}>VICTOIRE !</b>
-              ) : (
-                <b className="text-4xl text-destructive">DÉFAITE…</b>
-              )}
-              {e.reussi &&
-                (e.ma_recompense ? (
-                  <>
-                    {reward && (
-                      <img
-                        src={reward}
-                        alt=""
-                        className="aspect-5/7 w-40 rounded-lg object-cover shadow-xl animate-in spin-in-12 zoom-in-50 duration-700"
-                      />
-                    )}
-                    <span>
-                      Tu reçois <b>{e.recompense_nom}</b> ! Elle est dans ta collection.
-                    </span>
-                  </>
-                ) : (
-                  <span className="text-muted-foreground">
-                    La victoire est là, mais la carte ne t'a pas choisi cette fois.
-                  </span>
-                ))}
-              {!e.reussi && <span className="text-muted-foreground">Aucune récompense.</span>}
-              <Button onClick={close}>Fermer</Button>
-            </div>
-          )}
-        </div>
-      </DialogContent>
+      {scene ? (
+        <DialogContent className="max-h-dialog overflow-y-auto sm:max-w-2xl">{body}</DialogContent>
+      ) : (
+        <DialogContent className="max-h-dialog overflow-y-auto sm:max-w-md">{body}</DialogContent>
+      )}
     </Dialog>
   );
 }

@@ -269,6 +269,16 @@ const KeyFighter = z.object({
   nom: z.string(),
 });
 
+// A fighter placed in a defence: its player, the card's first image, and its role once the keys
+// are shown (null otherwise, or for an ordinary fighter).
+const Defender = z.object({
+  pseudo: z.string(),
+  nom: z.string(),
+  image_path: z.string().nullable(),
+  role: z.enum(['cle', 'nuisible']).nullable(),
+});
+export type Defender = z.infer<typeof Defender>;
+
 const LoreEvent = z.object({
   id: Num,
   type: z.enum(['defense', 'vote']),
@@ -285,6 +295,12 @@ const LoreEvent = z.object({
   recompense_variante_id: NumOrNull,
   recompense_nom: z.string().nullable(),
   recompense_image: z.string().nullable(),
+  // 70-evenements-boss.sql: the attacking card (a precise version) and the place it attacks
+  // (a revealed place only, for the players)
+  attaquant_nom: z.string().nullable().default(null),
+  attaquant_image: z.string().nullable().default(null),
+  lieu_id: NumOrNull.default(null),
+  lieu_nom: z.string().nullable().default(null),
   base_pct: Num,
   cle_pct: Num,
   autre_pct: Num,
@@ -297,6 +313,7 @@ const LoreEvent = z.object({
   ma_recompense: z.boolean().nullable(),
   vu: z.boolean(),
   combattants: z.array(KeyFighter),
+  defenseurs: z.array(Defender).default([]),
   options: z.array(Option),
 });
 export type LoreEvent = z.infer<typeof LoreEvent>;
@@ -338,6 +355,8 @@ export type EventDraft = {
   fin: string; // datetime-local, Paris time of the admin's browser
   recompense_variante_id: number | null;
   recompense_pct: number;
+  attaquant_variante_id: number | null;
+  lieu_id: number | null;
   base_pct: number;
   cle_pct: number;
   autre_pct: number;
@@ -367,6 +386,8 @@ export async function createEvent(d: EventDraft): Promise<void> {
           fin: end.toISOString(),
           recompense_variante_id: d.recompense_variante_id,
           recompense_pct: d.recompense_pct,
+          attaquant_variante_id: d.attaquant_variante_id,
+          lieu_id: d.lieu_id,
           base_pct: d.base_pct,
           cle_pct: d.cle_pct,
           autre_pct: d.autre_pct,
