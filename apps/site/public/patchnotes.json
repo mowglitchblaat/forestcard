@@ -1,5 +1,35 @@
 [
   {
+    "date": "2026-11-07",
+    "intro": "Petite journée de réglages : championnat plus souple pour les ceintures vacantes, recyclage plus clair et carte du Lore plus fluide.",
+    "groupes": [
+      {
+        "titre": "Combat",
+        "points": [
+          "Championnat : un combat pour une ceinture vacante ne compte plus dans ton combat pour le titre du jour, pour les deux joueurs."
+        ]
+      },
+      {
+        "titre": "Collection et deck",
+        "points": [
+          "Recyclage : le choix entre gold et fragments reste toujours affiché, même quand les raretés cochées n’ont aucun doublon."
+        ]
+      },
+      {
+        "titre": "Site",
+        "points": [
+          "La carte du monde du Lore est bien plus légère : son brouillard ne fait plus ramer l’ordinateur."
+        ]
+      },
+      {
+        "titre": "Admin",
+        "points": [
+          "Puzzle commun : liste des joueurs, avec des pièces en plus à donner pour la journée et leurs essais à remettre à zéro."
+        ]
+      }
+    ]
+  },
+  {
     "date": "2026-11-06",
     "intro": "Le Lore s’ouvre sur une carte du monde à explorer, et les versions alternatives montrent enfin leurs chiffres en combat.",
     "groupes": [
