@@ -14,6 +14,7 @@
 //   - no round limit: each duel goes on until a KO (a safety cap of RELAY_ROUND_CAP rounds ends a
 //     duel that cannot end: the fighter with the lowest share of its max HP falls, exhausted);
 //   - both fighters down at once: both players send their next one (both act in the starting order);
+//     a fighter put down by the one entering (its magic, revealed on entry) gives way as well;
 //   - the player who still has a fighter standing when the other has none wins; both out at once is
 //     a draw.
 //
@@ -125,9 +126,15 @@ export function simulateRelay(
     },
   };
   // After a turn: what is pending, then the fallen give way. Whether someone is still down (the end).
+  // A fighter that enters can put the other side's fighter down (its magic, revealed on entry): that
+  // one gives way too, so the sides are checked again until nobody new has entered.
   const settle = (): boolean => {
     flush(c);
-    c.sides.forEach((s) => c.standIn!(s));
+    for (let changed = true; changed; ) {
+      const before = [...c.sides];
+      c.sides.forEach((s) => c.standIn!(s));
+      changed = c.sides.some((s, i) => s !== before[i]);
+    }
     return c.sides.some((s) => s.hp <= 0);
   };
 

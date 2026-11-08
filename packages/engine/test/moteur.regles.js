@@ -1091,6 +1091,16 @@ test('relais : une magie déjà jouée n\'est pas retirée au combattant suivant
   assert.equal(noms.length, 1, 'A garde son premier combattant : sa magie n\'est révélée qu\'une fois');
 });
 
+test('relais : un combattant mis KO par la magie du combattant qui entre est remplacé (pas de faux match nul)', () => {
+  // B tombe sur les dégâts renvoyés de sa propre attaque, son suivant entre : son souffle achève le combattant de A,
+  // qui doit envoyer le sien (avant : match nul, le combattant de A n'était ni debout ni remplacé)
+  const renvoi = { passif: { type: 'renvoi', u: 'pct', val: 50 } };
+  const souffle = n => MAG(n, { type: 'souffle', val: 40, statut: 'feu', chance: 0, niveau: 1, sval: 1, tours: 1 });
+  const r = relais([C('A1', 1, 120, renvoi), C('A2', 1, 120, renvoi)], [C('B1', 60, 25), C('B2', 60, 25), souffle('S1'), souffle('S2')], { regles: { equipe: 2 } });
+  assert.ok(entrees(r).some(e => e.c === 0), 'A envoie son combattant suivant');
+  assert.equal(r.gagnant, 0);
+});
+
 // ================= Sources d'un même effet d'attaque =================
 test('cumul : un passif et une magie qui donnent le même effet à l\'attaque additionnent leurs chances (un seul tirage)', () => {
   const poison = { type: 'poison', chance: 50, degtour: 1, tours: 1 };
