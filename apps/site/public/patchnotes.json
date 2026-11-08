@@ -1,5 +1,24 @@
 [
   {
+    "date": "2026-11-08",
+    "intro": "Les événements du Lore prennent vie : un boss peut désormais attaquer un lieu de la carte du monde.",
+    "groupes": [
+      {
+        "titre": "Site",
+        "points": [
+          "Événements du Lore : quand un boss attaque, une scène se joue sur la carte du monde zoomée sur le lieu visé, avec le boss dans son aura rouge face à la ligne des défenseurs.",
+          "Au résultat, le boss charge puis se brise si la défense tient, sinon ce sont les défenseurs qui tombent un à un."
+        ]
+      },
+      {
+        "titre": "Admin",
+        "points": [
+          "Un événement peut maintenant recevoir une carte qui attaque (le boss) et un lieu attaqué."
+        ]
+      }
+    ]
+  },
+  {
     "date": "2026-11-07",
     "intro": "Petite journée de réglages : championnat plus souple pour les ceintures vacantes, recyclage plus clair et carte du Lore plus fluide.",
     "groupes": [
