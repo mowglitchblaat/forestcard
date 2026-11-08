@@ -130,7 +130,8 @@ export function simulateRelay(
   // one gives way too, so the sides are checked again until nobody new has entered.
   const settle = (): boolean => {
     flush(c);
-    for (let changed = true; changed; ) {
+    let changed = true;
+    while (changed) {
       const before = [...c.sides];
       c.sides.forEach((s) => c.standIn!(s));
       changed = c.sides.some((s, i) => s !== before[i]);
