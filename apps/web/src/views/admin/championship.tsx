@@ -1,6 +1,7 @@
 // Admin · Réglages, « Championnat » (62-admin-ceintures-avertissements.sql): put a belt back in play
 // (vacant, the reign ends with the reason 'admin'), and clear a player's championship warnings, with
-// the option to lift the deprivation they led to.
+// the option to lift the deprivation they led to. And give back today's title fight on a belt, to one
+// player or to all (71-titre-combat-rendu.sql).
 
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -14,7 +15,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { clearWarnings, fetchTitleSanctions, vacateBelt } from '@/data/admin';
+import {
+  clearWarnings,
+  fetchTitleSanctions,
+  fetchUsedTitleFights,
+  giveBackTitleFight,
+  vacateBelt,
+} from '@/data/admin';
 import { beltKeys, fetchBelts } from '@/data/belts';
 import { AdminError, AdminSection, Choice, NoticeView, useAction } from './kit';
 
@@ -27,7 +34,12 @@ export function ChampionshipAdmin() {
     queryKey: ['admin', 'titleSanctions'],
     queryFn: fetchTitleSanctions,
   });
+  const used = useQuery({
+    queryKey: ['admin', 'usedTitleFights'],
+    queryFn: fetchUsedTitleFights,
+  });
   const vacate = useAction();
+  const giveBack = useAction();
   const warnings = useAction();
   const [lift, setLift] = useState(true);
 
@@ -62,6 +74,58 @@ export function ChampionshipAdmin() {
         ))}
         {belts.error && <AdminError error={belts.error} />}
         <NoticeView notice={vacate.notice} />
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <p className="text-sm font-medium">🔄 Combats pour le titre du jour</p>
+        <p className="text-sm text-muted-foreground">
+          Rendre le combat du jour : le joueur peut redéfier pour cette ceinture aujourd'hui (par
+          exemple un défi d'hier accepté seulement aujourd'hui).
+        </p>
+        {used.error && <AdminError error={used.error} />}
+        {(belts.data?.belts ?? []).map((b) => {
+          const players = (used.data ?? []).filter((u) => u.division === b.division);
+          return (
+            <div key={b.division} className="flex flex-wrap items-center gap-2 text-sm">
+              <span className="min-w-40 font-medium">{b.nom}</span>
+              {players.length === 0 && (
+                <span className="text-muted-foreground">Aucun combat utilisé aujourd'hui</span>
+              )}
+              {players.map((u) => (
+                <HoldButton
+                  key={u.joueur}
+                  size="sm"
+                  variant="outline"
+                  disabled={giveBack.pending}
+                  onConfirm={() =>
+                    giveBack.run(async () => {
+                      await giveBackTitleFight(b.division, u.joueur);
+                      return `${b.nom} : combat du jour rendu à ${u.pseudo ?? '?'}.`;
+                    })
+                  }
+                >
+                  Rendre à {u.pseudo ?? '?'}
+                </HoldButton>
+              ))}
+              {players.length > 1 && (
+                <HoldButton
+                  size="sm"
+                  variant="outline"
+                  disabled={giveBack.pending}
+                  onConfirm={() =>
+                    giveBack.run(async () => {
+                      const n = await giveBackTitleFight(b.division, null);
+                      return `${b.nom} : combat du jour rendu à ${n} joueur(s).`;
+                    })
+                  }
+                >
+                  Rendre à tous (maintenir)
+                </HoldButton>
+              )}
+            </div>
+          );
+        })}
+        <NoticeView notice={giveBack.notice} />
       </div>
 
       <div className="flex flex-col gap-2">

@@ -172,6 +172,23 @@ export async function clearWarnings(
   return { warnings: r.avertissements, deprivations: r.privations };
 }
 
+// Today's title fight given back by the admin (71-titre-combat-rendu.sql): the players whose fight of
+// the day is used, belt by belt, and the give-back (to one player, or to all when `player` is null).
+const UsedTitleFight = z.object({
+  division: z.string(),
+  joueur: z.string(),
+  pseudo: z.string().nullable(),
+});
+export type UsedTitleFight = z.infer<typeof UsedTitleFight>;
+export async function fetchUsedTitleFights(): Promise<UsedTitleFight[]> {
+  return z.array(UsedTitleFight).parse(await call(supabase.rpc('admin_titre_joues_jour')));
+}
+
+export async function giveBackTitleFight(division: string, player: string | null): Promise<number> {
+  const args = { p_division: division, p_joueur: player };
+  return Num.parse(await call(supabase.rpc('admin_titre_rendre', args)));
+}
+
 // Images of the storage (public `cartes`, players' `propositions`) cited by no column of the
 // database (65-images-inutilisees-generique.sql). Never listed either, a second safety net: the
 // composed cards' bare drawings still in use, the tournaments' images (cups, scarves, the trophies
