@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import tailwindcss from '@tailwindcss/vite';
@@ -19,8 +20,21 @@ const patchNotes = (): Plugin => ({
   configurePreviewServer: (server) => void server.middlewares.use(serveNotes),
 });
 
+// The effect preview's version: a hash of what it is built from (the overlay page and the preview's
+// own files). The preview frame asks for fx-preview.html?demo&v=<version>, so a browser or the Pages cache
+// never keeps an old animation once it has changed.
+const FX_PREVIEW_VERSION = createHash('sha256')
+  .update(
+    ['../overlay-combat/src/combat.html', './fx-preview/preview.js', './fx-preview/preview.css']
+      .map((f) => readFileSync(fileURLToPath(new URL(f, import.meta.url))))
+      .join('\n'),
+  )
+  .digest('hex')
+  .slice(0, 12);
+
 export default defineConfig({
   plugins: [react(), tailwindcss(), patchNotes()],
+  define: { __FX_PREVIEW_VERSION__: JSON.stringify(FX_PREVIEW_VERSION) },
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },

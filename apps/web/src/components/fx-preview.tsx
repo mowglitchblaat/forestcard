@@ -45,7 +45,7 @@ export function PreviewFrame({
     <div className="relative overflow-hidden rounded-md bg-muted/40">
       <iframe
         ref={frame}
-        src="fx-preview.html?demo"
+        src={`fx-preview.html?demo&v=${__FX_PREVIEW_VERSION__}`}
         title={title}
         className={`pointer-events-none w-full ${className}`}
       />
