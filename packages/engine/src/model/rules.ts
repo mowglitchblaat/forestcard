@@ -12,6 +12,9 @@ export type Rules = {
   maxProlong: number; // overtimes after the first period
   equipe?: number; // relay combat (relay.ts): fighters per player (3)
   niveaux?: Partial<StatusLevels>; // what each status level does (model/levels.ts); defaults when absent
+  // Storm, a combat event (mechanics/storm.ts): at the start of each turn, `chance` % that a bolt
+  // strikes a fighter for `degats` damage and a lightning mark. Absent: no storm.
+  orage?: { chance: number; degats: number };
 };
 
 export const DEFAULT_RULES: Rules = {

@@ -71,7 +71,7 @@ export function simulateRelay(
   const fighters = players.map((p) => p.deck.filter((card) => card.type === 'combattant').length);
 
   const first = c.random() < 0.5 ? 0 : 1;
-  emit(c, { type: 'combatStarted', first, team });
+  emit(c, { type: 'combatStarted', first, team, ...(rules.orage ? { storm: true as const } : {}) });
   revealMagics(c, [c.sides[first] as Side, c.sides[1 - first] as Side]);
 
   const canSend = (i: number) => fielded[i]! < team && fielded[i]! < (fighters[i] ?? 0);

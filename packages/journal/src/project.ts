@@ -347,7 +347,12 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
       return {
         t: 'debut',
         txt: 'Le combat commence !',
-        o: { joueurs: players(), premier: e.first, ...(e.team ? { equipe: e.team } : {}) },
+        o: {
+          joueurs: players(),
+          premier: e.first,
+          ...(e.team ? { equipe: e.team } : {}),
+          ...(e.storm ? { orage: 1 } : {}),
+        },
       };
     case 'fighterEntered':
       return {
@@ -590,6 +595,12 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
           : `${name(e.side)} est forgé au maximum : le feu ne lui fait plus rien`,
         o: { c: e.side, k: 'arme_feu', f: e.forged ? 1 : 0 },
       };
+    case 'stormStruck':
+      return {
+        t: 'statut',
+        txt: `⚡ ORAGE ! Un éclair frappe ${name(e.side)} !`,
+        o: { c: e.side, k: 'orage' },
+      };
     case 'scaled': {
       const scythe = e.kind === 'fauche';
       const what = scythe
@@ -788,6 +799,12 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
           };
         case 'gag':
           return { t: 'degats', txt: `${name(c)} subit ${n} dégâts (gag)`, o: { c, n, k: 'gag' } };
+        case 'storm':
+          return {
+            t: 'degats',
+            txt: `${name(c)} subit ${n} dégâts (éclair de l'orage)`,
+            o: { c, n, k: 'orage' },
+          };
         case 'fauche':
           return {
             t: 'degats',

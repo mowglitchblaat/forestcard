@@ -80,7 +80,7 @@ export function simulate(
     entered: (_i, s) => revealMagics(c, [s]),
     giveBack: () => {},
   };
-  emit(c, { type: 'combatStarted', first });
+  emit(c, { type: 'combatStarted', first, ...(rules.orage ? { storm: true as const } : {}) });
   revealMagics(c, cards());
 
   // Overtime: at the last round, if no card fell, each player draws 3 new cards from their deck (1

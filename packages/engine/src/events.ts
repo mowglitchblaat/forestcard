@@ -140,6 +140,7 @@ export type DamageCause =
   | 'missileReturned' // a reflected missile exploding on its shooter
   | 'shatter' // the ice of a frost shattering (glaciation, or a fracture)
   | 'thermalShock' // fire on ice: a burn laid on a frozen card
+  | 'storm' // a bolt of the storm (mechanics/storm.ts)
   | 'fauche' // a scythe strike, as an effect (mechanics/scaling-strikes.ts)
   | 'laser' // a laser shot, as an effect (mechanics/scaling-strikes.ts)
   | 'thorns' // a thorny rooting: the rooted card's own strike hurts it
@@ -266,7 +267,9 @@ export type ForgeField =
 
 export type DomainEvent =
   // Combat flow
-  | { type: 'combatStarted'; first: number; team?: number } // team: relay combat, fighters per player
+  // team: relay combat, fighters per player; storm: the storm event is on (mechanics/storm.ts)
+  | { type: 'combatStarted'; first: number; team?: number; storm?: true }
+  | { type: 'stormStruck'; side: SideIndex } // a bolt of the storm falls on this fighter
   | { type: 'turnStarted'; side: SideIndex; turn: number }
   | { type: 'overtimeStarted'; period: number; first: number }
   // Relay combat (relay.ts): the next fighter of a player enters (index: its rank, of: team size)

@@ -61,6 +61,7 @@ import {
 import { ultimate } from '../mechanics/ultimates.ts';
 import { aliveAtEnd, aliveAtStart, countTurn, everyTurnPassives } from './turn.ts';
 import { knellRises } from '../mechanics/knell.ts';
+import { stormAtStart } from '../mechanics/storm.ts';
 import { headshotStrike, targetingEnd } from '../mechanics/headshot.ts';
 import { moltAtStart, moltWatch, mutationQuiet } from '../mechanics/insect.ts';
 import { mistEnd } from '../mechanics/mist.ts';
@@ -85,6 +86,7 @@ type TurnStep = Step<Side>;
 // 1. Start of its turn, BEFORE its attack.
 const START_OF_TURN: TurnStep[] = [
   aliveAtStart,
+  stormAtStart, // the storm (a combat event): a bolt may strike either fighter
   moltAtStart, // the molt, before anything else of its turn
   delayedMagicAtStart, // a magic waiting for this turn acts
   solidificationAtStart,

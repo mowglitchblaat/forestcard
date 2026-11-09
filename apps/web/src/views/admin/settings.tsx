@@ -208,6 +208,7 @@ function SettingsForms({ v }: { v: Settings }) {
   const levels = useAction();
   const gains = useAction();
   const bounty = useAction();
+  const storm = useAction();
   const recycling = useAction();
   const exchanges = useAction();
   const images = useAction();
@@ -720,6 +721,63 @@ function SettingsForms({ v }: { v: Settings }) {
             </Button>
           </div>
           <NoticeView notice={bounty.notice} />
+        </form>
+      </AdminSection>
+
+      <AdminSection
+        title="⛈️ Événement Orage"
+        description="Pendant les combats, au début de chaque tour, un éclair peut tomber sur l'un des deux combattants (au hasard) : il subit des dégâts et reçoit un niveau de marque de foudre. Valable pour tous les combats (du jour, duels, ceintures, tournois) tant qu'il est actif."
+      >
+        <form
+          className="flex flex-col gap-3"
+          onSubmit={(e) => {
+            const f = form(e);
+            storm.run(async () => {
+              await saveSettings({
+                orage_actif: f.get('on') === 'on' ? 1 : 0,
+                orage_chance: clamp(f.get('och'), 0, 100),
+                orage_degats: clamp(f.get('odeg'), 0, 10000),
+              });
+              return 'Orage enregistré.';
+            });
+          }}
+        >
+          <Choice>
+            <Checkbox name="on" defaultChecked={setting(v, 'orage_actif', 0) === '1'} /> Actif
+          </Choice>
+          <Row>
+            <Field label="Chance d'un éclair à chaque tour %">
+              <Input
+                name="och"
+                type="number"
+                min={0}
+                max={100}
+                defaultValue={setting(v, 'orage_chance', 10)}
+                className="w-24"
+              />
+            </Field>
+            <Field label="Dégâts de l'éclair">
+              <Input
+                name="odeg"
+                type="number"
+                min={0}
+                max={10000}
+                defaultValue={setting(v, 'orage_degats', 18)}
+                className="w-24"
+              />
+            </Field>
+          </Row>
+          <p className="text-sm text-muted-foreground">
+            {setting(v, 'orage_actif', 0) === '1'
+              ? '⛈️ Orage actif : les éclairs tombent pendant les combats.'
+              : 'Orage inactif.'}
+          </p>
+          <div>
+            <Button type="submit" disabled={storm.pending}>
+              Enregistrer
+            </Button>
+          </div>
+          <NoticeView notice={storm.notice} />
         </form>
       </AdminSection>
 

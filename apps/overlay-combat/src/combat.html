@@ -1657,6 +1657,15 @@ function nVolt(c,n,plein){nfxStart();const b=nbox(c);if(!b)return;nglow(b.cx,b.y
 function nDecharge(c){nfxStart();const b=nbox(c);if(!b)return;for(let i=0;i<5;i++)nbolt(b.cx,b.cy,b.cx+R(-1,1)*b.w,b.cy+R(-1,1)*b.h,'#ffffff',4,16);nring(b.cx,b.cy,b.w*.1,b.w,'rgba(253,224,71,.9)',6,24);flot(c,'DÉCHARGE !','#facc15','big')}
 // malédiction : brisure de volonté (la carte se fissure), étreinte maudite (anneau violet)
 function nBrisure(c,ok){nfxStart();const b=nbox(c);if(!b)return;if(!ok){flot(c,'Rien à briser','#c4b5fd');return}nshake(c,1.4);ncracks(b.cx,b.cy,5,b.w*.55);nshards(b.cx,b.cy,22,'#a855f7',.25,7);nglow(b.cx,b.cy,14,'#a855f7',5,14,36);nflash(c,'#a855f7');flot(c,'BRISURE DE VOLONTÉ','#c084fc','big')}
+// Orage (événement de combat) : de temps en temps, un éclair lointain tombe entre les deux cartes (léger : un trait fin toutes les 4 à 8 s) ;
+// un éclair qui frappe une carte : gros trait blanc-bleu du haut de l'écran, flash, onde, étincelles
+function orageAmbiance(){nfxStart();let on=true,t=null;const loop=()=>{if(!on)return;const A=nbox(0),B=nbox(1);
+  if(A&&B){const lo=Math.min(A.cx,B.cx)+A.w*.6,hi=Math.max(A.cx,B.cx)-B.w*.6,x=R(lo,Math.max(lo,hi)),y=R(A.y+A.h*.2,A.y+A.h*.7);nbolt(x+R(-50,50),0,x,y,'#c7d2fe',1.4,12);if(Math.random()<.5)setTimeout(()=>nbolt(x+R(-30,30),0,x+R(-20,20),y*.8,'#a5b4fc',.9,9),110)}
+  t=setTimeout(loop,R(4000,8000))};t=setTimeout(loop,1800);fxAll.add(()=>{on=false;clearTimeout(t)})}
+function nOrage(c){nfxStart();const b=nbox(c);if(!b)return;const x=b.cx+R(-b.w*.12,b.w*.12);
+ nbolt(x+R(-70,70),0,x,b.cy-b.h*.05,'#e0e7ff',5.5,24);setTimeout(()=>nbolt(x+R(-50,50),0,b.cx+R(-b.w*.2,b.w*.2),b.cy+b.h*.1,'#a5b4fc',3,16),90);
+ setTimeout(()=>{nflash(c,'#c7d2fe',520);nshake(c,.9);nring(b.cx,b.cy,b.w*.08,b.w*.95,'rgba(224,231,255,.95)',5,26);nglow(b.cx,b.cy,16,'#e0e7ff',4.5,12,32);nburst(b.cx,b.cy,18,'#ffffff',6,2.5,30)},60);
+ flot(c,'⚡ ORAGE !','#c7d2fe','big')}
 // Fauche : une large déchirure s'ouvre en travers de la carte (bords dentelés, chair rouge, vide noir), lambeaux et gouttes ; plus la cible est blessée (pct : PV manquants), plus elle est large
 function nFauche(a,d,bonus,pct,active){nfxStart();const b=nbox(d);if(!b)return;const I=Math.max(.35,Math.min(1,(pct||0)/100));
  if(active){const A=nbox(a);if(A){nflash(a,'#b91c1c',420);nglow(A.cx,A.cy,10,'#7f1d1d',3,12,30)}}
@@ -1741,6 +1750,7 @@ Object.assign(NK,{
  'statut:fils':e=>nFils(e.c,e.n,e.of),'statut:fils_cout':e=>flot(e.c,'🎭 Marionnettiste -'+e.n+' PV ('+e.hp+'/'+e.m+')','#e879f9'),
  'statut:forge':e=>{nForge(e.c,e.n,e.s,e.m);forgeBadge(e.c,e.s,e.n)},'statut:forge_vide':e=>flot(e.c,'Plus rien à forger','#fdba74'),
  'statut:arme_immunite':e=>flot(e.c,'⚔️ Arme vivante : insensible','#fdba74'),'statut:arme_feu':e=>flot(e.c,e.f?'🔥 Le feu la forge !':'🔥 Sans effet','#fb923c',e.f?'big':undefined),'statut:fauche':e=>nFauche(e.c,e.cible,e.n,e.p,e.a),'statut:laser':e=>nLaser(e.c,e.cible,e.n,e.p),
+ 'statut:orage':e=>nOrage(e.c),
  'statut:reconstruction_ratee':e=>flot(e.c,'🔧 Reconstruction ratée ('+e.n+' %)','#94a3b8'),'statut:forge_creation':e=>{nForgeCreation(e.c,e.s==='piege');forgeBadge(e.c,e.s==='piege'?'trap':'magic',0)}});
 async function jouer(res){
  file.push(res);if(enCours)return;enCours=true;
@@ -1750,7 +1760,7 @@ async function jouer(res){
    $('#ban').className=e.t;$('#ban').textContent=e.txt;$('#log').innerHTML+=e.txt+'<br>';$('#log').scrollTop=1e5;
    if(e.t==='debut'||e.t==='prolongation'||e.t==='relais'||e.t==='controle'||e.t==='controle_fin'){chargerZones(e.joueurs);chargerChiffres(e.joueurs)}
    try{allumerEffets(e)}catch(_){}
-   if(e.t==='debut'){beltsDebut(R);EQUIPE=e.equipe?[{n:1,of:e.equipe},{n:1,of:e.equipe}]:[null,null];st={};fxL.length=0;fxAll.forEach(s=>s());fxAll.clear();JOUEURS=[];[0,1].forEach(i=>$('#p'+i).classList.remove('actif','idle'));e.joueurs.forEach((j,i)=>panneau(i,j));titreBan(e.joueurs);$('#scene').classList.add('on');maj(e);await wait(2200);   // les 3 dos de chaque joueur, puis les combattants se retournent
+   if(e.t==='debut'){beltsDebut(R);EQUIPE=e.equipe?[{n:1,of:e.equipe},{n:1,of:e.equipe}]:[null,null];st={};fxL.length=0;fxAll.forEach(s=>s());fxAll.clear();if(e.orage)orageAmbiance();JOUEURS=[];[0,1].forEach(i=>$('#p'+i).classList.remove('actif','idle'));e.joueurs.forEach((j,i)=>panneau(i,j));titreBan(e.joueurs);$('#scene').classList.add('on');maj(e);await wait(2200);   // les 3 dos de chaque joueur, puis les combattants se retournent
     await Promise.all([0,1].map(i=>retourner($('#p'+i+' .card'),()=>{const d=$('#p'+i+' .dosf');if(d)d.remove()})));await wait(900);continue}
    if(e.t==='prolongation'){await prolongation(e);continue}
    if(e.t==='relais'){await relais(e);continue}
@@ -1991,6 +2001,7 @@ if(DEMO){
   ['Forge','Forge : amélioration (3 coups de marteau, le marteau et son niveau sur la carte)',async c=>{for(let n=1;n<=3;n++){nForge(c,n);forgeBadge(c,'fighter',n);await wait(1300)}forgeBadge(c,'fighter',0)},4200],
   ['Fauche','Fauche : cible très blessée (80 % de PV manquants)',c=>nFauche(c,1-c,24,80),1800],
   ['Fauche','Fauche (ultime) : cible peu blessée (20 %)',c=>nFauche(c,1-c,6,20,1),1800],
+  ['Orage','Orage : éclairs lointains, puis un éclair frappe la carte',async c=>{orageAmbiance();await wait(1200);nOrage(c)},3000],
   ['Laser','Tir laser : cible pleine de vie',c=>nLaser(c,1-c,30,100),1800],
   ['Laser','Tir laser : cible presque morte (15 % de PV)',c=>nLaser(c,1-c,3,15),1800],
   ['Forge','Forge de création : une nouvelle magie',async c=>{nForgeCreation(c,false)},2400],

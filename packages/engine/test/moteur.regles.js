@@ -1732,6 +1732,23 @@ test('fauche : donnée à l\'attaque de base par une magie (atk_fauche)', () => 
   assert.ok(lignes(r, e => e.k === 'fauche' && e.t === 'statut' && e.n > 0).length > 0);
 });
 
+// ================= Orage, événement de combat (novembre 2026) =================
+test('orage : à chaque tour, un éclair peut frapper un des deux combattants (18 dégâts + marque de foudre)', () => {
+  const r = combat([C('A', 1, SOLIDE)], [C('B', 1, SOLIDE)], { regles: { maxTours: 4, maxProlong: 0, orage: { chance: 100, degats: 18 } } });
+  assert.equal(r.journal[0].orage, 1, 'le début du combat annonce l\'orage');
+  const frappes = lignes(r, e => e.t === 'statut' && e.k === 'orage');
+  assert.equal(frappes.length, 8, 'un éclair à chaque tour (4 rounds × 2 cartes)');
+  const degats = lignes(r, e => e.t === 'degats' && e.k === 'orage');
+  assert.ok(degats.length === 8 && degats.every(e => e.n === 18));
+  assert.ok(r.journal.some(e => e.k === 'foudre'), 'la marque de foudre est posée');
+});
+
+test('orage : désactivé (pas de regles.orage), aucun éclair', () => {
+  const r = combat([C('A', 1, SOLIDE)], [C('B', 1, SOLIDE)], { regles: { maxTours: 4, maxProlong: 0 } });
+  assert.equal(r.journal[0].orage, undefined);
+  assert.ok(!r.journal.some(e => e.k === 'orage'));
+});
+
 // ================= Fils et contrôle (marionnette) =================
 const FILS = { type: 'fils', chance: 100, nbfils: 5, pctctrl: 100 };
 

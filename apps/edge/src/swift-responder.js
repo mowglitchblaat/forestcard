@@ -64,9 +64,9 @@ async function championnat(b) {
   try {
     const dos = await dosDe([a.id, adv.id]);
     await ajouterRaretes([...(a.deck || []), ...(adv.deck || [])]);
-    const niveaux = await reglesNiveaux();
+    const niveaux = await reglesNiveaux(), orage = await reglesOrage();
     res = simulerRelais({ pseudo: a.pseudo, deck: a.deck, dos: dos[a.id] }, { pseudo: adv.pseudo, deck: adv.deck, dos: dos[adv.id] },
-      { seed: Math.floor(Math.random() * 1e9), regles: { ...REGLES, gain, perte, nul: perte, equipe: 3, niveaux } });
+      { seed: Math.floor(Math.random() * 1e9), regles: { ...REGLES, gain, perte, nul: perte, equipe: 3, niveaux, orage } });
     res.ceintures = await ceinturesDe([a.id, adv.id]);   // avant le combat (titre_conclure n'a pas encore eu lieu)
   } catch (e) {
     console.error('titre :', String(e));
@@ -153,9 +153,9 @@ async function tournoiSuivant() {
   try {
     const dos = await dosDe([A.id, B.id]);
     await ajouterRaretes([...(A.deck || []), ...(B.deck || [])]);
-    const niveaux = await reglesNiveaux();
+    const niveaux = await reglesNiveaux(), orage = await reglesOrage();
     res = simulerRelais({ pseudo: A.pseudo, deck: A.deck, dos: dos[A.id] }, { pseudo: B.pseudo, deck: B.deck, dos: dos[B.id] },
-      { seed: Math.floor(Math.random() * 1e9), regles: { ...REGLES, gain: 0, perte: 0, nul: 0, equipe: 3, niveaux } });
+      { seed: Math.floor(Math.random() * 1e9), regles: { ...REGLES, gain: 0, perte: 0, nul: 0, equipe: 3, niveaux, orage } });
     res.ceintures = await ceinturesDe([A.id, B.id]);
   } catch (e) {
     console.error('tournoi :', String(e));
@@ -271,6 +271,18 @@ async function reglesNiveaux() {
     const o = v ? JSON.parse(v) : null;
     return o && typeof o === 'object' ? o : undefined;
   } catch { return undefined; }
+}
+// Événement Orage (Admin > Réglages) : pendant les combats, au début de chaque tour, une chance qu'un éclair frappe
+// un des deux combattants (dégâts + marque de foudre). Éteint (ou réglages illisibles) : pas d'orage.
+async function reglesOrage() {
+  const v = {};
+  try {
+    const r = await rest('reglages_jeu?cle=in.(orage_actif,orage_chance,orage_degats)&select=cle,valeur');
+    if (r.ok && Array.isArray(r.data)) r.data.forEach(x => { v[x.cle] = x.valeur; });
+  } catch { return undefined; }
+  if (String(v.orage_actif) !== '1') return undefined;
+  const nb = (x, d, max) => { const n = parseFloat(x); return Number.isFinite(n) && n >= 0 ? Math.min(n, max) : d; };
+  return { chance: nb(v.orage_chance, 10, 100), degats: Math.round(nb(v.orage_degats, 18, 10000)) };
 }
 // Gains des combats (Admin > Réglages) : gold par victoire / défaite / nul, multiplicateur des soirées spéciales (×2…) avec heure de fin facultative
 async function reglesGains() {
@@ -545,10 +557,10 @@ async function traiter(req) {
   try {
     const dos = await dosDe([a.id, adv.id]);
     G = await reglesGains();
-    const niveaux = await reglesNiveaux();
+    const niveaux = await reglesNiveaux(), orage = await reglesOrage();
     await ajouterRaretes([...(a.deck || []), ...(adv.deck || [])]);
     res = simuler({ pseudo: a.pseudo, deck: a.deck, dos: dos[a.id] }, { pseudo: adv.pseudo, deck: adv.deck, dos: dos[adv.id] },
-      { seed: Math.floor(Math.random() * 1e9), regles: { ...REGLES, gain: G.gain, perte: G.perte, nul: G.nul, niveaux } });
+      { seed: Math.floor(Math.random() * 1e9), regles: { ...REGLES, gain: G.gain, perte: G.perte, nul: G.nul, niveaux, orage } });
     res.ceintures = await ceinturesDe([a.id, adv.id]);
   } catch (e) {
     if (mode === 'quotidien') await rpc('rendre_combat_quotidien', { p_joueur: a.id });
