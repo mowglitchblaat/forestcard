@@ -61,6 +61,14 @@ export const EFFECT_GROUPS: EffectGroup[] = [
       },
       { label: 'Réanimation', types: ['reanimation'], target: 'self', preview: 'reanimation' },
       {
+        label: 'Reconstruction',
+        types: ['reconstruction'],
+        target: 'self',
+        preview: 'reconstruction',
+      },
+      { label: 'Brume', types: ['brume'], target: 'self', preview: 'brume' },
+      { label: 'Réaction', types: ['reaction'], target: 'self' },
+      {
         label: 'Solidification',
         types: ['solidification'],
         target: 'self',
@@ -171,8 +179,6 @@ export const EFFECT_GROUPS: EffectGroup[] = [
       { label: 'Lien parasitaire', types: ['lien_parasite'], target: 'both', preview: 'lien' },
       { label: 'Mutation insecte', types: ['mutation'], target: 'self', preview: 'mutation' },
       { label: 'Mue', types: ['mue', 'mue_forcee'], target: 'self', preview: 'mue' },
-      { label: 'Réaction', types: ['reaction'], target: 'self' },
-      { label: 'Brume', types: ['brume'], target: 'self', preview: 'brume' },
     ],
   },
   {
@@ -257,11 +263,31 @@ export const EFFECT_GROUPS: EffectGroup[] = [
     effects: [
       { label: 'Forge', types: ['forge', 'forge_creation'], target: 'self', preview: 'forge' },
       {
+        label: 'Arme vivante',
+        types: ['arme_vivante'],
+        target: 'self',
+        preview: 'arme_vivante',
+      },
+      {
         label: 'Fils et contrôle (marionnette)',
         types: ['fils', 'atk_fils'],
         target: 'opponent',
         preview: 'fils',
       },
+    ],
+  },
+  {
+    title: 'Fauche et tir laser',
+    intro:
+      'Deux frappes qui dépendent des PV de la cible, l’une le miroir de l’autre : la fauche déchire une cible blessée (plus elle a perdu de PV, plus ça fait mal), le tir laser transperce une cible pleine de vie (moins elle a de PV, moins il fait de dégâts en plus).',
+    effects: [
+      {
+        label: 'Fauche',
+        types: ['fauche', 'atk_fauche'],
+        target: 'opponent',
+        preview: 'fauche',
+      },
+      { label: 'Tir laser', types: ['laser', 'atk_laser'], target: 'opponent', preview: 'laser' },
     ],
   },
   {

@@ -66,10 +66,14 @@ function scaledStrike(
   return undefined;
 }
 
-export const scytheStrike = (c: Combat, at: Attack, st: Strike): StrikeFlow =>
-  scaledStrike(c, at, st, 'fauche', attackSources(at.a, (q) => q.type === 'fauche'));
-export const laserStrike = (c: Combat, at: Attack, st: Strike): StrikeFlow =>
-  scaledStrike(c, at, st, 'laser', attackSources(at.a, (q) => q.type === 'laser'));
+export function scytheStrike(c: Combat, at: Attack, st: Strike): StrikeFlow {
+  const sources = attackSources(at.a, (q) => q.type === 'fauche');
+  return scaledStrike(c, at, st, 'fauche', sources);
+}
+export function laserStrike(c: Combat, at: Attack, st: Strike): StrikeFlow {
+  const sources = attackSources(at.a, (q) => q.type === 'laser');
+  return scaledStrike(c, at, st, 'laser', sources);
+}
 
 // The effect: a strike apart, with its bonus.
 function scaledEffect(kind: ScalingKind, { c, e, o, x }: EffectContext): void {

@@ -357,6 +357,47 @@
           ),
         ),
     },
+    // Living weapon: fire forges it (twice, at 50 %), up to 6 forges.
+    arme_vivante: {
+      on: 'self',
+      play: (s) => {
+        flot(s, '🔥 Le feu la forge !', '#fb923c', 'big');
+        nForge(s, 1, 'fighter', 6);
+        forgeBadge(s, 'fighter', 1);
+        setTimeout(() => {
+          nForge(s, 3, 'fighter', 6);
+          forgeBadge(s, 'fighter', 3);
+        }, 1300);
+      },
+    },
+    // The card shatters, then rebuilds itself (70 % of its HP the first time).
+    reconstruction: {
+      on: 'self',
+      play: (s) => {
+        briser(s);
+        setTimeout(() => {
+          reforme(s);
+          flot(s, '🔧 Reconstruction (70 %)', '#4ade80');
+        }, 3100);
+      },
+    },
+    // A scythe tears a wounded target; a laser pierces a target at full HP.
+    fauche: {
+      on: 'opponent',
+      play: (s, o) =>
+        attack(s, () => {
+          nFauche(s, o, 18, 75);
+          setTimeout(() => hit(o, 30, [70, 10]), 350);
+        }),
+    },
+    laser: {
+      on: 'opponent',
+      play: (s, o) =>
+        attack(s, () => {
+          nLaser(s, o, 12, 100);
+          setTimeout(() => hit(o, 24, [70, 46]), 450);
+        }),
+    },
     // Threads land on the opponent, up to 5; then the puppeteer's hand takes it.
     fils: {
       on: 'opponent',
