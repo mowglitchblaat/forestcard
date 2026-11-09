@@ -309,6 +309,20 @@ const LoreEvent = z.object({
   eclair_x: NumOrNull.default(null),
   eclair_y: NumOrNull.default(null),
   arrivee: z.string().nullable().default(null),
+  // 74-evenement-pot-manches.sql: a vote that sends its faction at seuil_votes votes, round after
+  // round (manche), with no end date; the faction on its way (depart, option_envoyee); the round's
+  // votes; the pot (admin only); the player's share; the attempts so far
+  seuil_votes: NumOrNull.default(null),
+  manche: Num.default(1),
+  depart: z.string().nullable().default(null),
+  option_envoyee: NumOrNull.default(null),
+  votes_manche: Num.default(0),
+  pot: NumOrNull.default(null),
+  mon_gain: NumOrNull.default(null),
+  ma_manche: NumOrNull.default(null),
+  tentatives: z
+    .array(z.object({ manche: Num, option_id: NumOrNull, reussi: z.boolean(), tirage: Num }))
+    .default([]),
   base_pct: Num,
   cle_pct: Num,
   autre_pct: Num,

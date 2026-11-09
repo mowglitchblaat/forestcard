@@ -99,7 +99,7 @@ export function EventScene({
             className="event-map-layer absolute inset-0 size-full"
           />
         ))}
-        {lightning ? (
+        {lightning && e.statut === 'ouvert' ? (
           <>
             <div style={focus} className="event-fog absolute inset-0" />
             <div className="event-scene-veil-light absolute inset-0" />

@@ -287,8 +287,9 @@ export function EventCard({
   const open = e.statut === 'ouvert';
   // A lightning event: after the vote, the faction sent travels before the result.
   const trip = e.eclair_x !== null ? lightningPhase(e, now).phase : null;
-  const voting = open && new Date(e.fin).getTime() > now;
-  const joined = e.ma_carte !== null || e.mon_option !== null;
+  const rounds = e.seuil_votes !== null;
+  const voting = open && (rounds ? trip === 'vote' : new Date(e.fin).getTime() > now);
+  const joined = e.ma_carte !== null || e.mon_option !== null || e.mon_gain !== null;
   return (
     <Card>
       <CardHeader>
@@ -302,6 +303,11 @@ export function EventCard({
                 ? `En route · arrivée dans ${countdown(e.arrivee, now)}`
                 : 'Arrivée : résultat imminent'}
             </Badge>
+          ) : open && rounds ? (
+            <Badge variant="info">
+              <ICONS.wait />
+              Vote {e.votes_manche}/{e.seuil_votes}
+            </Badge>
           ) : open ? (
             <Badge variant="info">
               <ICONS.wait />
@@ -314,11 +320,13 @@ export function EventCard({
           )}
         </CardTitle>
         <CardDescription>
-          {voting
-            ? `${trip ? 'Vote jusqu’au' : 'Se termine'} ${dateOf(e.fin)}`
-            : open && e.arrivee
-              ? `Vote terminé · arrivée ${dateOf(e.arrivee)}`
-              : `Terminé ${dateOf(e.fin)}`}{' '}
+          {rounds && open
+            ? `Sans date de fin · la faction part à ${e.seuil_votes} votes${e.manche > 1 ? ` · tentative ${e.manche}` : ''}`
+            : voting
+              ? `${trip ? 'Vote jusqu’au' : 'Se termine'} ${dateOf(e.fin)}`
+              : open && e.arrivee
+                ? `Vote terminé · arrivée ${dateOf(e.arrivee)}`
+                : `Terminé ${dateOf(e.fin)}`}{' '}
           · {e.participants} participant{e.participants > 1 ? 's' : ''}
         </CardDescription>
       </CardHeader>
@@ -340,6 +348,9 @@ export function EventCard({
             {e.participants === 0
               ? 'Personne n’a répondu à l’appel : rien ne se passe.'
               : `Chance de réussite : ${e.chance_finale ?? 0} % · le destin a tiré ${e.tirage ?? '?'} (il fallait ${e.chance_finale ?? 0} ou moins).`}{' '}
+            {joined && e.mon_gain !== null && e.mon_gain > 0 && (
+              <b className={TONES.success.text}>Ta part du pot : {e.mon_gain} gold ! </b>
+            )}
             {joined &&
               (e.ma_recompense ? (
                 <b className={TONES.success.text}>Tu as gagné {e.recompense_nom} !</b>
@@ -510,19 +521,23 @@ function VoteOptions({ event: e, voting }: { event: LoreEvent; voting: boolean }
   });
   const open = voting;
   const lightning = e.eclair_x !== null;
+  const rounds = e.seuil_votes !== null;
+  const myVote = rounds && e.ma_manche !== e.manche ? null : e.mon_option;
   const total = e.options.reduce((s, o) => s + o.voix, 0);
   return (
     <div className="flex flex-col gap-2">
       <span className="text-sm">
-        {lightning
-          ? 'Chaque joueur vote pour la faction à envoyer : la plus votée part de chez elle vers l’éclair à la fin du vote (trajet = distance ÷ vitesse). À son arrivée, sa chance de réussite décide.'
-          : 'Chaque joueur vote : l’option la plus votée est envoyée, avec sa chance de réussite.'}
+        {rounds
+          ? `Chaque joueur vote pour la faction à envoyer : à ${e.seuil_votes} votes, la plus votée part de chez elle vers l’éclair (trajet = distance ÷ vitesse). À son arrivée, le destin décide. Si elle échoue, un nouveau vote commence. En cas de réussite, un pot est partagé à parts égales entre tous ceux qui ont voté.`
+          : lightning
+            ? 'Chaque joueur vote pour la faction à envoyer : la plus votée part de chez elle vers l’éclair à la fin du vote (trajet = distance ÷ vitesse). À son arrivée, sa chance de réussite décide.'
+            : 'Chaque joueur vote : l’option la plus votée est envoyée, avec sa chance de réussite.'}
       </span>
       <div className="grid gap-3 sm:grid-cols-2">
         {e.options.map((o) => {
           const picture = img(o.image_path);
-          const mine = e.mon_option === o.id;
-          const sent = e.option_gagnante === o.id;
+          const mine = myVote === o.id;
+          const sent = (e.option_envoyee ?? e.option_gagnante) === o.id;
           const pct = total ? Math.round((o.voix * 100) / total) : 0;
           return (
             <button
@@ -560,6 +575,22 @@ function VoteOptions({ event: e, voting }: { event: LoreEvent; voting: boolean }
           );
         })}
       </div>
+      {e.tentatives.length > 0 && (
+        <ul className="flex flex-col gap-1 text-sm">
+          {e.tentatives.map((t) => (
+            <li key={t.manche} className="flex items-center gap-1.5">
+              {t.reussi ? (
+                <ICONS.done className={`size-4 ${TONES.success.text}`} />
+              ) : (
+                <ICONS.remove className={`size-4 ${TONES.danger.text}`} />
+              )}
+              Tentative {t.manche} :{' '}
+              {e.options.find((o) => o.id === t.option_id)?.libelle ?? 'la faction'}{' '}
+              {t.reussi ? 'a réussi !' : 'a échoué…'}
+            </li>
+          ))}
+        </ul>
+      )}
       {vote.error && (
         <small role="alert" className="text-destructive">
           {vote.error.message}
@@ -650,7 +681,13 @@ function Reveal({ event: e, onClose }: { event: LoreEvent; onClose: () => void }
                     : 'Les défenseurs sont tombés…'}
               </span>
             )}
+            {e.reussi && e.mon_gain !== null && e.mon_gain > 0 && (
+              <span className="text-lg">
+                Ta part du pot : <b className={TONES.success.text}>{e.mon_gain} gold</b> !
+              </span>
+            )}
             {e.reussi &&
+              e.recompense_variante_id !== null &&
               (e.ma_recompense ? (
                 <>
                   {reward && (
