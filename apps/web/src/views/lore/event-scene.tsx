@@ -134,16 +134,19 @@ export function EventScene({
         {lightning ? (
           <>
             <div style={focus} className="event-fog absolute inset-0" />
+            <div className="event-scene-veil-light absolute inset-0" />
+            <div className="lightning-sky absolute inset-0" />
             <div style={focus} className="absolute top-(--y) left-(--x) size-0">
-              <div className="lightning-impact absolute size-24 rounded-full" />
+              <div className="lightning-impact absolute size-32 rounded-full" />
               <svg
                 viewBox="0 0 40 120"
-                className={`lightning-bolt absolute bottom-0 h-56 w-20 -translate-x-1/2 ${outcome === 'clash' ? 'lightning-bolt-strike' : ''}`}
+                className={`lightning-bolt absolute bottom-0 h-80 w-28 -translate-x-1/2 ${outcome === 'clash' ? 'lightning-bolt-strike' : ''}`}
               >
                 <polyline points="24,0 14,38 26,44 10,82 22,86 18,120" />
+                <polyline className="lightning-branch" points="14,38 4,58 8,66" />
+                <polyline className="lightning-branch" points="10,82 30,98" />
               </svg>
             </div>
-            <div className="event-scene-veil-light absolute inset-0" />
           </>
         ) : (
           <div className="event-scene-veil absolute inset-0" />

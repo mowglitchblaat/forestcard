@@ -796,17 +796,18 @@
     linear-gradient(to bottom, rgb(14 6 6 / 0.55), rgb(14 6 6 / 0.8));
 }
 /* A lightning event (views/lore/event-scene.tsx): the fog around where it fell, a lighter veil, the
-   bolt striking again and again, its glow on the ground. A stronger strike plays during the reveal. */
+   bolt striking again and again with the sky flashing, its glow on the ground. A stronger strike plays
+   during the reveal. */
 @utility event-fog {
   background:
     radial-gradient(
       circle at var(--x, 50%) var(--y, 50%),
-      transparent 6%,
-      rgb(200 210 225 / 0.35) 22%
+      rgb(200 210 225 / 0.15) 4%,
+      rgb(200 210 225 / 0.55) 26%
     ),
-    radial-gradient(ellipse at 20% 30%, rgb(220 228 240 / 0.45), transparent 45%),
-    radial-gradient(ellipse at 80% 70%, rgb(220 228 240 / 0.4), transparent 50%),
-    radial-gradient(ellipse at 60% 15%, rgb(220 228 240 / 0.35), transparent 40%);
+    radial-gradient(ellipse at 20% 30%, rgb(220 228 240 / 0.55), transparent 45%),
+    radial-gradient(ellipse at 80% 70%, rgb(220 228 240 / 0.5), transparent 50%),
+    radial-gradient(ellipse at 60% 15%, rgb(220 228 240 / 0.45), transparent 40%);
   background-size:
     100% 100%,
     160% 160%,
@@ -824,16 +825,46 @@
   }
 }
 @utility event-scene-veil-light {
-  background: linear-gradient(to bottom, rgb(8 10 22 / 0.45), rgb(8 10 22 / 0.75));
+  background: linear-gradient(to bottom, rgb(8 10 22 / 0.5), rgb(8 10 22 / 0.7));
+}
+@utility lightning-sky {
+  background: rgb(200 215 255);
+  mix-blend-mode: screen;
+  opacity: 0;
+  animation: lightning-sky 3.2s linear infinite;
+}
+@keyframes lightning-sky {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  2% {
+    opacity: 0.35;
+  }
+  4% {
+    opacity: 0.05;
+  }
+  6% {
+    opacity: 0.25;
+  }
+  14% {
+    opacity: 0;
+  }
 }
 @utility lightning-bolt {
   fill: none;
-  stroke: rgb(240 246 255);
-  stroke-width: 3;
+  stroke: rgb(250 252 255);
+  stroke-width: 3.5;
   stroke-linejoin: round;
-  filter: drop-shadow(0 0 6px rgb(165 200 255)) drop-shadow(0 0 16px rgb(120 150 255));
+  stroke-linecap: round;
+  overflow: visible;
+  filter: drop-shadow(0 0 4px rgb(200 225 255)) drop-shadow(0 0 12px rgb(140 170 255))
+    drop-shadow(0 0 28px rgb(110 130 255));
   opacity: 0;
   animation: lightning-flash 3.2s linear infinite;
+}
+@utility lightning-branch {
+  stroke-width: 1.6;
 }
 @utility lightning-bolt-strike {
   animation: lightning-flash-strike 0.5s linear 3;
@@ -852,7 +883,7 @@
   6% {
     opacity: 1;
   }
-  12% {
+  13% {
     opacity: 0;
   }
 }
@@ -869,8 +900,8 @@
 @utility lightning-impact {
   background: radial-gradient(
     circle,
-    rgb(220 235 255 / 0.9),
-    rgb(120 150 255 / 0.35) 40%,
+    rgb(235 242 255 / 0.95),
+    rgb(140 165 255 / 0.45) 35%,
     transparent 70%
   );
   animation: lightning-impact 3.2s linear infinite;
@@ -878,16 +909,16 @@
 @keyframes lightning-impact {
   0%,
   100% {
-    opacity: 0.25;
-    transform: translate(-50%, -50%) scale(0.8);
+    opacity: 0.3;
+    transform: translate(-50%, -50%) scale(0.7);
   }
   3% {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1.25);
+    transform: translate(-50%, -50%) scale(1.3);
   }
-  15% {
-    opacity: 0.35;
-    transform: translate(-50%, -50%) scale(0.9);
+  18% {
+    opacity: 0.4;
+    transform: translate(-50%, -50%) scale(0.85);
   }
 }
 @utility boss-aura {
