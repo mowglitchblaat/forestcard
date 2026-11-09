@@ -1,5 +1,39 @@
 [
   {
+    "date": "2026-11-09",
+    "intro": "Grosse fournée : de nouvelles façons de frapper, un orage qui peut s’inviter en combat et des événements du Lore qui se jouent à l’éclair.",
+    "groupes": [
+      {
+        "titre": "Combat",
+        "points": [
+          "Nouveaux coups : la Fauche fait plus mal quand la cible est déjà blessée, le Tir laser au contraire quand elle est en pleine forme, en passif, attaque, ultime, magie ou piège.",
+          "Deux nouveaux passifs : Arme vivante (jusqu’à 6 forges, la brûlure la renforce, insensible à plusieurs statuts) et Reconstruction (chance de se relever après une mort, de moins en moins souvent).",
+          "Orage : quand il est activé, un éclair peut frapper un combattant au début d’un tour, et rien ne l’arrête, même pas une esquive ou un piège."
+        ]
+      },
+      {
+        "titre": "Animations",
+        "points": [
+          "La Fauche déchire la carte d’un large croissant et le Tir laser part en gros rayon violet ; pendant un orage, des éclairs grondent au loin."
+        ]
+      },
+      {
+        "titre": "Site",
+        "points": [
+          "Lore : un éclair peut frapper la carte du monde ; la faction la plus votée part de chez elle et met plus ou moins de temps à arriver selon sa vitesse avant de tenter sa chance.",
+          "Certains événements cachent leurs chances de réussite, ou se jouent en manches autour d’un pot de gold partagé entre tous les votants en cas de réussite.",
+          "Relais : un combattant achevé par la magie de celui qui vient d’entrer est bien remplacé, fini les faux matchs nuls ; et l’Encyclopédie présente les nouvelles mécaniques."
+        ]
+      },
+      {
+        "titre": "Admin",
+        "points": [
+          "On peut rendre le combat pour le titre du jour, ceinture par ceinture, à un joueur ou à tous, et régler l’orage depuis les réglages."
+        ]
+      }
+    ]
+  },
+  {
     "date": "2026-11-08",
     "intro": "Les événements du Lore prennent vie : un boss peut désormais attaquer un lieu de la carte du monde.",
     "groupes": [
