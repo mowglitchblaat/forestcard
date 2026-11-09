@@ -32,7 +32,7 @@ import { useSession } from '@/lib/session';
 import { TONES } from '@/lib/tones';
 import { LORE_TABS, type LoreTab } from './search';
 import { ChapterReader, paragraphsOf } from './chapter-reader';
-import { EventScene, hasScene, type SceneOutcome } from './event-scene';
+import { EventScene, hasScene, lightningPhase, type SceneOutcome, sentOption } from './event-scene';
 import { WorldMap } from './world-map';
 
 const route = getRouteApi('/lore');
@@ -245,12 +245,22 @@ function Events() {
   );
 }
 
-function useCountdown(iso: string): string {
+function useNow(): number {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 30_000);
     return () => clearInterval(t);
   }, []);
+  return now;
+}
+
+// A duration in hours, as « 4 h 05 » (or « 35 min »).
+const hoursText = (hours: number): string => {
+  const m = Math.round(hours * 60);
+  return m >= 60 ? `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')}` : `${m} min`;
+};
+
+function countdown(iso: string, now: number): string {
   const left = Math.max(0, new Date(iso).getTime() - now);
   const m = Math.floor(left / 60000);
   const d = Math.floor(m / 1440);
@@ -271,8 +281,12 @@ export function EventCard({
 }) {
   const img = useImages();
   const picture = img(e.image_path);
-  const left = useCountdown(e.fin);
+  const now = useNow();
+  const left = countdown(e.fin, now);
   const open = e.statut === 'ouvert';
+  // A lightning event: after the vote, the faction sent travels before the result.
+  const trip = e.eclair_x !== null ? lightningPhase(e, now).phase : null;
+  const voting = open && new Date(e.fin).getTime() > now;
   const joined = e.ma_carte !== null || e.mon_option !== null;
   return (
     <Card>
@@ -280,7 +294,14 @@ export function EventCard({
         <CardTitle className="flex flex-wrap items-center gap-2">
           <ICONS.events />
           {e.titre}
-          {open ? (
+          {open && trip && trip !== 'vote' ? (
+            <Badge variant="info">
+              <ICONS.travel />
+              {trip === 'travel' && e.arrivee
+                ? `En route · arrivée dans ${countdown(e.arrivee, now)}`
+                : 'Arrivée : résultat imminent'}
+            </Badge>
+          ) : open ? (
             <Badge variant="info">
               <ICONS.wait />
               Encore {left}
@@ -292,8 +313,12 @@ export function EventCard({
           )}
         </CardTitle>
         <CardDescription>
-          {open ? `Se termine ${dateOf(e.fin)}` : `Terminé ${dateOf(e.fin)}`} · {e.participants}{' '}
-          participant{e.participants > 1 ? 's' : ''}
+          {voting
+            ? `${trip ? 'Vote jusqu’au' : 'Se termine'} ${dateOf(e.fin)}`
+            : open && e.arrivee
+              ? `Vote terminé · arrivée ${dateOf(e.arrivee)}`
+              : `Terminé ${dateOf(e.fin)}`}{' '}
+          · {e.participants} participant{e.participants > 1 ? 's' : ''}
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
@@ -307,7 +332,7 @@ export function EventCard({
         {e.type === 'defense' ? (
           <Defence event={e} owned={owned} scene={hasScene(e)} />
         ) : (
-          <VoteOptions event={e} />
+          <VoteOptions event={e} voting={voting} />
         )}
         {!open && (
           <p className="text-sm">
@@ -475,19 +500,22 @@ function Defence({
   );
 }
 
-function VoteOptions({ event: e }: { event: LoreEvent }) {
+function VoteOptions({ event: e, voting }: { event: LoreEvent; voting: boolean }) {
   const client = useQueryClient();
   const img = useImages();
   const vote = useMutation({
     mutationFn: (option: number) => joinEvent(e.id, null, option),
     onSettled: () => client.invalidateQueries({ queryKey: loreKeys.events }),
   });
-  const open = e.statut === 'ouvert';
+  const open = voting;
+  const lightning = e.eclair_x !== null;
   const total = e.options.reduce((s, o) => s + o.voix, 0);
   return (
     <div className="flex flex-col gap-2">
       <span className="text-sm">
-        Chaque joueur vote : l’option la plus votée est envoyée, avec sa chance de réussite.
+        {lightning
+          ? 'Chaque joueur vote pour la faction à envoyer : la plus votée part de chez elle vers l’éclair à la fin du vote (trajet = distance ÷ vitesse). À son arrivée, sa chance de réussite décide.'
+          : 'Chaque joueur vote : l’option la plus votée est envoyée, avec sa chance de réussite.'}
       </span>
       <div className="grid gap-3 sm:grid-cols-2">
         {e.options.map((o) => {
@@ -517,6 +545,12 @@ function VoteOptions({ event: e }: { event: LoreEvent }) {
                 {o.libelle}
                 <Badge variant="outline">{o.chance} % de réussite</Badge>
               </span>
+              {lightning && o.trajet_heures !== null && (
+                <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <ICONS.travel className="size-3.5" />
+                  Vitesse {o.vitesse} · trajet {hoursText(o.trajet_heures)}
+                </span>
+              )}
               <span className="flex flex-col gap-1 text-xs text-muted-foreground">
                 <Progress value={pct} />
                 {o.voix} voix ({pct} %)
@@ -606,9 +640,13 @@ function Reveal({ event: e, onClose }: { event: LoreEvent; onClose: () => void }
             )}
             {scene && e.participants > 0 && (
               <span className="font-medium">
-                {e.reussi
-                  ? `La défense a tenu : ${e.attaquant_nom ?? 'l’attaque'} est repoussé${e.attaquant_nom ? '' : 'e'} !`
-                  : 'Les défenseurs sont tombés…'}
+                {e.eclair_x !== null
+                  ? e.reussi
+                    ? `${sentOption(e)?.libelle ?? 'La faction'} a percé le secret de l’éclair !`
+                    : `${sentOption(e)?.libelle ?? 'La faction'} est revenue bredouille…`
+                  : e.reussi
+                    ? `La défense a tenu : ${e.attaquant_nom ?? 'l’attaque'} est repoussé${e.attaquant_nom ? '' : 'e'} !`
+                    : 'Les défenseurs sont tombés…'}
               </span>
             )}
             {e.reussi &&

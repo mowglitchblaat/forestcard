@@ -76,6 +76,8 @@ const emptyEvent = (): EventDraft => ({
   recompense_pct: 40,
   attaquant_variante_id: null,
   lieu_id: null,
+  eclair_x: null,
+  eclair_y: null,
   base_pct: 0,
   cle_pct: 20,
   autre_pct: 2,
@@ -84,8 +86,8 @@ const emptyEvent = (): EventDraft => ({
   cles: [],
   nuisibles: [],
   options: [
-    { libelle: '', collection_id: null, chance: 50, image: null },
-    { libelle: '', collection_id: null, chance: 50, image: null },
+    { libelle: '', collection_id: null, chance: 50, vitesse: 10, image: null },
+    { libelle: '', collection_id: null, chance: 50, vitesse: 10, image: null },
   ],
 });
 
@@ -310,9 +312,34 @@ function EventsAdmin() {
             </>
           ) : (
             <div className="flex flex-col gap-3">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label="Éclair : X sur la carte du lore (%, vide = pas d'éclair)">
+                  <Input
+                    type="number"
+                    value={d.eclair_x ?? ''}
+                    onChange={(e) =>
+                      set({ eclair_x: e.target.value === '' ? null : num(e.target.value, 50) })
+                    }
+                  />
+                </Field>
+                <Field label="Éclair : Y sur la carte du lore (%)">
+                  <Input
+                    type="number"
+                    value={d.eclair_y ?? ''}
+                    onChange={(e) =>
+                      set({ eclair_y: e.target.value === '' ? null : num(e.target.value, 50) })
+                    }
+                  />
+                </Field>
+              </div>
+              <small className="text-muted-foreground">
+                Avec un éclair, la faction la plus votée part de son lieu (celui de sa collection) à
+                la fin du vote, et arrive après distance ÷ vitesse heures (à vitesse 10, une moitié
+                de carte = 5 h) : le jet de réussite se fait à son arrivée.
+              </small>
               <b className="text-sm">Options du vote</b>
               {d.options.map((o, i) => (
-                <div key={i} className="grid items-end gap-2 rounded-lg border p-3 sm:grid-cols-4">
+                <div key={i} className="grid items-end gap-2 rounded-lg border p-3 sm:grid-cols-5">
                   <Field label={`Option ${i + 1}`}>
                     <Input
                       value={o.libelle}
@@ -359,6 +386,19 @@ function EventsAdmin() {
                       }
                     />
                   </Field>
+                  <Field label="Vitesse (éclair)">
+                    <Input
+                      type="number"
+                      value={o.vitesse}
+                      onChange={(e) =>
+                        set({
+                          options: d.options.map((x, j) =>
+                            j === i ? { ...x, vitesse: num(e.target.value, 10) } : x,
+                          ),
+                        })
+                      }
+                    />
+                  </Field>
                   <Field label="Image">
                     <Input
                       type="file"
@@ -396,7 +436,7 @@ function EventsAdmin() {
                     set({
                       options: [
                         ...d.options,
-                        { libelle: '', collection_id: null, chance: 50, image: null },
+                        { libelle: '', collection_id: null, chance: 50, vitesse: 10, image: null },
                       ],
                     })
                   }

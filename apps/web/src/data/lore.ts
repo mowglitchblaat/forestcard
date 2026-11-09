@@ -260,6 +260,9 @@ const Option = z.object({
   image_path: z.string().nullable(),
   chance: Num,
   voix: Num,
+  // 72-evenement-eclair.sql: its speed, and its trip to the lightning in hours (null without one)
+  vitesse: Num.default(10),
+  trajet_heures: NumOrNull.default(null),
 });
 export type EventOption = z.infer<typeof Option>;
 
@@ -301,6 +304,11 @@ const LoreEvent = z.object({
   attaquant_image: z.string().nullable().default(null),
   lieu_id: NumOrNull.default(null),
   lieu_nom: z.string().nullable().default(null),
+  // 72-evenement-eclair.sql: where the lightning fell (% of the map), and when the faction sent
+  // arrives there (the end of the vote plus its trip; null without a lightning)
+  eclair_x: NumOrNull.default(null),
+  eclair_y: NumOrNull.default(null),
+  arrivee: z.string().nullable().default(null),
   base_pct: Num,
   cle_pct: Num,
   autre_pct: Num,
@@ -345,6 +353,7 @@ export type OptionDraft = {
   libelle: string;
   collection_id: number | null;
   chance: number;
+  vitesse: number;
   image: File | null;
 };
 export type EventDraft = {
@@ -357,6 +366,8 @@ export type EventDraft = {
   recompense_pct: number;
   attaquant_variante_id: number | null;
   lieu_id: number | null;
+  eclair_x: number | null;
+  eclair_y: number | null;
   base_pct: number;
   cle_pct: number;
   autre_pct: number;
@@ -388,6 +399,8 @@ export async function createEvent(d: EventDraft): Promise<void> {
           recompense_pct: d.recompense_pct,
           attaquant_variante_id: d.attaquant_variante_id,
           lieu_id: d.lieu_id,
+          eclair_x: d.type === 'vote' ? d.eclair_x : null,
+          eclair_y: d.type === 'vote' ? d.eclair_y : null,
           base_pct: d.base_pct,
           cle_pct: d.cle_pct,
           autre_pct: d.autre_pct,
@@ -414,6 +427,7 @@ export async function createEvent(d: EventDraft): Promise<void> {
         libelle: o.libelle.trim(),
         collection_id: o.collection_id,
         chance: Math.min(100, Math.max(0, o.chance)),
+        vitesse: Math.min(100, Math.max(1, Math.round(o.vitesse))),
         image_path: await upload(o.image),
         ordre: i,
       });

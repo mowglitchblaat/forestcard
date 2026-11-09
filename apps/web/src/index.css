@@ -795,6 +795,101 @@
     radial-gradient(ellipse at 50% 30%, rgb(60 8 8 / 0.35), transparent 70%),
     linear-gradient(to bottom, rgb(14 6 6 / 0.55), rgb(14 6 6 / 0.8));
 }
+/* A lightning event (views/lore/event-scene.tsx): the fog around where it fell, a lighter veil, the
+   bolt striking again and again, its glow on the ground. A stronger strike plays during the reveal. */
+@utility event-fog {
+  background:
+    radial-gradient(
+      circle at var(--x, 50%) var(--y, 50%),
+      transparent 6%,
+      rgb(200 210 225 / 0.35) 22%
+    ),
+    radial-gradient(ellipse at 20% 30%, rgb(220 228 240 / 0.45), transparent 45%),
+    radial-gradient(ellipse at 80% 70%, rgb(220 228 240 / 0.4), transparent 50%),
+    radial-gradient(ellipse at 60% 15%, rgb(220 228 240 / 0.35), transparent 40%);
+  background-size:
+    100% 100%,
+    160% 160%,
+    170% 170%,
+    150% 150%;
+  animation: event-fog-drift 18s ease-in-out infinite alternate;
+}
+@keyframes event-fog-drift {
+  to {
+    background-position:
+      0 0,
+      30% 10%,
+      -20% -10%,
+      10% 30%;
+  }
+}
+@utility event-scene-veil-light {
+  background: linear-gradient(to bottom, rgb(8 10 22 / 0.45), rgb(8 10 22 / 0.75));
+}
+@utility lightning-bolt {
+  fill: none;
+  stroke: rgb(240 246 255);
+  stroke-width: 3;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 6px rgb(165 200 255)) drop-shadow(0 0 16px rgb(120 150 255));
+  opacity: 0;
+  animation: lightning-flash 3.2s linear infinite;
+}
+@utility lightning-bolt-strike {
+  animation: lightning-flash-strike 0.5s linear 3;
+}
+@keyframes lightning-flash {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  2% {
+    opacity: 1;
+  }
+  4% {
+    opacity: 0.2;
+  }
+  6% {
+    opacity: 1;
+  }
+  12% {
+    opacity: 0;
+  }
+}
+@keyframes lightning-flash-strike {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  10%,
+  40% {
+    opacity: 1;
+  }
+}
+@utility lightning-impact {
+  background: radial-gradient(
+    circle,
+    rgb(220 235 255 / 0.9),
+    rgb(120 150 255 / 0.35) 40%,
+    transparent 70%
+  );
+  animation: lightning-impact 3.2s linear infinite;
+}
+@keyframes lightning-impact {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: translate(-50%, -50%) scale(0.8);
+  }
+  3% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.25);
+  }
+  15% {
+    opacity: 0.35;
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+}
 @utility boss-aura {
   animation: boss-aura 1.6s ease-in-out infinite;
 }

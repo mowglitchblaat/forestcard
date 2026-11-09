@@ -24,6 +24,7 @@ import {
   CircleCheck,
   CircleHelp,
   Clock,
+  CloudLightning,
   Coins,
   Copy,
   CopyCheck,
@@ -37,6 +38,7 @@ import {
   Flame,
   Focus,
   FolderTree,
+  Footprints,
   Gamepad2,
   Gem,
   Gift,
@@ -166,6 +168,8 @@ export const ICONS = {
   lore: Castle, // the lore: story, world map, events
   worldMap: WorldMap, // the lore's world map
   events: Flag, // the lore's events
+  lightning: CloudLightning, // an event's lightning, fallen on the world map
+  travel: Footprints, // the faction sent, on its way to the lightning
   announcements: Megaphone,
   puzzle: Puzzle,
   live: Tv,

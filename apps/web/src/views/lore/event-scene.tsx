@@ -5,11 +5,21 @@
 // framed in green, a harmful one in red, once the keys are shown) and the barrier, the chance of
 // success. `outcome` plays the end: the boss charges, the line shakes, then the loser shatters (the
 // boss if the defence held, the defenders one after the other if not).
+// A lightning event (72-evenement-eclair.sql): the map is zoomed on where the lightning fell, in the
+// fog; bolts keep striking there. Once the vote is over, the faction sent is on its way: its trip
+// fills until it arrives.
 
 import { useQuery } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
 import { Progress } from '@/components/ui/progress';
 import { fetchMirror, imageKeys, imageUrl } from '@/data/images';
-import { type Defender, fetchWorldMap, type LoreEvent, loreKeys } from '@/data/lore';
+import {
+  type Defender,
+  type EventOption,
+  fetchWorldMap,
+  type LoreEvent,
+  loreKeys,
+} from '@/data/lore';
 import { ICONS } from '@/lib/icons';
 import { TONES } from '@/lib/tones';
 import { visible } from './world-map';
@@ -17,7 +27,35 @@ import { visible } from './world-map';
 export type SceneOutcome = 'idle' | 'clash' | 'won' | 'lost';
 
 // The scene is shown when the event has a boss or a place.
-export const hasScene = (e: LoreEvent) => e.attaquant_nom !== null || e.lieu_id !== null;
+export const hasScene = (e: LoreEvent) =>
+  e.attaquant_nom !== null || e.lieu_id !== null || e.eclair_x !== null;
+
+// The faction a vote sends: the most voted option, then the best chance, then the first (as
+// evenement_option_gagnante does). Known by the server once resolved.
+export function sentOption(e: LoreEvent): EventOption | null {
+  if (e.option_gagnante !== null) return e.options.find((o) => o.id === e.option_gagnante) ?? null;
+  return (
+    e.options.reduce<EventOption | null>(
+      (best, o) =>
+        !best || o.voix > best.voix || (o.voix === best.voix && o.chance > best.chance) ? o : best,
+      null,
+    ) ?? null
+  );
+}
+
+// Where a lightning event stands at `now`: voting, the faction on its way (0 to 1 of its trip), or
+// arrived.
+export function lightningPhase(
+  e: LoreEvent,
+  now: number,
+): { phase: 'vote' | 'travel' | 'arrived'; progress: number } {
+  const end = new Date(e.fin).getTime();
+  const arrival = e.arrivee ? new Date(e.arrivee).getTime() : end;
+  if (e.statut === 'ouvert' && now < end) return { phase: 'vote', progress: 0 };
+  if (e.statut === 'ouvert' && now < arrival)
+    return { phase: 'travel', progress: (now - end) / Math.max(1, arrival - end) };
+  return { phase: 'arrived', progress: 1 };
+}
 
 // How much the map is enlarged around the attacked place.
 const ZOOM = '2.2';
@@ -52,9 +90,12 @@ export function EventScene({
   const { places, layers } = visible(map.data?.places ?? [], img);
   const base = img(map.data?.image ?? null);
   const place = places.find((p) => p.id === e.lieu_id) ?? null;
-  const focus = place
-    ? { '--x': `${place.x}%`, '--y': `${place.y}%`, '--zoom': ZOOM }
-    : { '--x': '50%', '--y': '50%', '--zoom': '1' };
+  const lightning = e.eclair_x !== null && e.eclair_y !== null;
+  const focus = lightning
+    ? { '--x': `${e.eclair_x}%`, '--y': `${e.eclair_y}%`, '--zoom': ZOOM }
+    : place
+      ? { '--x': `${place.x}%`, '--y': `${place.y}%`, '--zoom': ZOOM }
+      : { '--x': '50%', '--y': '50%', '--zoom': '1' };
   const boss = img(e.attaquant_image);
   const open = e.statut === 'ouvert';
   const chance = open ? e.chance : e.chance_finale;
@@ -90,7 +131,23 @@ export function EventScene({
             className="event-map-layer absolute inset-0 size-full"
           />
         ))}
-        <div className="event-scene-veil absolute inset-0" />
+        {lightning ? (
+          <>
+            <div style={focus} className="event-fog absolute inset-0" />
+            <div style={focus} className="absolute top-(--y) left-(--x) size-0">
+              <div className="lightning-impact absolute size-24 rounded-full" />
+              <svg
+                viewBox="0 0 40 120"
+                className={`lightning-bolt absolute bottom-0 h-56 w-20 -translate-x-1/2 ${outcome === 'clash' ? 'lightning-bolt-strike' : ''}`}
+              >
+                <polyline points="24,0 14,38 26,44 10,82 22,86 18,120" />
+              </svg>
+            </div>
+            <div className="event-scene-veil-light absolute inset-0" />
+          </>
+        ) : (
+          <div className="event-scene-veil absolute inset-0" />
+        )}
       </div>
       <div className="flex flex-col items-center gap-4 p-4 text-center sm:p-6">
         {(e.attaquant_nom || e.lieu_nom) && (
@@ -117,6 +174,7 @@ export function EventScene({
             )}
           </p>
         )}
+        {lightning && <LightningLine event={e} />}
         {e.attaquant_nom && (
           <div className="py-2">
             {/* the motion on the wrapper, the aura (an animation too) on the card */}
@@ -184,6 +242,48 @@ export function EventScene({
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// Under the lightning: the vote's call, then the faction on its way (its trip filling up), then its
+// arrival.
+function LightningLine({ event: e }: { event: LoreEvent }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(t);
+  }, []);
+  const { phase, progress } = lightningPhase(e, now);
+  const sent = sentOption(e);
+  return (
+    <div className="flex w-72 max-w-full flex-col items-center gap-2 text-sm">
+      <p className="flex items-center gap-1.5 text-lg font-semibold">
+        <ICONS.lightning className="size-5" />
+        Un éclair est tombé dans le brouillard !
+      </p>
+      {phase === 'vote' && (
+        <span className="text-muted-foreground">
+          Quelle faction envoyer voir ce qui s’y passe ?
+        </span>
+      )}
+      {phase !== 'vote' && sent && (
+        <>
+          <span className="flex items-center gap-1.5">
+            <ICONS.travel className="size-4" />
+            {phase === 'travel' ? (
+              <>
+                <b>{sent.libelle}</b> est en route ({Math.round(progress * 100)} %)
+              </>
+            ) : (
+              <>
+                <b>{sent.libelle}</b> est arrivée sur place
+              </>
+            )}
+          </span>
+          <Progress value={Math.round(progress * 100)} className="w-full" />
+        </>
+      )}
     </div>
   );
 }
