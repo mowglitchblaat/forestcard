@@ -118,7 +118,11 @@ export const TRIGGER_FACT: { [K in EventType]: Classify<K> | null } = {
   damageDoubled: null,
   counterPrepared: null,
   damaged: (e) =>
-    e.amount > 0 && e.cause !== 'poison' && e.cause !== 'burn' && e.cause !== 'bleed'
+    e.amount > 0 &&
+    e.cause !== 'poison' &&
+    e.cause !== 'burn' &&
+    e.cause !== 'bleed' &&
+    e.cause !== 'storm' // the storm triggers nothing (mechanics/storm.ts)
       ? { kind: 'hit', who: e.side, amount: e.amount }
       : null,
   healed: fact('heal'),

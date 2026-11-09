@@ -54,8 +54,8 @@ function bounce(c: Combat, o: Side, x: Side, slot: 'magie' | 'piege'): void {
   emit(c, { type: 'lightningBounced', side: id(c, x), slot, result: 'charged' });
 }
 
-// One level of mark on x, laid by o.
-export function markLightning(c: Combat, o: Side, x: Side): void {
+// One level of mark on x, laid by o (storm: laid by the storm's bolt, no accumulator charge).
+export function markLightning(c: Combat, o: Side, x: Side, storm = false): void {
   if (x.hp <= 0) return;
   if (livingWeaponTakes(c, x, 'lightning')) return;
   const m = x.status.lightning ?? { level: 0, primed: false };
@@ -64,7 +64,7 @@ export function markLightning(c: Combat, o: Side, x: Side): void {
   if (m.level < 2) {
     m.primed = true;
     emit(c, { type: 'lightningMarked', side: id(c, x), level: m.level });
-    accumulate(c, o); // an accumulator gains a charge (overload.ts)
+    if (!storm) accumulate(c, o); // an accumulator gains a charge (overload.ts)
     return;
   }
   emit(c, { type: 'lightningMarked', side: id(c, x), level: 2 });
@@ -72,7 +72,7 @@ export function markLightning(c: Combat, o: Side, x: Side): void {
   bounce(c, o, x, 'piege');
   x.status.lightning = null;
   emit(c, { type: 'lightningFaded', side: id(c, x) });
-  accumulate(c, o);
+  if (!storm) accumulate(c, o);
 }
 
 // Each strike, after a critical hit: a primed mark amplifies it, once.

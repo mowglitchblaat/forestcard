@@ -1743,6 +1743,16 @@ test('orage : à chaque tour, un éclair peut frapper un des deux combattants (1
   assert.ok(r.journal.some(e => e.k === 'foudre'), 'la marque de foudre est posée');
 });
 
+test('orage : l\'éclair ne déclenche rien (ni esquive, ni évite la mort, ni réanimation) et peut tuer', () => {
+  const protege = { briques: [{ type: 'esquive', chance: 100 }, { type: 'evite_mort' }, { type: 'reanimation', pctrev: 100 }] };
+  const r = combat([C('A', 1, SOLIDE)], [C('B', 1, 10, { passif: protege })], { regles: { maxTours: 4, maxProlong: 0, orage: { chance: 100, degats: 18 } } });
+  const frappeB = r.journal.findIndex(e => e.t === 'degats' && e.k === 'orage' && e.c === 1);
+  assert.ok(frappeB >= 0, 'B est frappé');
+  assert.equal(r.journal[frappeB].n, 10, 'il perd ses 10 PV');
+  assert.ok(!r.journal.some(e => /évite la mort|esquive|réanimé/i.test(e.txt || '')), 'aucune protection ne joue');
+  assert.equal(r.gagnant, 0, 'B meurt');
+});
+
 test('orage : désactivé (pas de regles.orage), aucun éclair', () => {
   const r = combat([C('A', 1, SOLIDE)], [C('B', 1, SOLIDE)], { regles: { maxTours: 4, maxProlong: 0 } });
   assert.equal(r.journal[0].orage, undefined);
