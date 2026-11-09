@@ -564,7 +564,8 @@ function VoteOptions({ event: e, voting }: { event: LoreEvent; voting: boolean }
               {lightning && o.trajet_heures !== null && (
                 <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <ICONS.travel className="size-3.5" />
-                  Vitesse {o.vitesse} · trajet {hoursText(o.trajet_heures)}
+                  {o.trajet_minutes !== null ? 'Téléportation' : `Vitesse ${o.vitesse}`} · trajet{' '}
+                  {hoursText(o.trajet_heures)}
                 </span>
               )}
               <span className="flex flex-col gap-1 text-xs text-muted-foreground">

@@ -263,6 +263,8 @@ const Option = z.object({
   // 72-evenement-eclair.sql: its speed, and its trip to the lightning in hours (null without one)
   vitesse: Num.default(10),
   trajet_heures: NumOrNull.default(null),
+  // 75-evenement-trajet-fixe.sql: a fixed trip in minutes (a faction that teleports)
+  trajet_minutes: NumOrNull.default(null),
 });
 export type EventOption = z.infer<typeof Option>;
 
