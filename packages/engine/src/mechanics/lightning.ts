@@ -17,6 +17,7 @@ import type { StrikeFlow } from '../combat/flow.ts';
 import type { Side } from '../combat/state.ts';
 import type { Card, EffectData } from '../model/card.ts';
 import { accumulate } from './overload.ts';
+import { livingWeaponTakes } from './living-weapon.ts';
 
 export type LightningMark = { level: number; primed: boolean };
 
@@ -56,6 +57,7 @@ function bounce(c: Combat, o: Side, x: Side, slot: 'magie' | 'piege'): void {
 // One level of mark on x, laid by o.
 export function markLightning(c: Combat, o: Side, x: Side): void {
   if (x.hp <= 0) return;
+  if (livingWeaponTakes(c, x, 'lightning')) return;
   const m = x.status.lightning ?? { level: 0, primed: false };
   m.level++;
   x.status.lightning = m;

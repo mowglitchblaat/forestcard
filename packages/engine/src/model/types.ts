@@ -155,6 +155,8 @@ export const PASSIVE_TYPES = [
   'forge_creation',
   'fils',
   'gag',
+  'arme_vivante',
+  'reconstruction',
 ] as const;
 export type PassiveType = (typeof PASSIVE_TYPES)[number];
 

@@ -14,13 +14,17 @@
 //     chance by forgeChanceMin to forgeChanceMax points (forgePlafondChance at most); a duration by
 //     one turn (never a duration 0 = "the whole combat"); a status level by one (III at most).
 //     A forged magic or trap keeps its forge when stolen. Revives and avoid-death are never forged.
+//   - Living weapon (passive arme_vivante, November 2026): its fighter takes up to
+//     LIVING_WEAPON.forgeMax forges (6) instead of forgeMax, and each time it is forged, LIVING_WEAPON.double %
+//     (50) of chances to be forged once more (a double forge counts for two). A burn laid on it
+//     forges it instead (mechanics/living-weapon.ts).
 //   - Creation forge (forge_creation): forges a new magic or a new trap, whose effect is drawn
 //     among the game's effects (the pool of the random effect), and puts it in play in its slot. A spent
 //     slot (no magic acting or waiting, no armed trap) is filled first; with both or neither spent,
 //     magic or trap is drawn. A replaced magic's effects are undone. A forged trap gets a condition
 //     drawn from a short list, and one trigger.
 
-import { emit, id, opponent, raw, round, type Combat } from '../combat/combat.ts';
+import { emit, id, opponent, raw, roll, round, type Combat } from '../combat/combat.ts';
 import type { EffectContext, EffectRules } from '../combat/effect-context.ts';
 import { applyEffect } from '../combat/effects.ts';
 import type { Side } from '../combat/state.ts';
@@ -29,6 +33,13 @@ import type { Card, EffectData, TrapCondition } from '../model/card.ts';
 import { MAX_LEVEL } from '../model/levels.ts';
 import { randomEffectPool } from './random.ts';
 import { undoMagic } from './theft.ts';
+
+// Living weapon (passive arme_vivante): forges its fighter can take, % of chances of a double forge.
+export const LIVING_WEAPON = { forgeMax: 6, double: 50 } as const;
+export const isLivingWeapon = (s: Side): boolean =>
+  s.passives.some((p) => p.type === 'arme_vivante');
+const fighterMax = (c: Combat, s: Side): number =>
+  isLivingWeapon(s) ? LIVING_WEAPON.forgeMax : c.levels.forgeMax;
 
 // Its part of a card's status (combat/state.ts): the forge level of its fighter.
 export type ForgeState = { forgeLevel: number };
@@ -137,16 +148,24 @@ function brickOptions(c: Combat, b: EffectData, period: boolean, statOnly: boole
 }
 
 // What a forge can do on each of its card's cards; null: that card cannot be forged now.
-type Target = { slot: ForgeSlot; card: Card; options: () => Option[]; done: () => number };
+type Target = {
+  slot: ForgeSlot;
+  card: Card;
+  max: number;
+  options: () => Option[];
+  done: () => number;
+};
 
 function fighterTarget(c: Combat, o: Side): Target | null {
-  if (o.hp <= 0 || o.status.forgeLevel >= c.levels.forgeMax) return null;
+  const max = fighterMax(c, o);
+  if (o.hp <= 0 || o.status.forgeLevel >= max) return null;
   const L = c.levels;
   const grow = (base: number) =>
     Math.max(1, round((base * ri(c, L.forgeStatMin, L.forgeStatMax)) / 100));
   return {
     slot: 'fighter',
     card: o.fighter,
+    max,
     options: () => {
       const out: Option[] = [
         {
@@ -216,6 +235,7 @@ function magicTarget(c: Combat, o: Side): Target | null {
   return {
     slot: 'magic',
     card,
+    max: c.levels.forgeMax,
     options: () => {
       const f = forgedOf(c, card);
       return bricksOf(f.effet).flatMap((b) => {
@@ -248,6 +268,7 @@ function trapTarget(c: Combat, o: Side): Target | null {
   return {
     slot: 'trap',
     card,
+    max: c.levels.forgeMax,
     options: () => {
       const f = forgedOf(c, card);
       const values = bricksOf(f.effet.effet).flatMap((b) => brickOptions(c, b, false, false));
@@ -270,6 +291,42 @@ function trapTarget(c: Combat, o: Side): Target | null {
   };
 }
 
+// One forge on target t of card o (double: the second forge of a living weapon). False: nothing to
+// forge in it.
+function forgeOnce(c: Combat, o: Side, t: Target, double: boolean): boolean {
+  const options = t.options();
+  const pick = options[Math.floor(c.random() * options.length)];
+  if (!pick) return false;
+  const level = t.done();
+  const [from, to, then] = pick.apply();
+  emit(c, {
+    type: 'forged',
+    side: id(c, o),
+    slot: t.slot,
+    card: t.card,
+    level,
+    max: t.max,
+    field: pick.field,
+    effectType: pick.effectType,
+    from,
+    to,
+    ...(double ? { double: true as const } : {}),
+  });
+  if (then) then();
+  return true;
+}
+
+// A forge on target t; a living weapon's fighter may be forged once more.
+function forgeTarget(c: Combat, o: Side, t: Target): void {
+  if (!forgeOnce(c, o, t, false)) {
+    emit(c, { type: 'forgeIdle', side: id(c, o) });
+    return;
+  }
+  if (t.slot !== 'fighter' || !isLivingWeapon(o) || !roll(c, LIVING_WEAPON.double)) return;
+  const again = fighterTarget(c, o);
+  if (again) forgeOnce(c, o, again, true);
+}
+
 // One forge by card o: a card drawn among those it can forge, then one of its values.
 export function forge(c: Combat, o: Side): void {
   if (o.hp <= 0) return;
@@ -280,28 +337,15 @@ export function forge(c: Combat, o: Side): void {
     emit(c, { type: 'forgeIdle', side: id(c, o) });
     return;
   }
-  const t = targets[Math.floor(c.random() * targets.length)] as Target;
-  const options = t.options();
-  const pick = options[Math.floor(c.random() * options.length)];
-  if (!pick) {
-    emit(c, { type: 'forgeIdle', side: id(c, o) });
-    return;
-  }
-  const level = t.done();
-  const [from, to, then] = pick.apply();
-  emit(c, {
-    type: 'forged',
-    side: id(c, o),
-    slot: t.slot,
-    card: t.card,
-    level,
-    max: c.levels.forgeMax,
-    field: pick.field,
-    effectType: pick.effectType,
-    from,
-    to,
-  });
-  if (then) then();
+  forgeTarget(c, o, targets[Math.floor(c.random() * targets.length)] as Target);
+}
+
+// A forge of o's own fighter only (a living weapon set on fire). False: it cannot be forged now.
+export function forgeFighter(c: Combat, o: Side): boolean {
+  const t = fighterTarget(c, o);
+  if (!t) return false;
+  forgeTarget(c, o, t);
+  return true;
 }
 
 // ── Creation ──

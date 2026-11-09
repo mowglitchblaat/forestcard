@@ -11,6 +11,9 @@
 // attack, which belong to the card that laid them). Stun stays where it is. Positive statuses
 // copied: reflect, damage reduction (guard), double damage, rage, dodge bonus, mist, trap immunity.
 //
+// A living weapon (passive arme_vivante) receives none of its immunities (poison, bleed, frost) and
+// no burn: a burn placed this way does not forge it (it is not laid).
+//
 // A status placed this way is not laid by an attack or an effect: no mist takes it, no fire melts
 // the ice, and the contamination adds no turn. It merges with the receiver's own status of the
 // same kind, as a new one would (levels add up, the longer duration stays). A curse moved gives
@@ -28,6 +31,7 @@ import type { DamageOverTime } from './dot.ts';
 import type { Bleed } from './bleed.ts';
 import type { Contamination } from './contamination.ts';
 import { type Fatigue, fatigue, fatiguePct } from './fatigue.ts';
+import { isLivingWeapon } from './forge.ts';
 import type { Fracture } from './fracture.ts';
 import type { Frost } from './frost.ts';
 import type { Gag } from './gag.ts';
@@ -130,8 +134,9 @@ function merge<T extends { level: number; turns: number }>(
   }
 }
 
-function placeNegatives(c: Combat, s: Side, n: Negatives): void {
+function placeNegatives(c: Combat, s: Side, all: Negatives): void {
   const z = s.status;
+  const n = isLivingWeapon(s) ? { ...all, dots: [], bleeds: [], frosts: [] } : all;
   n.dots.forEach((d) => merge(z.dots, d, (x) => x.kind === d.kind));
   n.bleeds.forEach((b) => merge(z.bleeds, b, () => true));
   n.fractures.forEach((f) => merge(z.fractures, f, () => true));

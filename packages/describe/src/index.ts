@@ -288,6 +288,10 @@ const PASSIVE_TEXT: Record<PassiveType, (p: Fx, x: PassiveContext) => string> = 
     ),
   etreinte_maudite: () =>
     `Étreinte maudite : à chaque attaque de l'adversaire, chacune de ses malédictions lui retire ${L.etreinte} ATQ de plus (rendue avec la malédiction)`,
+  arme_vivante: () =>
+    "Arme vivante : chaque forge de son combattant a 50 % de chances d'être double, 6 forges max au lieu de 3 ; la brûlure la forge au lieu de la brûler (sans effet à 6 forges) ; insensible au saignement, au poison, au gel et à la foudre",
+  reconstruction: () =>
+    'Reconstruction : à chaque mort, 65 % de chances de se réanimer avec 70 % de ses PV max ; chaque reconstruction retire 15 points de chance (5 % min) et 10 points de PV (20 % min)',
   visee_maintenue: () =>
     `Visée maintenue : quand un de ses ciblages est utilisé, ${L.visee} % de chances de le garder pour le coup suivant`,
   fils: (p, { c }) =>

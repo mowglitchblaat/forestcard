@@ -178,6 +178,8 @@ const PASSIVE_LABELS: Record<PassiveType, (p: Fx) => string> = {
   fils: () => 'Fils',
   gag: () => 'Gag',
   etreinte_maudite: () => 'Étreinte maudite',
+  arme_vivante: () => 'Arme vivante',
+  reconstruction: () => 'Reconstruction',
   visee_maintenue: () => 'Visée maintenue',
 };
 

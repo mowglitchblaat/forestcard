@@ -68,6 +68,9 @@ export type MistedStatus =
   | 'contamination'
   | 'gag';
 
+// A status a living weapon is immune to (mechanics/living-weapon.ts).
+export type LivingWeaponImmunity = 'bleed' | 'poison' | 'frost' | 'lightning';
+
 // A status removed by a purification, or moved away by a swallow (legacy keys, shown as such).
 export type DispelledStatus =
   | 'poison'
@@ -323,8 +326,15 @@ export type DomainEvent =
       effectType: string | undefined;
       from: number;
       to: number;
+      double?: true; // the second forge of a living weapon (passive arme_vivante)
     }
   | { type: 'forgeIdle'; side: SideIndex }
+  // Living weapon (mechanics/living-weapon.ts): a status it is immune to; a burn that forges it
+  // (forged: false, it is at its forge max: the burn does nothing).
+  | { type: 'livingWeaponImmune'; side: SideIndex; status: LivingWeaponImmunity }
+  | { type: 'livingWeaponBurned'; side: SideIndex; forged: boolean }
+  // Reconstruction (passive, mechanics/revive.ts): the chance rolled at a death failed.
+  | { type: 'reconstructionFailed'; side: SideIndex; chance: number }
   // Threads and control (mechanics/threads.ts). side: the card the threads are laid on; threads: its
   // total now; of: the threshold from which a control can be taken.
   | { type: 'threadsLaid'; side: SideIndex; count: number; threads: number; of: number }

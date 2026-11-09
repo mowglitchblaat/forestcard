@@ -24,6 +24,7 @@ import { contaminationExtra, vaporize } from './contamination.ts';
 import { statusDamageMarks } from './execution.ts';
 import { thaw } from './frost.ts';
 import { mistTakes } from './mist.ts';
+import { livingWeaponTakes } from './living-weapon.ts';
 import { leechTick } from './venom.ts';
 
 // kind is the legacy label, printed as is in the journal: 'poison' or 'brûlure'.
@@ -55,6 +56,7 @@ export function damageOverTime(
   level: number,
   turns: number,
 ): void {
+  if (livingWeaponTakes(c, M, isPoison(kind) ? 'poison' : 'burn')) return;
   if (
     mistTakes(c, M, isPoison(kind) ? 'poison' : 'burn', (t) =>
       damageOverTime(c, t, kind, level, turns),

@@ -469,6 +469,12 @@ export const EDITOR_PASSIVES: Record<PassiveType, EditorEntry> = {
     'banane',
     'bananepct',
   ],
+  arme_vivante: [
+    "⚔️ Arme vivante (réservé aux armes vivantes) : chaque forge de son combattant a 50 % de chances d'être double, jusqu'à 6 forges au lieu de 3 ; la brûlure la forge au lieu de la brûler (rien à 6 forges) ; insensible au saignement, au poison, au gel et à la foudre",
+  ],
+  reconstruction: [
+    '🔧 Reconstruction : à chaque mort, 65 % de chances de se réanimer avec 70 % de ses PV max ; à chaque reconstruction, −15 points de chance (5 % min) et −10 points de PV (20 % min)',
+  ],
 };
 
 export const EDITOR_ULTIMATES: { readonly [K in EffectType]?: EditorEntry } = {

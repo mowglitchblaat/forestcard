@@ -144,6 +144,7 @@ const CATEGORY_OF: Record<string, string> = {
   visee_maintenue: 'headshot',
   forge: 'forge',
   forge_creation: 'forge',
+  arme_vivante: 'forge',
   fils: 'fils',
 };
 export const categoryOf = (t: unknown): string =>

@@ -9,6 +9,7 @@ import type {
   Card,
   CombatView,
   DomainEvent,
+  LivingWeaponImmunity,
   MistedStatus,
   ProgrammedDraw,
   ProgrammedTrigger,
@@ -169,6 +170,14 @@ const MISTED_ART: Record<MistedStatus, string> = {
   rooting: "l'enracinement",
   contamination: 'la contamination',
   gag: 'le gag',
+};
+
+// The statuses a living weapon is immune to, with their article.
+const LIVING_WEAPON_ART: Record<LivingWeaponImmunity, string> = {
+  bleed: 'le saignement',
+  poison: 'le poison',
+  frost: 'le gel',
+  lightning: 'la marque de foudre',
 };
 
 // Explosion mark, written as an escape: the source stays emoji-free.
@@ -563,10 +572,30 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
           : `forge ${e.slot === 'magic' ? 'la magie' : 'le piège'} ${e.card.nom}`;
       return {
         t: 'statut',
-        txt: `FORGE ! ${name(e.side)} ${what} (${e.level}/${e.max}) : ${FORGE_FIELD_LABELS[e.field]} ${fr(e.from)} → ${fr(e.to)}`,
+        txt: `${e.double ? 'DOUBLE FORGE' : 'FORGE'} ! ${name(e.side)} ${what} (${e.level}/${e.max}) : ${FORGE_FIELD_LABELS[e.field]} ${fr(e.from)} → ${fr(e.to)}`,
         o: { c: e.side, k: 'forge', s: e.slot, f: e.field, n: e.level, m: e.max, d: e.to - e.from },
       };
     }
+    case 'livingWeaponImmune':
+      return {
+        t: 'statut',
+        txt: `${name(e.side)} est une arme vivante : ${LIVING_WEAPON_ART[e.status]} ne prend pas !`,
+        o: { c: e.side, k: 'arme_immunite', s: e.status },
+      };
+    case 'livingWeaponBurned':
+      return {
+        t: 'statut',
+        txt: e.forged
+          ? `Le feu ne brûle pas ${name(e.side)} : il le forge !`
+          : `${name(e.side)} est forgé au maximum : le feu ne lui fait plus rien`,
+        o: { c: e.side, k: 'arme_feu', f: e.forged ? 1 : 0 },
+      };
+    case 'reconstructionFailed':
+      return {
+        t: 'statut',
+        txt: `${name(e.side)} tente de se reconstruire (${e.chance} %)… en vain !`,
+        o: { c: e.side, k: 'reconstruction_ratee', n: e.chance },
+      };
     case 'forgeIdle':
       return {
         t: 'statut',

@@ -7,9 +7,14 @@
 // revealed (its trigger is used), so a counter-trap (adv_piege) answers it before anything happens.
 // Still held: the card reforms with the trap's percent, then the trap's other effects play. Destroyed
 // or stolen: it does nothing, and the card reforms only from another source left (or stays down).
+//
+// Reconstruction (passive reconstruction, November 2026): when no other source brings the card back,
+// a chance to reform, on every death: 65 % with 70 % of its max HP the first time, then 15 points
+// of chance and 10 points of HP less at each reconstruction (5 % and 20 % at least). A failed
+// reconstruction changes nothing (the card is down).
 
 import { applyEffect } from '../combat/effects.ts';
-import { effetOf, emit, id, opponent, raw, round, type Combat } from '../combat/combat.ts';
+import { effetOf, emit, id, opponent, raw, roll, round, type Combat } from '../combat/combat.ts';
 import type { EffectContext, EffectRules } from '../combat/effect-context.ts';
 import type { Side } from '../combat/state.ts';
 import { scan } from '../combat/traps.ts';
@@ -24,8 +29,42 @@ export type TrapRevive = { card: Card; pct: Num; rest: EffectData | null };
 export type ReviveState = {
   usedReviveSources: ReviveSource[];
   grantedRevives: ReviveSource[]; // revives granted by an ultimate or a trap
+  reconstructions: number; // reconstructions that brought the card back
 };
-export const reviveState = (): ReviveState => ({ usedReviveSources: [], grantedRevives: [] });
+export const reviveState = (): ReviveState => ({
+  usedReviveSources: [],
+  grantedRevives: [],
+  reconstructions: 0,
+});
+
+// Reconstruction: chance and HP (% of max HP) of the first one, lost at each one, floor.
+export const RECONSTRUCTION = {
+  chance: 65,
+  chanceStep: 15,
+  chanceMin: 5,
+  hp: 70,
+  hpStep: 10,
+  hpMin: 20,
+} as const;
+const hasReconstruction = (d: Side): boolean =>
+  d.passives.some((p) => p.type === 'reconstruction');
+
+// A reconstruction tried at d's death: the % of max HP it reforms with, or null (none, or failed).
+// later: the failure is announced when the damage line flushes.
+function reconstruct(c: Combat, d: Side, later: boolean): number | null {
+  if (!hasReconstruction(d)) return null;
+  const R = RECONSTRUCTION;
+  const n = d.status.reconstructions;
+  const chance = Math.max(R.chanceMin, R.chance - R.chanceStep * n);
+  if (!roll(c, chance)) {
+    const fail = () => emit(c, { type: 'reconstructionFailed', side: id(c, d), chance });
+    if (later) c.pendingEffects.push(fail);
+    else fail();
+    return null;
+  }
+  d.status.reconstructions++;
+  return Math.max(R.hpMin, R.hp - R.hpStep * n);
+}
 
 // On a lethal hit no avoid-death stopped: a revive trap is kept for the death (returned, nothing is
 // used yet); otherwise the other "owner dies" traps fire now.
@@ -76,7 +115,7 @@ function reviveSource(c: Combat, d: Side): ReviveSource | undefined {
 // flushes), from the revive trap kept for this death first; a revive denied by detonation damage is
 // announced.
 export function reviveOnLethal(c: Combat, dst: Side, trap: TrapRevive | null): void {
-  if (c.noRevive && reviveSource(c, dst))
+  if (c.noRevive && (reviveSource(c, dst) || hasReconstruction(dst)))
     c.pendingEffects.push(() =>
       emit(c, {
         type: 'reviveDenied',
@@ -95,6 +134,12 @@ export function reviveOnLethal(c: Combat, dst: Side, trap: TrapRevive | null): v
     dst.status.usedReviveSources.push(reviveFrom);
     dst.hp = 0;
     c.pendingRevives.push({ side: dst, pct: reviveFrom.pctrev || 0, trap: null });
+    return;
+  }
+  const pct = reconstruct(c, dst, true);
+  if (pct !== null) {
+    dst.hp = 0;
+    c.pendingRevives.push({ side: dst, pct, trap: null });
   }
 }
 
@@ -141,6 +186,9 @@ export function flushRevives(c: Combat): void {
         if (from) {
           d.status.usedReviveSources.push(from);
           reform(c, d, from.pctrev || 0);
+        } else {
+          const pct = reconstruct(c, d, false);
+          if (pct !== null) reform(c, d, pct);
         }
       }
     } finally {

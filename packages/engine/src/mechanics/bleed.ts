@@ -15,6 +15,7 @@ import { addLevels, at, levelOf } from '../model/levels.ts';
 import { contaminationExtra } from './contamination.ts';
 import { statusDamageMarks } from './execution.ts';
 import { mistTakes } from './mist.ts';
+import { livingWeaponTakes } from './living-weapon.ts';
 
 export type Bleed = { level: number; turns: number };
 
@@ -33,6 +34,7 @@ export const bleedAmount = (c: Combat, s: Side, b: Bleed): number =>
   round((s.maxHp * bleedPct(c, b)) / 100);
 
 export function bleed(c: Combat, dst: Side, level: number, turns: number): void {
+  if (livingWeaponTakes(c, dst, 'bleed')) return;
   if (mistTakes(c, dst, 'bleed', (t) => bleed(c, t, level, turns))) return;
   turns += contaminationExtra(dst);
   let current = dst.status.bleeds[0];

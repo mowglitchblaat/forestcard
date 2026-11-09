@@ -22,6 +22,7 @@ import type { EffectData, Num } from '../model/card.ts';
 import { contaminationExtra } from './contamination.ts';
 import { putOutBlaze } from './blaze.ts';
 import { mistTakes } from './mist.ts';
+import { livingWeaponTakes } from './living-weapon.ts';
 
 // Shatter damage when a frost does not say (breaths, missiles, the random effect, older cards).
 export const DEFAULT_SHATTER = 10;
@@ -59,6 +60,7 @@ export function freeze(
   turns: number,
   levels = 1,
 ): void {
+  if (livingWeaponTakes(c, d, 'frost')) return;
   if (mistTakes(c, d, 'frost', (t) => freeze(c, t, cancelChance, shatter, turns, levels))) return;
   // ice on a blaze: the blaze is put out, the ice is spent doing it (mechanics/blaze.ts)
   if (putOutBlaze(c, d, 'ice')) return;

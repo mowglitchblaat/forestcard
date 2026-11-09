@@ -1706,7 +1706,8 @@ Object.assign(NK,{
  'statut:surcharge':e=>nSurcharge(e.c),'finstatut:surcharge':()=>{},'statut:volt':e=>nVolt(e.c,e.n,e.plein),'statut:decharge':e=>nDecharge(e.c),
  'statut:brisure':e=>nBrisure(e.c,!/rien à briser/.test(e.txt||'')),'statut:etreinte':e=>nEtreinte(e.c),
  'statut:fils':e=>nFils(e.c,e.n,e.of),'statut:fils_cout':e=>flot(e.c,'🎭 Marionnettiste -'+e.n+' PV ('+e.hp+'/'+e.m+')','#e879f9'),
- 'statut:forge':e=>{nForge(e.c,e.n,e.s,e.m);forgeBadge(e.c,e.s,e.n)},'statut:forge_vide':e=>flot(e.c,'Plus rien à forger','#fdba74'),'statut:forge_creation':e=>{nForgeCreation(e.c,e.s==='piege');forgeBadge(e.c,e.s==='piege'?'trap':'magic',0)}});
+ 'statut:forge':e=>{nForge(e.c,e.n,e.s,e.m);forgeBadge(e.c,e.s,e.n)},'statut:forge_vide':e=>flot(e.c,'Plus rien à forger','#fdba74'),
+ 'statut:arme_immunite':e=>flot(e.c,'⚔️ Arme vivante : insensible','#fdba74'),'statut:arme_feu':e=>flot(e.c,e.f?'🔥 Le feu la forge !':'🔥 Sans effet','#fb923c',e.f?'big':undefined),'statut:reconstruction_ratee':e=>flot(e.c,'🔧 Reconstruction ratée ('+e.n+' %)','#94a3b8'),'statut:forge_creation':e=>{nForgeCreation(e.c,e.s==='piege');forgeBadge(e.c,e.s==='piege'?'trap':'magic',0)}});
 async function jouer(res){
  file.push(res);if(enCours)return;enCours=true;
  while(file.length){const R=file.shift();await verrouPrendre('combat');await chargerMiroir();   // liste des images copiées sur GitHub, relue à chaque combat : OBS ouvert longtemps ne repasse jamais par Supabase pour une image copiée

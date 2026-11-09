@@ -1654,6 +1654,50 @@ test('forge : la carte en base n\'est jamais modifiée (combats suivants intacts
   assert.equal(JSON.stringify([mag, fighter]), avant);
 });
 
+// ================= Arme vivante et reconstruction (novembre 2026) =================
+const ARME = { type: 'arme_vivante' };
+
+test('arme vivante : insensible au saignement, au poison, au gel et à la foudre', () => {
+  const statuts = { briques: [{ type: 'poison', chance: 100, niveau: 1, tours: 3 }, { type: 'saignement', chance: 100, niveau: 1, tours: 3 }, GEL(), { type: 'foudre', chance: 100 }] };
+  const r = combat([C('A', 5, SOLIDE, { passif: statuts })], [C('Arme', 1, SOLIDE, { passif: ARME })], { regles: { maxTours: 6, maxProlong: 0 } });
+  const immun = new Set(lignes(r, e => e.k === 'arme_immunite' && e.c === 1).map(e => e.s));
+  assert.deepEqual([...immun].sort(), ['bleed', 'frost', 'lightning', 'poison']);
+  assert.ok(!r.journal.some(e => e.t === 'degats' && e.c === 1 && ['poison', 'saignement'].includes(e.k)), 'aucun dégât de statut');
+});
+
+test('arme vivante : la brûlure la forge (une forge par brûlure posée), 6 forges max, double forge possible', () => {
+  let doubles = 0;
+  for (let seed = 1; seed <= 20; seed++) {
+    const r = combat([C('Feu', 5, SOLIDE, { passif: { type: 'brulure', chance: 100, niveau: 1, tours: 3 } })], [C('Arme', 1, SOLIDE, { passif: ARME })], { seed, regles: { maxTours: 20, maxProlong: 0 } });
+    assert.ok(!r.journal.some(e => e.t === 'degats' && e.c === 1 && e.k === 'brulure'), 'la brûlure ne fait pas de dégâts');
+    const f = lignes(r, e => e.k === 'forge' && e.c === 1);
+    assert.deepEqual(f.map(e => e.n), [1, 2, 3, 4, 5, 6], seed + ' : jusqu\'à 6 forges');
+    assert.ok(f.every(e => e.m === 6 && e.s === 'fighter'));
+    assert.ok(lignes(r, e => e.k === 'arme_feu' && e.f === 0).length > 0, 'forgée au max : le feu ne fait plus rien');
+    doubles += f.filter(e => /^DOUBLE FORGE/.test(e.txt)).length;
+  }
+  assert.ok(doubles > 0, 'double forge déjà vue en 20 combats');
+});
+
+test('reconstruction : 65 % puis −15 points (5 % min), PV 70 % puis −10 points (20 % min)', () => {
+  let vues = 0;
+  for (let seed = 1; seed <= 60; seed++) {
+    const r = combat([C('A', 1000, SOLIDE)], [C('B', 1, 100, { passif: { type: 'reconstruction' } })], { seed, regles: { maxTours: 60, maxProlong: 0 } });
+    let k = 0;
+    for (const e of r.journal) {
+      if (e.t === 'reanim') {
+        assert.equal(+/\((\d+) %\)/.exec(e.txt)[1], Math.max(20, 70 - 10 * k), seed + ' : PV de la reconstruction ' + (k + 1));
+        k++;
+      } else if (e.k === 'reconstruction_ratee') {
+        assert.equal(e.n, Math.max(5, 65 - 15 * k), seed + ' : chance après ' + k + ' reconstructions');
+      }
+    }
+    assert.equal(lignes(r, e => e.k === 'reconstruction_ratee').length, 1, 'le combat finit sur une reconstruction ratée');
+    vues = Math.max(vues, k);
+  }
+  assert.ok(vues >= 3, 'plusieurs reconstructions de suite déjà vues');
+});
+
 // ================= Fils et contrôle (marionnette) =================
 const FILS = { type: 'fils', chance: 100, nbfils: 5, pctctrl: 100 };
 
