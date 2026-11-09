@@ -55,8 +55,7 @@ export const RECONSTRUCTION = {
   hpStep: 10,
   hpMin: 20,
 } as const;
-const hasReconstruction = (d: Side): boolean =>
-  d.passives.some((p) => p.type === 'reconstruction');
+const hasReconstruction = (d: Side): boolean => d.passives.some((p) => p.type === 'reconstruction');
 
 // A reconstruction tried at d's death: the % of max HP it reforms with, or null (none, or failed).
 // later: the failure is announced when the damage line flushes.
