@@ -1020,7 +1020,7 @@ test('les 3 copies du moteur sont identiques (moteur-combat.js, combat.html, swi
 
 // ================= Combat en relais (championnat, ceintures) =================
 // 3 combattants chacun ; à chaque entrée un nouveau trio (combattant + magie + piège) ; une carte déjà jouée n'est pas retirée ;
-// le survivant garde PV et statuts ; le nouveau combattant joue en premier ; pas de limite de tours.
+// le survivant garde PV et statuts ; les tours continuent dans leur ordre (le nouveau combattant ne prend pas l'initiative) ; pas de limite de tours.
 const relais = (deckA, deckB, opt = {}) => M.simulerRelais({ pseudo: 'A', deck: deckA }, { pseudo: 'B', deck: deckB }, { seed: 1, ...opt });
 const entrees = r => r.journal.filter(e => e.t === 'relais');
 
@@ -1039,7 +1039,7 @@ test('relais : pas de limite de tours, le combat va jusqu\'au KO', () => {
   assert.ok(r.journal.filter(e => e.t === 'tour').length > 10);
 });
 
-test('relais : le survivant garde ses PV, le nouveau combattant joue en premier', () => {
+test('relais : le survivant garde ses PV, puis c\'est au camp du nouveau combattant de jouer (ordre normal des tours)', () => {
   const r = relais([C('A1', 60, 1000), C('A2', 60, 1000), C('A3', 60, 1000)], [C('B1', 10, 100), C('B2', 10, 100), C('B3', 10, 100)]);
   const i = r.journal.findIndex(e => e.t === 'relais');
   assert.ok(i > 0);
@@ -1047,7 +1047,18 @@ test('relais : le survivant garde ses PV, le nouveau combattant joue en premier'
   const avant = r.journal[i].pv[0];
   assert.ok(avant < 1000, 'A a pris des coups pendant le premier duel');
   const t = r.journal.slice(i).find(e => e.t === 'tour');
-  assert.equal(t.c, 1, 'le nouveau combattant ouvre le duel');
+  assert.equal(t.c, 1, 'A vient de jouer : c\'est au tour de B, donc du nouveau combattant');
+});
+
+test('relais : un combattant qui tombe pendant son propre tour ne donne pas l\'initiative à son remplaçant', () => {
+  // Le combattant de A meurt du renvoi de B1 en attaquant : le suivant entre, mais c'est ensuite au tour de B, comme d'habitude.
+  for (const seed of [1, 2, 3, 4]) {
+    const r = relais([C('A1', 50, 50), C('A2', 50, 50)], [C('B1', 1, 5000, { passif: { type: 'renvoi', val: 100, u: 'pct' } })], { seed });
+    const i = r.journal.findIndex(e => e.t === 'relais' && e.c === 0);
+    assert.ok(i > 0, 'A2 entre');
+    const t = r.journal.slice(i).find(e => e.t === 'tour');
+    assert.equal(t.c, 1, 'B joue après l\'entrée de A2 (seed ' + seed + ')');
+  }
 });
 
 // Les tours de jeu d'un camp : pour chaque ligne « tour » de c, les lignes jusqu'au tour suivant.

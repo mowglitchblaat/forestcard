@@ -9,11 +9,13 @@
 //     can absorb, an ultimate it can trigger…). The card playing the turn, if it falls, ends its turn
 //     there. A fighter that has given way gets nothing more: the rest of its sequence (a status
 //     tick, its end-of-turn steps) stops once it is out of play (combat.ts, inPlay). Then a new
-//     duel starts, the new fighter acting first. The fighter still standing keeps everything: HP, statuses, magic and trap already played. The new fighter acts first, and
-//     only its magic is revealed;
+//     duel starts and the turns go on in their usual order: the side whose turn comes next plays
+//     first (the new fighter does not take the initiative). The fighter still standing keeps
+//     everything: HP, statuses, magic and trap already played (a magic's turns go on). Only the
+//     new fighter's magic is revealed;
 //   - no round limit: each duel goes on until a KO (a safety cap of RELAY_ROUND_CAP rounds ends a
 //     duel that cannot end: the fighter with the lowest share of its max HP falls, exhausted);
-//   - both fighters down at once: both players send their next one (both act in the starting order);
+//   - both fighters down at once: both players send their next one (the turns go on in their order);
 //     a fighter put down by the one entering (its magic, revealed on entry) gives way as well;
 //   - the player who still has a fighter standing when the other has none wins; both out at once is
 //     a draw.
@@ -142,8 +144,11 @@ export function simulateRelay(
   // The turn order, by side: a side's card may change during a duel (a control, threads.ts).
   let order = [first, 1 - first];
   let turn = 0;
+  // The side whose turn comes next when a duel ends: the turns go on in their usual order.
+  let nextUp = first;
   duels: for (;;) {
     entered.clear();
+    nextUp = order[0] as number;
     // One duel: rounds until a fighter falls (or the safety cap).
     for (c.round = 1; ; c.round++) {
       if (c.round > RELAY_ROUND_CAP) {
@@ -170,11 +175,14 @@ export function simulateRelay(
         }
         if (settle()) break duels;
         if (c.pendingControl) takeControl(c);
-        if (entered.size) break;
+        if (entered.size) {
+          nextUp = order[1 - oi] as number;
+          break;
+        }
       }
       if (entered.size) break;
     }
-    // A new duel: the new fighter acts first (both new: the starting order). The fighter still
+    // A new duel: the side whose turn comes next plays first (no initiative for the newcomer). The fighter still
     // standing keeps its state; its ultimates' cooldowns start again (rounds count from 1 again).
     c.sides.forEach((s, i) => {
       if (!entered.has(i))
@@ -188,8 +196,8 @@ export function simulateRelay(
     c.round = 0;
     c.pendingRevives = [];
     c.pendingEffects = [];
-    const one = entered.size === 1 ? [...entered][0]! : null;
-    order = one !== null ? [one, 1 - one] : [first, 1 - first];
+    // The turns go on in their usual order: the new fighter does not take the initiative.
+    order = [nextUp, 1 - nextUp];
   }
   endControl(c, 'end');
 
