@@ -37,7 +37,11 @@ export function sentOption(e: LoreEvent): EventOption | null {
   return (
     e.options.reduce<EventOption | null>(
       (best, o) =>
-        !best || o.voix > best.voix || (o.voix === best.voix && o.chance > best.chance) ? o : best,
+        !best ||
+        o.voix > best.voix ||
+        (o.voix === best.voix && (o.chance ?? 0) > (best.chance ?? 0))
+          ? o
+          : best,
       null,
     ) ?? null
   );

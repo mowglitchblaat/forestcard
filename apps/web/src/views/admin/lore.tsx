@@ -83,6 +83,7 @@ const emptyEvent = (): EventDraft => ({
   autre_pct: 2,
   nuisible_pct: 10,
   montrer_cles: false,
+  montrer_chances: true,
   cles: [],
   nuisibles: [],
   options: [
@@ -257,6 +258,13 @@ function EventsAdmin() {
               />
             </Field>
           </div>
+          <Choice>
+            <Checkbox
+              checked={d.montrer_chances}
+              onChange={(e) => set({ montrer_chances: e.target.checked })}
+            />{' '}
+            Montrer les chances de réussite aux joueurs (sinon, ils les découvrent au résultat)
+          </Choice>
           {d.type === 'defense' ? (
             <>
               <div className="grid gap-3 sm:grid-cols-4">

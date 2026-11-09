@@ -543,7 +543,7 @@ function VoteOptions({ event: e, voting }: { event: LoreEvent; voting: boolean }
                 {mine && <ICONS.done className="size-4" />}
                 {sent && <ICONS.events className="size-4" />}
                 {o.libelle}
-                <Badge variant="outline">{o.chance} % de réussite</Badge>
+                {o.chance !== null && <Badge variant="outline">{o.chance} % de réussite</Badge>}
               </span>
               {lightning && o.trajet_heures !== null && (
                 <span className="flex items-center gap-1.5 text-xs text-muted-foreground">

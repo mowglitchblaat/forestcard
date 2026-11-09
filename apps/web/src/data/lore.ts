@@ -258,7 +258,7 @@ const Option = z.object({
   libelle: z.string(),
   collection_id: NumOrNull,
   image_path: z.string().nullable(),
-  chance: Num,
+  chance: NumOrNull, // null: hidden from the players (73-evenement-chances-cachees.sql)
   voix: Num,
   // 72-evenement-eclair.sql: its speed, and its trip to the lightning in hours (null without one)
   vitesse: Num.default(10),
@@ -314,6 +314,8 @@ const LoreEvent = z.object({
   autre_pct: Num,
   nuisible_pct: Num,
   montrer_cles: z.boolean(),
+  // 73-evenement-chances-cachees.sql: false, the players see no chance until the result
+  montrer_chances: z.boolean().default(true),
   chance: NumOrNull,
   participants: Num,
   ma_carte: NumOrNull,
@@ -373,6 +375,7 @@ export type EventDraft = {
   autre_pct: number;
   nuisible_pct: number;
   montrer_cles: boolean;
+  montrer_chances: boolean;
   cles: number[];
   nuisibles: number[];
   options: OptionDraft[];
@@ -406,6 +409,7 @@ export async function createEvent(d: EventDraft): Promise<void> {
           autre_pct: d.autre_pct,
           nuisible_pct: d.nuisible_pct,
           montrer_cles: d.montrer_cles,
+          montrer_chances: d.montrer_chances,
         })
         .select('id')
         .single(),
