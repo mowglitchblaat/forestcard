@@ -11,16 +11,24 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { type MouseEvent, type PointerEvent, useEffect, useRef, useState } from 'react';
+import { Fragment, type MouseEvent, type PointerEvent, useEffect, useRef, useState } from 'react';
 import { PageSkeleton } from '@/components/skeletons';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover';
 import { fetchMirror, imageKeys, imageUrl } from '@/data/images';
-import { fetchChapters, fetchWorldMap, loreKeys, type Place } from '@/data/lore';
+import {
+  fetchChapters,
+  fetchEvents,
+  fetchWorldMap,
+  type LoreEvent,
+  loreKeys,
+  type Place,
+} from '@/data/lore';
 import { fetchContents, fetchShop, shopKeys } from '@/data/shop';
 import { ICONS } from '@/lib/icons';
 import { ChapterReader } from './chapter-reader';
+import { lightningPhase, sentOption } from './lightning';
 
 // The places a player has seen revealed (this browser): a new one lifts its fog once.
 const SEEN_KEY = 'fc-lore-lieux-vus';
@@ -485,6 +493,7 @@ export function WorldMap() {
             />
           ))}
           {built && <Fog built={built} />}
+          <MapLightnings places={places} />
           {pins.map((p) => (
             <button
               key={p.id}
@@ -627,4 +636,68 @@ export function WorldMap() {
       </Dialog>
     </div>
   );
+}
+
+// The lightning events in progress, right on the map, above the fog: the bolt keeps striking where
+// it fell (a click leads to the event), and once the vote is over, the faction sent walks from its
+// place (the place of its collection, the centre otherwise) to the lightning.
+function MapLightnings({ places }: { places: Place[] }) {
+  const events = useQuery({ queryKey: loreKeys.events, queryFn: fetchEvents });
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(t);
+  }, []);
+  const strikes = (events.data ?? []).filter(
+    (e): e is LoreEvent & { eclair_x: number; eclair_y: number } =>
+      e.statut === 'ouvert' && e.eclair_x !== null && e.eclair_y !== null,
+  );
+  return strikes.map((e) => {
+    const { phase, progress } = lightningPhase(e, now);
+    const sent = phase === 'vote' ? null : sentOption(e);
+    const home = sent?.collection_id
+      ? places.find((p) => p.collection_id === sent.collection_id)
+      : undefined;
+    const from = home ? { x: home.x, y: home.y } : { x: 50, y: 50 };
+    const walker = {
+      '--x': `${from.x + (e.eclair_x - from.x) * progress}%`,
+      '--y': `${from.y + (e.eclair_y - from.y) * progress}%`,
+    };
+    return (
+      <Fragment key={e.id}>
+        <Link
+          to="/lore"
+          search={{ onglet: 'evenements' }}
+          title={e.titre}
+          onClick={(ev) => ev.stopPropagation()}
+          style={{ '--x': `${e.eclair_x}%`, '--y': `${e.eclair_y}%` }}
+          className="absolute top-(--y) left-(--x) size-0"
+        >
+          <span className="lightning-impact absolute size-20 rounded-full" />
+          <svg
+            viewBox="0 0 40 120"
+            className="lightning-bolt absolute bottom-0 h-40 w-14 -translate-x-1/2"
+          >
+            <polyline points="24,0 14,38 26,44 10,82 22,86 18,120" />
+            <polyline className="lightning-branch" points="14,38 4,58 8,66" />
+            <polyline className="lightning-branch" points="10,82 30,98" />
+          </svg>
+          <span className="absolute top-3 flex -translate-x-1/2 items-center gap-1 rounded-md bg-background/90 px-2 py-0.5 text-xs font-semibold whitespace-nowrap shadow-lg">
+            <ICONS.lightning className="size-3.5" />
+            {e.titre}
+          </span>
+        </Link>
+        {sent && phase === 'travel' && (
+          <span
+            style={walker}
+            title={`${sent.libelle} est en route`}
+            className="pointer-events-none absolute top-(--y) left-(--x) flex -translate-1/2 items-center gap-1 rounded-full bg-background/90 px-2 py-0.5 text-xs font-medium whitespace-nowrap shadow-lg"
+          >
+            <ICONS.travel className="size-3.5" />
+            {sent.libelle}
+          </span>
+        )}
+      </Fragment>
+    );
+  });
 }

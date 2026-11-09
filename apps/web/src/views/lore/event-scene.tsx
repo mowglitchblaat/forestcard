@@ -13,15 +13,10 @@ import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { Progress } from '@/components/ui/progress';
 import { fetchMirror, imageKeys, imageUrl } from '@/data/images';
-import {
-  type Defender,
-  type EventOption,
-  fetchWorldMap,
-  type LoreEvent,
-  loreKeys,
-} from '@/data/lore';
+import { type Defender, fetchWorldMap, type LoreEvent, loreKeys } from '@/data/lore';
 import { ICONS } from '@/lib/icons';
 import { TONES } from '@/lib/tones';
+import { lightningPhase, sentOption } from './lightning';
 import { visible } from './world-map';
 
 export type SceneOutcome = 'idle' | 'clash' | 'won' | 'lost';
@@ -29,37 +24,6 @@ export type SceneOutcome = 'idle' | 'clash' | 'won' | 'lost';
 // The scene is shown when the event has a boss or a place.
 export const hasScene = (e: LoreEvent) =>
   e.attaquant_nom !== null || e.lieu_id !== null || e.eclair_x !== null;
-
-// The faction a vote sends: the most voted option, then the best chance, then the first (as
-// evenement_option_gagnante does). Known by the server once resolved.
-export function sentOption(e: LoreEvent): EventOption | null {
-  if (e.option_gagnante !== null) return e.options.find((o) => o.id === e.option_gagnante) ?? null;
-  return (
-    e.options.reduce<EventOption | null>(
-      (best, o) =>
-        !best ||
-        o.voix > best.voix ||
-        (o.voix === best.voix && (o.chance ?? 0) > (best.chance ?? 0))
-          ? o
-          : best,
-      null,
-    ) ?? null
-  );
-}
-
-// Where a lightning event stands at `now`: voting, the faction on its way (0 to 1 of its trip), or
-// arrived.
-export function lightningPhase(
-  e: LoreEvent,
-  now: number,
-): { phase: 'vote' | 'travel' | 'arrived'; progress: number } {
-  const end = new Date(e.fin).getTime();
-  const arrival = e.arrivee ? new Date(e.arrivee).getTime() : end;
-  if (e.statut === 'ouvert' && now < end) return { phase: 'vote', progress: 0 };
-  if (e.statut === 'ouvert' && now < arrival)
-    return { phase: 'travel', progress: (now - end) / Math.max(1, arrival - end) };
-  return { phase: 'arrived', progress: 1 };
-}
 
 // How much the map is enlarged around the attacked place.
 const ZOOM = '2.2';

@@ -32,7 +32,8 @@ import { useSession } from '@/lib/session';
 import { TONES } from '@/lib/tones';
 import { LORE_TABS, type LoreTab } from './search';
 import { ChapterReader, paragraphsOf } from './chapter-reader';
-import { EventScene, hasScene, lightningPhase, type SceneOutcome, sentOption } from './event-scene';
+import { EventScene, hasScene, type SceneOutcome } from './event-scene';
+import { lightningPhase, sentOption } from './lightning';
 import { WorldMap } from './world-map';
 
 const route = getRouteApi('/lore');
