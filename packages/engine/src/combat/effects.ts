@@ -55,6 +55,7 @@ import { effects as fury } from '../mechanics/fury.ts';
 import { effects as venom } from '../mechanics/venom.ts';
 import { effects as overload } from '../mechanics/overload.ts';
 import { effects as forge } from '../mechanics/forge.ts';
+import { effects as scalingStrikes } from '../mechanics/scaling-strikes.ts';
 import { effects as ultimates } from '../mechanics/ultimates.ts';
 import type { EffectData } from '../model/card.ts';
 import type { EffectType } from '../model/types.ts';
@@ -103,6 +104,7 @@ export const rules = (): Record<EffectType, EffectRule> =>
     ...venom,
     ...overload,
     ...forge,
+    ...scalingStrikes,
     ...threads,
     ...programming,
     ...purification,

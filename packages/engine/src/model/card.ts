@@ -111,6 +111,7 @@ export type EffectData = {
 
   // Passives.
   frappes?: Num;
+  pctmax?: Num; // fauche, laser: max bonus, % of the strike (mechanics/scaling-strikes.ts)
   pctatq?: Num; // vol_pct_atq: % of the damage healed; replique: counter-strike, % of its ATQ
   coups?: Num;
 

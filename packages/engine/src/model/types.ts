@@ -33,6 +33,10 @@ export const EFFECT_TYPES = [
   'distorsion',
   'gag',
   'atk_gag',
+  'fauche',
+  'atk_fauche',
+  'laser',
+  'atk_laser',
   'malediction',
   'saignement',
   'souffle',
@@ -157,6 +161,8 @@ export const PASSIVE_TYPES = [
   'gag',
   'arme_vivante',
   'reconstruction',
+  'fauche',
+  'laser',
 ] as const;
 export type PassiveType = (typeof PASSIVE_TYPES)[number];
 

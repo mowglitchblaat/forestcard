@@ -1669,7 +1669,7 @@ test('arme vivante : la brûlure la forge (une forge par brûlure posée), 6 for
   let doubles = 0;
   for (let seed = 1; seed <= 20; seed++) {
     const r = combat([C('Feu', 5, SOLIDE, { passif: { type: 'brulure', chance: 100, niveau: 1, tours: 3 } })], [C('Arme', 1, SOLIDE, { passif: ARME })], { seed, regles: { maxTours: 20, maxProlong: 0 } });
-    assert.ok(!r.journal.some(e => e.t === 'degats' && e.c === 1 && e.k === 'brulure'), 'la brûlure ne fait pas de dégâts');
+    assert.ok(!r.journal.some(e => e.t === 'degats' && e.c === 1 && ['brulure', 'brûlure'].includes(e.k)), 'la brûlure ne fait pas de dégâts');
     const f = lignes(r, e => e.k === 'forge' && e.c === 1);
     assert.deepEqual(f.map(e => e.n), [1, 2, 3, 4, 5, 6], seed + ' : jusqu\'à 6 forges');
     assert.ok(f.every(e => e.m === 6 && e.s === 'fighter'));
@@ -1696,6 +1696,40 @@ test('reconstruction : 65 % puis −15 points (5 % min), PV 70 % puis −10 poin
     vues = Math.max(vues, k);
   }
   assert.ok(vues >= 3, 'plusieurs reconstructions de suite déjà vues');
+});
+
+// ================= Fauche et tir laser (novembre 2026) =================
+test('fauche : bonus selon les PV manquants de la cible (rien sur une cible pleine de vie)', () => {
+  const r = combat([C('Faucheur', 10, SOLIDE, { passif: { type: 'fauche', chance: 100, pctmax: 100 } })], [C('B', 1, 100)], { regles: { maxTours: 8, maxProlong: 0 } });
+  const f = lignes(r, e => e.k === 'fauche' && e.t === 'statut');
+  assert.ok(f.length >= 3);
+  assert.equal(f[0].p, 0, 'premier coup : cible pleine de vie');
+  assert.equal(f[0].n, 0);
+  assert.ok(f.slice(1).every((e, i) => e.p > f[i].p && e.n >= f[i].n), 'plus la cible est blessée, plus le bonus monte');
+  assert.equal(f[1].n, Math.round(10 * f[1].p / 100), 'bonus = coup × % de PV manquants');
+});
+
+test('tir laser : bonus selon les PV restants de la cible (plein sur une cible pleine de vie)', () => {
+  const r = combat([C('Tireur', 10, SOLIDE, { passif: { type: 'laser', chance: 100 } })], [C('B', 1, 100)], { regles: { maxTours: 8, maxProlong: 0 } });
+  const f = lignes(r, e => e.k === 'laser' && e.t === 'statut');
+  assert.ok(f.length >= 3);
+  assert.equal(f[0].p, 100);
+  assert.equal(f[0].n, 10, 'cible pleine de vie : +100 % (pctmax 100 par défaut)');
+  assert.ok(f.slice(1).every((e, i) => e.p < f[i].p), 'moins de PV, moins de bonus');
+});
+
+test('fauche et tir laser en effet : un coup à part avec le bonus', () => {
+  const r = combat([C('A', 10, SOLIDE), MAG('Canon', { type: 'laser', pctatq: 100 })], [C('B', 1, SOLIDE)], { regles: { maxTours: 1, maxProlong: 0 } });
+  const tir = lignes(r, e => e.t === 'degats' && e.k === 'laser');
+  assert.equal(tir.length, 1);
+  assert.equal(tir[0].n, 20, 'ATQ 10 + 100 % sur une cible pleine de vie');
+  const f = combat([C('A', 10, SOLIDE), MAG('Faux', { type: 'fauche', pctatq: 200 })], [C('B', 1, SOLIDE)], { regles: { maxTours: 1, maxProlong: 0 } });
+  assert.equal(lignes(f, e => e.t === 'degats' && e.k === 'fauche')[0].n, 20, '200 % de l\'ATQ, aucun bonus sur une cible pleine de vie');
+});
+
+test('fauche : donnée à l\'attaque de base par une magie (atk_fauche)', () => {
+  const r = combat([C('A', 10, SOLIDE), MAG('Lame', { type: 'atk_fauche', chance: 100 })], [C('B', 1, 100)], { regles: { maxTours: 6, maxProlong: 0 } });
+  assert.ok(lignes(r, e => e.k === 'fauche' && e.t === 'statut' && e.n > 0).length > 0);
 });
 
 // ================= Fils et contrôle (marionnette) =================

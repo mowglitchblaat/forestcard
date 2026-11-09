@@ -68,6 +68,9 @@ export type MistedStatus =
   | 'contamination'
   | 'gag';
 
+// A strike whose bonus depends on the target's HP (mechanics/scaling-strikes.ts).
+export type ScalingKind = 'fauche' | 'laser';
+
 // A status a living weapon is immune to (mechanics/living-weapon.ts).
 export type LivingWeaponImmunity = 'bleed' | 'poison' | 'frost' | 'lightning';
 
@@ -137,6 +140,8 @@ export type DamageCause =
   | 'missileReturned' // a reflected missile exploding on its shooter
   | 'shatter' // the ice of a frost shattering (glaciation, or a fracture)
   | 'thermalShock' // fire on ice: a burn laid on a frozen card
+  | 'fauche' // a scythe strike, as an effect (mechanics/scaling-strikes.ts)
+  | 'laser' // a laser shot, as an effect (mechanics/scaling-strikes.ts)
   | 'thorns' // a thorny rooting: the rooted card's own strike hurts it
   | 'seismic' // a seismic counter-strike (mechanics/earth.ts)
   | 'blades' // air blades striking (mechanics/blades.ts)
@@ -333,6 +338,18 @@ export type DomainEvent =
   // (forged: false, it is at its forge max: the burn does nothing).
   | { type: 'livingWeaponImmune'; side: SideIndex; status: LivingWeaponImmunity }
   | { type: 'livingWeaponBurned'; side: SideIndex; forged: boolean }
+  // Scythe and laser (mechanics/scaling-strikes.ts): side strikes target; bonus: damage added; pct:
+  // the target's missing HP (scythe) or HP left (laser), in % of its max HP; active: the effect (a
+  // strike apart), else a strike of an attack.
+  | {
+      type: 'scaled';
+      kind: ScalingKind;
+      side: SideIndex;
+      target: SideIndex;
+      bonus: number;
+      pct: number;
+      active: boolean;
+    }
   // Reconstruction (passive, mechanics/revive.ts): the chance rolled at a death failed.
   | { type: 'reconstructionFailed'; side: SideIndex; chance: number }
   // Threads and control (mechanics/threads.ts). side: the card the threads are laid on; threads: its

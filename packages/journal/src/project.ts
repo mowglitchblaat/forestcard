@@ -590,6 +590,17 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
           : `${name(e.side)} est forgé au maximum : le feu ne lui fait plus rien`,
         o: { c: e.side, k: 'arme_feu', f: e.forged ? 1 : 0 },
       };
+    case 'scaled': {
+      const scythe = e.kind === 'fauche';
+      const what = scythe
+        ? `${e.active ? 'fauche' : 'déchire'} ${name(e.target)} (${e.pct} % de PV manquants)`
+        : `${e.active ? 'tire au laser sur' : 'transperce'} ${name(e.target)} (${e.pct} % de PV)`;
+      return {
+        t: 'statut',
+        txt: `${scythe ? 'FAUCHE' : 'TIR LASER'} ! ${name(e.side)} ${what} : +${e.bonus} dégâts`,
+        o: { c: e.side, k: e.kind, cible: e.target, n: e.bonus, p: e.pct, a: e.active ? 1 : 0 },
+      };
+    }
     case 'reconstructionFailed':
       return {
         t: 'statut',
@@ -777,6 +788,18 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
           };
         case 'gag':
           return { t: 'degats', txt: `${name(c)} subit ${n} dégâts (gag)`, o: { c, n, k: 'gag' } };
+        case 'fauche':
+          return {
+            t: 'degats',
+            txt: `${name(c)} subit ${n} dégâts (fauche)`,
+            o: { c, n, k: 'fauche' },
+          };
+        case 'laser':
+          return {
+            t: 'degats',
+            txt: `${name(c)} subit ${n} dégâts (tir laser)`,
+            o: { c, n, k: 'laser' },
+          };
         case 'selfFracture':
           return {
             t: 'degats',

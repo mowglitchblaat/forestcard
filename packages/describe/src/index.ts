@@ -204,6 +204,15 @@ function programmingText(p: Fx): string {
   return `Programmation : à chaque tour, ${ch} % de chances de se programmer (les ${N} premières fois en passif, puis 50 % passif / 50 % actif). Passif : acquiert au hasard ${it.length ? (it as string[]).join(', ') : 'un passif ou un ultime parmi tous ceux du jeu'}, qui reste en attente. Actif (jamais à vide) : les passifs programmés s'activent pour toujours, chaque ultime programmé s'installe avec ${um} utilisation${um > 1 ? 's' : ''} max, ${dm} tour${dm > 1 ? 's' : ''} de délai max et un déclencheur tirés au hasard`;
 }
 
+// Scythe and laser (mechanics/scaling-strikes.ts).
+const pctMaxOf = (e: Fx) => (nz(e.pctmax) > 0 ? nz(e.pctmax) : 100);
+const scytheBonus = (e: Fx) =>
+  `jusqu'à +${pctMaxOf(e)} % de dégâts selon les PV manquants de la cible (plus elle est blessée, plus ça fait mal)`;
+const laserBonus = (e: Fx) =>
+  `jusqu'à +${pctMaxOf(e)} % de dégâts selon les PV restants de la cible (au max sur une cible pleine de vie, faible sur une cible presque morte)`;
+const scalingChance = (p: Fx) => (isEmpty(p.chance) ? 100 : nz(p.chance));
+const scalingStrikeTxt = (e: Fx) => `${nz(e.pctatq) > 0 ? nz(e.pctatq) : 100} % de son ATQ`;
+
 // ── Passives ──
 type PassiveContext = { c: number; t: number; v: number; T: number };
 const PASSIVE_TEXT: Record<PassiveType, (p: Fx, x: PassiveContext) => string> = {
@@ -288,6 +297,9 @@ const PASSIVE_TEXT: Record<PassiveType, (p: Fx, x: PassiveContext) => string> = 
     ),
   etreinte_maudite: () =>
     `Étreinte maudite : à chaque attaque de l'adversaire, chacune de ses malédictions lui retire ${L.etreinte} ATQ de plus (rendue avec la malédiction)`,
+  fauche: (p) =>
+    `Fauche : ${scalingChance(p)} % de chances, à chaque coup, de déchirer la cible : ${scytheBonus(p)}`,
+  laser: (p) => `Tir laser : ${scalingChance(p)} % de chances, à chaque coup : ${laserBonus(p)}`,
   arme_vivante: () =>
     "Arme vivante : chaque forge de son combattant a 50 % de chances d'être double, 6 forges max au lieu de 3 ; la brûlure la forge au lieu de la brûler (sans effet à 6 forges) ; insensible au saignement, au poison, au gel et à la foudre",
   reconstruction: () =>
@@ -582,6 +594,14 @@ const EFFECT_TEXT: Record<EffectType, (e: Fx, x: EffectContext) => string[]> = {
   atk_fils: attackEffect,
   gag: (e) => [`Pose un gag sur l'adversaire (${gagTxt(e)})`],
   atk_gag: attackEffect,
+  fauche: (e) => [
+    `Fauche : un coup à part (${scalingStrikeTxt(e)}, ni esquive ni blocage), ${scytheBonus(e)}`,
+  ],
+  atk_fauche: attackEffect,
+  laser: (e) => [
+    `Tir laser : un tir à part (${scalingStrikeTxt(e)}, ni esquive ni blocage), ${laserBonus(e)}`,
+  ],
+  atk_laser: attackEffect,
   brisure_volonte: () => [willBreakTxt],
   etreinte_maudite: () => [
     `Donne à son combattant l'étreinte maudite : à chaque attaque de l'adversaire, chacune de ses malédictions lui retire ${L.etreinte} ATQ de plus (rendue avec la malédiction)`,

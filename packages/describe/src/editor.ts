@@ -73,6 +73,7 @@ export const EDITOR_FIELDS = {
   u: ['Unité', ['pct', 'pts']],
   tours: ['Nb de tours', 'n'],
   chance: ['Chance (%)', 'n'],
+  pctmax: ['Fauche / tir laser : bonus de dégâts max, en % (100 par défaut)', 'n'],
   nbpassif: ["Programmation : nombre de programmations passives d'abord (2 par défaut)", 'n'],
   pumax: ["Programmation : utilisations max d'un ultime programmé (3 par défaut)", 'n'],
   pdmax: ['Programmation : délai max entre deux utilisations, en tours (2 par défaut)', 'n'],
@@ -469,6 +470,16 @@ export const EDITOR_PASSIVES: Record<PassiveType, EditorEntry> = {
     'banane',
     'bananepct',
   ],
+  fauche: [
+    "🪓 Fauche : à X % de chances, chaque coup déchire la cible : jusqu'à +X % de dégâts selon ses PV manquants (plus elle est blessée, plus ça fait mal)",
+    'chance',
+    'pctmax',
+  ],
+  laser: [
+    "🔫 Tir laser : à X % de chances, chaque coup gagne jusqu'à +X % de dégâts selon les PV restants de la cible (au max sur une cible pleine de vie)",
+    'chance',
+    'pctmax',
+  ],
   arme_vivante: [
     "⚔️ Arme vivante (réservé aux armes vivantes) : chaque forge de son combattant a 50 % de chances d'être double, jusqu'à 6 forges au lieu de 3 ; la brûlure la forge au lieu de la brûler (rien à 6 forges) ; insensible au saignement, au poison, au gel et à la foudre",
   ],
@@ -478,6 +489,16 @@ export const EDITOR_PASSIVES: Record<PassiveType, EditorEntry> = {
 };
 
 export const EDITOR_ULTIMATES: { readonly [K in EffectType]?: EditorEntry } = {
+  fauche: [
+    "🪓 Fauche : un coup à part de X % de l'ATQ (100 par défaut), jusqu'à +X % selon les PV manquants de la cible",
+    'pctatq',
+    'pctmax',
+  ],
+  laser: [
+    "🔫 Tir laser : un tir à part de X % de l'ATQ (100 par défaut), jusqu'à +X % selon les PV restants de la cible",
+    'pctatq',
+    'pctmax',
+  ],
   degats: ["Dégâts directs à l'adversaire", 'val'],
   voler: ['Vole une magie/un piège (gardé X tours, ou tout le combat)', 'carte', 'duree'],
   detruire: ['Détruit une magie/un piège', 'carte'],
@@ -769,6 +790,26 @@ export const EDITOR_ULTIMATES: { readonly [K in EffectType]?: EditorEntry } = {
 };
 
 export const EDITOR_MAGICS: { readonly [K in EffectType]?: EditorEntry } = {
+  fauche: [
+    "🪓 Fauche : un coup à part de X % de l'ATQ (100 par défaut), jusqu'à +X % selon les PV manquants de la cible",
+    'pctatq',
+    'pctmax',
+  ],
+  laser: [
+    "🔫 Tir laser : un tir à part de X % de l'ATQ (100 par défaut), jusqu'à +X % selon les PV restants de la cible",
+    'pctatq',
+    'pctmax',
+  ],
+  atk_fauche: [
+    "Attaque de base : X % de chances, à chaque coup, de déchirer la cible (jusqu'à +X % selon ses PV manquants)",
+    'chance',
+    'pctmax',
+  ],
+  atk_laser: [
+    "Attaque de base : X % de chances, à chaque coup, d'un bonus laser (jusqu'à +X % selon les PV restants de la cible)",
+    'chance',
+    'pctmax',
+  ],
   voler: [
     "Vole la magie / le piège de l'adversaire (tout de suite, ou au début de son X-ième tour)",
     'carte',

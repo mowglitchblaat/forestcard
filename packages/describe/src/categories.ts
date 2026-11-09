@@ -45,6 +45,8 @@ export const CATEGORY_LABELS: Record<string, string> = {
   foudre: 'Marque de foudre',
   forge: 'Forge',
   fils: 'Fils / contrôle',
+  fauche: 'Fauche',
+  laser: 'Tir laser',
   autre: 'Autres',
 };
 // Category (legend colour) of each effect and passive type.
@@ -72,6 +74,7 @@ const CATEGORY_OF: Record<string, string> = {
   evite_mort: 'vie',
   mort_evitee: 'vie',
   reanimation: 'vie',
+  reconstruction: 'vie',
   enchainement: 'frappe',
   multi_frappe: 'frappe',
   double_degats: 'frappe',
@@ -145,6 +148,8 @@ const CATEGORY_OF: Record<string, string> = {
   forge: 'forge',
   forge_creation: 'forge',
   arme_vivante: 'forge',
+  fauche: 'fauche',
+  laser: 'laser',
   fils: 'fils',
 };
 export const categoryOf = (t: unknown): string =>
@@ -198,5 +203,7 @@ export const CATEGORY_STYLES: Record<
   foudre: { background: '#1e1b4b', color: '#fde047', border: '1px solid #facc15' },
   forge: { background: '#44260f', color: '#fdba74', border: '1px solid #ea580c' },
   fils: { background: '#2e1065', color: '#f5d0fe', border: '1px solid #c026d3' },
+  fauche: { background: '#3b0a0a', color: '#fecaca', border: '1px solid #b91c1c' },
+  laser: { background: '#082f49', color: '#a5f3fc', border: '1px solid #22d3ee' },
   autre: { background: '#6b7280', color: '#fff' },
 };

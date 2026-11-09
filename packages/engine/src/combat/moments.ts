@@ -74,6 +74,7 @@ import { earthCounters, shieldStrike } from '../mechanics/earth.ts';
 import { criticalStrike, updraftEnd } from '../mechanics/critical.ts';
 import { bladesTick } from '../mechanics/blades.ts';
 import { lightningStrike } from '../mechanics/lightning.ts';
+import { laserStrike, scytheStrike } from '../mechanics/scaling-strikes.ts';
 import { blazeEnd } from '../mechanics/blaze.ts';
 import { leechEnd } from '../mechanics/venom.ts';
 import { discharge, dischargeStrike, overloadEnd } from '../mechanics/overload.ts';
@@ -129,6 +130,8 @@ const STRIKE: StrikeStep[] = [
   headshotStrike, // a headshot (a critical hit) comes before the block and the reductions
   criticalStrike, // else the critical chance; the updraft
   lightningStrike, // a lightning mark (level I) amplifies the next strike taken
+  scytheStrike, // a scythe: more on a target that lost HP
+  laserStrike, // a laser: more on a target with its HP
   shieldStrike, // a sedimentation shield takes the strike first, before the block and the reductions
   blockOrReduce,
   gainedDefenses, // block chance and reduction gained (mutation, reaction passive)

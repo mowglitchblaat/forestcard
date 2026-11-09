@@ -14,16 +14,7 @@
 // reconstruction changes nothing (the card is down).
 
 import { applyEffect } from '../combat/effects.ts';
-import {
-  effetOf,
-  emit,
-  id,
-  opponent,
-  raw,
-  roll,
-  round,
-  type Combat,
-} from '../combat/combat.ts';
+import { effetOf, emit, id, opponent, raw, roll, round, type Combat } from '../combat/combat.ts';
 import type { EffectContext, EffectRules } from '../combat/effect-context.ts';
 import type { Side } from '../combat/state.ts';
 import { scan } from '../combat/traps.ts';
