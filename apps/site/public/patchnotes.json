@@ -1,5 +1,17 @@
 [
   {
+    "date": "2026-11-10",
+    "intro": "Un petit réglage pour rendre les combats en relais plus justes.",
+    "groupes": [
+      {
+        "titre": "Combat",
+        "points": [
+          "Relais : quand un combattant tombe, le duel suivant reprend dans l’ordre habituel des tours, le nouveau venu ne joue plus automatiquement en premier."
+        ]
+      }
+    ]
+  },
+  {
     "date": "2026-11-09",
     "intro": "Grosse fournée : de nouvelles façons de frapper, un orage qui peut s’inviter en combat et des événements du Lore qui se jouent à l’éclair.",
     "groupes": [
