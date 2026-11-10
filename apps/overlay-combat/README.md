@@ -48,3 +48,7 @@ Si le tournoi continue (`tournoi.suite`), l'overlay lance lui-même le combat su
 ## Programmation
 
 Chaque programmation passive pose une icône éteinte en bas de la carte (engrenage : passif, éclair : ultime ; `n` de la ligne `prog`). À l'activation (`prog_act`), les icônes s'allument et montent se ranger en haut de la carte : ce qui est installé y reste. Un ultime programmé installé (`prog_ult_pret`) affiche sur son icône ses utilisations restantes, qui baissent à chaque lancement (`t: 'ultime'`, `k: 'prog_ult'`) ; à zéro, l'icône s'éteint. Démo : « Activation : tout se range en haut, ultime utilisé » dans la galerie de `combat.html?test`.
+
+## Annonce du résultat dans le chat
+
+À la fin de l'animation, la page demande à Streamer.bot de lancer l'action « Combat - Résultat » (`?action=` pour un autre nom), avec le message dans `%message%`. À la connexion, elle lit la liste des actions de Streamer.bot (`GetActions`) et appelle l'action par son id : le nom est comparé sans tenir compte des espaces, tirets, accents ni majuscules. Si le combat reçu n'a pas d'annonce, le texte de fin du journal sert d'annonce. Avec `?debug`, un encadré en bas à droite montre les actions lues, l'annonce envoyée et la réponse de Streamer.bot (aussi dans la console, préfixe `[annonce]`).

@@ -1861,7 +1861,7 @@ async function jouer(res){
    await wait(ms);
   }
   if(!TEST&&!DEMO&&R.seed!=null)fetch('https://bjsvqikjnvaomyoifiml.supabase.co/rest/v1/rpc/combat_affiche',{method:'POST',headers:{apikey:'sb_publishable_-3cPqDCyE-zhb3z5r6dPhg_DJFKGAI6','Content-Type':'application/json'},body:JSON.stringify({p_seed:String(R.seed)})}).catch(()=>{});   // le combat apparaît dans l'historique du site seulement maintenant (pas de spoil)
-  if(!TEST&&!DEMO&&R.annonce&&wsLive&&wsLive.readyState===1)wsLive.send(JSON.stringify({request:'DoAction',id:'fin-combat',action:{name:ACTION_FIN},args:{message:R.annonce}}));   // annonce du résultat dans le chat, une fois l'animation terminée
+  if(!TEST&&!DEMO&&!SITE)annoncer(R);   // annonce du résultat dans le chat, une fois l'animation terminée
   if(!TEST){$('#scene').classList.remove('on');await wait(800)}
   if(TOURNOI&&TOURNOI.tournoi_fini&&TOURNOI.tableau_final)await tableauTournoi(TOURNOI.tableau_final,{champion:TOURNOI.champion,ms:11000});   // tournoi terminé : le tableau final et le champion
   const TS=TOURNOI;ceintureMilieu(false);{const tb=$('#titreban');if(tb)tb.remove()}TITRE=null;TOURNOI=null;BELTS=[[],[]];
@@ -2230,9 +2230,30 @@ if(DEMO){
 // ---------- Mode live : reçoit le journal par WebSocket (Streamer.bot) ----------
 function extraire(d){for(let k=0;k<4;k++){if(typeof d==='string'){try{d=JSON.parse(d)}catch(x){return null}}
  if(Array.isArray(d))d=d[0];if(d&&d.journal)return d;if(d&&d.data)d=d.data;else return null}return null}
+// Annonce du résultat : l'action Streamer.bot ACTION_FIN (« Combat - Résultat », ?action= pour changer son nom) reçoit le message dans %message%.
+// L'action est appelée par son id (liste lue à la connexion, nom comparé sans tenir compte des espaces, tirets, accents ni majuscules) :
+// un nom tapé avec un autre tiret ou un autre « é » ne bloque plus l'annonce. Sans annonce dans le combat reçu, le texte de fin sert d'annonce.
+// La réponse de Streamer.bot est notée dans la console (et à l'écran avec ?debug).
+let actionsSB=[];
+const nomAction=n=>String(n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[\s\-\u2010-\u2015_]+/g,' ').trim();
+function actionSB(nom){return actionsSB.find(a=>a.name===nom)||actionsSB.find(a=>nomAction(a.name)===nomAction(nom))||null}
+function diagLive(t){console.log('[annonce]',t);if(!/debug/.test(location.search))return;let b=document.getElementById('livebox');if(!b){b=document.createElement('div');b.id='livebox';b.style.cssText='position:fixed;right:8px;bottom:8px;max-width:50vw;background:#1e293b;color:#e2e8f0;font:12px monospace;padding:6px 8px;border-radius:6px;z-index:99999;white-space:pre-wrap';document.body.appendChild(b)}b.textContent=(b.textContent+'\n'+t).split('\n').slice(-8).join('\n')}
+function annoncer(R){
+ let msg=R.annonce;
+ if(!msg){const f=R.journal&&R.journal[R.journal.length-1];msg=f&&f.t==='fin'&&f.txt?String(f.txt):'';diagLive('pas d\'annonce dans le combat reçu'+(msg?', texte de fin utilisé':''))}
+ if(!msg)return;
+ if(!wsLive||wsLive.readyState!==1){diagLive('WebSocket fermé : annonce perdue');return}
+ const a=actionSB(ACTION_FIN);
+ if(!a)diagLive('action « '+ACTION_FIN+' » introuvable dans Streamer.bot ('+actionsSB.length+' actions lues)');
+ wsLive.send(JSON.stringify({request:'DoAction',id:'fin-combat',action:a?{id:a.id,name:a.name}:{name:ACTION_FIN},args:{message:msg}}));
+ diagLive('annonce envoyée : '+msg);
+}
 function connect(){const ws=new WebSocket('ws://127.0.0.1:8080/');wsLive=ws;
- ws.onopen=()=>ws.send(JSON.stringify({request:'Subscribe',id:'sub-combat',events:{General:['Custom']}}));
- ws.onmessage=e=>{const r=extraire(e.data);if(r)jouer(r)};
+ ws.onopen=()=>{ws.send(JSON.stringify({request:'Subscribe',id:'sub-combat',events:{General:['Custom']}}));ws.send(JSON.stringify({request:'GetActions',id:'actions-combat'}))};
+ ws.onmessage=e=>{let d=null;try{d=JSON.parse(e.data)}catch{}
+  if(d&&d.id==='actions-combat'){if(Array.isArray(d.actions))actionsSB=d.actions;diagLive(actionsSB.length+' actions Streamer.bot lues'+(actionSB(ACTION_FIN)?'':', « '+ACTION_FIN+' » introuvable'));return}
+  if(d&&d.id==='fin-combat'){diagLive('réponse de Streamer.bot : '+JSON.stringify(d));return}
+  const r=extraire(e.data);if(r)jouer(r)};
  ws.onclose=()=>setTimeout(connect,3000);ws.onerror=()=>ws.close()}
 
 // ---------- Récap du dernier combat (page de test) ----------
