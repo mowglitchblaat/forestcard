@@ -775,6 +775,67 @@
 @utility lore-glow {
   transition: opacity 0.2s ease-out;
 }
+/* A place that won a lightning event (world-map.tsx, chargedPlaces): its golden glow turned electric
+   blue, flickering like an arc, with a blue halo; a place without a layer gets the halo on its pin.
+   The badge with its name pulses with the same blue light. */
+@utility lore-electric {
+  filter: hue-rotate(180deg) saturate(2.4) brightness(1.35) drop-shadow(0 0 6px rgb(140 190 255))
+    drop-shadow(0 0 16px rgb(90 130 255));
+  animation: lore-electric 2.4s linear infinite;
+}
+@keyframes lore-electric {
+  0%,
+  100% {
+    opacity: 0.75;
+  }
+  8% {
+    opacity: 1;
+  }
+  10% {
+    opacity: 0.35;
+  }
+  12% {
+    opacity: 1;
+  }
+  30% {
+    opacity: 0.8;
+  }
+  52% {
+    opacity: 1;
+  }
+  54% {
+    opacity: 0.5;
+  }
+  56% {
+    opacity: 0.95;
+  }
+}
+@utility lore-electric-pin {
+  box-shadow:
+    0 0 8px rgb(150 200 255),
+    0 0 20px rgb(90 130 255);
+  animation: lore-electric 2.4s linear infinite;
+}
+@utility lore-electric-badge {
+  box-shadow:
+    0 0 6px rgb(150 200 255 / 0.9),
+    0 0 16px rgb(90 130 255 / 0.6);
+  animation: lore-electric-badge 2.4s linear infinite;
+}
+@keyframes lore-electric-badge {
+  0%,
+  100% {
+    box-shadow:
+      0 0 6px rgb(150 200 255 / 0.7),
+      0 0 14px rgb(90 130 255 / 0.4);
+  }
+  8%,
+  12% {
+    box-shadow:
+      0 0 10px rgb(200 230 255),
+      0 0 26px rgb(110 150 255 / 0.9);
+  }
+}
 @utility lore-layer-lit {
   filter: drop-shadow(0 0 6px rgb(255 226 140 / 0.95)) drop-shadow(0 0 14px rgb(255 200 90 / 0.6))
     brightness(1.12);

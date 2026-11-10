@@ -372,6 +372,7 @@ export function WorldMap() {
   const shop = useQuery({ queryKey: shopKeys.offers, queryFn: fetchShop });
   const contents = useQuery({ queryKey: shopKeys.contents, queryFn: fetchContents });
   const chapters = useQuery({ queryKey: loreKeys.chapters, queryFn: fetchChapters });
+  const events = useQuery({ queryKey: loreKeys.events, queryFn: fetchEvents });
   const images = mirror.data ?? new Set<string>();
   const img = (path: string | null) => imageUrl(path, images);
 
@@ -427,6 +428,7 @@ export function WorldMap() {
     setMenu({ place, x: u * 100, y: v * 100 });
   };
   const pins = places.filter((p) => p.lore_calques.length === 0);
+  const charged = chargedPlaces(events.data ?? [], places);
   const hovered = placeOf(hover);
   const opened = menu?.place ?? null;
   // the boosters that give the place's collection from the rare cards up: the commons of every
@@ -492,6 +494,17 @@ export function WorldMap() {
               className={`lore-glow pointer-events-none absolute inset-0 size-full ${hover === place || opened?.id === place ? 'opacity-100' : 'opacity-0'}`}
             />
           ))}
+          {[...(built?.glows ?? [])]
+            .filter(([place]) => charged.has(place))
+            .map(([place, glow]) => (
+              <img
+                key={`electric-${place}`}
+                src={glow}
+                alt=""
+                draggable={false}
+                className="lore-electric pointer-events-none absolute inset-0 size-full"
+              />
+            ))}
           {built && <Fog built={built} />}
           <MapLightnings places={places} />
           {pins.map((p) => (
@@ -506,11 +519,26 @@ export function WorldMap() {
               style={{ '--x': `${p.x}%`, '--y': `${p.y}%` }}
               className="absolute top-(--y) left-(--x) flex -translate-x-1/2 -translate-y-full cursor-pointer flex-col items-center"
             >
-              <span className="rounded-full border-2 border-foreground bg-background p-1.5 shadow-lg transition hover:scale-125">
+              <span
+                className={`rounded-full border-2 border-foreground bg-background p-1.5 shadow-lg transition hover:scale-125 ${charged.has(p.id) ? 'lore-electric-pin' : ''}`}
+              >
                 <ICONS.position className="size-4" />
               </span>
             </button>
           ))}
+          {places
+            .filter((p) => charged.has(p.id))
+            .map((p) => (
+              <span
+                key={`bolt-${p.id}`}
+                title={`${p.nom} a récupéré l'éclair : ${charged.get(p.id)}`}
+                style={{ '--x': `${p.x}%`, '--y': `${p.y}%` }}
+                className="lore-electric-badge pointer-events-none absolute top-(--y) left-(--x) flex -translate-1/2 items-center gap-1 rounded-full bg-background/90 px-2 py-0.5 text-xs font-semibold whitespace-nowrap shadow-lg"
+              >
+                <ICONS.lightning className="size-3.5" />
+                {p.nom}
+              </span>
+            ))}
           {hovered && !menu && (
             <span
               style={{ '--x': `${hovered.x}%`, '--y': `${hovered.y}%` }}
@@ -636,6 +664,22 @@ export function WorldMap() {
       </Dialog>
     </div>
   );
+}
+
+// The places that won a lightning event (resolved, successful): the place of the faction sent (the
+// place of its collection) keeps an electric glow on the map, with the title of the event. A place
+// that won several keeps the latest.
+function chargedPlaces(events: LoreEvent[], places: Place[]): Map<number, string> {
+  const won = new Map<number, string>();
+  for (const e of [...events].sort((a, b) => a.id - b.id)) {
+    if (e.statut !== 'resolu' || !e.reussi || e.eclair_x === null || e.eclair_y === null) continue;
+    const sent = sentOption(e);
+    const home = sent?.collection_id
+      ? places.find((p) => p.collection_id === sent.collection_id)
+      : undefined;
+    if (home) won.set(home.id, e.titre);
+  }
+  return won;
 }
 
 // The lightning events in progress, right on the map, above the fog: the bolt keeps striking where
