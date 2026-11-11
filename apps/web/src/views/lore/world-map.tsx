@@ -752,43 +752,84 @@ function homeOf(places: Place[], collection: number | null): Place | undefined {
   return places.find((p) => p.collection_id === collection);
 }
 
-// The arcs crackling around a place holding a lightning: zigzags leaving the edge of its drawing
-// (an ellipse around its shape, on the map's own scale), redrawn several times a second, a blue halo
-// under a white core (none for a player who asked for less motion).
+// The electricity around a place holding a lightning, redrawn about every tenth of a second:
+// arcs crawling along the edge of its drawing (an ellipse around its shape, on the map's own scale,
+// jagged) and strikes leaping out of it, with a branch now and then; once in a while a discharge,
+// more arcs and a flash. A blue halo under a white core (nothing for a player who asked for less
+// motion).
 function ElectricArcs({ shape }: { shape: Shape }) {
-  const [arcs, setArcs] = useState<string[]>([]);
+  const [frame, setFrame] = useState<{ arcs: string[]; flash: boolean }>({
+    arcs: [],
+    flash: false,
+  });
   useEffect(() => {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const reach = Math.max(shape.rx, shape.ry, shape.width * 0.02);
-    const zigzag = () => {
-      const angle = Math.random() * Math.PI * 2;
-      const sx = shape.cx + Math.cos(angle) * shape.rx * 0.8;
-      const sy = shape.cy + Math.sin(angle) * shape.ry * 0.8;
-      const length = reach * (0.25 + Math.random() * 0.45);
-      const points: [number, number][] = [[sx, sy]];
-      for (let i = 1; i <= 6; i++) {
-        const d = (length * i) / 6;
-        const off = (Math.random() - 0.5) * length * 0.35;
-        points.push([
-          sx + Math.cos(angle) * d - Math.sin(angle) * off,
-          sy + Math.sin(angle) * d + Math.cos(angle) * off,
-        ]);
-      }
-      return points.map(([a, b]) => `${a.toFixed(1)},${b.toFixed(1)}`).join(' ');
+    const line = (points: [number, number][]) =>
+      points.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+    const onEdge = (angle: number, scale: number): [number, number] => [
+      shape.cx + Math.cos(angle) * shape.rx * scale,
+      shape.cy + Math.sin(angle) * shape.ry * scale,
+    ];
+    // an arc hugging the edge: from one angle to another, its radius jumping around the edge
+    const crawl = () => {
+      const from = Math.random() * Math.PI * 2;
+      const span = (0.35 + Math.random() * 0.9) * (Math.random() < 0.5 ? -1 : 1);
+      const steps = 9 + Math.floor(Math.random() * 6);
+      return line(
+        Array.from({ length: steps + 1 }, (_, i) =>
+          onEdge(from + (span * i) / steps, 0.92 + (Math.random() - 0.5) * 0.22),
+        ),
+      );
     };
-    const t = setInterval(() => {
-      const n = Math.random() < 0.25 ? 0 : 1 + Math.floor(Math.random() * 4);
-      setArcs(Array.from({ length: n }, zigzag));
-    }, 120);
-    return () => clearInterval(t);
+    // a strike leaping out of the edge, and sometimes a branch off its middle
+    const strike = (): string[] => {
+      const angle = Math.random() * Math.PI * 2;
+      const [sx, sy] = onEdge(angle, 0.9);
+      const length = reach * (0.3 + Math.random() * 0.5);
+      const bolt = (x: number, y: number, dir: number, len: number, n: number) => {
+        const points: [number, number][] = [[x, y]];
+        for (let i = 1; i <= n; i++) {
+          const d = (len * i) / n;
+          const off = (Math.random() - 0.5) * len * 0.4;
+          points.push([
+            x + Math.cos(dir) * d - Math.sin(dir) * off,
+            y + Math.sin(dir) * d + Math.cos(dir) * off,
+          ]);
+        }
+        return points;
+      };
+      const main = bolt(sx, sy, angle, length, 7);
+      const out = [line(main)];
+      const mid = main[3];
+      if (mid && Math.random() < 0.5)
+        out.push(line(bolt(mid[0], mid[1], angle + (Math.random() - 0.5) * 1.6, length * 0.45, 4)));
+      return out;
+    };
+    let timer: ReturnType<typeof setTimeout>;
+    const tick = () => {
+      const flash = Math.random() < 0.07;
+      const crawls = Math.random() < 0.15 ? 0 : 2 + Math.floor(Math.random() * 3) + (flash ? 4 : 0);
+      const strikes = Math.random() < 0.55 ? 0 : 1 + (flash ? 3 : 0);
+      setFrame({
+        arcs: [
+          ...Array.from({ length: crawls }, crawl),
+          ...Array.from({ length: strikes }, strike).flat(),
+        ],
+        flash,
+      });
+      timer = setTimeout(tick, 60 + Math.random() * 70);
+    };
+    tick();
+    return () => clearTimeout(timer);
   }, [shape]);
   return (
     <svg
       viewBox={`0 0 ${shape.width} ${shape.height}`}
       preserveAspectRatio="none"
-      className="pointer-events-none absolute inset-0 size-full overflow-visible"
+      className={`pointer-events-none absolute inset-0 size-full overflow-visible ${frame.flash ? 'lore-arc-flash' : ''}`}
     >
-      {arcs.map((points) => (
+      {frame.arcs.map((points) => (
         <Fragment key={points}>
           <polyline points={points} className="lore-arc-halo" />
           <polyline points={points} className="lore-arc-core" />
