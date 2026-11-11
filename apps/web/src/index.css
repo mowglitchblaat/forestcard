@@ -780,33 +780,38 @@
    arcs crackling from its centre (ElectricArcs); a place without a layer gets the halo on its pin.
    The badge with its name pulses with the same light. */
 @utility lore-electric {
-  filter: hue-rotate(180deg) saturate(2.6) brightness(1.3) blur(2px)
-    drop-shadow(0 0 10px rgb(110 160 255)) drop-shadow(0 0 26px rgb(70 110 255));
-  mix-blend-mode: screen;
+  filter: hue-rotate(185deg) saturate(3) brightness(0.9) drop-shadow(0 0 8px rgb(60 120 255))
+    drop-shadow(0 0 22px rgb(40 80 255));
   animation: lore-electric-breathe 3.2s ease-in-out infinite;
 }
 @utility lore-electric-core {
-  filter: hue-rotate(180deg) saturate(1.6) brightness(2.2) drop-shadow(0 0 3px rgb(220 240 255))
-    drop-shadow(0 0 8px rgb(140 190 255));
-  mix-blend-mode: screen;
+  filter: hue-rotate(185deg) saturate(1.4) brightness(1.6) drop-shadow(0 0 3px rgb(120 190 255));
   animation: lore-electric 1.7s steps(1, end) infinite;
 }
-@utility lore-electric-arcs {
-  overflow: visible;
+@utility lore-arc-halo {
   fill: none;
-  stroke: rgb(235 245 255);
-  stroke-width: 1.4;
+  stroke: rgb(50 110 255 / 0.75);
+  stroke-width: 6px;
   stroke-linejoin: round;
   stroke-linecap: round;
-  filter: drop-shadow(0 0 2px rgb(160 205 255)) drop-shadow(0 0 6px rgb(90 140 255));
+  vector-effect: non-scaling-stroke;
+  filter: blur(2px);
+}
+@utility lore-arc-core {
+  fill: none;
+  stroke: rgb(235 245 255);
+  stroke-width: 1.8px;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
 }
 @keyframes lore-electric-breathe {
   0%,
   100% {
-    opacity: 0.55;
+    opacity: 0.7;
   }
   50% {
-    opacity: 0.95;
+    opacity: 1;
   }
 }
 @keyframes lore-electric {

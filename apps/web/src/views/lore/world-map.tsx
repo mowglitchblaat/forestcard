@@ -57,11 +57,14 @@ const isCommon = (name: string) =>
 const SCALE = 0.25;
 
 type Hit = { place: number; width: number; height: number; alpha: Uint8ClampedArray };
+// A place's drawing on the canvases: its centre and half-sizes, and the canvas size.
+type Shape = { cx: number; cy: number; rx: number; ry: number; width: number; height: number };
 type Built = {
   mask: HTMLCanvasElement;
   fresh: HTMLCanvasElement | null;
   hits: Hit[];
   glows: Map<number, string>;
+  shapes: Map<number, Shape>;
 };
 
 const loadImage = (src: string) =>
@@ -139,7 +142,13 @@ async function build(
   read.height = h;
   const rctx = read.getContext('2d', { willReadFrequently: true });
   if (!rctx)
-    return { mask: document.createElement('canvas'), fresh: null, hits: [], glows: new Map() };
+    return {
+      mask: document.createElement('canvas'),
+      fresh: null,
+      hits: [],
+      glows: new Map(),
+      shapes: new Map(),
+    };
   let basePx: Uint8ClampedArray | null = null;
   if (base) {
     rctx.drawImage(base, 0, 0, w, h);
@@ -245,7 +254,36 @@ async function build(
     gctx.drawImage(silhouette, 0, 0);
     glows.set(place, g.toDataURL('image/png'));
   }
-  return { mask, fresh, hits, glows };
+  // where each place's drawing sits (its own opaque part): for the arcs of a lightning's holder
+  const shapes = new Map<number, Shape>();
+  for (const place of new Set(hits.map((x) => x.place))) {
+    let x0 = w;
+    let y0 = h;
+    let x1 = -1;
+    let y1 = -1;
+    for (const hit of hits) {
+      if (hit.place !== place) continue;
+      for (let i = 0; i < hit.alpha.length; i++) {
+        if ((hit.alpha[i] ?? 0) < 60) continue;
+        const x = i % w;
+        const y = Math.floor(i / w);
+        if (x < x0) x0 = x;
+        if (x > x1) x1 = x;
+        if (y < y0) y0 = y;
+        if (y > y1) y1 = y;
+      }
+    }
+    if (x1 >= x0)
+      shapes.set(place, {
+        cx: (x0 + x1) / 2,
+        cy: (y0 + y1) / 2,
+        rx: (x1 - x0) / 2,
+        ry: (y1 - y0) / 2,
+        width: w,
+        height: h,
+      });
+  }
+  return { mask, fresh, hits, glows, shapes };
 }
 
 // The place under a point of the map (0..1), topmost layer first.
@@ -495,6 +533,7 @@ export function WorldMap() {
               className={`lore-glow pointer-events-none absolute inset-0 size-full ${hover === place || opened?.id === place ? 'opacity-100' : 'opacity-0'}`}
             />
           ))}
+          {built && <Fog built={built} />}
           {[...(built?.glows ?? [])]
             .filter(([place]) => charged.has(place))
             .map(([place, glow]) => (
@@ -513,7 +552,11 @@ export function WorldMap() {
                 />
               </Fragment>
             ))}
-          {built && <Fog built={built} />}
+          {[...(built?.shapes ?? [])]
+            .filter(([place]) => charged.has(place))
+            .map(([place, shape]) => (
+              <ElectricArcs key={`arcs-${place}`} shape={shape} />
+            ))}
           <MapLightnings places={places} />
           {pins.map((p) => (
             <button
@@ -540,7 +583,11 @@ export function WorldMap() {
               const c = charged.get(p.id);
               return (
                 <Fragment key={`bolt-${p.id}`}>
-                  <ElectricArcs x={p.x} y={p.y} />
+                  {!built?.shapes.has(p.id) && (
+                    <ElectricArcs
+                      shape={{ cx: p.x, cy: p.y, rx: 2, ry: 2, width: 100, height: 100 }}
+                    />
+                  )}
                   <span
                     title={
                       c?.contested
@@ -705,40 +752,47 @@ function homeOf(places: Place[], collection: number | null): Place | undefined {
   return places.find((p) => p.collection_id === collection);
 }
 
-// The arcs crackling around a place holding a lightning: a few random zigzags leaving its centre,
-// redrawn several times a second (none for a player who asked for less motion).
-function ElectricArcs({ x, y }: { x: number; y: number }) {
+// The arcs crackling around a place holding a lightning: zigzags leaving the edge of its drawing
+// (an ellipse around its shape, on the map's own scale), redrawn several times a second, a blue halo
+// under a white core (none for a player who asked for less motion).
+function ElectricArcs({ shape }: { shape: Shape }) {
   const [arcs, setArcs] = useState<string[]>([]);
   useEffect(() => {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const reach = Math.max(shape.rx, shape.ry, shape.width * 0.02);
     const zigzag = () => {
       const angle = Math.random() * Math.PI * 2;
-      const length = 18 + Math.random() * 28;
-      const points: [number, number][] = [[0, 0]];
-      for (let i = 1; i <= 5; i++) {
-        const d = (length * i) / 5;
-        const off = (Math.random() - 0.5) * 12;
+      const sx = shape.cx + Math.cos(angle) * shape.rx * 0.8;
+      const sy = shape.cy + Math.sin(angle) * shape.ry * 0.8;
+      const length = reach * (0.25 + Math.random() * 0.45);
+      const points: [number, number][] = [[sx, sy]];
+      for (let i = 1; i <= 6; i++) {
+        const d = (length * i) / 6;
+        const off = (Math.random() - 0.5) * length * 0.35;
         points.push([
-          Math.cos(angle) * d - Math.sin(angle) * off,
-          Math.sin(angle) * d + Math.cos(angle) * off,
+          sx + Math.cos(angle) * d - Math.sin(angle) * off,
+          sy + Math.sin(angle) * d + Math.cos(angle) * off,
         ]);
       }
       return points.map(([a, b]) => `${a.toFixed(1)},${b.toFixed(1)}`).join(' ');
     };
     const t = setInterval(() => {
-      const n = Math.random() < 0.35 ? 0 : 1 + Math.floor(Math.random() * 3);
+      const n = Math.random() < 0.25 ? 0 : 1 + Math.floor(Math.random() * 4);
       setArcs(Array.from({ length: n }, zigzag));
-    }, 140);
+    }, 120);
     return () => clearInterval(t);
-  }, []);
+  }, [shape]);
   return (
     <svg
-      viewBox="-50 -50 100 100"
-      style={{ '--x': `${x}%`, '--y': `${y}%` }}
-      className="lore-electric-arcs pointer-events-none absolute top-(--y) left-(--x) size-40 -translate-1/2"
+      viewBox={`0 0 ${shape.width} ${shape.height}`}
+      preserveAspectRatio="none"
+      className="pointer-events-none absolute inset-0 size-full overflow-visible"
     >
       {arcs.map((points) => (
-        <polyline key={points} points={points} />
+        <Fragment key={points}>
+          <polyline points={points} className="lore-arc-halo" />
+          <polyline points={points} className="lore-arc-core" />
+        </Fragment>
       ))}
     </svg>
   );
