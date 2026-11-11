@@ -310,7 +310,8 @@ export function DeckEditor({
       )}
 
       <Dialog open={blocker.status === 'blocked'} onOpenChange={(o) => !o && blocker.reset?.()}>
-        <DialogContent>
+        {/* Wide enough for its three buttons in a row (the default width cut them off). */}
+        <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>« {name} » n'est pas enregistré</DialogTitle>
             <DialogDescription>
@@ -322,7 +323,7 @@ export function DeckEditor({
               {save.error.message}
             </p>
           )}
-          <DialogFooter className="flex-col sm:flex-row">
+          <DialogFooter className="flex-col sm:flex-row sm:flex-wrap">
             <Button variant="ghost" onClick={() => blocker.reset?.()}>
               Rester
             </Button>

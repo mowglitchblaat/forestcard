@@ -18,7 +18,7 @@ import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { CARD_TYPES, type CardType, type CollectionEntry } from '@/data/cards';
 import type { SavedDeck } from '@/data/decks';
-import { CardTooltip } from '@/views/collection/browser';
+import { CardPreview } from '@/views/collection/browser';
 import { TYPE_LABELS } from '@/views/collection/model';
 import { type Composition, DECK_SIZE, layout, nameProblem, PER_TYPE } from './model';
 
@@ -130,19 +130,19 @@ export function Slots({
     );
     if (!onRemove)
       return (
-        <CardTooltip key={key} entry={e}>
+        <CardPreview key={key} entry={e} image={src}>
           <div>{picture}</div>
-        </CardTooltip>
+        </CardPreview>
       );
     return (
-      <CardTooltip key={key} entry={e} hint="Clic : retirer du deck">
+      <CardPreview key={key} entry={e} image={src} hint="Clic : retirer du deck">
         <button type="button" onClick={() => onRemove(e)} className="group relative block">
           {picture}
           <span className="absolute top-1 right-1 flex size-5 items-center justify-center rounded-full bg-background/90 opacity-0 shadow transition group-hover:opacity-100">
             <ICONS.remove className="size-3.5" />
           </span>
         </button>
-      </CardTooltip>
+      </CardPreview>
     );
   };
   return (

@@ -20,12 +20,13 @@ import {
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
 import { Toggle } from '@/components/ui/toggle';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { CARD_TYPES, type CardType, type CollectionEntry } from '@/data/cards';
 import { imageUrl } from '@/data/images';
 import type { Prices } from '@/data/recycling';
 import { rarityRank, tierOf } from '@/lib/rarity';
-import { CardDetails, CardImage } from './details';
+import { CardDetails, CardImage, Effects, RarityBadge } from './details';
 import { collectionOf, filterEntries, num, sortEntries, TYPE_LABELS } from './model';
 import { type CollectionSearch, OWNED, type Owned, type Sort, SORTS } from './search';
 
@@ -238,6 +239,59 @@ export function CardTooltip({
   );
 }
 
+// Building a deck: hovering a card shows it big with what it does (stats and effects), beside it,
+// and what a click would do; the grid's images are too small to read. (A touch screen has no
+// hover: the magnifier opens the details.)
+export function CardPreview({
+  entry,
+  image,
+  hint,
+  children,
+}: {
+  entry: CollectionEntry;
+  image: string | null;
+  hint?: string | null;
+  children: ReactElement;
+}) {
+  const { card } = entry;
+  return (
+    <HoverCard openDelay={250} closeDelay={60}>
+      <HoverCardTrigger asChild>{children}</HoverCardTrigger>
+      <HoverCardContent
+        side="right"
+        align="start"
+        collisionPadding={8}
+        className="flex max-h-viewport-inset w-xl max-w-viewport-inset gap-3 overflow-y-auto p-3"
+      >
+        <div className="w-48 shrink-0">
+          <CardImage entry={entry} image={image} className="shadow-lg" />
+        </div>
+        <div className="flex min-w-0 flex-col gap-2">
+          <b className="text-base">{card.nom}</b>
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <RarityBadge entry={entry} />
+            <span className="text-muted-foreground">
+              {[TYPE_LABELS[card.type].one, collectionOf(entry)].filter(Boolean).join(' · ')}
+            </span>
+          </div>
+          {card.type === 'combattant' && (card.atq != null || card.pv != null) && (
+            <span className="flex gap-3 text-sm font-semibold">
+              <span className="flex items-center gap-1">
+                <ICONS.attack className="size-4" /> {card.atq ?? '?'}
+              </span>
+              <span className="flex items-center gap-1">
+                <ICONS.hp className="size-4" /> {card.pv ?? '?'}
+              </span>
+            </span>
+          )}
+          <Effects entry={entry} />
+          {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
+        </div>
+      </HoverCardContent>
+    </HoverCard>
+  );
+}
+
 // A card in pick mode: in the deck, a check and a ring; refused, dimmed with the reason on hover.
 function PickTile({
   entry,
@@ -254,8 +308,9 @@ function PickTile({
   const refused = inDeck ? null : pick.refusal(entry);
   return (
     <div className="group relative">
-      <CardTooltip
+      <CardPreview
         entry={entry}
+        image={image}
         hint={refused ?? (inDeck ? 'Clic : retirer du deck' : 'Clic : ajouter au deck')}
       >
         <button
@@ -289,7 +344,7 @@ function PickTile({
             {inDeck ? 'dans le deck' : refused ? 'impossible à ajouter' : 'pas dans le deck'}
           </span>
         </button>
-      </CardTooltip>
+      </CardPreview>
       <button
         type="button"
         onClick={onDetails}

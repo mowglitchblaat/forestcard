@@ -209,7 +209,7 @@ function StatBar({
   );
 }
 
-function Effects({ entry }: { entry: CollectionEntry }) {
+export function Effects({ entry }: { entry: CollectionEntry }) {
   const sections = describeCard(entry.card);
   if (!sections.length)
     return (
