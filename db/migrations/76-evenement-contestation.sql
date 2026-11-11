@@ -3,7 +3,7 @@
 -- eclair (eclair_evenement_id, l'evenement eclair ; defenseur_collection, sa collection). Les options :
 --   - role 'non' : on ne conteste pas ;
 --   - une collection (collection_id ; sans collection = Basique) : on conteste avec elle ;
---   - role 'toutes' : toutes les collections contestent (Basique comprise).
+--   - role 'toutes' : toutes les collections sorties (au moins une carte active) contestent, Basique comprise.
 -- A la fin du vote (fin), sans plus de oui que de non : la collection garde l'eclair (statut resolu,
 -- reussi = false). Sinon, la collection (ou « toutes ») la plus votee parmi les oui est engagee avec la
 -- collection qui defend, et le decompte commence (statut 'decompte', decompte_debut = fin) : chaque
@@ -65,7 +65,9 @@ begin
       order by count(p.joueur_id) desc, o.ordre, o.id
       limit 1;
       if ch.role = 'toutes' then
-        select array_agg(c.id order by c.id) || 0 into engagees from public.collections c;
+        -- les collections sorties seulement (au moins une carte active) : pas de nom secret au tableau
+        select array_agg(c.id order by c.id) || 0 into engagees from public.collections c
+        where exists (select 1 from public.cartes ca where ca.collection_id = c.id and ca.actif);
       else
         engagees := array[coalesce(ch.collection_id, 0)];
       end if;
