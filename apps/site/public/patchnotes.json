@@ -1,5 +1,31 @@
 [
   {
+    "date": "2026-11-11",
+    "intro": "L’éclair du Lore peut maintenant être contesté : les collections s’affrontent pour le récupérer.",
+    "groupes": [
+      {
+        "titre": "Site",
+        "points": [
+          "Lore : un vote permet de contester la collection qui détient l’éclair, avec une collection précise (Basique comprise) ou toutes les collections en jeu.",
+          "Si la contestation l’emporte, chaque victoire en combat normal d’un combattant engagé rapporte 1 point, et la collection en tête à la fin s’empare de l’éclair.",
+          "Sur la carte du monde, le lieu du détenteur de l’éclair crépite d’électricité (la Forêt Enchantée pour Basique), et la page des dos de cartes ne bloque plus les joueurs qui n’en ont jamais choisi."
+        ]
+      },
+      {
+        "titre": "Animations",
+        "points": [
+          "L’annonce du résultat d’un combat à l’écran du stream est plus fiable."
+        ]
+      },
+      {
+        "titre": "Admin",
+        "points": [
+          "On peut régler la fin du décompte d’une contestation, ou la terminer tout de suite."
+        ]
+      }
+    ]
+  },
+  {
     "date": "2026-11-10",
     "intro": "Un petit réglage pour rendre les combats en relais plus justes.",
     "groupes": [
