@@ -686,17 +686,23 @@ export function WorldMap() {
 
 // The places holding a lightning (lightningHolders: the faction a successful lightning event sent,
 // or the collection that took it from them in a contest) keep an electric glow on the map, with the
-// title of the lightning, and whether it is contested right now. Basique has no place.
+// title of the lightning, and whether it is contested right now. Basique's place is the place
+// without a collection (la Forêt Enchantée).
 function chargedPlaces(
   events: LoreEvent[],
   places: Place[],
 ): Map<number, { titre: string; contested: boolean }> {
   const held = new Map<number, { titre: string; contested: boolean }>();
   for (const h of lightningHolders(events).values()) {
-    const home = h.collection ? places.find((p) => p.collection_id === h.collection) : undefined;
+    const home = homeOf(places, h.collection || null);
     if (home) held.set(home.id, { titre: h.titre, contested: h.contested });
   }
   return held;
+}
+
+// The place of a collection; null (Basique, the cards of no collection): the place without one.
+function homeOf(places: Place[], collection: number | null): Place | undefined {
+  return places.find((p) => p.collection_id === collection);
 }
 
 // The arcs crackling around a place holding a lightning: a few random zigzags leaving its centre,
@@ -755,9 +761,7 @@ function MapLightnings({ places }: { places: Place[] }) {
   return strikes.map((e) => {
     const { phase, progress } = lightningPhase(e, now);
     const sent = phase === 'vote' ? null : sentOption(e);
-    const home = sent?.collection_id
-      ? places.find((p) => p.collection_id === sent.collection_id)
-      : undefined;
+    const home = sent ? homeOf(places, sent.collection_id) : undefined;
     const from = home ? { x: home.x, y: home.y } : { x: 50, y: 50 };
     const walker = {
       '--x': `${from.x + (e.eclair_x - from.x) * progress}%`,
