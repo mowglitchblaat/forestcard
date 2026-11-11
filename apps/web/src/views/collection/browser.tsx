@@ -257,35 +257,32 @@ export function CardPreview({
   return (
     <HoverCard openDelay={250} closeDelay={60}>
       <HoverCardTrigger asChild>{children}</HoverCardTrigger>
-      <HoverCardContent
-        side="right"
-        align="start"
-        collisionPadding={8}
-        className="flex max-h-viewport-inset w-xl max-w-viewport-inset gap-3 overflow-y-auto p-3"
-      >
-        <div className="w-48 shrink-0">
-          <CardImage entry={entry} image={image} className="shadow-lg" />
-        </div>
-        <div className="flex min-w-0 flex-col gap-2">
-          <b className="text-base">{card.nom}</b>
-          <div className="flex flex-wrap items-center gap-2 text-xs">
-            <RarityBadge entry={entry} />
-            <span className="text-muted-foreground">
-              {[TYPE_LABELS[card.type].one, collectionOf(entry)].filter(Boolean).join(' · ')}
-            </span>
+      <HoverCardContent side="right" align="start" collisionPadding={8} className="w-xl">
+        <div className="flex max-h-viewport-inset gap-3 overflow-y-auto">
+          <div className="w-48 shrink-0">
+            <CardImage entry={entry} image={image} className="shadow-lg" />
           </div>
-          {card.type === 'combattant' && (card.atq != null || card.pv != null) && (
-            <span className="flex gap-3 text-sm font-semibold">
-              <span className="flex items-center gap-1">
-                <ICONS.attack className="size-4" /> {card.atq ?? '?'}
+          <div className="flex min-w-0 flex-col gap-2">
+            <b className="text-base">{card.nom}</b>
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <RarityBadge entry={entry} />
+              <span className="text-muted-foreground">
+                {[TYPE_LABELS[card.type].one, collectionOf(entry)].filter(Boolean).join(' · ')}
               </span>
-              <span className="flex items-center gap-1">
-                <ICONS.hp className="size-4" /> {card.pv ?? '?'}
+            </div>
+            {card.type === 'combattant' && (card.atq != null || card.pv != null) && (
+              <span className="flex gap-3 text-sm font-semibold">
+                <span className="flex items-center gap-1">
+                  <ICONS.attack className="size-4" /> {card.atq ?? '?'}
+                </span>
+                <span className="flex items-center gap-1">
+                  <ICONS.hp className="size-4" /> {card.pv ?? '?'}
+                </span>
               </span>
-            </span>
-          )}
-          <Effects entry={entry} />
-          {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
+            )}
+            <Effects entry={entry} />
+            {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
+          </div>
         </div>
       </HoverCardContent>
     </HoverCard>

@@ -511,9 +511,6 @@
 @utility max-h-viewport-inset {
   max-height: calc(100vh - 2rem);
 }
-@utility max-w-viewport-inset {
-  max-width: calc(100vw - 1rem);
-}
 @utility max-h-dialog {
   max-height: 85vh;
 }
