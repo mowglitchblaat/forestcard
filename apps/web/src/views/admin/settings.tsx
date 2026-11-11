@@ -737,6 +737,7 @@ function SettingsForms({ v }: { v: Settings }) {
                 orage_actif: f.get('on') === 'on' ? 1 : 0,
                 orage_chance: clamp(f.get('och'), 0, 100),
                 orage_degats: clamp(f.get('odeg'), 0, 10000),
+                orage_intensite: clamp(f.get('oint'), 1, 5),
               });
               return 'Orage enregistré.';
             });
@@ -766,7 +767,23 @@ function SettingsForms({ v }: { v: Settings }) {
                 className="w-24"
               />
             </Field>
+            <Field label="Intensité des éclairs en fond (1 à 5)">
+              <Input
+                name="oint"
+                type="number"
+                min={1}
+                max={5}
+                defaultValue={setting(v, 'orage_intensite', 1)}
+                className="w-24"
+              />
+            </Field>
           </Row>
+          <p className="text-sm text-muted-foreground">
+            Intensité, sur l'écran du combat (OBS) : 1, quelques éclairs lointains entre les cartes
+            ; 3, des éclairs sur toute la largeur de l'écran et des flashs dans le ciel ; 5, la
+            tempête, le ciel s'assombrit sur les bords. N'agit que sur l'ambiance, pas sur les
+            dégâts.
+          </p>
           <p className="text-sm text-muted-foreground">
             {setting(v, 'orage_actif', 0) === '1'
               ? '⛈️ Orage actif : les éclairs tombent pendant les combats.'

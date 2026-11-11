@@ -92,9 +92,14 @@ export type Place = z.infer<typeof Place>;
 
 // The map and its places: a player gets the revealed places and their public layers only (the
 // database filters), the admin gets everything.
-export async function fetchWorldMap(): Promise<{ image: string | null; places: Place[] }> {
+// tempete: the storm over the map, 0 (none) to 5 (80-tempete-et-intensite-orage.sql).
+export async function fetchWorldMap(): Promise<{
+  image: string | null;
+  tempete: number;
+  places: Place[];
+}> {
   const [map, places] = await Promise.all([
-    call(supabase.from('lore_carte').select('image_path').eq('id', 1).maybeSingle()),
+    call(supabase.from('lore_carte').select('image_path,tempete').eq('id', 1).maybeSingle()),
     call(
       supabase
         .from('lore_lieux')
@@ -104,9 +109,13 @@ export async function fetchWorldMap(): Promise<{ image: string | null; places: P
         .order('id'),
     ),
   ]);
+  const row = z
+    .object({ image_path: z.string().nullable(), tempete: Num.default(0) })
+    .nullable()
+    .parse(map);
   return {
-    image:
-      z.object({ image_path: z.string().nullable() }).nullable().parse(map)?.image_path ?? null,
+    image: row?.image_path ?? null,
+    tempete: row?.tempete ?? 0,
     places: z
       .array(Place)
       .parse(places)
@@ -115,6 +124,12 @@ export async function fetchWorldMap(): Promise<{ image: string | null; places: P
         lore_calques: [...p.lore_calques].sort((a, b) => a.ordre - b.ordre || a.id - b.id),
       })),
   };
+}
+
+// The storm over the world map, 0 (none) to 5. Admin only.
+export async function setMapStorm(level: number): Promise<void> {
+  const tempete = Math.max(0, Math.min(5, Math.round(level)));
+  await call(supabase.from('lore_carte').upsert({ id: 1, tempete }));
 }
 
 export async function saveMapImage(file: File): Promise<void> {

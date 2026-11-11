@@ -846,6 +846,102 @@
     0 0 20px rgb(90 130 255);
   animation: lore-electric 1.7s steps(1, end) infinite;
 }
+/* The storm over the world map (world-map.tsx, MapStorm; lore_carte.tempete): a darkened sky
+   (--storm-dark), slanted rain from level 3 (--storm-rain), flashes lighting the sky
+   (--storm-flash, played once per element) and lightning strikes that flicker then vanish. */
+@utility lore-storm-tint {
+  background: radial-gradient(
+    ellipse at 50% 35%,
+    rgb(12 16 40 / calc(var(--storm-dark) * 0.55)),
+    rgb(4 6 20 / var(--storm-dark))
+  );
+}
+@utility lore-storm-rain {
+  inset: -20%;
+  opacity: var(--storm-rain);
+  transform: rotate(12deg);
+  background-image:
+    linear-gradient(to bottom, transparent 0 62%, rgb(200 215 255 / 0.55) 62% 100%),
+    linear-gradient(to bottom, transparent 0 70%, rgb(200 215 255 / 0.4) 70% 100%);
+  background-size:
+    23px 47px,
+    37px 61px;
+  background-position:
+    0 0,
+    11px 19px;
+  animation: lore-storm-rain 0.45s linear infinite;
+}
+@keyframes lore-storm-rain {
+  to {
+    background-position:
+      0 47px,
+      11px 80px;
+  }
+}
+@utility lore-storm-flash {
+  opacity: 0;
+  background: radial-gradient(
+    ellipse at 50% 0%,
+    rgb(232 238 255),
+    rgb(170 190 255 / 0.5) 60%,
+    rgb(120 140 220 / 0.15)
+  );
+  animation: lore-storm-flash 0.55s ease-out forwards;
+}
+@keyframes lore-storm-flash {
+  0% {
+    opacity: 0;
+  }
+  10% {
+    opacity: var(--storm-flash);
+  }
+  25% {
+    opacity: calc(var(--storm-flash) * 0.3);
+  }
+  40% {
+    opacity: calc(var(--storm-flash) * 0.9);
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@utility lore-storm-halo {
+  fill: none;
+  stroke: rgb(130 165 255 / 0.75);
+  stroke-width: 8px;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+  filter: blur(2.5px);
+}
+@utility lore-storm-core {
+  fill: none;
+  stroke: rgb(246 249 255);
+  stroke-width: 2.4px;
+  stroke-linejoin: miter;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+@utility lore-storm-strike {
+  animation: lore-storm-strike 0.34s steps(1, end) forwards;
+}
+@keyframes lore-storm-strike {
+  0% {
+    opacity: 1;
+  }
+  22% {
+    opacity: 0.15;
+  }
+  36% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 0.55;
+  }
+  100% {
+    opacity: 0;
+  }
+}
 @utility lore-layer-lit {
   filter: drop-shadow(0 0 6px rgb(255 226 140 / 0.95)) drop-shadow(0 0 14px rgb(255 200 90 / 0.6))
     brightness(1.12);

@@ -39,6 +39,7 @@ import {
   saveMapImage,
   savePlace,
   setCountEnd,
+  setMapStorm,
   setPlaceRevealed,
 } from '@/data/lore';
 import { ICONS } from '@/lib/icons';
@@ -653,6 +654,25 @@ function MapAdmin() {
               });
           }}
         />
+      </Field>
+      <Field label="Tempête sur la carte (ce que voient les joueurs dans Lore > Carte)">
+        <NativeSelect
+          value={String(map.data.tempete)}
+          onChange={(e) => {
+            const level = Number(e.target.value);
+            act.run(async () => {
+              await setMapStorm(level);
+              return level ? `Tempête sur la carte : intensité ${level}.` : 'Tempête éteinte.';
+            });
+          }}
+        >
+          <option value="0">Éteinte</option>
+          <option value="1">1 : quelques éclairs lointains</option>
+          <option value="2">2 : orage qui gronde</option>
+          <option value="3">3 : éclairs partout, flashs dans le ciel</option>
+          <option value="4">4 : tempête, ciel sombre et pluie</option>
+          <option value="5">5 : déluge d'éclairs</option>
+        </NativeSelect>
       </Field>
       {picture && (
         <div

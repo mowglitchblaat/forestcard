@@ -557,6 +557,7 @@ export function WorldMap() {
             .map(([place, shape]) => (
               <ElectricArcs key={`arcs-${place}`} shape={shape} />
             ))}
+          <MapStorm level={map.data?.tempete ?? 0} />
           <MapLightnings places={places} />
           {pins.map((p) => (
             <button
@@ -731,6 +732,109 @@ function chargedPlaces(
 // The place of a collection; null (Basique, the cards of no collection): the place without one.
 function homeOf(places: Place[], collection: number | null): Place | undefined {
   return places.find((p) => p.collection_id === collection);
+}
+
+// The storm over the map (Admin > Lore, lore_carte.tempete, 1 to 5): the sky darkens, lightning
+// strikes anywhere on the map, flickering, sometimes branching, with flashes lighting the sky; from
+// 3, rain. The higher, the darker and the more often (several at once at 5). Always played, even
+// for a system set to reduce motion: the storm is the event.
+const STORM = {
+  dark: [0, 0.08, 0.16, 0.26, 0.38, 0.5],
+  rain: [0, 0, 0, 0.25, 0.4, 0.55],
+  pause: [
+    [0, 0],
+    [3500, 7000],
+    [2000, 4500],
+    [1100, 2600],
+    [600, 1500],
+    [250, 800],
+  ],
+} as const;
+function MapStorm({ level }: { level: number }) {
+  const L = Math.max(0, Math.min(5, Math.round(level)));
+  const [bolts, setBolts] = useState<{ id: number; lines: string[] }[]>([]);
+  const [flash, setFlash] = useState(0);
+  const next = useRef(0);
+  useEffect(() => {
+    if (!L) return;
+    const rand = (a: number, b: number) => a + Math.random() * (b - a);
+    // a jagged line from (x0, y0) to (x1, y1): midpoint displacement, sideways
+    const jag = (x0: number, y0: number, x1: number, y1: number, depth: number): number[][] => {
+      if (!depth) return [[x0, y0]];
+      const mx = (x0 + x1) / 2 + rand(-1, 1) * Math.abs(y1 - y0) * 0.18;
+      const my = (y0 + y1) / 2;
+      return [...jag(x0, y0, mx, my, depth - 1), ...jag(mx, my, x1, y1, depth - 1)];
+    };
+    const line = (pts: number[][]) =>
+      pts.map(([x = 0, y = 0]) => `${x.toFixed(2)},${y.toFixed(2)}`).join(' ');
+    const strike = () => {
+      const x = rand(3, 97);
+      const end = rand(L <= 2 ? 25 : 35, L <= 2 ? 55 : 92);
+      const main = [...jag(x + rand(-6, 6), -2, x, end, 5), [x, end]];
+      const lines = [line(main)];
+      const fork = main[Math.floor(main.length * rand(0.3, 0.6))];
+      if (fork && Math.random() < 0.6) {
+        const [fx = 0, fy = 0] = fork;
+        const ex = fx + rand(-14, 14);
+        const ey = fy + rand(8, 22);
+        lines.push(line([...jag(fx, fy, ex, ey, 4), [ex, ey]]));
+      }
+      const id = ++next.current;
+      setBolts((b) => [...b, { id, lines }]);
+      setTimeout(() => setBolts((b) => b.filter((x) => x.id !== id)), 340);
+    };
+    let timer: ReturnType<typeof setTimeout>;
+    const loop = () => {
+      const n =
+        1 + (L >= 3 && Math.random() < 0.5 ? 1 : 0) + (L >= 5 && Math.random() < 0.6 ? 1 : 0);
+      for (let i = 0; i < n; i++) setTimeout(strike, i * rand(60, 240));
+      if (L >= 2 && Math.random() < 0.2 * L) setFlash((f) => f + 1);
+      const [lo, hi] = STORM.pause[L] ?? [1000, 2000];
+      timer = setTimeout(loop, rand(lo, hi));
+    };
+    timer = setTimeout(loop, 400);
+    return () => clearTimeout(timer);
+  }, [L]);
+  if (!L) return null;
+  return (
+    <>
+      <div
+        style={{ '--storm-dark': String(STORM.dark[L] ?? 0) }}
+        className="lore-storm-tint pointer-events-none absolute inset-0"
+      />
+      {L >= 3 && (
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div
+            style={{ '--storm-rain': String(STORM.rain[L] ?? 0) }}
+            className="lore-storm-rain absolute"
+          />
+        </div>
+      )}
+      {flash > 0 && (
+        <div
+          key={flash}
+          style={{ '--storm-flash': String(0.22 + 0.08 * L) }}
+          className="lore-storm-flash pointer-events-none absolute inset-0"
+        />
+      )}
+      <svg
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+        className="pointer-events-none absolute inset-0 size-full overflow-visible"
+      >
+        {bolts.map((b) => (
+          <g key={b.id} className="lore-storm-strike">
+            {b.lines.map((points) => (
+              <Fragment key={points}>
+                <polyline points={points} className="lore-storm-halo" />
+                <polyline points={points} className="lore-storm-core" />
+              </Fragment>
+            ))}
+          </g>
+        ))}
+      </svg>
+    </>
+  );
 }
 
 // The electricity around a place holding a lightning, redrawn about every tenth of a second:

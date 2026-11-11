@@ -1659,9 +1659,32 @@ function nDecharge(c){nfxStart();const b=nbox(c);if(!b)return;for(let i=0;i<5;i+
 function nBrisure(c,ok){nfxStart();const b=nbox(c);if(!b)return;if(!ok){flot(c,'Rien à briser','#c4b5fd');return}nshake(c,1.4);ncracks(b.cx,b.cy,5,b.w*.55);nshards(b.cx,b.cy,22,'#a855f7',.25,7);nglow(b.cx,b.cy,14,'#a855f7',5,14,36);nflash(c,'#a855f7');flot(c,'BRISURE DE VOLONTÉ','#c084fc','big')}
 // Orage (événement de combat) : de temps en temps, un éclair lointain tombe entre les deux cartes (léger : un trait fin toutes les 4 à 8 s) ;
 // un éclair qui frappe une carte : gros trait blanc-bleu du haut de l'écran, flash, onde, étincelles
-function orageAmbiance(){nfxStart();let on=true,t=null;const loop=()=>{if(!on)return;const A=nbox(0),B=nbox(1);
-  if(A&&B){const lo=Math.min(A.cx,B.cx)+A.w*.6,hi=Math.max(A.cx,B.cx)-B.w*.6,x=R(lo,Math.max(lo,hi)),y=R(A.y+A.h*.2,A.y+A.h*.7);nbolt(x+R(-50,50),0,x,y,'#c7d2fe',1.4,12);if(Math.random()<.5)setTimeout(()=>nbolt(x+R(-30,30),0,x+R(-20,20),y*.8,'#a5b4fc',.9,9),110)}
-  t=setTimeout(loop,R(4000,8000))};t=setTimeout(loop,1800);fxAll.add(()=>{on=false;clearTimeout(t)})}
+// Intensité de l'orage (Admin > Réglages, « Événement Orage » : orage_intensite, 1 à 5 ; 80-tempete-et-intensite-orage.sql), lue avant chaque combat.
+// 1 : un éclair lointain toutes les 4 à 8 s entre les cartes (l'ambiance d'origine) ; plus haut : plus souvent, plusieurs à la fois,
+// sur toute la largeur de l'écran, avec des flashs dans le ciel ; 4 et 5 : le ciel s'assombrit sur les bords.
+let ORAGE_NIV=1;
+const chargerOrage=()=>Promise.race([fetch(SB_REST+'rpc/orage_intensite',{method:'POST',headers:{apikey:SB_KEY,'Content-Type':'application/json'},body:'{}'})
+  .then(r=>r.ok?r.json():null).then(v=>{v=Math.round(+v);if(v>=1&&v<=5)ORAGE_NIV=v}).catch(()=>{}),new Promise(r=>setTimeout(r,1200))]);
+function orageCouche(css){const d=document.createElement('div');d.style.cssText='position:fixed;inset:0;pointer-events:none;'+css;document.body.appendChild(d);return d}
+function orageAmbiance(niv){nfxStart();const L=Math.max(1,Math.min(5,Math.round(niv||ORAGE_NIV||1)));let on=true,t=null;
+  const pause=[[4000,8000],[2500,5000],[1400,3000],[800,1800],[400,1000]][L-1];
+  const ciel=L>=2?orageCouche('z-index:10;opacity:0;background:radial-gradient(ellipse at 50% 0%,rgba(225,232,255,.95),rgba(170,190,255,.55) 55%,rgba(120,140,220,.2))'):null;
+  const nuit=L>=4?orageCouche('z-index:9;opacity:0;transition:opacity 2.5s;background:radial-gradient(ellipse at 50% 55%,transparent 35%,rgba(4,6,22,'+(L===5?.62:.42)+') 100%)'):null;
+  if(nuit)requestAnimationFrame(()=>{nuit.style.opacity='1'});
+  const eclair=()=>{const A=nbox(0),B=nbox(1);if(!A||!B)return;let x,y;
+    if(L<=2){const lo=Math.min(A.cx,B.cx)+A.w*.6,hi=Math.max(A.cx,B.cx)-B.w*.6;x=R(lo,Math.max(lo,hi));y=R(A.y+A.h*.2,A.y+A.h*.7)}
+    else{x=R(innerWidth*.03,innerWidth*.97);y=R(innerHeight*.25,innerHeight*.8)}
+    const w=1.4+.45*(L-1);nbolt(x+R(-60,60),0,x,y,'#c7d2fe',w,12+L);
+    if(Math.random()<.5)setTimeout(()=>nbolt(x+R(-30,30),0,x+R(-20,20),y*.8,'#a5b4fc',w*.65,9+L),110);
+    if(L>=3&&Math.random()<.35)setTimeout(()=>nbolt(x,y*.45,x+R(-140,140),y*R(.7,1),'#e0e7ff',w*.6,8+L),70)};
+  const flash=()=>{if(!ciel||!ciel.animate)return;const k=.08+.06*L;ciel.animate([{opacity:0},{opacity:k},{opacity:k*.25},{opacity:k*.85},{opacity:0}],{duration:420+40*L,easing:'ease-out'})};
+  const loop=()=>{if(!on)return;const n=1+(L>=3&&Math.random()<.5?1:0)+(L>=5&&Math.random()<.6?1:0);
+    for(let i=0;i<n;i++)setTimeout(eclair,i*R(60,220));
+    if(ciel&&Math.random()<.25*(L-1))flash();
+    t=setTimeout(loop,R(pause[0],pause[1]))};
+  t=setTimeout(loop,L>=3?600:1800);
+  const stop=()=>{if(!on)return;on=false;clearTimeout(t);if(nuit){nuit.style.opacity='0';setTimeout(()=>nuit.remove(),2600)}if(ciel)ciel.remove()};
+  fxAll.add(stop);return stop}
 function nOrage(c){nfxStart();const b=nbox(c);if(!b)return;const x=b.cx+R(-b.w*.12,b.w*.12);
  nbolt(x+R(-70,70),0,x,b.cy-b.h*.05,'#e0e7ff',5.5,24);setTimeout(()=>nbolt(x+R(-50,50),0,b.cx+R(-b.w*.2,b.w*.2),b.cy+b.h*.1,'#a5b4fc',3,16),90);
  setTimeout(()=>{nflash(c,'#c7d2fe',520);nshake(c,.9);nring(b.cx,b.cy,b.w*.08,b.w*.95,'rgba(224,231,255,.95)',5,26);nglow(b.cx,b.cy,16,'#e0e7ff',4.5,12,32);nburst(b.cx,b.cy,18,'#ffffff',6,2.5,30)},60);
@@ -1755,7 +1778,7 @@ Object.assign(NK,{
 async function jouer(res){
  file.push(res);if(enCours)return;enCours=true;
  while(file.length){const R=file.shift();await verrouPrendre('combat');await chargerMiroir();   // liste des images copiées sur GitHub, relue à chaque combat : OBS ouvert longtemps ne repasse jamais par Supabase pour une image copiée
-  if(!TEST&&!DEMO)await chargerVitesse();journalRecap=R;TOURNOI=R.tournoi||null;if(TOURNOI&&TOURNOI.premiere&&TOURNOI.tableau)await tableauTournoi(TOURNOI.tableau,{actif:TOURNOI.match,ms:6500});/* tournoi : le tableau avant le 1er combat du match */$('#log').innerHTML='';let detoAvant=-1;
+  if(!TEST&&!DEMO)await Promise.all([chargerVitesse(),chargerOrage()]);journalRecap=R;TOURNOI=R.tournoi||null;if(TOURNOI&&TOURNOI.premiere&&TOURNOI.tableau)await tableauTournoi(TOURNOI.tableau,{actif:TOURNOI.match,ms:6500});/* tournoi : le tableau avant le 1er combat du match */$('#log').innerHTML='';let detoAvant=-1;
   for(let ix=0;ix<R.journal.length;ix++){const e=R.journal[ix];
    $('#ban').className=e.t;$('#ban').textContent=e.txt;$('#log').innerHTML+=e.txt+'<br>';$('#log').scrollTop=1e5;
    if(e.t==='debut'||e.t==='prolongation'||e.t==='relais'||e.t==='controle'||e.t==='controle_fin'){chargerZones(e.joueurs);chargerChiffres(e.joueurs)}
@@ -2001,7 +2024,9 @@ if(DEMO){
   ['Forge','Forge : amélioration (3 coups de marteau, le marteau et son niveau sur la carte)',async c=>{for(let n=1;n<=3;n++){nForge(c,n);forgeBadge(c,'fighter',n);await wait(1300)}forgeBadge(c,'fighter',0)},4200],
   ['Fauche','Fauche : cible très blessée (80 % de PV manquants)',c=>nFauche(c,1-c,24,80),1800],
   ['Fauche','Fauche (ultime) : cible peu blessée (20 %)',c=>nFauche(c,1-c,6,20,1),1800],
-  ['Orage','Orage : éclairs lointains, puis un éclair frappe la carte',async c=>{orageAmbiance();await wait(1200);nOrage(c)},3000],
+  ['Orage','Orage : éclairs lointains, puis un éclair frappe la carte',async c=>{const stop=orageAmbiance(1);await wait(1200);nOrage(c);await wait(1500);stop()},3000],
+  ['Orage','Orage intensité 3 : éclairs sur tout l\'écran, flashs dans le ciel',async c=>{const stop=orageAmbiance(3);await wait(4500);nOrage(c);await wait(1500);stop()},6000],
+  ['Orage','Orage intensité 5 : la tempête (ciel assombri)',async c=>{const stop=orageAmbiance(5);await wait(5000);nOrage(c);await wait(1500);stop()},7000],
   ['Laser','Tir laser : cible pleine de vie',c=>nLaser(c,1-c,30,100),1800],
   ['Laser','Tir laser : cible presque morte (15 % de PV)',c=>nLaser(c,1-c,3,15),1800],
   ['Forge','Forge de création : une nouvelle magie',async c=>{nForgeCreation(c,false)},2400],
