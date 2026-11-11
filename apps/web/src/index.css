@@ -860,22 +860,15 @@
   inset: -20%;
   opacity: var(--storm-rain);
   transform: rotate(12deg);
-  background-image:
-    linear-gradient(to bottom, transparent 0 62%, rgb(200 215 255 / 0.55) 62% 100%),
-    linear-gradient(to bottom, transparent 0 70%, rgb(200 215 255 / 0.4) 70% 100%);
-  background-size:
-    23px 47px,
-    37px 61px;
-  background-position:
-    0 0,
-    11px 19px;
-  animation: lore-storm-rain 0.45s linear infinite;
+  /* dashes falling in thin columns: the dashes run across the width, the mask keeps 1.5 px in 19 */
+  background-image: linear-gradient(to bottom, transparent 0 60%, rgb(205 218 255 / 0.7) 60% 100%);
+  background-size: 100% 47px;
+  mask-image: repeating-linear-gradient(to right, black 0 1.5px, transparent 1.5px 19px);
+  animation: lore-storm-rain 0.4s linear infinite;
 }
 @keyframes lore-storm-rain {
   to {
-    background-position:
-      0 47px,
-      11px 80px;
+    background-position: 0 47px;
   }
 }
 @utility lore-storm-flash {
