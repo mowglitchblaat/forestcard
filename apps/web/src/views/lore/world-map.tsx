@@ -22,6 +22,7 @@ import {
   fetchEvents,
   fetchWorldMap,
   type LoreEvent,
+  lightningHolders,
   loreKeys,
   type Place,
 } from '@/data/lore';
@@ -497,13 +498,20 @@ export function WorldMap() {
           {[...(built?.glows ?? [])]
             .filter(([place]) => charged.has(place))
             .map(([place, glow]) => (
-              <img
-                key={`electric-${place}`}
-                src={glow}
-                alt=""
-                draggable={false}
-                className="lore-electric pointer-events-none absolute inset-0 size-full"
-              />
+              <Fragment key={`electric-${place}`}>
+                <img
+                  src={glow}
+                  alt=""
+                  draggable={false}
+                  className="lore-electric pointer-events-none absolute inset-0 size-full"
+                />
+                <img
+                  src={glow}
+                  alt=""
+                  draggable={false}
+                  className="lore-electric-core pointer-events-none absolute inset-0 size-full"
+                />
+              </Fragment>
             ))}
           {built && <Fog built={built} />}
           <MapLightnings places={places} />
@@ -528,17 +536,27 @@ export function WorldMap() {
           ))}
           {places
             .filter((p) => charged.has(p.id))
-            .map((p) => (
-              <span
-                key={`bolt-${p.id}`}
-                title={`${p.nom} a récupéré l'éclair : ${charged.get(p.id)}`}
-                style={{ '--x': `${p.x}%`, '--y': `${p.y}%` }}
-                className="lore-electric-badge pointer-events-none absolute top-(--y) left-(--x) flex -translate-1/2 items-center gap-1 rounded-full bg-background/90 px-2 py-0.5 text-xs font-semibold whitespace-nowrap shadow-lg"
-              >
-                <ICONS.lightning className="size-3.5" />
-                {p.nom}
-              </span>
-            ))}
+            .map((p) => {
+              const c = charged.get(p.id);
+              return (
+                <Fragment key={`bolt-${p.id}`}>
+                  <ElectricArcs x={p.x} y={p.y} />
+                  <span
+                    title={
+                      c?.contested
+                        ? `${p.nom} détient l'éclair (${c.titre}) : il lui est contesté !`
+                        : `${p.nom} détient l'éclair : ${c?.titre ?? ''}`
+                    }
+                    style={{ '--x': `${p.x}%`, '--y': `${p.y}%` }}
+                    className="lore-electric-badge pointer-events-none absolute top-(--y) left-(--x) flex -translate-1/2 items-center gap-1 rounded-full bg-background/90 px-2 py-0.5 text-xs font-semibold whitespace-nowrap shadow-lg"
+                  >
+                    <ICONS.lightning className="size-3.5" />
+                    {p.nom}
+                    {c?.contested && ' · contesté'}
+                  </span>
+                </Fragment>
+              );
+            })}
           {hovered && !menu && (
             <span
               style={{ '--x': `${hovered.x}%`, '--y': `${hovered.y}%` }}
@@ -666,20 +684,58 @@ export function WorldMap() {
   );
 }
 
-// The places that won a lightning event (resolved, successful): the place of the faction sent (the
-// place of its collection) keeps an electric glow on the map, with the title of the event. A place
-// that won several keeps the latest.
-function chargedPlaces(events: LoreEvent[], places: Place[]): Map<number, string> {
-  const won = new Map<number, string>();
-  for (const e of [...events].sort((a, b) => a.id - b.id)) {
-    if (e.statut !== 'resolu' || !e.reussi || e.eclair_x === null || e.eclair_y === null) continue;
-    const sent = sentOption(e);
-    const home = sent?.collection_id
-      ? places.find((p) => p.collection_id === sent.collection_id)
-      : undefined;
-    if (home) won.set(home.id, e.titre);
+// The places holding a lightning (lightningHolders: the faction a successful lightning event sent,
+// or the collection that took it from them in a contest) keep an electric glow on the map, with the
+// title of the lightning, and whether it is contested right now. Basique has no place.
+function chargedPlaces(
+  events: LoreEvent[],
+  places: Place[],
+): Map<number, { titre: string; contested: boolean }> {
+  const held = new Map<number, { titre: string; contested: boolean }>();
+  for (const h of lightningHolders(events).values()) {
+    const home = h.collection ? places.find((p) => p.collection_id === h.collection) : undefined;
+    if (home) held.set(home.id, { titre: h.titre, contested: h.contested });
   }
-  return won;
+  return held;
+}
+
+// The arcs crackling around a place holding a lightning: a few random zigzags leaving its centre,
+// redrawn several times a second (none for a player who asked for less motion).
+function ElectricArcs({ x, y }: { x: number; y: number }) {
+  const [arcs, setArcs] = useState<string[]>([]);
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const zigzag = () => {
+      const angle = Math.random() * Math.PI * 2;
+      const length = 18 + Math.random() * 28;
+      const points: [number, number][] = [[0, 0]];
+      for (let i = 1; i <= 5; i++) {
+        const d = (length * i) / 5;
+        const off = (Math.random() - 0.5) * 12;
+        points.push([
+          Math.cos(angle) * d - Math.sin(angle) * off,
+          Math.sin(angle) * d + Math.cos(angle) * off,
+        ]);
+      }
+      return points.map(([a, b]) => `${a.toFixed(1)},${b.toFixed(1)}`).join(' ');
+    };
+    const t = setInterval(() => {
+      const n = Math.random() < 0.35 ? 0 : 1 + Math.floor(Math.random() * 3);
+      setArcs(Array.from({ length: n }, zigzag));
+    }, 140);
+    return () => clearInterval(t);
+  }, []);
+  return (
+    <svg
+      viewBox="-50 -50 100 100"
+      style={{ '--x': `${x}%`, '--y': `${y}%` }}
+      className="lore-electric-arcs pointer-events-none absolute top-(--y) left-(--x) size-40 -translate-1/2"
+    >
+      {arcs.map((points) => (
+        <polyline key={points} points={points} />
+      ))}
+    </svg>
+  );
 }
 
 // The lightning events in progress, right on the map, above the fog: the bolt keeps striking where

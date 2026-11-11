@@ -210,6 +210,7 @@ function Events() {
   // The first resolved event the player took part in and has not seen yet: played out at once.
   const unseen = events.data?.find(
     (e) =>
+      e.type !== 'contestation' &&
       e.statut === 'resolu' &&
       !e.vu &&
       !dismissed.includes(e.id) &&
@@ -283,6 +284,12 @@ export function EventCard({
   const img = useImages();
   const picture = img(e.image_path);
   const now = useNow();
+  if (e.type === 'contestation')
+    return (
+      <Contest event={e} now={now} picture={picture}>
+        {children}
+      </Contest>
+    );
   const left = countdown(e.fin, now);
   const open = e.statut === 'ouvert';
   // A lightning event: after the vote, the faction sent travels before the result.
@@ -370,6 +377,195 @@ export function EventCard({
         {children}
       </CardContent>
     </Card>
+  );
+}
+
+// A contest of a lightning's holder (76-evenement-contestation.sql): a vote, No or Yes with the
+// collection that contests (or all of them); after a yes, the score of the engaged collections
+// (a point per win of their fighter in a normal combat) until the end the admin sets.
+function Contest({
+  event: e,
+  now,
+  picture,
+  children,
+}: {
+  event: LoreEvent;
+  now: number;
+  picture: string | null;
+  children?: ReactNode;
+}) {
+  const holder = e.defenseur_nom ?? 'La collection qui détient l’éclair';
+  const voting = e.statut === 'ouvert' && new Date(e.fin).getTime() > now;
+  const challenger = e.options.find((o) => o.id === e.option_gagnante);
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex flex-wrap items-center gap-2">
+          <ICONS.lightning />
+          {e.titre}
+          {voting ? (
+            <Badge variant="info">
+              <ICONS.wait />
+              Vote · encore {countdown(e.fin, now)}
+            </Badge>
+          ) : e.statut === 'ouvert' ? (
+            <Badge variant="info">
+              <ICONS.wait />
+              Dépouillement…
+            </Badge>
+          ) : e.statut === 'decompte' ? (
+            <Badge variant="warning">
+              <ICONS.combat />
+              Affrontement en cours
+              {e.decompte_fin ? ` · fin dans ${countdown(e.decompte_fin, now)}` : ''}
+            </Badge>
+          ) : e.reussi ? (
+            <Badge variant="success">
+              <ICONS.lightning />
+              L’éclair change de mains
+            </Badge>
+          ) : (
+            <Badge variant="outline">L’éclair reste à {holder}</Badge>
+          )}
+        </CardTitle>
+        <CardDescription>
+          {voting
+            ? `Vote jusqu’au ${dateOf(e.fin)}`
+            : e.statut === 'decompte'
+              ? e.decompte_fin
+                ? `Les points se comptent jusqu’au ${dateOf(e.decompte_fin)}`
+                : 'Les points se comptent : la fin sera annoncée'
+              : `Vote terminé ${dateOf(e.fin)}`}{' '}
+          · {e.participants} votant{e.participants > 1 ? 's' : ''}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        {picture && <img src={picture} alt="" className="w-full rounded-lg" />}
+        {e.texte && <p className="whitespace-pre-line">{e.texte}</p>}
+        {e.statut === 'ouvert' ? (
+          <ContestVote event={e} voting={voting} holder={holder} />
+        ) : e.statut === 'resolu' && !e.points.length ? (
+          <p className="text-sm">
+            Les joueurs ont choisi de ne pas contester : <b>{holder}</b> garde l’éclair.
+          </p>
+        ) : (
+          <div className="flex flex-col gap-3">
+            <p className="text-sm">
+              {challenger?.role === 'toutes'
+                ? 'Toutes les collections contestent'
+                : `${challenger?.libelle ?? 'Une collection'} conteste`}{' '}
+              l’éclair à <b>{holder}</b>. Chaque victoire d’un de leurs combattants en combat normal
+              (combat du jour et défis) rapporte 1 point ; la collection qui en a le plus s’empare
+              définitivement de l’éclair.
+            </p>
+            <Scoreboard event={e} />
+            {e.statut === 'resolu' && e.gagnant_nom && (
+              <p className="flex items-center gap-2 text-lg font-bold">
+                <ICONS.lightning className={TONES.success.text} />
+                {e.reussi
+                  ? `${e.gagnant_nom} s’empare de l’éclair !`
+                  : `${e.gagnant_nom} a tenu bon et garde l’éclair !`}
+              </p>
+            )}
+          </div>
+        )}
+        {children}
+      </CardContent>
+    </Card>
+  );
+}
+
+function ContestVote({
+  event: e,
+  voting,
+  holder,
+}: {
+  event: LoreEvent;
+  voting: boolean;
+  holder: string;
+}) {
+  const client = useQueryClient();
+  const vote = useMutation({
+    mutationFn: (option: number) => joinEvent(e.id, null, option),
+    onSettled: () => client.invalidateQueries({ queryKey: loreKeys.events }),
+  });
+  const no = e.options.find((o) => o.role === 'non');
+  const yes = e.options.filter((o) => o.role !== 'non');
+  const noVotes = no?.voix ?? 0;
+  const yesVotes = yes.reduce((s, o) => s + o.voix, 0);
+  const total = noVotes + yesVotes;
+  const tile = (o: (typeof e.options)[number], big: boolean) => {
+    const mine = e.mon_option === o.id;
+    return (
+      <button
+        key={o.id}
+        type="button"
+        disabled={!voting || vote.isPending}
+        onClick={() => vote.mutate(o.id)}
+        className={`flex items-center justify-between gap-2 rounded-xl border p-2 text-left transition enabled:cursor-pointer enabled:hover:-translate-y-0.5 enabled:hover:bg-muted ${big ? 'font-semibold' : 'text-sm'} ${mine ? 'bg-primary/10 ring-2 ring-primary' : ''}`}
+      >
+        <span className="flex items-center gap-2">
+          {mine && <ICONS.done className="size-4" />}
+          {o.role === 'toutes' && <ICONS.collections className="size-4" />}
+          {o.libelle}
+        </span>
+        <span className="text-xs text-muted-foreground">{o.voix} voix</span>
+      </button>
+    );
+  };
+  return (
+    <div className="flex flex-col gap-3">
+      <span className="text-sm">
+        <b>{holder}</b> détient l’éclair. Faut-il le lui contester ? Vote <b>Non</b>, ou <b>Oui</b>{' '}
+        en choisissant la collection qui contestera (ou toutes les collections). Si les oui
+        l’emportent, la collection la plus votée affronte {holder} : chaque victoire d’un de ses
+        combattants en combat normal (combat du jour et défis, pas les ceintures ni les tournois)
+        lui rapporte 1 point. Celle qui en a le plus s’empare définitivement de l’éclair.
+      </span>
+      <div className="flex flex-col gap-1 text-sm">
+        <span className="flex justify-between font-medium">
+          <span>Oui : {yesVotes}</span>
+          <span>Non : {noVotes}</span>
+        </span>
+        <Progress value={total ? (yesVotes * 100) / total : 50} />
+      </div>
+      {no && tile(no, true)}
+      <span className="text-sm font-medium">Oui, contester avec :</span>
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        {yes.map((o) => tile(o, false))}
+      </div>
+      {vote.error && (
+        <small role="alert" className="text-destructive">
+          {vote.error.message}
+        </small>
+      )}
+    </div>
+  );
+}
+
+// The points of the engaged collections, the best first; the holder marked.
+function Scoreboard({ event: e }: { event: LoreEvent }) {
+  const best = Math.max(1, ...e.points.map((p) => p.points));
+  return (
+    <ol className="flex flex-col gap-2">
+      {e.points.map((p, i) => (
+        <li key={p.collection} className="flex flex-col gap-1 text-sm">
+          <span className="flex items-center justify-between gap-2">
+            <span className="flex items-center gap-1.5 font-medium">
+              {i === 0 && p.points > 0 && <ICONS.lightning className="size-4" />}
+              {p.nom ?? 'Collection'}
+              {p.collection === e.defenseur_collection && (
+                <Badge variant="outline">détient l’éclair</Badge>
+              )}
+            </span>
+            <b className="tabular-nums">
+              {p.points} pt{p.points > 1 ? 's' : ''}
+            </b>
+          </span>
+          <Progress value={(p.points * 100) / best} />
+        </li>
+      ))}
+    </ol>
   );
 }
 

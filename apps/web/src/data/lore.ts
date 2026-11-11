@@ -265,6 +265,9 @@ const Option = z.object({
   trajet_heures: NumOrNull.default(null),
   // 75-evenement-trajet-fixe.sql: a fixed trip in minutes (a faction that teleports)
   trajet_minutes: NumOrNull.default(null),
+  // 76-evenement-contestation.sql: in a contest, 'non' (no contest) or 'toutes' (every collection);
+  // null: a collection (collection_id; none = Basique)
+  role: z.enum(['non', 'toutes']).nullable().default(null),
 });
 export type EventOption = z.infer<typeof Option>;
 
@@ -286,12 +289,13 @@ export type Defender = z.infer<typeof Defender>;
 
 const LoreEvent = z.object({
   id: Num,
-  type: z.enum(['defense', 'vote']),
+  type: z.enum(['defense', 'vote', 'contestation']),
   titre: z.string(),
   texte: z.string(),
   image_path: z.string().nullable(),
   fin: z.string(),
-  statut: z.enum(['ouvert', 'resolu']),
+  // 'decompte': a contest whose vote said yes, counting its points (76-evenement-contestation.sql)
+  statut: z.enum(['ouvert', 'decompte', 'resolu']),
   reussi: z.boolean().nullable(),
   chance_finale: NumOrNull,
   tirage: NumOrNull,
@@ -324,6 +328,21 @@ const LoreEvent = z.object({
   ma_manche: NumOrNull.default(null),
   tentatives: z
     .array(z.object({ manche: Num, option_id: NumOrNull, reussi: z.boolean(), tirage: Num }))
+    .default([]),
+  // 76-evenement-contestation.sql: a contest of a lightning's holder (eclair_evenement_id, the
+  // lightning event; defenseur_collection, its holder). After a yes, the engaged collections score a
+  // point per win of their fighter in a normal combat, from decompte_debut to decompte_fin (set by the
+  // admin); the best takes the lightning (gagnant_collection). A collection's key: its id, 0 = Basique.
+  eclair_evenement_id: NumOrNull.default(null),
+  defenseur_collection: NumOrNull.default(null),
+  defenseur_nom: z.string().nullable().default(null),
+  collections_engagees: z.array(Num).nullable().default(null),
+  decompte_debut: z.string().nullable().default(null),
+  decompte_fin: z.string().nullable().default(null),
+  gagnant_collection: NumOrNull.default(null),
+  gagnant_nom: z.string().nullable().default(null),
+  points: z
+    .array(z.object({ collection: Num, nom: z.string().nullable(), points: Num }))
     .default([]),
   base_pct: Num,
   cle_pct: Num,
@@ -360,8 +379,15 @@ export async function markEventSeen(id: number): Promise<void> {
 }
 
 // An open event the player has not joined, or a result they have not seen: the sidebar's dot.
+// (A contest has no result to play out: its card shows the score.)
 export const eventTodo = (list: LoreEvent[]): 'todo' | 'news' | null =>
-  list.some((e) => e.statut === 'resolu' && (e.ma_carte !== null || e.mon_option !== null) && !e.vu)
+  list.some(
+    (e) =>
+      e.type !== 'contestation' &&
+      e.statut === 'resolu' &&
+      (e.ma_carte !== null || e.mon_option !== null) &&
+      !e.vu,
+  )
     ? 'news'
     : list.some((e) => e.statut === 'ouvert' && e.ma_carte === null && e.mon_option === null)
       ? 'todo'
@@ -453,6 +479,48 @@ export async function createEvent(d: EventDraft): Promise<void> {
       });
     await call(supabase.from('evenements_options').insert(rows));
   }
+}
+
+// A contest's end of counting (null: not set yet). Admin only.
+export async function setCountEnd(id: number, end: string | null): Promise<void> {
+  const date = end ? new Date(end) : null;
+  if (date && Number.isNaN(date.getTime())) throw new Error('Date invalide.');
+  await call(
+    supabase
+      .from('evenements')
+      .update({ decompte_fin: date ? date.toISOString() : null })
+      .eq('id', id),
+  );
+}
+
+// The collection holding each lightning: the last finished contest of it decides, otherwise the
+// faction its event sent (a successful lightning event). Key: the lightning event's id; value: the
+// holder's collection key (0 = Basique) and whether a contest about it is counting right now.
+export function lightningHolders(
+  list: LoreEvent[],
+): Map<number, { collection: number; contested: boolean; titre: string }> {
+  const holders = new Map<number, { collection: number; contested: boolean; titre: string }>();
+  const byId = [...list].sort((a, b) => a.id - b.id);
+  for (const e of byId) {
+    if (e.type === 'contestation' || e.eclair_x === null) continue;
+    if (e.statut !== 'resolu' || !e.reussi) continue;
+    const sent = e.options.find((o) => o.id === (e.option_envoyee ?? e.option_gagnante));
+    if (sent)
+      holders.set(e.id, { collection: sent.collection_id ?? 0, contested: false, titre: e.titre });
+  }
+  for (const e of byId) {
+    if (e.type !== 'contestation' || e.eclair_evenement_id === null) continue;
+    const h = holders.get(e.eclair_evenement_id);
+    if (!h) continue;
+    if (e.statut === 'resolu' && e.gagnant_collection !== null)
+      holders.set(e.eclair_evenement_id, {
+        ...h,
+        collection: e.gagnant_collection,
+        contested: false,
+      });
+    else if (e.statut === 'decompte') holders.set(e.eclair_evenement_id, { ...h, contested: true });
+  }
+  return holders;
 }
 
 export async function endEventNow(id: number): Promise<void> {

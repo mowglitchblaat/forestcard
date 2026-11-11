@@ -38,6 +38,7 @@ import {
   saveChapter,
   saveMapImage,
   savePlace,
+  setCountEnd,
   setPlaceRevealed,
 } from '@/data/lore';
 import { ICONS } from '@/lib/icons';
@@ -65,6 +66,39 @@ const defaultEnd = () => {
   const p = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
 };
+
+// A date as a datetime-local value, in the browser's time.
+const localInput = (iso: string) => {
+  const d = new Date(iso);
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+};
+
+// A contest counting its points (76-evenement-contestation.sql): the admin sets when the count ends
+// (the best collection then takes the lightning), or ends it now.
+function CountEnd({ id, end, run }: { id: number; end: string | null; run: Run }) {
+  const [value, setValue] = useState(() => (end ? localInput(end) : ''));
+  return (
+    <div className="flex flex-wrap items-end gap-2">
+      <Field label="Fin du décompte (heure de ton ordinateur)">
+        <Input type="datetime-local" value={value} onChange={(e) => setValue(e.target.value)} />
+      </Field>
+      <Button
+        size="sm"
+        disabled={!value}
+        onClick={() =>
+          run(async () => {
+            await setCountEnd(id, value);
+            return 'Fin du décompte enregistrée.';
+          })
+        }
+      >
+        <ICONS.save />
+        Enregistrer
+      </Button>
+    </div>
+  );
+}
 
 const emptyEvent = (): EventDraft => ({
   type: 'defense',
@@ -479,7 +513,15 @@ function EventsAdmin() {
       {events.data.map((e) => (
         <EventCard key={e.id} event={e} owned={[]}>
           <div className="flex flex-wrap gap-2">
-            {e.statut === 'ouvert' && (
+            {e.statut === 'decompte' && (
+              <CountEnd
+                key={e.decompte_fin ?? ''}
+                id={e.id}
+                end={e.decompte_fin}
+                run={action.run}
+              />
+            )}
+            {(e.statut === 'ouvert' || e.statut === 'decompte') && (
               <HoldButton
                 size="sm"
                 variant="outline"
@@ -487,12 +529,16 @@ function EventsAdmin() {
                 onConfirm={() =>
                   action.run(async () => {
                     await endEventNow(e.id);
-                    return `« ${e.titre} » est terminé : le destin a parlé.`;
+                    return e.statut === 'decompte'
+                      ? `« ${e.titre} » : décompte terminé, la collection en tête s’empare de l’éclair.`
+                      : `« ${e.titre} » est terminé : le destin a parlé.`;
                   })
                 }
               >
                 <ICONS.wait />
-                Terminer maintenant
+                {e.statut === 'decompte'
+                  ? 'Terminer le décompte maintenant'
+                  : 'Terminer maintenant'}
               </HoldButton>
             )}
             <HoldButton
