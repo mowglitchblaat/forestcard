@@ -11,7 +11,11 @@ export const CardBack = z.object({
   id: z.union([z.number(), z.string()]),
   nom: z.string(),
   image: z.string().nullable(),
-  actif: z.boolean(),
+  // null when the player never chose a back (joueurs.dos_actif is null): none of them is in use.
+  actif: z
+    .boolean()
+    .nullable()
+    .transform((v) => v === true),
   par_defaut: z.boolean(),
 });
 export type CardBack = z.infer<typeof CardBack>;
