@@ -578,32 +578,13 @@ export function WorldMap() {
             </button>
           ))}
           {places
-            .filter((p) => charged.has(p.id))
-            .map((p) => {
-              const c = charged.get(p.id);
-              return (
-                <Fragment key={`bolt-${p.id}`}>
-                  {!built?.shapes.has(p.id) && (
-                    <ElectricArcs
-                      shape={{ cx: p.x, cy: p.y, rx: 2, ry: 2, width: 100, height: 100 }}
-                    />
-                  )}
-                  <span
-                    title={
-                      c?.contested
-                        ? `${p.nom} détient l'éclair (${c.titre}) : il lui est contesté !`
-                        : `${p.nom} détient l'éclair : ${c?.titre ?? ''}`
-                    }
-                    style={{ '--x': `${p.x}%`, '--y': `${p.y}%` }}
-                    className="lore-electric-badge pointer-events-none absolute top-(--y) left-(--x) flex -translate-1/2 items-center gap-1 rounded-full bg-background/90 px-2 py-0.5 text-xs font-semibold whitespace-nowrap shadow-lg"
-                  >
-                    <ICONS.lightning className="size-3.5" />
-                    {p.nom}
-                    {c?.contested && ' · contesté'}
-                  </span>
-                </Fragment>
-              );
-            })}
+            .filter((p) => charged.has(p.id) && !built?.shapes.has(p.id))
+            .map((p) => (
+              <ElectricArcs
+                key={`arcs-pin-${p.id}`}
+                shape={{ cx: p.x, cy: p.y, rx: 2, ry: 2, width: 100, height: 100 }}
+              />
+            ))}
           {hovered && !menu && (
             <span
               style={{ '--x': `${hovered.x}%`, '--y': `${hovered.y}%` }}
