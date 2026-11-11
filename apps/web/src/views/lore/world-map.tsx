@@ -755,15 +755,14 @@ function homeOf(places: Place[], collection: number | null): Place | undefined {
 // The electricity around a place holding a lightning, redrawn about every tenth of a second:
 // arcs crawling along the edge of its drawing (an ellipse around its shape, on the map's own scale,
 // jagged) and strikes leaping out of it, with a branch now and then; once in a while a discharge,
-// more arcs and a flash. A blue halo under a white core (nothing for a player who asked for less
-// motion).
+// more arcs and a flash. A blue halo under a white core. Played even for a system set to reduce
+// motion (Windows with its animation effects off says so): the electricity is the point.
 function ElectricArcs({ shape }: { shape: Shape }) {
   const [frame, setFrame] = useState<{ arcs: string[]; flash: boolean }>({
     arcs: [],
     flash: false,
   });
   useEffect(() => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const reach = Math.max(shape.rx, shape.ry, shape.width * 0.02);
     const line = (points: [number, number][]) =>
       points.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');

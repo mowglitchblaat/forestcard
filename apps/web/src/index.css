@@ -869,14 +869,6 @@
       0 0 28px rgb(110 150 255 / 0.9);
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  .lore-electric,
-  .lore-electric-core,
-  .lore-electric-pin,
-  .lore-electric-badge {
-    animation: none;
-  }
-}
 @utility lore-layer-lit {
   filter: drop-shadow(0 0 6px rgb(255 226 140 / 0.95)) drop-shadow(0 0 14px rgb(255 200 90 / 0.6))
     brightness(1.12);
