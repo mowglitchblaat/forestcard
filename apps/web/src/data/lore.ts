@@ -446,7 +446,8 @@ export type EventDraft = {
   montrer_chances: boolean;
   boss_bonus_pct: number; // a boss fight: ATQ and PV of its card + %
   boss_essais_jour: number; // a boss fight: tries per player and per day
-  boss_or_10pv: number; // a boss fight: gold for every 10 HP taken off the boss (hidden from players)
+  boss_or_10pv: number; // a boss fight: gold for the first 10 HP taken off the boss (hidden from players)
+  boss_or_croissance: number; // ...and each next 10 HP gives this % more (exponential)
   cles: number[];
   nuisibles: number[];
   options: OptionDraft[];
@@ -489,6 +490,7 @@ export async function createEvent(d: EventDraft): Promise<void> {
                 boss_bonus_pct: Math.min(1000, Math.max(0, Math.round(d.boss_bonus_pct))),
                 boss_essais_jour: Math.min(50, Math.max(1, Math.round(d.boss_essais_jour))),
                 boss_or_10pv: Math.min(100000, Math.max(0, Math.round(d.boss_or_10pv))),
+                boss_or_croissance: Math.min(100, Math.max(0, d.boss_or_croissance)),
               }
             : {}),
         })

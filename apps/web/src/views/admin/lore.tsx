@@ -122,6 +122,7 @@ const emptyEvent = (): EventDraft => ({
   boss_bonus_pct: 70,
   boss_essais_jour: 3,
   boss_or_10pv: 5,
+  boss_or_croissance: 10,
   cles: [],
   nuisibles: [],
   options: [
@@ -301,20 +302,28 @@ function EventsAdmin() {
                     onChange={(e) => set({ boss_essais_jour: num(e.target.value, 3) })}
                   />
                 </Field>
-                <Field label="Gold tous les 10 PV retirés au boss (caché aux joueurs)">
+                <Field label="Gold des 10 premiers PV retirés au boss (caché aux joueurs)">
                   <Input
                     type="number"
                     value={d.boss_or_10pv}
                     onChange={(e) => set({ boss_or_10pv: num(e.target.value, 5) })}
                   />
                 </Field>
+                <Field label="Chaque tranche de 10 PV suivante rapporte + (%)">
+                  <Input
+                    type="number"
+                    value={d.boss_or_croissance}
+                    onChange={(e) => set({ boss_or_croissance: num(e.target.value, 10) })}
+                  />
+                </Field>
               </div>
               <p className="text-sm text-muted-foreground">
                 Chaque joueur affronte le boss depuis Lore &gt; Événements, avec un combattant de sa
                 collection, sans magie ni piège des deux côtés ; le combat se joue sur le site avec
-                l'animation du stream, sur fond orageux. Récompense cachée : le gold ci-dessus tous
-                les 10 PV retirés au boss (les joueurs voient seulement ce qu'ils ramassent). À la
-                fin, l'événement est réussi si quelqu'un l'a battu.
+                l'animation du stream, sur fond orageux. Récompense cachée, qui grossit avec les
+                dégâts : la 1re tranche de 10 PV retirés rapporte le gold ci-dessus, chaque tranche
+                suivante X % de plus (les joueurs voient seulement ce qu'ils ramassent). À la fin,
+                l'événement est réussi si quelqu'un l'a battu.
               </p>
             </>
           ) : (
