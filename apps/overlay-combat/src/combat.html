@@ -1667,10 +1667,11 @@ let ORAGE_NIV=1;
 const chargerOrage=()=>Promise.race([fetch(SB_REST+'rpc/orage_intensite',{method:'POST',headers:{apikey:SB_KEY,'Content-Type':'application/json'},body:'{}'})
   .then(r=>r.ok?r.json():null).then(v=>{v=Math.round(+v);if(v>=1&&v<=5)ORAGE_NIV=v}).catch(()=>{}),new Promise(r=>setTimeout(r,1200))]);
 function orageCouche(css){const d=document.createElement('div');d.style.cssText='position:fixed;inset:0;pointer-events:none;'+css;document.body.appendChild(d);return d}
+// Le ciel assombri (4 et plus) n'est posé que sur le site : sur OBS, le fond est transparent et le voile couvrirait l'image du stream
 function orageAmbiance(niv){nfxStart();const L=Math.max(1,Math.min(5,Math.round(niv||ORAGE_NIV||1)));let on=true,t=null;
   const pause=[[4000,8000],[2500,5000],[1400,3000],[800,1800],[400,1000]][L-1];
   const ciel=L>=2?orageCouche('z-index:10;opacity:0;background:radial-gradient(ellipse at 50% 0%,rgba(225,232,255,.95),rgba(170,190,255,.55) 55%,rgba(120,140,220,.2))'):null;
-  const nuit=L>=4?orageCouche('z-index:9;opacity:0;transition:opacity 2.5s;background:radial-gradient(ellipse at 50% 55%,transparent 35%,rgba(4,6,22,'+(L===5?.62:.42)+') 100%)'):null;
+  const nuit=L>=4&&SITE?orageCouche('z-index:9;opacity:0;transition:opacity 2.5s;background:radial-gradient(ellipse at 50% 55%,transparent 35%,rgba(4,6,22,'+(L===5?.62:.42)+') 100%)'):null;
   if(nuit)requestAnimationFrame(()=>{nuit.style.opacity='1'});
   const eclair=()=>{const A=nbox(0),B=nbox(1);if(!A||!B)return;let x,y;
     if(L<=2){const lo=Math.min(A.cx,B.cx)+A.w*.6,hi=Math.max(A.cx,B.cx)-B.w*.6;x=R(lo,Math.max(lo,hi));y=R(A.y+A.h*.2,A.y+A.h*.7)}
