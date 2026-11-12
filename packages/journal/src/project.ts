@@ -248,6 +248,7 @@ const BREATH_NAMES: Record<string, string> = {
   poison: 'empoisonné',
   saignement: 'de sang',
   fatigue: "d'épuisement",
+  foudre: 'de foudre',
 };
 
 // Status end: [legacy key, sentence].

@@ -388,6 +388,18 @@ test('souffle élémentaire : dégâts puis le statut choisi (chaque élément)'
   assert.ok(lignes(r0, e => /résiste au souffle/.test(e.txt || '')).length === 1, '0 % : pas de statut');
 });
 
+test('souffle de foudre : dégâts puis un niveau de marque de foudre ; jamais tiré par le souffle aléatoire', () => {
+  const r = combat([C('a', 10, SOLIDE), MAG('Souffle', { type: 'souffle', val: 50, statut: 'foudre', chance: 100 })], [C('b', 300, SOLIDE)], { regles: { maxTours: 2, maxProlong: 0 } });
+  const i = r.journal.findIndex(e => e.t === 'souffle');
+  assert.ok(i > 0 && r.journal[i].el === 'foudre', 'souffle de foudre');
+  assert.equal(r.journal[i].txt, 'a crache un souffle de foudre !');
+  assert.equal(r.journal[i + 1].txt, 'b subit 50 dégâts (souffle)');
+  assert.ok(r.journal[i + 2].k === 'foudre' && r.journal[i + 2].n === 1, 'marque de foudre niveau I');
+  const ult = { type: 'souffle', val: 1, statut: 'aleatoire', chance: 100, sval: 3, tours: 2, rechance: 100, remax: 30, apres_tours: 1, utilisations: 1 };
+  const ra = combat([C('a', 10, SOLIDE, { ultime: ult })], [C('b', 5000, SOLIDE)], { regles: { maxTours: 2, maxProlong: 0 }, seed: 7 });
+  assert.ok(lignes(ra, e => e.t === 'souffle').every(e => e.el !== 'foudre'), 'aléatoire : pas de foudre');
+});
+
 test('exécution : 3 marques puis exécutée sous le seuil, même avec « évite la mort », réanimation possible', () => {
   // seuil 1 % (10 PV sur 1000) : à 50 PV le coup suivant est mortel → c'est ce coup qui exécute : « évite la mort » ne se déclenche pas
   const r = combat([C('a', 95, SOLIDE, { passif: { type: 'execution', chance: 100, seuilexec: 1 } })], [C('b', 1, 1000, { passif: { type: 'evite_mort' } })], { regles: { maxTours: 30, maxProlong: 0 } });

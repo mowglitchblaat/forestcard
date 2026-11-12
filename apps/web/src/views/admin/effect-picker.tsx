@@ -27,6 +27,7 @@ const OPTION_LABELS: Record<string, string> = {
   poison: '🧪 Poison',
   saignement: '🩸 Saignement',
   fatigue: '💤 Fatigue',
+  foudre: '⚡ Foudre (une marque de foudre)',
   aleatoire: '🎲 Aléatoire (un statut au hasard à chaque souffle)',
   pct: '%',
   pts: 'points (unités)',

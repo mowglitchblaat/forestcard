@@ -1,5 +1,6 @@
 // Breath (souffle): damage (`val`, reduced like an attack, reflected), then with its chance a status
-// (`statut`; `aleatoire`: drawn for each breath). Then, with `rechance` %, another breath, until the
+// (`statut`; `aleatoire`: drawn for each breath among ELEMENTS; `foudre`, a breath only: one level of
+// lightning mark, as marque_foudre). Then, with `rechance` %, another breath, until the
 // first failure, `remax` more at most (3 by default). Dodged: neither damage nor status. Blocked
 // (blocked attack): no damage, the status still applies.
 
@@ -12,8 +13,11 @@ import { blockedShot, reduce, riposte } from './block.ts';
 import { dodges } from './dodge.ts';
 import { reflect } from './reflect.ts';
 
-// The statuses a breath or a missile can lay, as the effect that lays it.
+// The statuses a breath or a missile can lay, as the effect that lays it (and the draw of `aleatoire`).
 export const ELEMENTS = ['brulure', 'gel', 'malediction', 'poison', 'saignement', 'fatigue'];
+// A breath can also be of lightning (November 2026): chosen only, never drawn by `aleatoire` (the
+// draw of the existing random breaths stays the same).
+const BREATH_ELEMENTS = [...ELEMENTS, 'foudre'];
 // A leveled status takes the breath's level (`niveau`); a breath saved before the rework gives its
 // value (`sval`), read as the old value of that status (model/levels.ts).
 export const elementStatus = (element: string, e: EffectData): EffectData => {
@@ -27,6 +31,7 @@ export const elementStatus = (element: string, e: EffectData): EffectData => {
     poison: { type: 'poison_effet', ciblem: 'adversaire', niveau, degtour: v, tours: turns },
     saignement: { type: 'saignement', ciblem: 'adversaire', niveau, pctpv: v, tours: turns },
     fatigue: { type: 'fatigue', ciblem: 'adversaire', niveau, fatval: v, fattours: turns },
+    foudre: { type: 'marque_foudre', ciblem: 'adversaire' },
   };
   return statuses[element] as EffectData;
 };
@@ -38,7 +43,7 @@ export function breathEffect({ c, e, o, x, fromMagic, returning }: EffectContext
     const element =
       e.statut === 'aleatoire'
         ? (ELEMENTS[Math.floor(c.random() * ELEMENTS.length)] as string)
-        : ELEMENTS.includes(e.statut as string)
+        : BREATH_ELEMENTS.includes(e.statut as string)
           ? (e.statut as string)
           : 'brulure';
     emit(c, { type: 'breathed', side: id(c, o), target: id(c, x), element, index });

@@ -167,6 +167,7 @@ const elementText = (el: string, v: number, e: Fx): string | undefined =>
       poison: poisonTxt({ niveau: e.niveau, degtour: v }),
       saignement: bleedTxt({ niveau: e.niveau, pctpv: v }),
       fatigue: fatigueTxt({ niveau: e.niveau, fatval: v }),
+      foudre: 'poser un niveau de marque de foudre',
     } as Record<string, string>
   )[el];
 
@@ -392,6 +393,7 @@ const BREATH_NAMES: Record<string, string> = {
   poison: 'empoisonné (poison',
   saignement: 'de sang (saignement',
   fatigue: "d'épuisement (fatigue",
+  foudre: 'de foudre (marque de foudre',
 };
 
 const EFFECT_TEXT: Record<EffectType, (e: Fx, x: EffectContext) => string[]> = {

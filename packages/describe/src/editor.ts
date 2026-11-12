@@ -41,7 +41,7 @@ export const EDITOR_FIELDS = {
   ],
   statut: [
     'Statut infligé',
-    ['brulure', 'gel', 'malediction', 'poison', 'saignement', 'fatigue', 'aleatoire'],
+    ['brulure', 'gel', 'malediction', 'poison', 'saignement', 'fatigue', 'foudre', 'aleatoire'],
   ],
   rechance: [
     "Souffles en chaîne : X % de chances de souffler une fois de plus (retente, s'arrête au 1er échec)",
@@ -655,7 +655,7 @@ export const EDITOR_ULTIMATES: { readonly [K in EffectType]?: EditorEntry } = {
     'tours',
   ],
   souffle: [
-    "Souffle élémentaire : inflige X dégâts, puis X % de chances d'infliger le statut choisi, ou un statut au hasard à chaque souffle (valeur et durée réglables ; pour le saignement, soins réduits de X %). Option : souffles en chaîne",
+    "Souffle élémentaire : inflige X dégâts, puis X % de chances d'infliger le statut choisi, ou un statut au hasard à chaque souffle (valeur et durée réglables ; pour le saignement, soins réduits de X % ; foudre : un niveau de marque de foudre). Option : souffles en chaîne",
     'val',
     'statut',
     'chance',
@@ -1044,7 +1044,7 @@ export const EDITOR_MAGICS: { readonly [K in EffectType]?: EditorEntry } = {
     'tours',
   ],
   souffle: [
-    "Souffle élémentaire : inflige X dégâts, puis X % de chances d'infliger le statut choisi, ou un statut au hasard à chaque souffle (valeur et durée réglables ; pour le saignement, soins réduits de X %). Option : souffles en chaîne",
+    "Souffle élémentaire : inflige X dégâts, puis X % de chances d'infliger le statut choisi, ou un statut au hasard à chaque souffle (valeur et durée réglables ; pour le saignement, soins réduits de X % ; foudre : un niveau de marque de foudre). Option : souffles en chaîne",
     'val',
     'statut',
     'chance',

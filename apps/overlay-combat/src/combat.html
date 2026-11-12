@@ -1070,7 +1070,8 @@ function givreCoup(c){const K=rc(c),Sh=Array.from({length:12},(_,i)=>({a:i*.524+
 
 // SOUFFLE ÉLÉMENTAIRE : un jet de souffle de dragon part de la carte qui l'utilise et frappe l'adversaire ; la couleur dépend du statut
 const SOUFFLE={brulure:['255,244,190','255,140,30','190,35,0'],gel:['240,252,255','140,210,255','50,110,210'],malediction:['245,220,255','175,85,245','75,15,135'],
- poison:['235,255,205','125,225,60','25,115,30'],saignement:['255,210,210','225,30,45','105,0,12'],fatigue:['230,235,248','145,160,195','55,65,98']};
+ poison:['235,255,205','125,225,60','25,115,30'],saignement:['255,210,210','225,30,45','105,0,12'],fatigue:['230,235,248','145,160,195','55,65,98'],
+ foudre:['240,247,255','120,175,255','45,65,215']};
 function souffle(from,to,el){const C=SOUFFLE[el]||SOUFFLE.brulure,A=rc(from),B=rc(to),dir=Math.sign(B.cx-A.cx)||1;
  const sx=A.cx+dir*A.w*.42,sy=A.y+A.h*.36,tx=B.cx,ty=B.cy,ang=Math.atan2(ty-sy,tx-sx),dist=Math.hypot(tx-sx,ty-sy),S=A.w/280;
  const P=Array.from({length:170},()=>({tb:R(0,.8),sp:R(-.16,.16),v:R(.85,1.15),s:R(10,22)*S,w:R(0,6.28),k:Math.random()}));
@@ -1978,6 +1979,7 @@ if(DEMO){
   ['Souffle','Souffle de feu (brûlure)',c=>souffle(1-c,c,'brulure'),1900],
   ['Souffle','Souffle de glace (gel)',c=>souffle(1-c,c,'gel'),1900],
   ['Souffle','Souffle maudit (malédiction)',c=>souffle(1-c,c,'malediction'),1900],
+  ['Souffle','Souffle de foudre (marque de foudre)',c=>souffle(1-c,c,'foudre'),1900],
   ['Souffle','Souffle empoisonné (poison)',c=>souffle(1-c,c,'poison'),1900],
   ['Souffle','Souffle de sang (saignement)',c=>souffle(1-c,c,'saignement'),1900],
   ['Souffle',"Souffle d'épuisement (fatigue)",c=>souffle(1-c,c,'fatigue'),1900],
