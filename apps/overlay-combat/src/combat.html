@@ -1249,7 +1249,7 @@ async function volCarte(e){const src=$((e.de==='magie'?'#m':'#g')+e.from),dst=$(
   {transform:`translate(${dx/2}px,${dy/2-A.height*.9}px) scale(1.5) rotate(${rot}deg)`,boxShadow:'0 0 45px #c084fc',offset:.55},
   {transform:`translate(${dx}px,${dy}px) scale(${sc}) rotate(0deg)`,boxShadow:'0 0 22px #c084fc',offset:1}],{duration:1500,easing:'cubic-bezier(.45,.05,.35,1)',fill:'forwards'});
  await an.finished.catch(()=>{});
- dst.className='mini rev';dst.style.backgroundImage=img;dst.textContent=txt;cl.remove();
+ dst.className='mini rev';dst.style.visibility='';dst.style.backgroundImage=img;dst.textContent=txt;cl.remove();   // visibility : l'emplacement d'une carte détruite (brisée, cachée) reçoit la carte volée
  dst.classList.add('act');setTimeout(()=>dst.classList.remove('act'),1300);flot(e.to,'Carte volée !','#d8b4fe');await wait(400)}
 
 // RETOUR D'UNE CARTE VOLÉE (vol à durée) : elle repart du camp du voleur vers son propriétaire ; le voleur retrouve la carte qu'elle recouvrait
@@ -1258,14 +1258,14 @@ async function volRetour(e){const src=$((e.de==='magie'?'#m':'#g')+e.from),dst=$
  const cl=document.createElement('div');cl.className='mini';cl.textContent=txt;
  Object.assign(cl.style,{position:'fixed',left:A.left+'px',top:A.top+'px',width:A.width+'px',height:A.height+'px',margin:'0',zIndex:'60',pointerEvents:'none',backgroundImage:img});
  document.body.appendChild(cl);
- const R=e.reste;src.className='mini '+(R?'rev':'vide');src.style.backgroundImage=R&&R.img?`url('${urlImg(R.img)}')`:'';src.textContent=R?(R.img?'':R.nom):'';
+ const R=e.reste;src.style.visibility='';src.className='mini '+(R?'rev':'vide');src.style.backgroundImage=R&&R.img?`url('${urlImg(R.img)}')`:'';src.textContent=R?(R.img?'':R.nom):'';
  if(e.ok){const dx=B.left-A.left,dy=B.top-A.top,sc=B.width/A.width,rot=dx>0?10:-10;
   const an=cl.animate([{transform:'translate(0,0) scale(1) rotate(0deg)',boxShadow:'0 0 10px #000',offset:0},
    {transform:`translate(0px,${-A.height*.25}px) scale(1.15) rotate(${-rot/2}deg)`,boxShadow:'0 0 30px #93c5fd',offset:.18},
    {transform:`translate(${dx/2}px,${dy/2-A.height*.9}px) scale(1.5) rotate(${rot}deg)`,boxShadow:'0 0 45px #93c5fd',offset:.55},
    {transform:`translate(${dx}px,${dy}px) scale(${sc}) rotate(0deg)`,boxShadow:'0 0 22px #93c5fd',offset:1}],{duration:1500,easing:'cubic-bezier(.45,.05,.35,1)',fill:'forwards'});
   await an.finished.catch(()=>{});
-  dst.className='mini rev';dst.style.backgroundImage=img;dst.textContent=txt;cl.remove();
+  dst.className='mini rev';dst.style.visibility='';dst.style.backgroundImage=img;dst.textContent=txt;cl.remove();   // visibility : l'emplacement d'une carte détruite (brisée, cachée) reçoit la carte volée
   dst.classList.add('act');setTimeout(()=>dst.classList.remove('act'),1300);flot(e.to,e.epuise?'Carte rendue (épuisée)':'Carte rendue','#93c5fd');await wait(400)}
  else{const an=cl.animate([{opacity:1,transform:'scale(1)'},{opacity:0,transform:'scale(1.4)'}],{duration:900,fill:'forwards'});await an.finished.catch(()=>{});cl.remove();flot(e.from,'Carte volée disparue','#9ca3af');await wait(300)}}
 
