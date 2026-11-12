@@ -18,7 +18,8 @@ import { ICONS } from '@/lib/icons';
 type Scene = { page: string; message: unknown } | null;
 
 // The animation in a frame over the page: sent its data once loaded, closed when it says it is done
-// (a message ending in "-fini" from this site), or by the button.
+// (a message ending in "-fini" from this site), or by the button. The page is asked with the overlay's
+// version (v=, vite.config.ts), so a browser that kept an old combat.html loads the new one.
 export function SceneFrame({ scene, onDone }: { scene: NonNullable<Scene>; onDone: () => void }) {
   const frame = useRef<HTMLIFrameElement>(null);
   useEffect(() => {
@@ -38,7 +39,7 @@ export function SceneFrame({ scene, onDone }: { scene: NonNullable<Scene>; onDon
     <div className="fixed inset-0 z-50 bg-background">
       <iframe
         ref={frame}
-        src={scene.page}
+        src={`${scene.page}${scene.page.includes('?') ? '&' : '?'}v=${__FX_PREVIEW_VERSION__}`}
         title="Animation"
         className="size-full border-0"
         onLoad={() =>
