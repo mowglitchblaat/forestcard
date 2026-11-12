@@ -1,5 +1,34 @@
 [
   {
+    "date": "2026-11-12",
+    "intro": "L’orage gronde : tempête sur la carte du monde, foudre dans le souffle élémentaire et éclairs plus imprévisibles.",
+    "groupes": [
+      {
+        "titre": "Combat",
+        "points": [
+          "Souffle élémentaire : la foudre peut maintenant être l’élément du souffle (elle pose un niveau de marque de foudre).",
+          "Foudre niveau II : chaque rebond frappe au hasard la magie ou le piège encore en jeu, au lieu de toujours toucher la magie puis le piège.",
+          "Ceintures : un défi compte pour le jour où il est lancé, et un champion qui l’accepte un autre jour utilise son combat du jour pour cette ceinture."
+        ]
+      },
+      {
+        "titre": "Animations",
+        "points": [
+          "L’orage en fond de combat a désormais plusieurs intensités, avec plus d’éclairs et de flashs quand il est fort.",
+          "Une magie détruite se brise comme un piège, et une carte volée qui prend la place d’une carte détruite s’affiche correctement."
+        ]
+      },
+      {
+        "titre": "Site",
+        "points": [
+          "Lore : la carte du monde peut être balayée par une tempête (ciel assombri, éclairs, pluie fine).",
+          "Contestation : après une prolongation, le point revient bien au combattant qui a vraiment gagné.",
+          "Decks : survoler une carte en affiche un grand aperçu (image, stats, effets)."
+        ]
+      }
+    ]
+  },
+  {
     "date": "2026-11-11",
     "intro": "L’éclair du Lore peut maintenant être contesté : les collections s’affrontent pour le récupérer.",
     "groupes": [
