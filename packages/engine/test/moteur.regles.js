@@ -1446,7 +1446,7 @@ test('marque de foudre : niveau I amplifie le prochain coup reçu (+40 %), une f
   assert.deepEqual(coups.slice(0, 2), [70, 50], '50 +40 % = 70, puis normal');
 });
 
-test('marque de foudre : niveau II, deux rebonds au hasard sur la magie ou le piège encore en jeu, une carte chargée touchée de nouveau est détruite, puis la marque revient à zéro', () => {
+test('marque de foudre : niveau II, un ou deux rebonds au hasard sur la magie ou le piège encore en jeu, une carte chargée touchée de nouveau est détruite, puis la marque revient à zéro', () => {
   const foudre = { type: 'foudre', chance: 100 };
   const tirages = new Set();
   for (const seed of [1, 2, 3, 4, 5, 6, 7, 8]) {
@@ -1462,10 +1462,17 @@ test('marque de foudre : niveau II, deux rebonds au hasard sur la magie ou le pi
     assert.ok(r.journal.some(e => e.k === 'foudre' && e.t === 'finstatut'), 'la marque revient à zéro');
   }
   assert.ok(tirages.size > 1, 'le hasard varie les rebonds : ' + [...tirages]);
-  // seule la magie en jeu : les deux rebonds la touchent, elle est chargée puis détruite
-  const r1 = combat([C('Orage', 1, SOLIDE, { ultime: { type: 'marque_foudre', apres_tours: 1, utilisations: 3 }, passif: foudre })], [C('B', 1, SOLIDE), MAG('Bouclier', { type: 'atq_mod', cible: 'soi', val: 1 })], { regles: { maxTours: 3, maxProlong: 0 } });
-  const r1b = lignes(r1, e => e.k === 'foudre_rebond').map(e => `${e.s}:${e.r}`);
-  assert.deepEqual(r1b.slice(0, 2), ['magie:charged', 'magie:destroyed'], JSON.stringify(r1b));
+  // seule la magie en jeu : chaque rebond la touche ; une salve fait 1 ou 2 rebonds (les deux arrivent)
+  const salves = new Set();
+  for (const seed of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) {
+    const r1 = combat([C('Orage', 1, SOLIDE, { passif: foudre })], [C('B', 1, SOLIDE), MAG('Bouclier', { type: 'atq_mod', cible: 'soi', val: 1 })], { seed, regles: { maxTours: 6, maxProlong: 0 } });
+    let n = 0;
+    for (const e of r1.journal) {
+      if (e.k === 'foudre_rebond') { if (e.r !== 'empty') assert.equal(e.s, 'magie', 'seule la magie est en jeu'); n++; }
+      else if (n) { salves.add(n); n = 0; }
+    }
+  }
+  assert.ok(salves.has(1) && salves.has(2) && [...salves].every(n => n <= 2), 'salves de 1 ou 2 rebonds : ' + [...salves]);
 });
 
 test('marque de foudre : la purification la retire', () => {

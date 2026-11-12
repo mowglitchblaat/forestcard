@@ -3,10 +3,10 @@
 //     basic attack (atk_foudre), or an effect laying one level at once (marque_foudre).
 //   - Level I: the next strike the marked card takes is amplified (level table: foudre, +40 % by
 //     default), once.
-//   - Level II: lightning bounces twice; each bounce strikes at random the marked card's magic or
-//     trap, among those still in play (November 2026; before: the magic, then the trap): a card hit
-//     is charged; a charged card hit again is destroyed (so two bounces on the same card destroy
-//     it). After the two bounces the mark goes back to zero. No card in play: the bounce goes.
+//   - Level II: lightning bounces once or twice (drawn, one chance in two; November 2026, before:
+//     always twice); each bounce strikes at random the marked card's magic or trap, among those still
+//     in play: a card hit is charged; a charged card hit again is destroyed (so two bounces on the
+//     same card destroy it). Then the mark goes back to zero. No card in play: the bounce goes.
 //   - The charge stays on the card itself: a stolen magic or trap keeps it.
 // A mark, not a status, but it is purified; a molt removes it; a mist neither takes nor sends it back.
 
@@ -84,8 +84,8 @@ export function markLightning(c: Combat, o: Side, x: Side, storm = false): void 
     return;
   }
   emit(c, { type: 'lightningMarked', side: id(c, x), level: 2 });
-  bounce(c, o, x, 0);
-  bounce(c, o, x, 1);
+  const bounces = c.random() < 0.5 ? 1 : 2;
+  for (let i = 0; i < bounces; i++) bounce(c, o, x, i);
   x.status.lightning = null;
   emit(c, { type: 'lightningFaded', side: id(c, x) });
   if (!storm) accumulate(c, o);
