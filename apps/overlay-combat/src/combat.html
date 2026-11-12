@@ -1858,6 +1858,7 @@ async function jouer(res){
    else if(e.k==='vol_carte')await volCarte(e);   // la carte volée passe de l'autre côté
    else if(e.k==='vol_retour')await volRetour(e);   // fin d'un vol à durée : la carte repart chez son propriétaire
    else if(e.k==='vol_prevu'){flot(e.c,'Vol en préparation','#d8b4fe');await wait(500)}
+   else if(e.t==='vol'&&e.k==='magie_annulee'){const m=$('#m'+e.c);if(m){faceMagie(e.c);m.classList.remove('annule');await wait(500);briser(e.c,m);await wait(2600)}}   // magie DÉTRUITE (ligne « vol » du journal) : la carte se brise comme un piège détruit ; une magie annulée garde sa croix
    else if(e.k==='magie_annulee'){const m=$('#m'+e.c);if(m)m.classList.add('annule')}
    else if(e.k==='magie_retour'){const m=$('#m'+e.c);if(m){faceMagie(e.c);m.classList.remove('annule');m.classList.add('act');setTimeout(()=>m.classList.remove('act'),1000)}flot(e.c,'Magie de retour','#93c5fd');await wait(700)}   // fin de l'annulation : la croix part
    else if(e.k==='piege_annule'){revele(e.c,e);$('#g'+e.c).classList.add('annule')}
@@ -2020,6 +2021,7 @@ if(DEMO){
   ['Vent','Coup critique',c=>nCritique(c,1-c,12),1500],
   ['Vent','Courant ascendant',c=>{nCritique(c,1-c,12);setTimeout(()=>nCourant(c,1,60),500)},2000],
   ['Foudre','Marque de foudre niveau I, puis coup amplifié',async c=>{nFoudre(c,1);await wait(1100);nFoudreCoup(c,8)},2200],
+  ['Statuts','Magie détruite (la carte se brise)',async c=>{const m=$('#m'+c);if(!m)return;faceMagie(c);briser(c,m);await wait(2600);m.style.visibility='visible'},3000],
   ['Foudre','Niveau II : rebonds (magie chargée, piège détruit)',async c=>{nFoudre(c,2);await wait(600);await nRebond(c,'magie','charged');await wait(500);await nRebond(c,'piege','destroyed')},3200,null,null,true],
   ['Foudre','Surcharge (la carte crépite)',async c=>{NP[c].surcharge=true;nSurcharge(c);await wait(2600);NP[c].surcharge=false},3000],
   ['Foudre','Accumulateur : 3 charges, puis décharge',async c=>{for(let n=1;n<=3;n++){nVolt(c,n,n===3);await wait(700)}nDecharge(c)},3200],
