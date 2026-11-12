@@ -1784,7 +1784,7 @@ async function jouer(res){
    $('#ban').className=e.t;$('#ban').textContent=e.txt;$('#log').innerHTML+=e.txt+'<br>';$('#log').scrollTop=1e5;
    if(e.t==='debut'||e.t==='prolongation'||e.t==='relais'||e.t==='controle'||e.t==='controle_fin'){chargerZones(e.joueurs);chargerChiffres(e.joueurs)}
    try{allumerEffets(e)}catch(_){}
-   if(e.t==='debut'){beltsDebut(R);EQUIPE=e.equipe?[{n:1,of:e.equipe},{n:1,of:e.equipe}]:[null,null];st={};fxL.length=0;fxAll.forEach(s=>s());fxAll.clear();if(e.orage||R.tempete)orageAmbiance(R.tempete||undefined);   // R.tempete : le fond orageux d'un combat de boss (83-boss-duel.sql)JOUEURS=[];[0,1].forEach(i=>$('#p'+i).classList.remove('actif','idle'));e.joueurs.forEach((j,i)=>panneau(i,j));titreBan(e.joueurs);$('#scene').classList.add('on');maj(e);await wait(2200);   // les 3 dos de chaque joueur, puis les combattants se retournent
+   if(e.t==='debut'){beltsDebut(R);EQUIPE=e.equipe?[{n:1,of:e.equipe},{n:1,of:e.equipe}]:[null,null];st={};fxL.length=0;fxAll.forEach(s=>s());fxAll.clear();if(e.orage||R.tempete)orageAmbiance(R.tempete||undefined);/* R.tempete : le fond orageux d'un combat de boss (83-boss-duel.sql) */JOUEURS=[];[0,1].forEach(i=>$('#p'+i).classList.remove('actif','idle'));e.joueurs.forEach((j,i)=>panneau(i,j));titreBan(e.joueurs);$('#scene').classList.add('on');maj(e);await wait(2200);   // les 3 dos de chaque joueur, puis les combattants se retournent
     await Promise.all([0,1].map(i=>retourner($('#p'+i+' .card'),()=>{const d=$('#p'+i+' .dosf');if(d)d.remove()})));await wait(900);continue}
    if(e.t==='prolongation'){await prolongation(e);continue}
    if(e.t==='relais'){await relais(e);continue}
