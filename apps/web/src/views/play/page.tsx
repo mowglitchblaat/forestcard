@@ -19,7 +19,7 @@ type Scene = { page: string; message: unknown } | null;
 
 // The animation in a frame over the page: sent its data once loaded, closed when it says it is done
 // (a message ending in "-fini" from this site), or by the button.
-function SceneFrame({ scene, onDone }: { scene: NonNullable<Scene>; onDone: () => void }) {
+export function SceneFrame({ scene, onDone }: { scene: NonNullable<Scene>; onDone: () => void }) {
   const frame = useRef<HTMLIFrameElement>(null);
   useEffect(() => {
     const listen = (e: MessageEvent<unknown>) => {

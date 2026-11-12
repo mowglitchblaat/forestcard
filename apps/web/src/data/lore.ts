@@ -304,7 +304,7 @@ export type Defender = z.infer<typeof Defender>;
 
 const LoreEvent = z.object({
   id: Num,
-  type: z.enum(['defense', 'vote', 'contestation']),
+  type: z.enum(['defense', 'vote', 'contestation', 'boss']),
   titre: z.string(),
   texte: z.string(),
   image_path: z.string().nullable(),
@@ -359,6 +359,16 @@ const LoreEvent = z.object({
   points: z
     .array(z.object({ collection: Num, nom: z.string().nullable(), points: Num }))
     .default([]),
+  // 81-boss-duel.sql: a boss fight in 1 against 1 (attaquant_*: the boss's card; boss_atq / boss_pv:
+  // its stats + boss_bonus_pct %), boss_essais_jour tries per player and per day (mine today:
+  // mes_essais_jour), the tries and wins of everyone.
+  boss_bonus_pct: Num.default(70),
+  boss_essais_jour: Num.default(3),
+  boss_atq: NumOrNull.default(null),
+  boss_pv: NumOrNull.default(null),
+  boss_essais: Num.default(0),
+  boss_victoires: Num.default(0),
+  mes_essais_jour: Num.default(0),
   base_pct: Num,
   cle_pct: Num,
   autre_pct: Num,
@@ -416,7 +426,7 @@ export type OptionDraft = {
   image: File | null;
 };
 export type EventDraft = {
-  type: 'defense' | 'vote';
+  type: 'defense' | 'vote' | 'boss';
   titre: string;
   texte: string;
   image: File | null;
@@ -433,6 +443,8 @@ export type EventDraft = {
   nuisible_pct: number;
   montrer_cles: boolean;
   montrer_chances: boolean;
+  boss_bonus_pct: number; // a boss fight: ATQ and PV of its card + %
+  boss_essais_jour: number; // a boss fight: tries per player and per day
   cles: number[];
   nuisibles: number[];
   options: OptionDraft[];
@@ -445,6 +457,9 @@ export async function createEvent(d: EventDraft): Promise<void> {
     throw new Error('Choisis une fin dans le futur.');
   const options = d.type === 'vote' ? d.options.filter((o) => o.libelle.trim()) : [];
   if (d.type === 'vote' && options.length < 2) throw new Error('Un vote a besoin de deux options.');
+  if (d.type === 'boss' && d.attaquant_variante_id === null)
+    throw new Error('Choisis la carte du boss.');
+  const boss = d.type === 'boss';
   const created = z.object({ id: Num }).parse(
     await call(
       supabase
@@ -455,8 +470,8 @@ export async function createEvent(d: EventDraft): Promise<void> {
           texte: d.texte.trim(),
           image_path: await upload(d.image),
           fin: end.toISOString(),
-          recompense_variante_id: d.recompense_variante_id,
-          recompense_pct: d.recompense_pct,
+          recompense_variante_id: boss ? null : d.recompense_variante_id,
+          recompense_pct: boss ? 0 : d.recompense_pct,
           attaquant_variante_id: d.attaquant_variante_id,
           lieu_id: d.lieu_id,
           eclair_x: d.type === 'vote' ? d.eclair_x : null,
@@ -466,12 +481,19 @@ export async function createEvent(d: EventDraft): Promise<void> {
           autre_pct: d.autre_pct,
           nuisible_pct: d.nuisible_pct,
           montrer_cles: d.montrer_cles,
-          montrer_chances: d.montrer_chances,
+          montrer_chances: boss ? false : d.montrer_chances,
+          ...(boss
+            ? {
+                boss_bonus_pct: Math.min(1000, Math.max(0, Math.round(d.boss_bonus_pct))),
+                boss_essais_jour: Math.min(50, Math.max(1, Math.round(d.boss_essais_jour))),
+              }
+            : {}),
         })
         .select('id')
         .single(),
     ),
   );
+  if (boss) return;
   if (d.type === 'defense') {
     const rows = [
       ...d.cles.map((carte_id) => ({ evenement_id: created.id, carte_id, role: 'cle' })),
@@ -494,6 +516,45 @@ export async function createEvent(d: EventDraft): Promise<void> {
       });
     await call(supabase.from('evenements_options').insert(rows));
   }
+}
+
+// One try against a boss (81-boss-duel.sql): the database checks the card and the tries left, notes
+// the try and gives both decks (the player's fighter, the boss with its bonus), the seed and the
+// status levels; the combat is computed here, with the engine of every combat, to death (no
+// prolongation, no rewards), then its outcome is noted. The replay goes to combat.html?site.
+export async function fightBoss(
+  event: number,
+  variant: number,
+): Promise<{ replay: unknown; won: boolean; left: number }> {
+  const prep = z
+    .object({
+      essai: Num,
+      seed: Num,
+      niveaux: z.record(z.string(), z.unknown()).nullable(),
+      restants: Num,
+      a: z.object({ pseudo: z.string(), deck: z.array(z.record(z.string(), z.unknown())) }),
+      b: z.object({ pseudo: z.string(), deck: z.array(z.record(z.string(), z.unknown())) }),
+    })
+    .parse(await call(supabase.rpc('boss_preparer', { p_evenement: event, p_variante: variant })));
+  const { simuler } = await import('@forestcard/journal');
+  const result = simuler(
+    { pseudo: prep.a.pseudo, deck: prep.a.deck as never },
+    { pseudo: prep.b.pseudo, deck: prep.b.deck as never },
+    {
+      seed: prep.seed,
+      regles: {
+        maxTours: 60,
+        maxProlong: 0,
+        gain: 0,
+        perte: 0,
+        nul: 0,
+        ...(prep.niveaux ? { niveaux: prep.niveaux as never } : {}),
+      },
+    },
+  );
+  const won = result.gagnant === 0;
+  await call(supabase.rpc('boss_resultat', { p_essai: prep.essai, p_gagne: won }));
+  return { replay: result, won, left: prep.restants };
 }
 
 // A contest's end of counting (null: not set yet). Admin only.

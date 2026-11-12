@@ -119,6 +119,8 @@ const emptyEvent = (): EventDraft => ({
   nuisible_pct: 10,
   montrer_cles: false,
   montrer_chances: true,
+  boss_bonus_pct: 70,
+  boss_essais_jour: 3,
   cles: [],
   nuisibles: [],
   options: [
@@ -203,7 +205,9 @@ function EventsAdmin() {
             type="single"
             variant="outline"
             value={d.type}
-            onValueChange={(v) => v && set({ type: v === 'vote' ? 'vote' : 'defense' })}
+            onValueChange={(v) =>
+              v && set({ type: v === 'vote' ? 'vote' : v === 'boss' ? 'boss' : 'defense' })
+            }
           >
             <ToggleGroupItem value="defense">
               <ICONS.combat />
@@ -212,6 +216,10 @@ function EventsAdmin() {
             <ToggleGroupItem value="vote">
               <ICONS.votes />
               Vote de collection
+            </ToggleGroupItem>
+            <ToggleGroupItem value="boss">
+              <ICONS.combat />
+              Combat de boss (1 contre 1)
             </ToggleGroupItem>
           </ToggleGroup>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -237,7 +245,13 @@ function EventsAdmin() {
             />
           </Field>
           <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Carte qui attaque (boss, facultatif)">
+            <Field
+              label={
+                d.type === 'boss'
+                  ? 'Le boss (sa carte peut rester non publiée)'
+                  : 'Carte qui attaque (boss, facultatif)'
+              }
+            >
               <NativeSelect
                 value={d.attaquant_variante_id ?? ''}
                 onChange={(e) =>
@@ -269,37 +283,68 @@ function EventsAdmin() {
               </NativeSelect>
             </Field>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Carte récompense (une version précise)">
-              <NativeSelect
-                value={d.recompense_variante_id ?? ''}
-                onChange={(e) =>
-                  set({ recompense_variante_id: e.target.value ? Number(e.target.value) : null })
-                }
-              >
-                <option value="">— Aucune —</option>
-                {variants.data.map((v) => (
-                  <option key={v.id} value={v.id}>
-                    {variantLabel(v)}
-                  </option>
-                ))}
-              </NativeSelect>
-            </Field>
-            <Field label="Chance de chaque participant d'avoir la carte (%)">
-              <Input
-                type="number"
-                value={d.recompense_pct}
-                onChange={(e) => set({ recompense_pct: num(e.target.value, 40) })}
-              />
-            </Field>
-          </div>
-          <Choice>
-            <Checkbox
-              checked={d.montrer_chances}
-              onChange={(e) => set({ montrer_chances: e.target.checked })}
-            />{' '}
-            Montrer les chances de réussite aux joueurs (sinon, ils les découvrent au résultat)
-          </Choice>
+          {d.type === 'boss' ? (
+            <>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label="Boss plus fort que sa carte : ATQ et PV + (%)">
+                  <Input
+                    type="number"
+                    value={d.boss_bonus_pct}
+                    onChange={(e) => set({ boss_bonus_pct: num(e.target.value, 70) })}
+                  />
+                </Field>
+                <Field label="Essais par joueur et par jour">
+                  <Input
+                    type="number"
+                    value={d.boss_essais_jour}
+                    onChange={(e) => set({ boss_essais_jour: num(e.target.value, 3) })}
+                  />
+                </Field>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Chaque joueur affronte le boss depuis Lore &gt; Événements, avec un combattant de sa
+                collection, sans magie ni piège des deux côtés ; le combat se joue sur le site avec
+                l'animation du stream. Pas de récompense. À la fin, l'événement est réussi si
+                quelqu'un l'a battu.
+              </p>
+            </>
+          ) : (
+            <>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label="Carte récompense (une version précise)">
+                  <NativeSelect
+                    value={d.recompense_variante_id ?? ''}
+                    onChange={(e) =>
+                      set({
+                        recompense_variante_id: e.target.value ? Number(e.target.value) : null,
+                      })
+                    }
+                  >
+                    <option value="">— Aucune —</option>
+                    {variants.data.map((v) => (
+                      <option key={v.id} value={v.id}>
+                        {variantLabel(v)}
+                      </option>
+                    ))}
+                  </NativeSelect>
+                </Field>
+                <Field label="Chance de chaque participant d'avoir la carte (%)">
+                  <Input
+                    type="number"
+                    value={d.recompense_pct}
+                    onChange={(e) => set({ recompense_pct: num(e.target.value, 40) })}
+                  />
+                </Field>
+              </div>
+              <Choice>
+                <Checkbox
+                  checked={d.montrer_chances}
+                  onChange={(e) => set({ montrer_chances: e.target.checked })}
+                />{' '}
+                Montrer les chances de réussite aux joueurs (sinon, ils les découvrent au résultat)
+              </Choice>
+            </>
+          )}
           {d.type === 'defense' ? (
             <>
               <div className="grid gap-3 sm:grid-cols-4">
@@ -353,7 +398,7 @@ function EventsAdmin() {
                 la fin)
               </Choice>
             </>
-          ) : (
+          ) : d.type === 'vote' ? (
             <div className="flex flex-col gap-3">
               <div className="grid gap-3 sm:grid-cols-2">
                 <Field label="Éclair : X sur la carte du lore (%, vide = pas d'éclair)">
@@ -489,7 +534,7 @@ function EventsAdmin() {
                 </Button>
               </div>
             </div>
-          )}
+          ) : null}
           <div>
             <Button
               disabled={add.pending}

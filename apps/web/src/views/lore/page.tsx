@@ -21,6 +21,7 @@ import {
   EVENTS_REFRESH,
   fetchChapters,
   fetchEvents,
+  fightBoss,
   joinEvent,
   type LoreEvent,
   loreKeys,
@@ -35,6 +36,7 @@ import { ChapterReader, paragraphsOf } from './chapter-reader';
 import { EventScene, hasScene, type SceneOutcome } from './event-scene';
 import { lightningPhase, sentOption } from './lightning';
 import { WorldMap } from './world-map';
+import { SceneFrame } from '@/views/play/page';
 
 const route = getRouteApi('/lore');
 
@@ -284,6 +286,12 @@ export function EventCard({
   const img = useImages();
   const picture = img(e.image_path);
   const now = useNow();
+  if (e.type === 'boss')
+    return (
+      <BossFight event={e} now={now} picture={picture} owned={owned}>
+        {children}
+      </BossFight>
+    );
   if (e.type === 'contestation')
     return (
       <Contest event={e} now={now} picture={picture}>
@@ -376,6 +384,149 @@ export function EventCard({
         )}
         {children}
       </CardContent>
+    </Card>
+  );
+}
+
+// A boss fight in 1 against 1 (81-boss-duel.sql): the boss and its stats, my tries left today, and
+// everyone's tries and wins; the button opens my fighters, a pick plays the combat with the stream's
+// animation in a full-screen scene, then says how it went.
+function BossFight({
+  event: e,
+  now,
+  picture,
+  owned,
+  children,
+}: {
+  event: LoreEvent;
+  now: number;
+  picture: string | null;
+  owned: CollectionEntry[];
+  children?: ReactNode;
+}) {
+  const img = useImages();
+  const client = useQueryClient();
+  const [picking, setPicking] = useState(false);
+  const [scene, setScene] = useState<{ page: string; message: unknown } | null>(null);
+  const [outcome, setOutcome] = useState<string | null>(null);
+  const open = e.statut === 'ouvert' && new Date(e.fin).getTime() > now;
+  const left = Math.max(0, e.boss_essais_jour - e.mes_essais_jour);
+  const boss = e.attaquant_nom ?? 'le boss';
+  const fighters = owned
+    .filter((o) => o.quantite > 0 && o.card.type === 'combattant')
+    .sort((a, b) => a.card.nom.localeCompare(b.card.nom, 'fr'));
+  const fight = useMutation({
+    mutationFn: (variant: number) => fightBoss(e.id, variant),
+    onSuccess: (r) => {
+      setPicking(false);
+      setOutcome(
+        r.won
+          ? `Incroyable : tu as vaincu ${boss} !`
+          : `${boss} t'a balayé… ${r.left > 0 ? `Encore ${r.left} essai${r.left > 1 ? 's' : ''} aujourd'hui.` : 'Reviens demain.'}`,
+      );
+      setScene({ page: 'combat.html?site', message: { fc: 'combat', res: r.replay } });
+    },
+    onSettled: () => client.invalidateQueries({ queryKey: loreKeys.events }),
+  });
+  const bossImage = img(e.attaquant_image);
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex flex-wrap items-center gap-2">
+          <ICONS.combat />
+          {e.titre}
+          {open ? (
+            <Badge variant="warning">
+              <ICONS.wait />
+              Encore {countdown(e.fin, now)}
+            </Badge>
+          ) : e.reussi ? (
+            <Badge variant="success">{boss} est tombé</Badge>
+          ) : (
+            <Badge variant="outline">Personne n'a vaincu {boss}</Badge>
+          )}
+        </CardTitle>
+        <CardDescription>
+          {e.boss_essais} essai{e.boss_essais > 1 ? 's' : ''} · {e.boss_victoires} victoire
+          {e.boss_victoires > 1 ? 's' : ''}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        {picture && <img src={picture} alt="" className="w-full rounded-lg" />}
+        {e.texte && <p className="whitespace-pre-line">{e.texte}</p>}
+        <div className="flex flex-wrap items-center gap-4">
+          {bossImage && <img src={bossImage} alt={boss} className="w-36 rounded-lg shadow-lg" />}
+          <div className="flex flex-col gap-1">
+            <b className="text-lg">{boss}</b>
+            <span className="flex gap-3 text-sm font-semibold">
+              <span className="flex items-center gap-1">
+                <ICONS.attack className="size-4" /> {e.boss_atq ?? '?'}
+              </span>
+              <span className="flex items-center gap-1">
+                <ICONS.hp className="size-4" /> {e.boss_pv ?? '?'}
+              </span>
+            </span>
+            <span className="text-xs text-muted-foreground">
+              Plus fort que sa carte : ATQ et PV +{e.boss_bonus_pct} %. Un contre un, sans magie ni
+              piège.
+            </span>
+          </div>
+        </div>
+        {open && (
+          <div className="flex flex-wrap items-center gap-3">
+            <Button disabled={!left || fight.isPending} onClick={() => setPicking(true)}>
+              <ICONS.combat />
+              Affronter {boss}
+            </Button>
+            <span className="text-sm text-muted-foreground">
+              {left
+                ? `${left} essai${left > 1 ? 's' : ''} restant${left > 1 ? 's' : ''} aujourd'hui`
+                : "Plus d'essai aujourd'hui : reviens demain !"}
+            </span>
+          </div>
+        )}
+        {outcome && !scene && <p className="font-semibold">{outcome}</p>}
+        {fight.error && (
+          <small role="alert" className="text-destructive">
+            {fight.error.message}
+          </small>
+        )}
+        {children}
+      </CardContent>
+      <Dialog open={picking} onOpenChange={setPicking}>
+        <DialogContent className="sm:max-w-3xl">
+          <DialogTitle>Qui affronte {boss} ?</DialogTitle>
+          <DialogDescription>
+            Choisis un combattant de ta collection : il se bat seul, avec ses passifs et son ultime.
+          </DialogDescription>
+          <div className="grid max-h-dialog grid-cols-3 gap-2 overflow-y-auto sm:grid-cols-5">
+            {fighters.map((o) => {
+              const src = img(o.variant.image_path);
+              return (
+                <button
+                  key={o.variant.id}
+                  type="button"
+                  disabled={fight.isPending}
+                  onClick={() => fight.mutate(o.variant.id)}
+                  className="flex flex-col items-center gap-1 rounded-lg p-1 text-xs transition enabled:cursor-pointer enabled:hover:-translate-y-0.5 enabled:hover:bg-muted"
+                >
+                  {src ? (
+                    <img src={src} alt="" className="w-full rounded-md" />
+                  ) : (
+                    <span className="aspect-5/7 w-full rounded-md bg-muted" />
+                  )}
+                  <span className="line-clamp-1">{o.card.nom}</span>
+                  <span className="text-muted-foreground">
+                    {o.card.atq ?? '?'} / {o.card.pv ?? '?'}
+                  </span>
+                </button>
+              );
+            })}
+            {!fighters.length && <p className="col-span-full">Tu n'as pas encore de combattant.</p>}
+          </div>
+        </DialogContent>
+      </Dialog>
+      {scene && <SceneFrame scene={scene} onDone={() => setScene(null)} />}
     </Card>
   );
 }

@@ -295,6 +295,9 @@ importers:
       '@forestcard/engine':
         specifier: workspace:*
         version: link:../../packages/engine
+      '@forestcard/journal':
+        specifier: workspace:*
+        version: link:../../packages/journal
       '@supabase/supabase-js':
         specifier: 'catalog:'
         version: 2.118.0
