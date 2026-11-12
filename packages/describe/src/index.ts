@@ -94,7 +94,7 @@ const shearTxt = (e: Fx) => {
   return `poser ${n} lame${n > 1 ? 's' : ''} d'air sur l'adversaire, qui frappe${n > 1 ? 'nt' : ''} ensemble dans ${trs(isEmpty(e.tours) ? 2 : nz(e.tours))} : ${n} × ${d} = ${n * d} dégâts (esquivable ; ni purifiée, ni prolongée)`;
 };
 // Lightning mark (engine mechanics/lightning.ts).
-const lightningTxt = `poser un niveau de marque de foudre sur l'adversaire (niveau I : son prochain coup reçu fait +${L.foudre} % · niveau II : l'éclair rebondit sur sa magie puis son piège, les charge, et détruit une carte déjà chargée ; puis la marque revient à zéro)`;
+const lightningTxt = `poser un niveau de marque de foudre sur l'adversaire (niveau I : son prochain coup reçu fait +${L.foudre} % · niveau II : l'éclair rebondit deux fois au hasard sur sa magie ou son piège, les charge, et détruit une carte déjà chargée ; puis la marque revient à zéro)`;
 const blazeTxt = `Embrasement : la carte s'enflamme pendant 2 de ses tours : ATQ +${L.embrasementAtq} %, chaque coup pose une brûlure I (2 tours), et elle se calcine (−${L.embrasementCalcination} % de ses PV max) à chacun de ses tours`;
 const furyTxt = `Fureur incandescente : chaque perte de PV donne +${L.fureurPct} % d'ATQ à ses coups (jusqu'à +${L.fureurMax} %) ; chaque soin en retire un`;
 const leechTxt = `Sangsue toxique : à chaque tic de poison de l'adversaire, récupère ${L.sangsue[0]} / ${L.sangsue[1]} / ${L.sangsue[2]} % de ses dégâts (poison I / II / III)`;

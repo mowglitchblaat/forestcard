@@ -3,9 +3,10 @@
 //     basic attack (atk_foudre), or an effect laying one level at once (marque_foudre).
 //   - Level I: the next strike the marked card takes is amplified (level table: foudre, +40 % by
 //     default), once.
-//   - Level II: lightning bounces twice towards the marked card's magic and trap slots (first the
-//     magic, then the trap): a card hit is charged; a charged card hit again is destroyed. After the
-//     two bounces the mark goes back to zero. A slot with no live card lets its bounce go.
+//   - Level II: lightning bounces twice; each bounce strikes at random the marked card's magic or
+//     trap, among those still in play (November 2026; before: the magic, then the trap): a card hit
+//     is charged; a charged card hit again is destroyed (so two bounces on the same card destroy
+//     it). After the two bounces the mark goes back to zero. No card in play: the bounce goes.
 //   - The charge stays on the card itself: a stolen magic or trap keeps it.
 // A mark, not a status, but it is purified; a molt removes it; a mist neither takes nor sends it back.
 
@@ -36,11 +37,26 @@ const discharge = (c: Combat, card: Card) =>
     s.status.chargedCards = s.status.chargedCards.filter((k) => k !== card);
   });
 
-// One bounce towards a slot of x (laid by o).
-function bounce(c: Combat, o: Side, x: Side, slot: 'magie' | 'piege'): void {
+// A slot of x with a card still in play.
+const liveSlot = (x: Side, slot: 'magie' | 'piege'): boolean => {
   const live = slot === 'magie' ? !!(x.magicActive || x.magicCancelTurns) : !!x.trapActive;
   const card = slot === 'magie' ? x.magic : x.trap;
-  if (!live || card.vide) {
+  return live && !card.vide;
+};
+
+// One bounce of x's mark (laid by o): at random on the magic or the trap still in play (one draw,
+// only when both are); none in play, the bounce goes (reported on the magic's slot for the first
+// bounce, the trap's for the second, as before).
+function bounce(c: Combat, o: Side, x: Side, index: number): void {
+  const slots = (['magie', 'piege'] as const).filter((s) => liveSlot(x, s));
+  const slot =
+    slots.length > 1
+      ? c.random() < 0.5
+        ? 'magie'
+        : 'piege'
+      : (slots[0] ?? (index ? 'piege' : 'magie'));
+  const card = slot === 'magie' ? x.magic : x.trap;
+  if (!slots.length) {
     emit(c, { type: 'lightningBounced', side: id(c, x), slot, result: 'empty' });
     return;
   }
@@ -68,8 +84,8 @@ export function markLightning(c: Combat, o: Side, x: Side, storm = false): void 
     return;
   }
   emit(c, { type: 'lightningMarked', side: id(c, x), level: 2 });
-  bounce(c, o, x, 'magie');
-  bounce(c, o, x, 'piege');
+  bounce(c, o, x, 0);
+  bounce(c, o, x, 1);
   x.status.lightning = null;
   emit(c, { type: 'lightningFaded', side: id(c, x) });
   if (!storm) accumulate(c, o);

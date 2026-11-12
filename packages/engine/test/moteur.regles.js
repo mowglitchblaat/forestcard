@@ -1446,12 +1446,26 @@ test('marque de foudre : niveau I amplifie le prochain coup reçu (+40 %), une f
   assert.deepEqual(coups.slice(0, 2), [70, 50], '50 +40 % = 70, puis normal');
 });
 
-test('marque de foudre : niveau II, l\'éclair charge la magie puis le piège, détruit une carte déjà chargée, puis la marque revient à zéro', () => {
+test('marque de foudre : niveau II, deux rebonds au hasard sur la magie ou le piège encore en jeu, une carte chargée touchée de nouveau est détruite, puis la marque revient à zéro', () => {
   const foudre = { type: 'foudre', chance: 100 };
-  const r = combat([C('Orage', 1, SOLIDE, { passif: foudre })], [C('B', 1, SOLIDE), MAG('Bouclier', { type: 'atq_mod', cible: 'soi', val: 1 }), PIE('Fosse', { type: 'tour_n', ntour: 99 }, { type: 'degats', val: 1 })], { regles: { maxTours: 6, maxProlong: 0 } });
-  const rebonds = lignes(r, e => e.k === 'foudre_rebond').map(e => `${e.s}:${e.r}`);
-  assert.deepEqual(rebonds.slice(0, 4), ['magie:charged', 'piege:charged', 'magie:destroyed', 'piege:destroyed'], JSON.stringify(rebonds));
-  assert.ok(r.journal.some(e => e.k === 'foudre' && e.t === 'finstatut'), 'la marque revient à zéro');
+  const tirages = new Set();
+  for (const seed of [1, 2, 3, 4, 5, 6, 7, 8]) {
+    const r = combat([C('Orage', 1, SOLIDE, { passif: foudre })], [C('B', 1, SOLIDE), MAG('Bouclier', { type: 'atq_mod', cible: 'soi', val: 1 }), PIE('Fosse', { type: 'tour_n', ntour: 99 }, { type: 'degats', val: 1 })], { seed, regles: { maxTours: 6, maxProlong: 0 } });
+    const rebonds = lignes(r, e => e.k === 'foudre_rebond').map(e => `${e.s}:${e.r}`);
+    tirages.add(rebonds.slice(0, 2).join(','));
+    const charge = { magie: 0, piege: 0 };
+    for (const x of rebonds) {
+      const [s, res] = x.split(':');
+      if (res === 'charged') { assert.equal(charge[s], 0, s + ' chargée deux fois : ' + rebonds); charge[s] = 1; }
+      else if (res === 'destroyed') { assert.equal(charge[s], 1, s + ' détruite sans être chargée : ' + rebonds); charge[s] = 2; }
+    }
+    assert.ok(r.journal.some(e => e.k === 'foudre' && e.t === 'finstatut'), 'la marque revient à zéro');
+  }
+  assert.ok(tirages.size > 1, 'le hasard varie les rebonds : ' + [...tirages]);
+  // seule la magie en jeu : les deux rebonds la touchent, elle est chargée puis détruite
+  const r1 = combat([C('Orage', 1, SOLIDE, { ultime: { type: 'marque_foudre', apres_tours: 1, utilisations: 3 }, passif: foudre })], [C('B', 1, SOLIDE), MAG('Bouclier', { type: 'atq_mod', cible: 'soi', val: 1 })], { regles: { maxTours: 3, maxProlong: 0 } });
+  const r1b = lignes(r1, e => e.k === 'foudre_rebond').map(e => `${e.s}:${e.r}`);
+  assert.deepEqual(r1b.slice(0, 2), ['magie:charged', 'magie:destroyed'], JSON.stringify(r1b));
 });
 
 test('marque de foudre : la purification la retire', () => {
