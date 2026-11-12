@@ -3,18 +3,21 @@
 -- (Lore > Evenements), boss_essais_jour fois par jour (3 par defaut, jour de Paris). Le joueur choisit un
 -- combattant de sa collection ; ni magie ni piege, des deux cotes. Le boss est la carte de attaquant_variante_id
 -- (elle peut rester non publiee), son ATQ et ses PV augmentes de boss_bonus_pct % (70 par defaut), passifs et
--- ultime inchanges. Pas de recompense : c'est l'histoire.
--- boss_preparer(evenement, variante) verifie tout, note l'essai et rend les deux decks, la graine et le tableau
--- des niveaux : le site calcule le combat (le meme moteur que l'edge), le joue avec l'animation du stream, puis
--- note l'issue avec boss_resultat(essai, gagne). A la fin de l'evenement (fin), il est resolu : reussi si au
--- moins un joueur a battu le boss.
+-- ultime inchanges.
+-- Recompense cachee (jamais envoyee aux joueurs par evenements_liste) : boss_or_10pv gold tous les 10 PV
+-- retires au boss pendant un essai.
+-- Le combat est calcule par l'edge function (mode 'boss', depuis le site) : boss_preparer verifie tout, note
+-- l'essai et rend les deux decks, la graine et le tableau des niveaux ; boss_conclure note l'issue et les
+-- degats et verse le gold. Les deux ne sont appelables que par l'edge (service_role). A la fin de l'evenement
+-- (fin), il est resolu : reussi si au moins un joueur a battu le boss.
 
 alter table public.evenements drop constraint if exists evenements_type_check;
 alter table public.evenements add constraint evenements_type_check
   check (type in ('defense', 'vote', 'contestation', 'boss'));
 alter table public.evenements
   add column if not exists boss_bonus_pct integer not null default 70 check (boss_bonus_pct between 0 and 1000),
-  add column if not exists boss_essais_jour integer not null default 3 check (boss_essais_jour between 1 and 50);
+  add column if not exists boss_essais_jour integer not null default 3 check (boss_essais_jour between 1 and 50),
+  add column if not exists boss_or_10pv integer not null default 5 check (boss_or_10pv between 0 and 100000);
 
 create table if not exists public.evenements_boss_essais (
   id bigserial primary key,
@@ -23,6 +26,8 @@ create table if not exists public.evenements_boss_essais (
   carte_id bigint not null,
   seed bigint not null,
   gagne boolean,
+  degats integer,
+  gain integer,
   cree_le timestamptz not null default now(),
   fini_le timestamptz
 );
@@ -55,9 +60,10 @@ returns jsonb language sql stable security definer set search_path = public as $
   where v.id = p_variante;
 $$;
 
-create or replace function public.boss_preparer(p_evenement bigint, p_variante bigint)
+drop function if exists public.boss_preparer(bigint, bigint);
+create or replace function public.boss_preparer(p_joueur uuid, p_evenement bigint, p_variante bigint)
 returns jsonb language plpgsql security definer set search_path = public as $$
-declare me uuid := auth.uid(); e public.evenements; carte jsonb; boss jsonb; deja int; essai bigint; graine bigint; niv jsonb;
+declare me uuid := p_joueur; e public.evenements; carte jsonb; boss jsonb; deja int; essai bigint; graine bigint; niv jsonb;
 begin
   if me is null then raise exception 'Connecte-toi pour affronter le boss.'; end if;
   select * into e from public.evenements where id = p_evenement;
@@ -90,17 +96,26 @@ begin
     'b', jsonb_build_object('pseudo', coalesce(boss->>'nom', 'Boss'), 'deck', jsonb_build_array(boss)),
     'restants', e.boss_essais_jour - deja - 1);
 end $$;
-revoke all on function public.boss_preparer(bigint, bigint) from public, anon;
-grant execute on function public.boss_preparer(bigint, bigint) to authenticated;
+revoke all on function public.boss_preparer(uuid, bigint, bigint) from public, anon, authenticated;
+grant execute on function public.boss_preparer(uuid, bigint, bigint) to service_role;
 
--- L'issue d'un essai, notee par le site une fois le combat calcule (une seule fois).
-create or replace function public.boss_resultat(p_essai bigint, p_gagne boolean)
-returns void language sql security definer set search_path = public as $$
-  update public.evenements_boss_essais set gagne = coalesce(p_gagne, false), fini_le = now()
-  where id = p_essai and joueur_id = auth.uid() and gagne is null;
-$$;
-revoke all on function public.boss_resultat(bigint, boolean) from public, anon;
-grant execute on function public.boss_resultat(bigint, boolean) to authenticated;
+-- L'issue d'un essai, notee par l'edge une fois le combat calcule (une seule fois) : les degats faits au boss
+-- et le gold cache (boss_or_10pv tous les 10 PV), verse au joueur. Rend le gold gagne.
+drop function if exists public.boss_resultat(bigint, boolean);
+create or replace function public.boss_conclure(p_essai bigint, p_gagne boolean, p_degats integer)
+returns integer language plpgsql security definer set search_path = public as $$
+declare b public.evenements_boss_essais; g int;
+begin
+  select * into b from public.evenements_boss_essais where id = p_essai and gagne is null for update;
+  if b.id is null then return 0; end if;
+  g := (greatest(0, coalesce(p_degats, 0)) / 10) * (select boss_or_10pv from public.evenements where id = b.evenement_id);
+  update public.evenements_boss_essais set gagne = coalesce(p_gagne, false), degats = greatest(0, coalesce(p_degats, 0)),
+    gain = g, fini_le = now() where id = b.id;
+  if g > 0 then update public.joueurs set monnaie = coalesce(monnaie, 0) + g where id = b.joueur_id; end if;
+  return g;
+end $$;
+revoke all on function public.boss_conclure(bigint, boolean, integer) from public, anon, authenticated;
+grant execute on function public.boss_conclure(bigint, boolean, integer) to service_role;
 
 -- Fin d'un combat de boss : resolu, reussi si quelqu'un l'a battu.
 create or replace function public.boss_resoudre()

@@ -46,3 +46,7 @@ En format suisse (`50-tournoi-suisse.sql`), `tournoi_conclure` dit aussi où von
 Un combat calculé pendant qu'un abandon passe n'est pas compté : `tournoi_conclure` répond « match gagné par forfait » (409) et il suffit de relancer « Tournoi - Suivant ».
 
 Tant qu'un tournoi est en cours (`statut = 'en_cours'`), les autres combats attendent la finale : combat du jour, duel, `defi` et `accepter` reçoivent « tournoi en cours » (409). `refuser`, `ceintures`, le booster quotidien et les commandes du tournoi marchent toujours.
+
+## Combat de boss (Lore)
+
+`db/migrations/81-boss-duel.sql`. Mode `boss`, depuis le site seulement (jeton du joueur), à toute heure, en live aussi : `{ mode: 'boss', evenement, variante }`. `boss_preparer` vérifie la carte (un combattant de sa collection) et les essais du jour, note l'essai et rend les deux decks (le boss avec son bonus d'ATQ et de PV), la graine et le tableau des niveaux. Le combat se calcule ici, jusqu'à la mort (`maxTours` 60, pas de prolongation, pas de récompense de combat), puis `boss_conclure` note l'issue et les dégâts faits au boss et verse le gold caché (`boss_or_10pv` tous les 10 PV). La réponse est le combat, avec `tempete: 4` (fond orageux de l'overlay) et `boss: { gagne, degats, gain, restants }`.

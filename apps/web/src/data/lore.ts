@@ -9,6 +9,7 @@
 import { z } from 'zod';
 import { call, lighten, removeImages, uploadImage } from '@/data/admin';
 import { supabase } from '@/lib/supabase';
+import { callGame } from './game';
 
 const Num = z.union([z.number(), z.string()]).transform(Number);
 const NumOrNull = z
@@ -445,6 +446,7 @@ export type EventDraft = {
   montrer_chances: boolean;
   boss_bonus_pct: number; // a boss fight: ATQ and PV of its card + %
   boss_essais_jour: number; // a boss fight: tries per player and per day
+  boss_or_10pv: number; // a boss fight: gold for every 10 HP taken off the boss (hidden from players)
   cles: number[];
   nuisibles: number[];
   options: OptionDraft[];
@@ -486,6 +488,7 @@ export async function createEvent(d: EventDraft): Promise<void> {
             ? {
                 boss_bonus_pct: Math.min(1000, Math.max(0, Math.round(d.boss_bonus_pct))),
                 boss_essais_jour: Math.min(50, Math.max(1, Math.round(d.boss_essais_jour))),
+                boss_or_10pv: Math.min(100000, Math.max(0, Math.round(d.boss_or_10pv))),
               }
             : {}),
         })
@@ -518,43 +521,27 @@ export async function createEvent(d: EventDraft): Promise<void> {
   }
 }
 
-// One try against a boss (81-boss-duel.sql): the database checks the card and the tries left, notes
-// the try and gives both decks (the player's fighter, the boss with its bonus), the seed and the
-// status levels; the combat is computed here, with the engine of every combat, to death (no
-// prolongation, no rewards), then its outcome is noted. The replay goes to combat.html?site.
+// One try against a boss (81-boss-duel.sql), computed by the game server (mode 'boss'): it checks the
+// card and the tries left, plays the combat and pays the hidden gold. The replay goes to
+// combat.html?site (with its stormy background).
 export async function fightBoss(
   event: number,
   variant: number,
-): Promise<{ replay: unknown; won: boolean; left: number }> {
-  const prep = z
-    .object({
-      essai: Num,
-      seed: Num,
-      niveaux: z.record(z.string(), z.unknown()).nullable(),
-      restants: Num,
-      a: z.object({ pseudo: z.string(), deck: z.array(z.record(z.string(), z.unknown())) }),
-      b: z.object({ pseudo: z.string(), deck: z.array(z.record(z.string(), z.unknown())) }),
+): Promise<{ replay: unknown; won: boolean; gold: number; left: number }> {
+  const answer = await callGame({ mode: 'boss', evenement: event, variante: variant });
+  const parsed = z
+    .looseObject({
+      journal: z.array(z.unknown()),
+      boss: z.object({ gagne: z.boolean(), gain: Num, restants: Num }),
     })
-    .parse(await call(supabase.rpc('boss_preparer', { p_evenement: event, p_variante: variant })));
-  const { simuler } = await import('@forestcard/journal');
-  const result = simuler(
-    { pseudo: prep.a.pseudo, deck: prep.a.deck as never },
-    { pseudo: prep.b.pseudo, deck: prep.b.deck as never },
-    {
-      seed: prep.seed,
-      regles: {
-        maxTours: 60,
-        maxProlong: 0,
-        gain: 0,
-        perte: 0,
-        nul: 0,
-        ...(prep.niveaux ? { niveaux: prep.niveaux as never } : {}),
-      },
-    },
-  );
-  const won = result.gagnant === 0;
-  await call(supabase.rpc('boss_resultat', { p_essai: prep.essai, p_gagne: won }));
-  return { replay: result, won, left: prep.restants };
+    .safeParse(answer.json);
+  if (!answer.ok || !parsed.success) throw new Error(answer.text || 'Combat de boss impossible.');
+  return {
+    replay: answer.json,
+    won: parsed.data.boss.gagne,
+    gold: parsed.data.boss.gain,
+    left: parsed.data.boss.restants,
+  };
 }
 
 // A contest's end of counting (null: not set yet). Admin only.

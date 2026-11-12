@@ -13,7 +13,6 @@
     "@fontsource-variable/geist": "catalog:",
     "@forestcard/describe": "workspace:*",
     "@forestcard/engine": "workspace:*",
-    "@forestcard/journal": "workspace:*",
     "@supabase/supabase-js": "catalog:",
     "@tanstack/react-query": "catalog:",
     "@tanstack/react-router": "catalog:",

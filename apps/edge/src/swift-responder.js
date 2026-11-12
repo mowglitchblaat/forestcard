@@ -410,6 +410,31 @@ async function joueurDuSite(req, corps) {
     return { ...j, admin };
   } catch { return null; }
 }
+// Combat de boss en 1 contre 1 (81-boss-duel.sql) : boss_preparer vérifie la carte et les essais et rend les
+// decks ; le combat se calcule ici (jusqu'à la mort, sans prolongation ni récompense de combat), puis
+// boss_conclure note l'issue et les dégâts faits au boss, et verse le gold caché (tous les 10 PV retirés).
+// tempete : le fond orageux de l'overlay pendant le combat.
+async function bossCombat(site, b) {
+  const p = await rpc('boss_preparer', { p_joueur: site.id, p_evenement: Number(b.evenement) || 0, p_variante: Number(b.variante) || 0 });
+  if (!p.ok) return txt(String((p.data && p.data.message) || 'Combat de boss impossible.'), 409);
+  const d = p.data;
+  let res;
+  try {
+    res = simuler({ pseudo: d.a.pseudo, deck: d.a.deck }, { pseudo: d.b.pseudo, deck: d.b.deck },
+      { seed: d.seed, regles: { ...REGLES, maxTours: 60, maxProlong: 0, gain: 0, perte: 0, nul: 0, ...(d.niveaux ? { niveaux: d.niveaux } : {}) } });
+  } catch (e) {
+    await rpc('boss_conclure', { p_essai: d.essai, p_gagne: false, p_degats: 0 });
+    return txt('Le combat de boss a échoué : ' + String(e && e.message || e), 500);
+  }
+  const fin = res.journal[res.journal.length - 1] || {};
+  const depart = +((d.b.deck[0] || {}).pv) || 0, reste = Array.isArray(fin.pv) ? Math.max(0, +fin.pv[1] || 0) : depart;
+  const degats = Math.max(0, depart - reste), gagne = res.gagnant === 0;
+  const c = await rpc('boss_conclure', { p_essai: d.essai, p_gagne: gagne, p_degats: degats });
+  res.tempete = 4;
+  res.boss = { gagne, degats, gain: c.ok ? (+c.data || 0) : 0, restants: d.restants };
+  return new Response(JSON.stringify(res), { status: 200, headers: { 'content-type': 'application/json; charset=utf-8' } });
+}
+
 // Prix d'un duel lancé depuis le site (en live, le duel coûte des points de chaîne) : Admin > Réglages
 async function prixDuelSite() {
   try {
@@ -439,6 +464,8 @@ async function traiter(req) {
   const [live, ferme] = await Promise.all([jeuEnLive(), jeuFerme()]);
   // fermé : tout est coupé, en live comme sur le site ; l'admin peut encore tester depuis le site
   if (ferme && !(site && site.admin)) return txt(FERME, 409);
+  // combat de boss (Lore > Événements) : depuis le site seulement, à toute heure, en live aussi
+  if (b.mode === 'boss') return site ? bossCombat(site, b) : txt('Le combat de boss se joue sur le site.', 409);
   if (site) {
     // le combat pour le titre se joue uniquement en live, dans le chat (!accepter) : jamais depuis le site
     if (b.mode === 'accepter') return txt('Le combat pour le titre se joue en live : accepte le défi dans le chat avec !accepter.', 409);

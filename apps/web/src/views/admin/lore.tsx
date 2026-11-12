@@ -121,6 +121,7 @@ const emptyEvent = (): EventDraft => ({
   montrer_chances: true,
   boss_bonus_pct: 70,
   boss_essais_jour: 3,
+  boss_or_10pv: 5,
   cles: [],
   nuisibles: [],
   options: [
@@ -300,12 +301,20 @@ function EventsAdmin() {
                     onChange={(e) => set({ boss_essais_jour: num(e.target.value, 3) })}
                   />
                 </Field>
+                <Field label="Gold tous les 10 PV retirés au boss (caché aux joueurs)">
+                  <Input
+                    type="number"
+                    value={d.boss_or_10pv}
+                    onChange={(e) => set({ boss_or_10pv: num(e.target.value, 5) })}
+                  />
+                </Field>
               </div>
               <p className="text-sm text-muted-foreground">
                 Chaque joueur affronte le boss depuis Lore &gt; Événements, avec un combattant de sa
                 collection, sans magie ni piège des deux côtés ; le combat se joue sur le site avec
-                l'animation du stream. Pas de récompense. À la fin, l'événement est réussi si
-                quelqu'un l'a battu.
+                l'animation du stream, sur fond orageux. Récompense cachée : le gold ci-dessus tous
+                les 10 PV retirés au boss (les joueurs voient seulement ce qu'ils ramassent). À la
+                fin, l'événement est réussi si quelqu'un l'a battu.
               </p>
             </>
           ) : (

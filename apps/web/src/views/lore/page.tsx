@@ -420,9 +420,10 @@ function BossFight({
     onSuccess: (r) => {
       setPicking(false);
       setOutcome(
-        r.won
+        (r.won
           ? `Incroyable : tu as vaincu ${boss} !`
-          : `${boss} t'a balayé… ${r.left > 0 ? `Encore ${r.left} essai${r.left > 1 ? 's' : ''} aujourd'hui.` : 'Reviens demain.'}`,
+          : `${boss} t'a balayé… ${r.left > 0 ? `Encore ${r.left} essai${r.left > 1 ? 's' : ''} aujourd'hui.` : 'Reviens demain.'}`) +
+          (r.gold > 0 ? ` Tu ramasses ${r.gold} gold.` : ''),
       );
       setScene({ page: 'combat.html?site', message: { fc: 'combat', res: r.replay } });
     },
