@@ -9,6 +9,7 @@
 import { z } from 'zod';
 import { call, lighten, removeImages, uploadImage } from '@/data/admin';
 import { supabase } from '@/lib/supabase';
+import { callGame } from './game';
 
 const Num = z.union([z.number(), z.string()]).transform(Number);
 const NumOrNull = z
@@ -304,7 +305,7 @@ export type Defender = z.infer<typeof Defender>;
 
 const LoreEvent = z.object({
   id: Num,
-  type: z.enum(['defense', 'vote', 'contestation']),
+  type: z.enum(['defense', 'vote', 'contestation', 'boss']),
   titre: z.string(),
   texte: z.string(),
   image_path: z.string().nullable(),
@@ -359,6 +360,16 @@ const LoreEvent = z.object({
   points: z
     .array(z.object({ collection: Num, nom: z.string().nullable(), points: Num }))
     .default([]),
+  // 83-boss-duel.sql: a boss fight in 1 against 1 (attaquant_*: the boss's card; boss_atq / boss_pv:
+  // its stats + boss_bonus_pct %), boss_essais_jour tries per player and per day (mine today:
+  // mes_essais_jour), the tries and wins of everyone.
+  boss_bonus_pct: Num.default(70),
+  boss_essais_jour: Num.default(3),
+  boss_atq: NumOrNull.default(null),
+  boss_pv: NumOrNull.default(null),
+  boss_essais: Num.default(0),
+  boss_victoires: Num.default(0),
+  mes_essais_jour: Num.default(0),
   base_pct: Num,
   cle_pct: Num,
   autre_pct: Num,
@@ -416,7 +427,7 @@ export type OptionDraft = {
   image: File | null;
 };
 export type EventDraft = {
-  type: 'defense' | 'vote';
+  type: 'defense' | 'vote' | 'boss';
   titre: string;
   texte: string;
   image: File | null;
@@ -433,6 +444,10 @@ export type EventDraft = {
   nuisible_pct: number;
   montrer_cles: boolean;
   montrer_chances: boolean;
+  boss_bonus_pct: number; // a boss fight: ATQ and PV of its card + %
+  boss_essais_jour: number; // a boss fight: tries per player and per day
+  boss_or_10pv: number; // a boss fight: gold for the first 10 HP taken off the boss (hidden from players)
+  boss_or_croissance: number; // ...and each next 10 HP gives this % more (exponential)
   cles: number[];
   nuisibles: number[];
   options: OptionDraft[];
@@ -445,6 +460,9 @@ export async function createEvent(d: EventDraft): Promise<void> {
     throw new Error('Choisis une fin dans le futur.');
   const options = d.type === 'vote' ? d.options.filter((o) => o.libelle.trim()) : [];
   if (d.type === 'vote' && options.length < 2) throw new Error('Un vote a besoin de deux options.');
+  if (d.type === 'boss' && d.attaquant_variante_id === null)
+    throw new Error('Choisis la carte du boss.');
+  const boss = d.type === 'boss';
   const created = z.object({ id: Num }).parse(
     await call(
       supabase
@@ -455,8 +473,8 @@ export async function createEvent(d: EventDraft): Promise<void> {
           texte: d.texte.trim(),
           image_path: await upload(d.image),
           fin: end.toISOString(),
-          recompense_variante_id: d.recompense_variante_id,
-          recompense_pct: d.recompense_pct,
+          recompense_variante_id: boss ? null : d.recompense_variante_id,
+          recompense_pct: boss ? 0 : d.recompense_pct,
           attaquant_variante_id: d.attaquant_variante_id,
           lieu_id: d.lieu_id,
           eclair_x: d.type === 'vote' ? d.eclair_x : null,
@@ -466,12 +484,21 @@ export async function createEvent(d: EventDraft): Promise<void> {
           autre_pct: d.autre_pct,
           nuisible_pct: d.nuisible_pct,
           montrer_cles: d.montrer_cles,
-          montrer_chances: d.montrer_chances,
+          montrer_chances: boss ? false : d.montrer_chances,
+          ...(boss
+            ? {
+                boss_bonus_pct: Math.min(1000, Math.max(0, Math.round(d.boss_bonus_pct))),
+                boss_essais_jour: Math.min(50, Math.max(1, Math.round(d.boss_essais_jour))),
+                boss_or_10pv: Math.min(100000, Math.max(0, Math.round(d.boss_or_10pv))),
+                boss_or_croissance: Math.min(100, Math.max(0, d.boss_or_croissance)),
+              }
+            : {}),
         })
         .select('id')
         .single(),
     ),
   );
+  if (boss) return;
   if (d.type === 'defense') {
     const rows = [
       ...d.cles.map((carte_id) => ({ evenement_id: created.id, carte_id, role: 'cle' })),
@@ -494,6 +521,29 @@ export async function createEvent(d: EventDraft): Promise<void> {
       });
     await call(supabase.from('evenements_options').insert(rows));
   }
+}
+
+// One try against a boss (83-boss-duel.sql), computed by the game server (mode 'boss'): it checks the
+// card and the tries left, plays the combat and pays the hidden gold. The replay goes to
+// combat.html?site (with its stormy background).
+export async function fightBoss(
+  event: number,
+  variant: number,
+): Promise<{ replay: unknown; won: boolean; gold: number; left: number }> {
+  const answer = await callGame({ mode: 'boss', evenement: event, variante: variant });
+  const parsed = z
+    .looseObject({
+      journal: z.array(z.unknown()),
+      boss: z.object({ gagne: z.boolean(), gain: Num, restants: Num }),
+    })
+    .safeParse(answer.json);
+  if (!answer.ok || !parsed.success) throw new Error(answer.text || 'Combat de boss impossible.');
+  return {
+    replay: answer.json,
+    won: parsed.data.boss.gagne,
+    gold: parsed.data.boss.gain,
+    left: parsed.data.boss.restants,
+  };
 }
 
 // A contest's end of counting (null: not set yet). Admin only.
