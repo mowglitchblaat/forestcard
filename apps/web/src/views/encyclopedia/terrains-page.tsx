@@ -18,7 +18,7 @@ export function TerrainsPage() {
   const navigate = route.useNavigate();
   const wide = useMediaQuery('(min-width: 1024px)');
   const panel = useRef<HTMLElement>(null);
-  const selected = SHOWN.find((t) => t.key === terrain) ?? SHOWN[0];
+  const selected = SHOWN.find((t) => t.key === terrain) ?? TERRAIN_INFO[0];
 
   const pick = (key: string) => {
     void navigate({ search: { terrain: key }, replace: true, resetScroll: false });
