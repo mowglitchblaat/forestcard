@@ -27,6 +27,7 @@ const TERRAINS: Record<string, string> = {
   lune: 'Terrain : Lune de sang',
   sakura: 'Terrain : Jardin de sakura',
   grimoire: 'Terrain : Grimoire ouvert',
+  theatre: 'Terrain : Grand Théâtre',
 };
 const terrainLabel = (e: Fx) => TERRAINS[String(e.terrain)] ?? 'Terrain';
 const rootLabel = (e: Fx) => ROOTS[String(e.variante)] ?? 'Enracinement';

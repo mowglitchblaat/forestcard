@@ -167,6 +167,17 @@ export const TERRAIN_INFO = [
     regle: 'à chaque tour, le combattant qui joue peut recevoir un effet au hasard',
     bonus: "les cartes de la Bibliothèque de l'Auteur plus souvent",
   },
+  {
+    // Its collection is not revealed yet: hidden from the encyclopedia until it is (secret).
+    key: 'theatre',
+    emoji: '🎭',
+    nom: 'le Grand Théâtre',
+    titre: 'Grand Théâtre',
+    camp: 'les marionnettes',
+    regle: 'à chaque tour, un fil peut tomber des cintres sur le combattant qui joue',
+    bonus: 'les marionnettes y échappent et leurs fils prennent le contrôle plus facilement',
+    secret: true,
+  },
 ] as const;
 const TERRAIN_TXT: Record<string, string> = Object.fromEntries(
   TERRAIN_INFO.map((t) => [t.key, `${t.nom} (${t.regle} ; ${t.bonus})`]),

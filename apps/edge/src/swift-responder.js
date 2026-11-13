@@ -306,6 +306,7 @@ const TERRAINS_REGLAGES = {   // chaque terrain : ses réglages par défaut (mot
   lune: { chance: [20, 100], tours: [2, 20], bonus: [10, 1000], collection: [1, 1e9] },
   sakura: { esquive: [10, 100], bonus: [20, 100], collection: [7, 1e9] },
   grimoire: { chance: [15, 100], bonus: [30, 100], collection: [11, 1e9] },
+  theatre: { chance: [20, 100], bonus: [15, 100], collection: [14, 1e9] },
 };
 async function reglesTerrain(tirer = true) {
   const v = {};

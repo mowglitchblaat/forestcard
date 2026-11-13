@@ -16,7 +16,7 @@ type Field = readonly [label: string, input: 'n' | readonly string[]];
 export const EDITOR_FIELDS = {
   terrain: [
     "Terrain invoqué (jusqu'à la fin du combat)",
-    ['orage', 'essaim', 'foret', 'cathedrale', 'lune', 'sakura', 'grimoire'],
+    ['orage', 'essaim', 'foret', 'cathedrale', 'lune', 'sakura', 'grimoire', 'theatre'],
   ],
   ratio: ["Avalage : PV nécessaires = X × l'ATQ de la cible (3 par défaut)", 'n'],
   pctmache: ['Avalage : dégâts de chaque mâche, en % des PV de la cible (10 par défaut)', 'n'],
@@ -449,7 +449,7 @@ export const EDITOR_PASSIVES: Record<PassiveType, EditorEntry> = {
     'tours',
   ],
   terrain: [
-    '🌍 Invocation de terrain : en entrant en jeu, la carte invoque un terrain (Orage, Essaim, Forêt, Cathédrale, Lune de sang, Sakura, Grimoire) pour le reste du combat',
+    '🌍 Invocation de terrain : en entrant en jeu, la carte invoque un terrain (Orage, Essaim, Forêt, Cathédrale, Lune de sang, Sakura, Grimoire, Grand Théâtre) pour le reste du combat',
     'terrain',
   ],
   accumulateur: [
@@ -772,7 +772,7 @@ export const EDITOR_ULTIMATES: { readonly [K in EffectType]?: EditorEntry } = {
     '🔨 Forge de création : forge une nouvelle magie ou un nouveau piège, avec un effet tiré au hasard ; remplace en priorité la carte épuisée',
   ],
   terrain: [
-    '🌍 Invocation de terrain : invoque un terrain (Orage, Essaim, Forêt, Cathédrale, Lune de sang, Sakura, Grimoire) pour le reste du combat',
+    '🌍 Invocation de terrain : invoque un terrain (Orage, Essaim, Forêt, Cathédrale, Lune de sang, Sakura, Grimoire, Grand Théâtre) pour le reste du combat',
     'terrain',
   ],
   surcharge: [
@@ -1192,7 +1192,7 @@ export const EDITOR_MAGICS: { readonly [K in EffectType]?: EditorEntry } = {
     '🔨 Forge de création : forge une nouvelle magie ou un nouveau piège, avec un effet tiré au hasard ; remplace en priorité la carte épuisée',
   ],
   terrain: [
-    '🌍 Invocation de terrain : invoque un terrain (Orage, Essaim, Forêt, Cathédrale, Lune de sang, Sakura, Grimoire) pour le reste du combat',
+    '🌍 Invocation de terrain : invoque un terrain (Orage, Essaim, Forêt, Cathédrale, Lune de sang, Sakura, Grimoire, Grand Théâtre) pour le reste du combat',
     'terrain',
   ],
   surcharge: [

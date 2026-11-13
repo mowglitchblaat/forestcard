@@ -37,7 +37,15 @@ export type SideView = {
 export type CombatView = { readonly round: number; readonly sides: readonly SideView[] };
 
 // The terrains (mechanics/terrain.ts).
-export type Terrain = 'orage' | 'essaim' | 'foret' | 'cathedrale' | 'lune' | 'sakura' | 'grimoire';
+export type Terrain =
+  | 'orage'
+  | 'essaim'
+  | 'foret'
+  | 'cathedrale'
+  | 'lune'
+  | 'sakura'
+  | 'grimoire'
+  | 'theatre';
 
 export type StatusKind =
   | 'curse'

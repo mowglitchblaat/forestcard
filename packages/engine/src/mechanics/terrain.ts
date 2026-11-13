@@ -22,6 +22,10 @@
 //     `bonus` points instead.
 //   - grimoire (Open Grimoire, the Author's Library): at the start of its turn, `chance` % that the
 //     card playing casts an effect drawn at random (mechanics/random.ts). Favoured: `bonus` % instead.
+//   - theatre (Grand Theatre, a collection not revealed yet): at the start of its turn, `chance` % that a thread falls
+//     from the flies on the card playing (mechanics/threads.ts; it adds up, without a control draw
+//     of its own). Favoured: never receives one, and its own threads take control `bonus` points
+//     more easily.
 
 import type { Strike, StrikeStep } from '../combat/attack.ts';
 import { amount, emit, id, opponent, raw, roll, round, type Combat } from '../combat/combat.ts';
@@ -33,6 +37,7 @@ import type { Terrain as EventTerrain } from '../events.ts';
 import { bleed } from './bleed.ts';
 import { curse } from './curse.ts';
 import { program } from './programming.ts';
+import { layThreads } from './threads.ts';
 import { randomEffect } from './random.ts';
 import { stormBolt } from './storm.ts';
 
@@ -44,6 +49,7 @@ export const TERRAINS = [
   'lune',
   'sakura',
   'grimoire',
+  'theatre',
 ] as const satisfies readonly EventTerrain[];
 export type Terrain = EventTerrain;
 export const isTerrain = (t: unknown): t is Terrain => TERRAINS.includes(t as Terrain);
@@ -57,6 +63,7 @@ export const TERRAIN_DEFAULTS: Record<Terrain, Record<string, number>> = {
   lune: { chance: 20, tours: 2, bonus: 10, collection: 1 },
   sakura: { esquive: 10, bonus: 20, collection: 7 },
   grimoire: { chance: 15, bonus: 30, collection: 11 },
+  theatre: { chance: 20, bonus: 15, collection: 14 },
 };
 
 const num = (v: unknown, fallback: number): number => {
@@ -133,7 +140,7 @@ export function terrainAtStart(c: Combat, s: Side): Flow {
     return undefined;
   }
   if (t === 'sakura') return undefined; // a dodge bonus (terrainDodge)
-  if ((t === 'essaim' || t === 'lune') && fav) return undefined; // never stung, never cursed
+  if ((t === 'essaim' || t === 'lune' || t === 'theatre') && fav) return undefined; // never stung, cursed, threaded
   const chance =
     t === 'cathedrale'
       ? setting(c, t, 'chance') + (fav ? setting(c, t, 'bonus') : 0)
@@ -149,6 +156,7 @@ export function terrainAtStart(c: Combat, s: Side): Flow {
     );
   else if (t === 'lune') curse(c, s, Math.max(1, Math.round(setting(c, t, 'tours'))));
   else if (t === 'cathedrale') program(c, s, { chance: 100, nbpassif: 1 });
+  else if (t === 'theatre') layThreads(c, s, 1, 0, false);
   else randomEffect(c, s, opponent(c, s));
   return s.hp <= 0 ? 'stop' : undefined;
 }
@@ -165,6 +173,11 @@ export const terrainStrike: StrikeStep = (c: Combat, { a }, st: Strike) => {
 // The sakura garden: the dodge chance it adds (mechanics/dodge.ts).
 export const terrainDodge = (c: Combat, d: Side): number =>
   c.terrain === 'sakura' ? setting(c, 'sakura', favoured(c, d) ? 'bonus' : 'esquive') : 0;
+
+// The grand theatre: the control chance it adds to the threads laid on d by a card it favours
+// (mechanics/threads.ts).
+export const terrainControl = (c: Combat, d: Side): number =>
+  c.terrain === 'theatre' && favoured(c, opponent(c, d)) ? setting(c, 'theatre', 'bonus') : 0;
 
 function terrainEffect({ c, e, o }: EffectContext): void {
   if (isTerrain(e.terrain)) setTerrain(c, e.terrain, 'effet', o);

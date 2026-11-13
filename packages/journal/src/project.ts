@@ -28,6 +28,7 @@ const TERRAIN_NAMES = {
   lune: 'la Lune de sang',
   sakura: 'le Jardin de sakura',
   grimoire: 'le Grimoire ouvert',
+  theatre: 'le Grand Théâtre',
 } as const;
 const TERRAIN_RULES = {
   orage: 'Des éclairs peuvent frapper les combattants ; les cartes de foudre frappent plus fort.',
@@ -40,6 +41,8 @@ const TERRAIN_RULES = {
   sakura: 'Les combattants esquivent plus souvent ; les cartes Nihon Densetsu encore plus.',
   grimoire:
     "Une page du grimoire peut donner un effet au hasard ; les cartes de la Bibliothèque de l'Auteur plus souvent.",
+  theatre:
+    'Des fils tombent des cintres sur les combattants ; les marionnettes y échappent et contrôlent plus facilement.',
 } as const;
 const TERRAIN_ACTS = {
   essaim: (n: string) => `🐝 L'essaim pique ${n} !`,
@@ -47,6 +50,7 @@ const TERRAIN_ACTS = {
   cathedrale: (n: string) => `⛪ La cathédrale programme ${n}`,
   lune: (n: string) => `🌕 La lune de sang maudit ${n} !`,
   grimoire: (n: string) => `📖 Une page du grimoire s'envole vers ${n}`,
+  theatre: (n: string) => `🎭 Un fil tombe des cintres sur ${n}`,
 } as const;
 
 export type JournalLine = {

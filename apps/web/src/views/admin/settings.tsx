@@ -202,7 +202,8 @@ const pctField = (key: string, label: string, fallback: number): TerrainField =>
   min: 0,
   max: 100,
 });
-const TERRAIN_SETTINGS: { key: string; title: string; fields: TerrainField[] }[] = [
+// poids: its weight in the draw when none is saved (0 for a collection still secret).
+const TERRAIN_SETTINGS: { key: string; title: string; poids?: number; fields: TerrainField[] }[] = [
   {
     key: 'orage',
     title:
@@ -265,6 +266,16 @@ const TERRAIN_SETTINGS: { key: string; title: string; fields: TerrainField[] }[]
     fields: [
       pctField('chance', "Chance d'un effet %", 15),
       pctField('bonus', 'Chance Bibliothèque %', 30),
+    ],
+  },
+  {
+    key: 'theatre',
+    poids: 0,
+    title:
+      "🎭 Grand Théâtre (collection secrète, poids 0 jusqu'à sa révélation) : un fil peut tomber des cintres sur le combattant qui joue ; les marionnettes y échappent et contrôlent plus facilement",
+    fields: [
+      pctField('chance', "Chance d'un fil %", 20),
+      pctField('bonus', 'Chance de contrôle en plus, marionnettes', 15),
     ],
   },
 ];
@@ -930,7 +941,7 @@ function SettingsForms({ v }: { v: Settings }) {
                     type="number"
                     min={0}
                     max={1000}
-                    defaultValue={setting(v, `terrain_poids_${t.key}`, 1)}
+                    defaultValue={setting(v, `terrain_poids_${t.key}`, t.poids ?? 1)}
                     className="w-24"
                   />
                 </Field>

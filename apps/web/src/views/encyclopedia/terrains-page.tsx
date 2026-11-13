@@ -8,6 +8,9 @@ import { useRef } from 'react';
 import { FxPreview } from '@/components/fx-preview';
 import { useMediaQuery } from '@/hooks/use-media-query';
 
+// The terrains shown: not those of a collection still secret.
+const SHOWN = TERRAIN_INFO.filter((t) => !('secret' in t && t.secret));
+
 const route = getRouteApi('/encyclopedie/terrains');
 
 export function TerrainsPage() {
@@ -15,7 +18,7 @@ export function TerrainsPage() {
   const navigate = route.useNavigate();
   const wide = useMediaQuery('(min-width: 1024px)');
   const panel = useRef<HTMLElement>(null);
-  const selected = TERRAIN_INFO.find((t) => t.key === terrain) ?? TERRAIN_INFO[0];
+  const selected = SHOWN.find((t) => t.key === terrain) ?? SHOWN[0];
 
   const pick = (key: string) => {
     void navigate({ search: { terrain: key }, replace: true, resetScroll: false });
@@ -33,7 +36,7 @@ export function TerrainsPage() {
           de sa collection.
         </p>
         <div className="flex flex-col gap-3">
-          {TERRAIN_INFO.map((t) => (
+          {SHOWN.map((t) => (
             <button
               key={t.key}
               type="button"

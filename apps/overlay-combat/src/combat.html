@@ -1694,7 +1694,7 @@ let TERRAIN=null,TERRAIN_STOP=null,ORAGE_FOND=false;
 // Chaque terrain : sa direction artistique, faite d'éléments animés (WAAPI) au-dessus du combat. Sur OBS, le fond est transparent :
 // seulement des éléments qui passent (particules, engrenages, lune) ; sur le site (SITE), en plus, le décor de fond (voile, rayons,
 // brume, motifs). col : la couleur du terrain (flash et texte quand il agit sur une carte).
-const TERRAINS_FX={essaim:{col:'#bef264'},foret:{col:'#86efac'},cathedrale:{col:'#67e8f9'},lune:{col:'#f87171'},sakura:{col:'#f9a8d4'},grimoire:{col:'#fcd34d'}};
+const TERRAINS_FX={essaim:{col:'#bef264'},foret:{col:'#86efac'},cathedrale:{col:'#67e8f9'},lune:{col:'#f87171'},sakura:{col:'#f9a8d4'},grimoire:{col:'#fcd34d'},theatre:{col:'#fb7185'}};
 // fond : le décor de fond même hors du site (l'aperçu des terrains de l'encyclopédie)
 function terrainAmbiance(t,fond){if(TERRAIN_STOP){TERRAIN_STOP();TERRAIN_STOP=null}TERRAIN=t;
  if(t==='orage'){if(!ORAGE_FOND)TERRAIN_STOP=orageAmbiance(fond?4:undefined)}else if(TERRAINS_FX[t])TERRAIN_STOP=terrainDecor(t,fond)}
@@ -1745,12 +1745,26 @@ function terrainDecor(t,avecFond){const box=orageCouche('z-index:8;overflow:hidd
   for(let i=0;i<9;i++){const pg=el(box,`width:3.2vh;height:4.2vh;border-radius:.3vh;background:repeating-linear-gradient(180deg,#fdf6e3 0 .55vh,#d6c7a1 .55vh .62vh);box-shadow:0 .3vh .8vh rgba(0,0,0,.5);border:1px solid #c8b78f`);
    const pts=Array.from({length:5},()=>[R(-3,100),R(5,92)]);pts.push(pts[0]);go(pg,pts.map(([x,y])=>({transform:`translate(${x}vw,${y}vh) rotate(${R(-50,50)}deg) rotateY(${R(0,70)}deg)`})),{duration:R(14000,20000),delay:-R(0,14000),easing:'ease-in-out'})}
   for(let i=0;i<18;i++)monte(el(box,'font:700 '+R(2.6,4).toFixed(1)+'vh serif;color:#fde68a;text-shadow:0 0 1vh #f59e0b,0 0 .3vh #fff',['ᚠ','ᚱ','✶','ᛟ','ᚨ','✧','ᛉ','§'][i%8]),R(6000,10000));
+ }else if(t==='theatre'){
+  voile('rgba(76,5,25,.55)');
+  // le faisceau du projecteur qui balaie la scène (site)
+  if(fond){const f=el(fond,'left:calc(50% - 30vw);top:-10vh;width:60vw;height:125vh;transform-origin:50% 0;background:conic-gradient(from 165deg at 50% 0,transparent 0deg,rgba(254,243,199,.22) 12deg,rgba(254,243,199,.32) 15deg,rgba(254,243,199,.22) 18deg,transparent 30deg);filter:blur(1vh)');go(f,[{transform:'rotate(-22deg)'},{transform:'rotate(22deg)'},{transform:'rotate(-22deg)'}],{duration:11000,easing:'ease-in-out'})}
+  // les rideaux de velours, sur les bords (plissés, qui ondulent un peu)
+  [0,1].forEach(k=>{const r=el(box,`${k?'right':'left'}:0;left:${k?'auto':'0'};top:0;width:4.5vw;height:100vh;background:repeating-linear-gradient(90deg,#7f1d1d 0 1.1vw,#b91c1c 1.1vw 1.7vw,#450a0a 1.7vw 2.2vw);box-shadow:${k?'-':''}1vw 0 2vw rgba(0,0,0,.6);border-${k?'left':'right'}:.4vh solid #ca8a04;transform-origin:${k?'right':'left'} top`);
+   go(r,[{transform:'scaleX(1) skewY(0deg)'},{transform:`scaleX(1.06) skewY(${k?-1:1}deg)`},{transform:'scaleX(1) skewY(0deg)'}],{duration:R(5000,7000),easing:'ease-in-out'})});
+  el(box,'left:0;top:0;width:100%;height:5vh;background:repeating-linear-gradient(90deg,#991b1b 0 3vw,#7f1d1d 3vw 6vw);border-bottom:.4vh solid #ca8a04;border-radius:0 0 50% 50% / 0 0 40% 40%;box-shadow:0 1vh 2vh rgba(0,0,0,.5)');
+  // les fils qui pendent des cintres et se balancent, une croix de marionnettiste au bout de certains
+  for(let i=0;i<9;i++){const x=R(12,88),h=R(18,55);const f=el(box,`left:${x}vw;top:4vh;width:1px;height:${h}vh;background:linear-gradient(180deg,rgba(255,255,255,.1),rgba(255,255,255,.75));transform-origin:50% 0`);
+   if(i%3===0)el(f,'left:-1.1vh;top:auto;bottom:-1.2vh;font-size:2.2vh','✚');
+   go(f,[{transform:`rotate(${R(-6,-2)}deg)`},{transform:`rotate(${R(2,6)}deg)`},{transform:`rotate(${R(-6,-2)}deg)`}],{duration:R(3500,6000),easing:'ease-in-out'})}
+  // la poussière dorée qui flotte dans la lumière
+  for(let i=0;i<20;i++){const g=R(.3,.6);monte(el(box,`width:${g}vh;height:${g}vh;border-radius:50%;background:#fde68a;box-shadow:0 0 .8vh #f59e0b`),R(8000,14000))}
  }
  fondu();
  let on=true;const stop=()=>{if(!on)return;on=false;an.forEach(a=>a.cancel());box.remove();if(fond){fond.style.opacity='0';setTimeout(()=>fond.remove(),2600)}};
  fxAll.add(stop);return stop}
 // Le terrain agit sur une carte (piqûre, sève, programmation, malédiction, page du grimoire)
-const TERRAIN_ACTE={essaim:'🐝 PIQÛRE !',foret:'🌿 Sève',cathedrale:'⛪ Programmation',lune:'🌕 Maudit !',grimoire:'📖 Page du grimoire'};
+const TERRAIN_ACTE={theatre:'🎭 Un fil tombe !',essaim:'🐝 PIQÛRE !',foret:'🌿 Sève',cathedrale:'⛪ Programmation',lune:'🌕 Maudit !',grimoire:'📖 Page du grimoire'};
 function nTerrain(c,t){nfxStart();const b=nbox(c),T=TERRAINS_FX[t];if(!b||!T)return;if(t==='essaim'||t==='lune')nshake(c,.5);nflash(c,T.col,300);nburst(b.cx,b.cy,14,T.col,4,2.5,30);flot(c,TERRAIN_ACTE[t],T.col,'big')}
 function nOrage(c){nfxStart();const b=nbox(c);if(!b)return;const x=b.cx+R(-b.w*.12,b.w*.12);
  nbolt(x+R(-70,70),0,x,b.cy-b.h*.05,'#e0e7ff',5.5,24);setTimeout(()=>nbolt(x+R(-50,50),0,b.cx+R(-b.w*.2,b.w*.2),b.cy+b.h*.1,'#a5b4fc',3,16),90);
@@ -1845,7 +1859,7 @@ Object.assign(NK,{
  'statut:fils':e=>nFils(e.c,e.n,e.of),'statut:fils_cout':e=>flot(e.c,'🎭 Marionnettiste -'+e.n+' PV ('+e.hp+'/'+e.m+')','#e879f9'),
  'statut:forge':e=>{nForge(e.c,e.n,e.s,e.m);forgeBadge(e.c,e.s,e.n)},'statut:forge_vide':e=>flot(e.c,'Plus rien à forger','#fdba74'),
  'statut:arme_immunite':e=>flot(e.c,'⚔️ Arme vivante : insensible','#fdba74'),'statut:arme_feu':e=>flot(e.c,e.f?'🔥 Le feu la forge !':'🔥 Sans effet','#fb923c',e.f?'big':undefined),'statut:fauche':e=>nFauche(e.c,e.cible,e.n,e.p,e.a),'statut:laser':e=>nLaser(e.c,e.cible,e.n,e.p),
- 'statut:orage':e=>nOrage(e.c),'statut:essaim':e=>nTerrain(e.c,'essaim'),'statut:foret':e=>nTerrain(e.c,'foret'),'statut:cathedrale':e=>nTerrain(e.c,'cathedrale'),'statut:lune':e=>nTerrain(e.c,'lune'),'statut:grimoire':e=>nTerrain(e.c,'grimoire'),
+ 'statut:orage':e=>nOrage(e.c),'statut:essaim':e=>nTerrain(e.c,'essaim'),'statut:foret':e=>nTerrain(e.c,'foret'),'statut:cathedrale':e=>nTerrain(e.c,'cathedrale'),'statut:lune':e=>nTerrain(e.c,'lune'),'statut:grimoire':e=>nTerrain(e.c,'grimoire'),'statut:theatre':e=>nTerrain(e.c,'theatre'),
  'statut:reconstruction_ratee':e=>flot(e.c,'🔧 Reconstruction ratée ('+e.n+' %)','#94a3b8'),'statut:forge_creation':e=>{nForgeCreation(e.c,e.s==='piege');forgeBadge(e.c,e.s==='piege'?'trap':'magic',0);forgeSlot(e)}});
 async function jouer(res){
  file.push(res);if(enCours)return;enCours=true;

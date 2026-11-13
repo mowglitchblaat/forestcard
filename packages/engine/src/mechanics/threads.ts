@@ -26,6 +26,7 @@ import type { EffectContext, EffectRules } from '../combat/effect-context.ts';
 import type { Side } from '../combat/state.ts';
 import type { ControlEndReason } from '../events.ts';
 import type { Card, EffectData, Num } from '../model/card.ts';
+import { terrainControl } from './terrain.ts';
 
 // Its part of a card's status (combat/state.ts): the threads it carries, and the control chance of
 // the last laying.
@@ -73,17 +74,20 @@ function canControl(c: Combat, m: Side): boolean {
 }
 
 // Lays `count` threads on d. From the threshold on, one draw to take control (at the end of the
-// turn under way).
-export function layThreads(c: Combat, d: Side, count: number, pct: number): void {
+// turn under way), unless `draw` is false (the grand theatre's threads: they only add up).
+export function layThreads(c: Combat, d: Side, count: number, pct: number, draw = true): void {
   if (d.hp <= 0 || count <= 0 || !inPlay(c, d)) return;
   const st = d.status;
   st.threads += count;
-  st.threadControl = pct;
+  if (draw) st.threadControl = pct;
   const of = c.levels.filsSeuil;
   emit(c, { type: 'threadsLaid', side: id(c, d), count, threads: st.threads, of });
-  if (st.threads < of || c.control || c.pendingControl) return;
+  if (!draw || st.threads < of || c.control || c.pendingControl) return;
   if (!canControl(c, d)) return;
-  const chance = Math.min(100, pct + c.levels.filsPas * (st.threads - of));
+  const chance = Math.min(
+    100,
+    pct + c.levels.filsPas * (st.threads - of) + terrainControl(c, d), // the grand theatre
+  );
   if (roll(c, chance)) c.pendingControl = d;
 }
 

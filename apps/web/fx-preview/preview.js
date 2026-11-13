@@ -24,11 +24,21 @@
     setTimeout(() => cardOf(c).classList.remove('hit'), 450);
   };
 
+  const TERRAINS = [
+    'orage',
+    'essaim',
+    'foret',
+    'cathedrale',
+    'lune',
+    'sakura',
+    'grimoire',
+    'theatre',
+  ];
   const PREVIEW = {
     // The terrains (mechanics/terrain.ts): the terrain's scenery, with its background, then what it
     // does to the opponent (a bolt, a sting, the sap, a programming, a curse, a page).
     ...Object.fromEntries(
-      ['orage', 'essaim', 'foret', 'cathedrale', 'lune', 'sakura', 'grimoire'].map((t) => [
+      TERRAINS.map((t) => [
         'terrain_' + t,
         {
           on: 'both',

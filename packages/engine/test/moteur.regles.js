@@ -1896,6 +1896,13 @@ test('grimoire ouvert : un effet au hasard, plus souvent pour une carte de la Bi
   assert.ok(!lignes(r, e => e.k === 'grimoire' && e.c === 1).length);
 });
 
+test('grand théâtre : un fil tombe des cintres sur le combattant qui joue (sans tirage de contrôle), jamais sur une marionnette, dont les fils contrôlent plus facilement', () => {
+  const r = combat([C('Marionnette', 1, SOLIDE, { collection_id: 14 })], [C('B', 1, SOLIDE)], { regles: { maxTours: 6, maxProlong: 0, ...TERRAIN('theatre', { chance: 100 }) } });
+  const fils = lignes(r, e => e.k === 'theatre');
+  assert.ok(fils.length >= 3 && fils.every(e => e.c === 1), 'seul B reçoit les fils du théâtre');
+  assert.ok(!lignes(r, e => e.t === 'controle').length, 'les fils du théâtre seuls ne prennent pas le contrôle');
+});
+
 test('invocation de terrain : une magie, un passif (en entrant en jeu), un ultime ou un piège le changent jusqu\'à la fin', () => {
   const magie = combat([C('A', 1, SOLIDE), MAG('Appel', { type: 'terrain', terrain: 'orage' })], [C('B', 1, SOLIDE)], { regles: { maxTours: 2, maxProlong: 0, ...ESSAIM(0) } });
   const t = lignes(magie, e => e.t === 'terrain');
