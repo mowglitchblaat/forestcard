@@ -342,8 +342,29 @@ const LoreEvent = z.object({
   pot: NumOrNull.default(null),
   mon_gain: NumOrNull.default(null),
   ma_manche: NumOrNull.default(null),
+  // 88-defense-par-vagues.sql: a defense in waves of `vague` fighters (each wave's chance, roll and
+  // defenders are kept in tentatives; a role stays hidden until the end)
+  vague: NumOrNull.default(null),
   tentatives: z
-    .array(z.object({ manche: Num, option_id: NumOrNull, reussi: z.boolean(), tirage: Num }))
+    .array(
+      z.object({
+        manche: Num,
+        option_id: NumOrNull,
+        reussi: z.boolean(),
+        tirage: Num,
+        chance: NumOrNull.default(null),
+        defenseurs: z
+          .array(
+            z.object({
+              pseudo: z.string(),
+              nom: z.string(),
+              role: z.enum(['cle', 'nuisible']).nullable().default(null),
+            }),
+          )
+          .nullable()
+          .default(null),
+      }),
+    )
     .default([]),
   // 76-evenement-contestation.sql: a contest of a lightning's holder (eclair_evenement_id, the
   // lightning event; defenseur_collection, its holder). After a yes, the engaged collections score a
@@ -444,6 +465,7 @@ export type EventDraft = {
   nuisible_pct: number;
   montrer_cles: boolean;
   enjeu_eclair: boolean; // a defense: the lightning is at stake (lost: the attacker takes it back)
+  vague: number; // a defense in waves: a roll every `vague` fighters placed (0: one roll at the end)
   montrer_chances: boolean;
   boss_bonus_pct: number; // a boss fight: ATQ and PV of its card + %
   boss_essais_jour: number; // a boss fight: tries per player and per day
@@ -504,6 +526,7 @@ export async function createEvent(d: EventDraft): Promise<void> {
           eclair_x: d.type === 'vote' ? d.eclair_x : null,
           eclair_y: d.type === 'vote' ? d.eclair_y : null,
           eclair_evenement_id: lightning,
+          vague: d.type === 'defense' && d.vague > 0 ? Math.min(100, Math.round(d.vague)) : null,
           base_pct: d.base_pct,
           cle_pct: d.cle_pct,
           autre_pct: d.autre_pct,

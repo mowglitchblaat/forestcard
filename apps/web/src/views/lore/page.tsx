@@ -737,6 +737,14 @@ function Reward({ event: e }: { event: LoreEvent }) {
 }
 
 // scene: the boss scene above already shows the barrier (the chance) and the defence line.
+// The defenders of a wave: pseudo · fighter, and its role once shown.
+const wave = (list: { pseudo: string; nom: string; role: 'cle' | 'nuisible' | null }[]) =>
+  list
+    .map(
+      (d) => `${d.pseudo} · ${d.nom}${d.role ? ` (${d.role === 'cle' ? 'clé' : 'nuisible'})` : ''}`,
+    )
+    .join(', ');
+
 function Defence({
   event: e,
   owned,
@@ -773,6 +781,20 @@ function Defence({
           Chaque joueur place un de ses combattants. Combattant clé : +{e.cle_pct} % (une seule fois
           chacun) · autre combattant : +{e.autre_pct} % · combattant nuisible : −{e.nuisible_pct} %.
         </span>
+        {e.vague !== null && (
+          <span>
+            Défense par vagues : dès que {e.vague} combattants sont placés, la vague tente de
+            repousser {e.attaquant_nom ?? 'l’attaquant'}, avec la chance de ses seuls combattants.
+            Si elle échoue, ses défenseurs tombent et une nouvelle vague commence (chacun peut y
+            placer un combattant).
+            {open && (
+              <b>
+                {' '}
+                Vague {e.manche} : {e.defenseurs.length}/{e.vague} combattants.
+              </b>
+            )}
+          </span>
+        )}
         {e.chance !== null && open && !scene && (
           <span className="flex items-center gap-2">
             <b>Chance de réussite actuelle : {e.chance} %</b>
@@ -792,6 +814,23 @@ function Defence({
           </span>
         )}
       </div>
+      {e.vague !== null && e.tentatives.length > 0 && (
+        <ul className="flex flex-col gap-1 text-sm">
+          {e.tentatives.map((t) => (
+            <li key={t.manche}>
+              <b>Vague {t.manche}</b> · {t.chance ?? 0} % · le destin a tiré {t.tirage} :{' '}
+              {t.reussi ? (
+                <b className={TONES.success.text}>l’attaque est repoussée !</b>
+              ) : (
+                <span className={TONES.danger.text}>les défenseurs tombent.</span>
+              )}
+              {t.defenseurs?.length ? (
+                <span className="text-muted-foreground"> ({wave(t.defenseurs)})</span>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      )}
       {mine ? (
         <div className="flex items-center gap-3 text-sm">
           {img(mine.variant.image_path) && (

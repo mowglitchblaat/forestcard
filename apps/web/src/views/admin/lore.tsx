@@ -119,6 +119,7 @@ const emptyEvent = (): EventDraft => ({
   nuisible_pct: 10,
   montrer_cles: false,
   enjeu_eclair: false,
+  vague: 0,
   montrer_chances: true,
   boss_bonus_pct: 70,
   boss_essais_jour: 3,
@@ -386,6 +387,14 @@ function EventsAdmin() {
                     type="number"
                     value={d.autre_pct}
                     onChange={(e) => set({ autre_pct: num(e.target.value, 2) })}
+                  />
+                </Field>
+                <Field label="Vague (combattants, 0 : un seul jet à la fin)">
+                  <Input
+                    type="number"
+                    min={0}
+                    value={d.vague}
+                    onChange={(e) => set({ vague: num(e.target.value, 0) })}
                   />
                 </Field>
                 <Field label="Nuisible (−%)">
