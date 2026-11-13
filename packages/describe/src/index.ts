@@ -168,15 +168,13 @@ export const TERRAIN_INFO = [
     bonus: "les cartes de la Bibliothèque de l'Auteur plus souvent",
   },
   {
-    // Its collection is not revealed yet: hidden from the encyclopedia until it is (secret).
     key: 'theatre',
     emoji: '🎭',
     nom: 'le Grand Théâtre',
     titre: 'Grand Théâtre',
-    camp: 'les marionnettes',
+    camp: 'Marionnettia',
     regle: 'à chaque tour, un fil peut tomber des cintres sur le combattant qui joue',
-    bonus: 'les marionnettes y échappent et leurs fils prennent le contrôle plus facilement',
-    secret: true,
+    bonus: 'les cartes de Marionnettia y échappent et leurs fils prennent le contrôle plus facilement',
   },
 ] as const;
 const TERRAIN_TXT: Record<string, string> = Object.fromEntries(

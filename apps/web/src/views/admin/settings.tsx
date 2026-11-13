@@ -270,12 +270,11 @@ const TERRAIN_SETTINGS: { key: string; title: string; poids?: number; fields: Te
   },
   {
     key: 'theatre',
-    poids: 0,
     title:
-      "🎭 Grand Théâtre (collection secrète, poids 0 jusqu'à sa révélation) : un fil peut tomber des cintres sur le combattant qui joue ; les marionnettes y échappent et contrôlent plus facilement",
+      '🎭 Grand Théâtre : un fil peut tomber des cintres sur le combattant qui joue ; les cartes de Marionnettia y échappent et contrôlent plus facilement',
     fields: [
       pctField('chance', "Chance d'un fil %", 20),
-      pctField('bonus', 'Chance de contrôle en plus, marionnettes', 15),
+      pctField('bonus', 'Chance de contrôle en plus, Marionnettia', 15),
     ],
   },
 ];

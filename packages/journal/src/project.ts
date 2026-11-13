@@ -42,7 +42,7 @@ const TERRAIN_RULES = {
   grimoire:
     "Une page du grimoire peut donner un effet au hasard ; les cartes de la Bibliothèque de l'Auteur plus souvent.",
   theatre:
-    'Des fils tombent des cintres sur les combattants ; les marionnettes y échappent et contrôlent plus facilement.',
+    'Des fils tombent des cintres sur les combattants ; les cartes de Marionnettia y échappent et contrôlent plus facilement.',
 } as const;
 const TERRAIN_ACTS = {
   essaim: (n: string) => `🐝 L'essaim pique ${n} !`,

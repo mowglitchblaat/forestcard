@@ -22,7 +22,7 @@
 //     `bonus` points instead.
 //   - grimoire (Open Grimoire, the Author's Library): at the start of its turn, `chance` % that the
 //     card playing casts an effect drawn at random (mechanics/random.ts). Favoured: `bonus` % instead.
-//   - theatre (Grand Theatre, a collection not revealed yet): at the start of its turn, `chance` % that a thread falls
+//   - theatre (Grand Theatre, Marionnettia): at the start of its turn, `chance` % that a thread falls
 //     from the flies on the card playing (mechanics/threads.ts; it adds up, without a control draw
 //     of its own). Favoured: never receives one, and its own threads take control `bonus` points
 //     more easily.
