@@ -168,7 +168,7 @@ const ELEMENTS = ['brulure', 'gel', 'malediction', 'poison', 'saignement', 'fati
 // A leveled status takes the effect's level (`niveau`), else the level of its old value (`sval`).
 const elementText = (el: string, v: number, e: Fx): string | undefined =>
   (
-    ({
+    {
       brulure: burnTxt({ niveau: e.niveau, pctpv: v }),
       gel: `gel ${v} % d'attaque annulée`,
       malediction: `malédiction ${curseTxt}`,
@@ -176,7 +176,7 @@ const elementText = (el: string, v: number, e: Fx): string | undefined =>
       saignement: bleedTxt({ niveau: e.niveau, pctpv: v }),
       fatigue: fatigueTxt({ niveau: e.niveau, fatval: v }),
       foudre: 'poser un niveau de marque de foudre',
-    }) as Record<string, string>
+    } as Record<string, string>
   )[el];
 
 // The riposte of a block (bloque_attaque), once, on the first strike it blocks.
