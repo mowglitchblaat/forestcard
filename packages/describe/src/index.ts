@@ -174,7 +174,8 @@ export const TERRAIN_INFO = [
     titre: 'Grand Théâtre',
     camp: 'Marionnettia',
     regle: 'à chaque tour, un fil peut tomber des cintres sur le combattant qui joue',
-    bonus: 'les cartes de Marionnettia y échappent et leurs fils prennent le contrôle plus facilement',
+    bonus:
+      'les cartes de Marionnettia y échappent et leurs fils prennent le contrôle plus facilement',
   },
 ] as const;
 const TERRAIN_TXT: Record<string, string> = Object.fromEntries(
