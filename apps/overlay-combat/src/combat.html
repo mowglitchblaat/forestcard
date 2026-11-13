@@ -1949,11 +1949,13 @@ const DECK=[
  {type:'piege',nom:'Sang froid',effet:{condition:{type:'proprio_pv_sous',seuilpv:40},effet:{type:'soin',val:15,u:'pct'},declenchements:1}}];
 let dernier=null;
 let dernierDecks=null;
-function lancer(seed,decks){dernierDecks=decks||null;dernier=Moteur.simuler(decks?decks[0]:{pseudo:'Toi',deck:DECK},decks?decks[1]:{pseudo:'Bot',deck:DECK},{seed});jouer(dernier)}
+// Forge de création en test : les magies et pièges actifs du jeu (avec image), chargés avec les vraies cartes, comme l'edge les passe en live
+let FORGE_CARTES=null;const regTest=()=>FORGE_CARTES&&FORGE_CARTES.length?{regles:{forgeCartes:FORGE_CARTES}}:{};
+function lancer(seed,decks){dernierDecks=decks||null;dernier=Moteur.simuler(decks?decks[0]:{pseudo:'Toi',deck:DECK},decks?decks[1]:{pseudo:'Bot',deck:DECK},{seed,...regTest()});jouer(dernier)}
 if(TEST){$('#ctl').style.display='none';$('#log').style.display='none';   // l'ancienne barre de boutons et le journal en bas sont remplacés par le panneau + le bouton « Récap »
 
  $('#nv').onclick=()=>{if(!enCours)lancer()};$('#ts').onclick=()=>{if(enCours)return;const f=n=>DECK.find(c=>c.nom===n),A={...f('Loup-garou'),passif:{type:'poison',chance:100,degtour:3,tours:3}},B={...f('Spectre'),passif:{type:'brulure',chance:100,pctpv:6,tours:3}},ult={...f('Chasseur'),passif:null,ultime:{type:'degats',val:10,apres_tours:2,utilisations:1}};
-  const m=DECK.filter(c=>c.type!=='combattant');dernier=Moteur.simuler({pseudo:'Toi',deck:[A,...m]},{pseudo:'Bot',deck:[B,...m]},{seed:7});jouer(dernier)};
+  const m=DECK.filter(c=>c.type!=='combattant');dernier=Moteur.simuler({pseudo:'Toi',deck:[A,...m]},{pseudo:'Bot',deck:[B,...m]},{seed:7,...regTest()});jouer(dernier)};
  $('#tn').onclick=()=>{if(enCours)return;const f=n=>DECK.find(c=>c.nom===n),A=f('Chasseur'),B=f('Loup-garou'),
   mA={type:'magie',nom:'Magie test A',effet:{briques:[{type:'poison_effet',ciblem:'adversaire',degtour:3,tours:3},{type:'etourdir_effet',ciblem:'adversaire',tours:2},{type:'esquive_mod',cible:'soi',val:25},{type:'atk_brulure',chance:100,pctpv:6,tours:3}]}},
   mB={type:'magie',nom:'Magie test B',effet:{type:'atk_etourdir',chance:60}},
@@ -2146,7 +2148,7 @@ if(DEMO){
     if(error&&/rarete/i.test(error.message||''))({data,error}=await sel('',''));
     if(error)throw error;
     const all=(data||[]).map(c=>{const vs=c.variantes_carte||[],v=vs.find(x=>x.nom==='Standard')||vs[0]||{};const rr=Array.isArray(c.raretes)?c.raretes[0]:c.raretes;return{rarete:(rr&&rr.nom)||'—',rar:rr||null,id:c.id,type:c.type,nom:c.nom,atq:c.atq,pv:c.pv,actif:c.actif,passif:c.passif,ultime:c.ultime,effet:c.effet,image:v.image_path||null,imageCombat:v.image_combat||null}});
-    REEL.cartes=all.filter(c=>c.type==='combattant');REEL.magies=all.filter(c=>c.type==='magie');REEL.pieges=all.filter(c=>c.type==='piege');
+    REEL.cartes=all.filter(c=>c.type==='combattant');REEL.magies=all.filter(c=>c.type==='magie');REEL.pieges=all.filter(c=>c.type==='piege');FORGE_CARTES=all.filter(c=>c.type!=='combattant'&&c.actif&&c.effet&&c.image);
     // versions alternatives des combattants (FULLEG, FULLEP, Seazer édition…) : choisissables à part, pour voir leurs chiffres en direct
     REEL.versions=(data||[]).filter(c=>c.type==='combattant').flatMap(c=>(c.variantes_carte||[]).filter(x=>x.nom!=='Standard'&&x.image_path).map(x=>({...all.find(a=>a.id===c.id),version:x.nom,image:x.image_path,imageCombat:x.image_combat||null}))).sort((a,b)=>a.nom.localeCompare(b.nom,'fr'));
     if(!REEL.cartes.length){vide('Aucune carte lue (non connecté ?)');$('#rst').innerHTML='Aucun combattant lu. Si tu en as créé, il faut être connecté sur le site.'+IOS+RB;return}
@@ -2160,7 +2162,7 @@ if(DEMO){
   ['ra','rb','rma','rmb','rpa','rpb'].forEach(i=>$('#'+i).onchange=refresh);
   // relais du championnat : 5 combattants, 5 magies, 5 pièges au hasard par joueur (rareté du filtre)
   $('#rrl').onclick=()=>{if(enCours||!REEL.cartes.length)return;const tire=(l,n)=>[...l].sort(()=>Math.random()-.5).slice(0,n),deck=()=>[...tire(poolC(),5),...tire(REEL.magies,5),...tire(REEL.pieges,5)];
-   dernierDecks=null;dernier=Moteur.simulerRelais({pseudo:'Toi',deck:deck()},{pseudo:'Bot',deck:deck()});dernier.titre={division:['rare','epique','libre'][Math.floor(Math.random()*3)],cote:Math.random()<.7?1:null};dernier.ceintures=[[],['rare','epique','libre'].slice(0,1+Math.floor(Math.random()*3))];jouer(dernier)};   // ceinture en jeu : sur la carte du champion (Bot), ou au milieu (vacante)
+   dernierDecks=null;dernier=Moteur.simulerRelais({pseudo:'Toi',deck:deck()},{pseudo:'Bot',deck:deck()},regTest());dernier.titre={division:['rare','epique','libre'][Math.floor(Math.random()*3)],cote:Math.random()<.7?1:null};dernier.ceintures=[[],['rare','epique','libre'].slice(0,1+Math.floor(Math.random()*3))];jouer(dernier)};   // ceinture en jeu : sur la carte du champion (Bot), ou au milieu (vacante)
   // match de ceinture avec les cartes choisies : chaque deck de championnat (5 combattants, 5 magies, 5 pièges) part des cartes
   // choisies plus haut, complété au hasard dans les raretés permises par la ceinture (Rare : communes et rares ; Épique : jusqu'aux épiques ; Libre : toutes)
   $('#rcv').onclick=()=>{if(enCours||!REEL.cartes.length)return;const dv=$('#rdv').value,norm=x=>String(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(),
@@ -2168,7 +2170,7 @@ if(DEMO){
    tire=(l,n,deja)=>[...l].filter(c=>ok(c)&&!deja.includes(c)).sort(()=>Math.random()-.5).slice(0,n),
    deck=(a,m,pi)=>{const base=deckOf(a,m,pi),C=base.filter(c=>c.type==='combattant'),M=base.filter(c=>c.type==='magie'),P=base.filter(c=>c.type==='piege');
     return [...C,...tire(REEL.cartes,5-C.length,C),...M,...tire(REEL.magies,5-M.length,M),...P,...tire(REEL.pieges,5-P.length,P)]};
-   dernierDecks=null;dernier=Moteur.simulerRelais({pseudo:'Toi',deck:deck('#ra','#rma','#rpa')},{pseudo:'Bot',deck:deck('#rb','#rmb','#rpb')});
+   dernierDecks=null;dernier=Moteur.simulerRelais({pseudo:'Toi',deck:deck('#ra','#rma','#rpa')},{pseudo:'Bot',deck:deck('#rb','#rmb','#rpb')},regTest());
    const ch=$('#rch').value==='1';dernier.titre={division:dv,cote:ch?1:null};dernier.ceintures=[[],ch?[dv]:[]];jouer(dernier)};
   $('#rgo').onclick=()=>{if(enCours||!REEL.cartes.length)return;lancer(undefined,[{pseudo:'Toi',deck:deckOf('#ra','#rma','#rpa')},{pseudo:'Bot',deck:deckOf('#rb','#rmb','#rpb')}])};
   $('#rre').onclick=()=>{if(!enCours&&dernier)lancer(dernier.seed,dernierDecks)};
