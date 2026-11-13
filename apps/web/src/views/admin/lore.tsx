@@ -118,6 +118,7 @@ const emptyEvent = (): EventDraft => ({
   autre_pct: 2,
   nuisible_pct: 10,
   montrer_cles: false,
+  enjeu_eclair: false,
   montrer_chances: true,
   boss_bonus_pct: 70,
   boss_essais_jour: 3,
@@ -414,6 +415,14 @@ function EventsAdmin() {
                 />{' '}
                 Montrer aux joueurs les combattants clés et nuisibles (sinon, ils les découvrent à
                 la fin)
+              </Choice>
+              <Choice>
+                <Checkbox
+                  checked={d.enjeu_eclair}
+                  onChange={(e) => set({ enjeu_eclair: e.target.checked })}
+                />{' '}
+                L'éclair est en jeu : si la défense échoue, l'attaquant reprend l'éclair (il quitte
+                la carte du monde) ; pendant l'attaque, il est contesté
               </Choice>
             </>
           ) : d.type === 'vote' ? (

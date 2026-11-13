@@ -443,6 +443,7 @@ export type EventDraft = {
   autre_pct: number;
   nuisible_pct: number;
   montrer_cles: boolean;
+  enjeu_eclair: boolean; // a defense: the lightning is at stake (lost: the attacker takes it back)
   montrer_chances: boolean;
   boss_bonus_pct: number; // a boss fight: ATQ and PV of its card + %
   boss_essais_jour: number; // a boss fight: tries per player and per day
@@ -452,6 +453,25 @@ export type EventDraft = {
   nuisibles: number[];
   options: OptionDraft[];
 };
+
+// The lightning a defense can put at stake: the latest one that fell (a successful vote with its
+// strike point).
+async function latestLightning(): Promise<number | null> {
+  const rows = z.array(z.object({ id: Num })).parse(
+    await call(
+      supabase
+        .from('evenements')
+        .select('id')
+        .eq('type', 'vote')
+        .eq('statut', 'resolu')
+        .eq('reussi', true)
+        .not('eclair_x', 'is', null)
+        .order('id', { ascending: false })
+        .limit(1),
+    ),
+  );
+  return rows[0]?.id ?? null;
+}
 
 export async function createEvent(d: EventDraft): Promise<void> {
   if (!d.titre.trim()) throw new Error("Donne un titre à l'événement.");
@@ -463,6 +483,9 @@ export async function createEvent(d: EventDraft): Promise<void> {
   if (d.type === 'boss' && d.attaquant_variante_id === null)
     throw new Error('Choisis la carte du boss.');
   const boss = d.type === 'boss';
+  const lightning = d.type === 'defense' && d.enjeu_eclair ? await latestLightning() : null;
+  if (d.type === 'defense' && d.enjeu_eclair && lightning === null)
+    throw new Error("Aucun éclair n'est tombé : rien à mettre en jeu.");
   const created = z.object({ id: Num }).parse(
     await call(
       supabase
@@ -479,6 +502,7 @@ export async function createEvent(d: EventDraft): Promise<void> {
           lieu_id: d.lieu_id,
           eclair_x: d.type === 'vote' ? d.eclair_x : null,
           eclair_y: d.type === 'vote' ? d.eclair_y : null,
+          eclair_evenement_id: lightning,
           base_pct: d.base_pct,
           cle_pct: d.cle_pct,
           autre_pct: d.autre_pct,
@@ -584,6 +608,15 @@ export function lightningHolders(
         contested: false,
       });
     else if (e.statut === 'decompte') holders.set(e.eclair_evenement_id, { ...h, contested: true });
+  }
+  // A defense with the lightning at stake: contested during the attack; lost, the attacker takes it
+  // back (it leaves the map).
+  for (const e of byId) {
+    if (e.type !== 'defense' || e.eclair_evenement_id === null) continue;
+    const h = holders.get(e.eclair_evenement_id);
+    if (!h) continue;
+    if (e.statut !== 'resolu') holders.set(e.eclair_evenement_id, { ...h, contested: true });
+    else if (e.reussi === false) holders.delete(e.eclair_evenement_id);
   }
   return holders;
 }
