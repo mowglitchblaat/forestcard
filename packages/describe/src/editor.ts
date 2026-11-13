@@ -14,6 +14,7 @@ import type { EffectType, PassiveType, TrapConditionType } from '@forestcard/eng
 type Field = readonly [label: string, input: 'n' | readonly string[]];
 
 export const EDITOR_FIELDS = {
+  terrain: ["Terrain invoqué (jusqu'à la fin du combat)", ['orage', 'essaim']],
   ratio: ["Avalage : PV nécessaires = X × l'ATQ de la cible (3 par défaut)", 'n'],
   pctmache: ['Avalage : dégâts de chaque mâche, en % des PV de la cible (10 par défaut)', 'n'],
   machebase: ['Avalage : % calculé sur', ['max', 'actuels']],
@@ -444,6 +445,10 @@ export const EDITOR_PASSIVES: Record<PassiveType, EditorEntry> = {
     '🔨 Forge de création : tous les X tours (2 si vide), forge une nouvelle magie ou un nouveau piège au hasard',
     'tours',
   ],
+  terrain: [
+    '🌍 Invocation de terrain : en entrant en jeu, la carte invoque un terrain (Orage, Essaim) pour le reste du combat',
+    'terrain',
+  ],
   accumulateur: [
     '⚡ Accumulateur (Foudre) : chaque marque de foudre posée donne une charge ; à X charges, la prochaine attaque fait +X % (valeurs dans Réglages > Niveaux)',
   ],
@@ -762,6 +767,10 @@ export const EDITOR_ULTIMATES: { readonly [K in EffectType]?: EditorEntry } = {
   ],
   forge_creation: [
     '🔨 Forge de création : forge une nouvelle magie ou un nouveau piège, avec un effet tiré au hasard ; remplace en priorité la carte épuisée',
+  ],
+  terrain: [
+    '🌍 Invocation de terrain : invoque un terrain (Orage, Essaim) pour le reste du combat',
+    'terrain',
   ],
   surcharge: [
     "⚡ Surcharge (Foudre) : s'électrocute (X % de ses PV max), puis 2 tours : ATQ −X %, X % de chances d'enchaîner (jusqu'à 3 coups), chaque coup pose la foudre (valeurs dans Réglages > Niveaux)",
@@ -1178,6 +1187,10 @@ export const EDITOR_MAGICS: { readonly [K in EffectType]?: EditorEntry } = {
   ],
   forge_creation: [
     '🔨 Forge de création : forge une nouvelle magie ou un nouveau piège, avec un effet tiré au hasard ; remplace en priorité la carte épuisée',
+  ],
+  terrain: [
+    '🌍 Invocation de terrain : invoque un terrain (Orage, Essaim) pour le reste du combat',
+    'terrain',
   ],
   surcharge: [
     "⚡ Surcharge (Foudre) : s'électrocute (X % de ses PV max), puis 2 tours : ATQ −X %, X % de chances d'enchaîner (jusqu'à 3 coups), chaque coup pose la foudre (valeurs dans Réglages > Niveaux)",

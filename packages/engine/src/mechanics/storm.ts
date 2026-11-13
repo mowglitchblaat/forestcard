@@ -15,11 +15,18 @@ import { markLightning } from './lightning.ts';
 
 export function stormAtStart(c: Combat, s: Side): Flow {
   const storm = c.rules.orage;
-  if (!storm || !(storm.chance > 0) || !roll(c, storm.chance)) return undefined;
+  if (!storm || !(storm.chance > 0)) return undefined;
+  return stormBolt(c, s, storm.chance, storm.degats);
+}
+
+// A bolt at the start of the turn of `s`: `chance` %, then on either fighter. Also the storm terrain
+// (mechanics/terrain.ts).
+export function stormBolt(c: Combat, s: Side, chance: number, degats: number): Flow {
+  if (!roll(c, chance)) return undefined;
   const target = c.random() < 0.5 ? s : opponent(c, s);
   if (target.hp > 0) {
     emit(c, { type: 'stormStruck', side: id(c, target) });
-    const n = Math.min(target.hp, Math.max(0, Math.round(storm.degats)));
+    const n = Math.min(target.hp, Math.max(0, Math.round(degats)));
     target.hp -= n;
     emit(c, { type: 'damaged', side: id(c, target), amount: n, cause: 'storm' });
     if (target.hp > 0) markLightning(c, opponent(c, target), target, true);

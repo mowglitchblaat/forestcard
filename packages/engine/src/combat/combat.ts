@@ -17,6 +17,7 @@ import { overloadMalus } from '../mechanics/overload.ts';
 import { flushRevives, type TrapRevive } from '../mechanics/revive.ts';
 import { noticeTrigger, type Triggers } from '../mechanics/triggers.ts';
 import { reactToEvent } from '../mechanics/reaction.ts';
+import type { Terrain } from '../mechanics/terrain.ts';
 import { puppetFell, type Control, type ControlHost } from '../mechanics/threads.ts';
 import { statusBadges } from './badges.ts';
 import { NO_MAGIC, NO_TRAP, newStatus, normalizePassives, type Side } from './state.ts';
@@ -55,6 +56,7 @@ export type Combat = {
   control: Control | null;
   pendingControl: Side | null;
   controlHost?: ControlHost;
+  terrain: Terrain | null; // the terrain in play (mechanics/terrain.ts)
 };
 
 // A magic or trap forged during the combat: its improved effect, its forge level, the triggers the
@@ -239,6 +241,7 @@ export function createCombat(rules: Rules, seed: number, onEvent: OnEvent): Comb
     forged: new Map(),
     control: null,
     pendingControl: null,
+    terrain: null,
   };
   return combat;
 }

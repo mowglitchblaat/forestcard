@@ -1803,6 +1803,53 @@ test('orage : désactivé (pas de regles.orage), aucun éclair', () => {
   assert.ok(!r.journal.some(e => e.k === 'orage'));
 });
 
+// ================= Terrains (orage, essaim) =================
+
+const ESSAIM = (chance, extra = {}) => ({ terrain: { tirage: [{ terrain: 'essaim', poids: 1 }], essaim: { chance, collection: 10, ...extra } } });
+
+test('terrain : tiré au début du combat parmi les terrains pondérés, annoncé juste après le début', () => {
+  const r = combat([C('A', 1, SOLIDE)], [C('B', 1, SOLIDE)], { regles: { maxTours: 2, maxProlong: 0, ...ESSAIM(0) } });
+  assert.equal(r.journal[1].t, 'terrain');
+  assert.equal(r.journal[1].terrain, 'essaim');
+  assert.equal(r.journal[1].cause, 'tirage');
+  const aucun = combat([C('A', 1, SOLIDE)], [C('B', 1, SOLIDE)], { regles: { maxTours: 2, maxProlong: 0, terrain: { tirage: [{ terrain: null, poids: 1 }] } } });
+  assert.ok(!aucun.journal.some(e => e.t === 'terrain'), 'tirage « aucun terrain »');
+});
+
+test('terrain : sans poids, aucun tirage, le combat est inchangé', () => {
+  const sans = combat([C('A', 3, 100)], [C('B', 4, 100)]);
+  const vide = combat([C('A', 3, 100)], [C('B', 4, 100)], { regles: { terrain: { tirage: [{ terrain: 'orage', poids: 0 }] } } });
+  assert.deepEqual(vide.journal.map(e => e.txt), sans.journal.map(e => e.txt));
+});
+
+test('essaim : le combattant qui joue peut être piqué (saignement), jamais un Xénoptera, qui frappe +10 %', () => {
+  const r = combat([C('Mante', 20, SOLIDE, { collection_id: 10 })], [C('Loup', 20, SOLIDE, { collection_id: 1 })], { regles: { maxTours: 4, maxProlong: 0, ...ESSAIM(100) } });
+  const piqures = lignes(r, e => e.k === 'essaim');
+  assert.ok(piqures.length > 0);
+  assert.ok(piqures.every(e => e.c === 1), 'seul le Loup est piqué');
+  assert.ok(lignes(r, e => e.k === 'saignement' || /saigne/.test(e.txt)).length > 0);
+  assert.equal(lignes(r, e => e.t === 'degats' && e.c === 1 && !e.k)[0].n, 22, 'la Mante frappe 20 + 10 %');
+  assert.equal(lignes(r, e => e.t === 'degats' && e.c === 0 && !e.k)[0].n, 20);
+});
+
+test('orage (terrain) : des éclairs, et les cartes au passif foudre frappent +10 %', () => {
+  const r = combat([C('Dragon', 20, SOLIDE, { passif: { type: 'foudre', chance: 0 } })], [C('B', 20, SOLIDE)], { regles: { maxTours: 4, maxProlong: 0, terrain: { tirage: [{ terrain: 'orage', poids: 1 }], orage: { chance: 100, degats: 18 } } } });
+  assert.ok(lignes(r, e => e.t === 'statut' && e.k === 'orage').length > 0, 'les éclairs tombent');
+  assert.equal(lignes(r, e => e.t === 'degats' && e.c === 1 && !e.k)[0].n, 22);
+});
+
+test('invocation de terrain : une magie, un passif (en entrant en jeu), un ultime ou un piège le changent jusqu\'à la fin', () => {
+  const magie = combat([C('A', 1, SOLIDE), MAG('Appel', { type: 'terrain', terrain: 'orage' })], [C('B', 1, SOLIDE)], { regles: { maxTours: 2, maxProlong: 0, ...ESSAIM(0) } });
+  const t = lignes(magie, e => e.t === 'terrain');
+  assert.deepEqual(t.map(e => [e.terrain, e.cause]), [['essaim', 'tirage'], ['orage', 'effet']]);
+  const passif = combat([C('Ruche', 1, SOLIDE, { passif: { type: 'terrain', terrain: 'essaim' } })], [C('B', 1, SOLIDE)], { regles: { maxTours: 2, maxProlong: 0 } });
+  assert.deepEqual(lignes(passif, e => e.t === 'terrain').map(e => [e.terrain, e.cause, e.c]), [['essaim', 'passif', 0]]);
+  const ultime = combat([C('A', 1, SOLIDE, { ultime: { type: 'terrain', terrain: 'essaim', apres_tours: 1, utilisations: 1 } })], [C('B', 1, SOLIDE)], { regles: { maxTours: 4, maxProlong: 0 } });
+  assert.ok(lignes(ultime, e => e.t === 'terrain' && e.terrain === 'essaim' && e.cause === 'effet').length === 1);
+  const piege = combat([C('A', 1, SOLIDE)], [C('B', 1, SOLIDE), PIE('Nid', { type: 'adv_attaque' }, { type: 'terrain', terrain: 'essaim' })], { regles: { maxTours: 2, maxProlong: 0 } });
+  assert.ok(lignes(piege, e => e.t === 'terrain' && e.terrain === 'essaim').length === 1);
+});
+
 // ================= Fils et contrôle (marionnette) =================
 const FILS = { type: 'fils', chance: 100, nbfils: 5, pctctrl: 100 };
 

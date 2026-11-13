@@ -197,6 +197,8 @@ export const TRIGGER_FACT: { [K in EventType]: Classify<K> | null } = {
   reconstructionFailed: null,
   scaled: null,
   stormStruck: null,
+  terrainChanged: null,
+  stung: null,
   forgeCreated: null,
   overloadEnded: null,
   voltCharged: null,

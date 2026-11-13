@@ -62,6 +62,7 @@ import { ultimate } from '../mechanics/ultimates.ts';
 import { aliveAtEnd, aliveAtStart, countTurn, everyTurnPassives } from './turn.ts';
 import { knellRises } from '../mechanics/knell.ts';
 import { stormAtStart } from '../mechanics/storm.ts';
+import { terrainAtStart, terrainStrike } from '../mechanics/terrain.ts';
 import { headshotStrike, targetingEnd } from '../mechanics/headshot.ts';
 import { moltAtStart, moltWatch, mutationQuiet } from '../mechanics/insect.ts';
 import { mistEnd } from '../mechanics/mist.ts';
@@ -87,6 +88,7 @@ type TurnStep = Step<Side>;
 const START_OF_TURN: TurnStep[] = [
   aliveAtStart,
   stormAtStart, // the storm (a combat event): a bolt may strike either fighter
+  terrainAtStart, // the terrain (mechanics/terrain.ts): a bolt, a sting
   moltAtStart, // the molt, before anything else of its turn
   delayedMagicAtStart, // a magic waiting for this turn acts
   solidificationAtStart,
@@ -128,6 +130,7 @@ const STRIKE: StrikeStep[] = [
   dodge, // a dodge cancels the strike and its effects
   swallowAttempt, // third successful attack: swallowing replaces the damage
   strikePower,
+  terrainStrike, // the terrain favours this card: more damage
   dischargeStrike, // the charged attack of an accumulator
   headshotStrike, // a headshot (a critical hit) comes before the block and the reductions
   criticalStrike, // else the critical chance; the updraft

@@ -1687,6 +1687,20 @@ function orageAmbiance(niv){nfxStart();const L=Math.max(1,Math.min(5,Math.round(
   t=setTimeout(loop,L>=3?600:1800);
   const stop=()=>{if(!on)return;on=false;clearTimeout(t);if(nuit){nuit.style.opacity='0';setTimeout(()=>nuit.remove(),2600)}if(ciel)ciel.remove()};
   fxAll.add(stop);return stop}
+// Terrains (packages/engine/src/mechanics/terrain.ts) : l'ambiance du terrain en jeu, remplacée quand une carte en invoque un autre.
+// ORAGE_FOND : l'orage de fond de l'événement Orage ou d'un combat de boss (lancé au début) ; le terrain Orage ne le double pas.
+let TERRAIN=null,TERRAIN_STOP=null,ORAGE_FOND=false;
+function terrainAmbiance(t){if(TERRAIN_STOP){TERRAIN_STOP();TERRAIN_STOP=null}TERRAIN=t;
+ if(t==='orage'&&!ORAGE_FOND)TERRAIN_STOP=orageAmbiance();else if(t==='essaim')TERRAIN_STOP=essaimAmbiance()}
+// Essaim : des insectes qui volent en tous sens au-dessus du combat (et, sur le site seulement, une lueur verdâtre sur les bords)
+function essaimAmbiance(){const box=orageCouche('z-index:8;overflow:hidden'),N=14,an=[];
+ if(SITE){const v=orageCouche('z-index:7;opacity:0;transition:opacity 2s;background:radial-gradient(ellipse at 50% 55%,transparent 40%,rgba(54,83,20,.35) 100%)');requestAnimationFrame(()=>{v.style.opacity='1'});box._voile=v}
+ for(let i=0;i<N;i++){const d=document.createElement('span');d.textContent=['🐝','🪰','🦟','🐝'][i%4];d.style.cssText='position:absolute;left:0;top:0;font-size:'+R(1.6,2.6).toFixed(2)+'vh;opacity:.85;filter:drop-shadow(0 0 2px #000)';box.appendChild(d);
+  const pts=Array.from({length:7},()=>[R(-5,105),R(5,95)]);pts.push(pts[0]);
+  const a=d.animate(pts.map(([x,y])=>({transform:`translate(${x}vw,${y}vh) rotate(${R(-40,40)}deg)`})),{duration:R(7000,12000),iterations:Infinity,easing:'ease-in-out',delay:-R(0,8000)});an.push(a)}
+ let on=true;const stop=()=>{if(!on)return;on=false;an.forEach(a=>a.cancel());box.remove();if(box._voile){box._voile.style.opacity='0';setTimeout(()=>box._voile.remove(),2100)}};
+ fxAll.add(stop);return stop}
+function nEssaim(c){nfxStart();const b=nbox(c);if(!b)return;nshake(c,.5);nflash(c,'#a3e635',300);nburst(b.cx,b.cy,14,'#bef264',4,2.5,30);flot(c,'🐝 PIQÛRE !','#bef264','big')}
 function nOrage(c){nfxStart();const b=nbox(c);if(!b)return;const x=b.cx+R(-b.w*.12,b.w*.12);
  nbolt(x+R(-70,70),0,x,b.cy-b.h*.05,'#e0e7ff',5.5,24);setTimeout(()=>nbolt(x+R(-50,50),0,b.cx+R(-b.w*.2,b.w*.2),b.cy+b.h*.1,'#a5b4fc',3,16),90);
  setTimeout(()=>{nflash(c,'#c7d2fe',520);nshake(c,.9);nring(b.cx,b.cy,b.w*.08,b.w*.95,'rgba(224,231,255,.95)',5,26);nglow(b.cx,b.cy,16,'#e0e7ff',4.5,12,32);nburst(b.cx,b.cy,18,'#ffffff',6,2.5,30)},60);
@@ -1775,7 +1789,7 @@ Object.assign(NK,{
  'statut:fils':e=>nFils(e.c,e.n,e.of),'statut:fils_cout':e=>flot(e.c,'🎭 Marionnettiste -'+e.n+' PV ('+e.hp+'/'+e.m+')','#e879f9'),
  'statut:forge':e=>{nForge(e.c,e.n,e.s,e.m);forgeBadge(e.c,e.s,e.n)},'statut:forge_vide':e=>flot(e.c,'Plus rien à forger','#fdba74'),
  'statut:arme_immunite':e=>flot(e.c,'⚔️ Arme vivante : insensible','#fdba74'),'statut:arme_feu':e=>flot(e.c,e.f?'🔥 Le feu la forge !':'🔥 Sans effet','#fb923c',e.f?'big':undefined),'statut:fauche':e=>nFauche(e.c,e.cible,e.n,e.p,e.a),'statut:laser':e=>nLaser(e.c,e.cible,e.n,e.p),
- 'statut:orage':e=>nOrage(e.c),
+ 'statut:orage':e=>nOrage(e.c),'statut:essaim':e=>nEssaim(e.c),
  'statut:reconstruction_ratee':e=>flot(e.c,'🔧 Reconstruction ratée ('+e.n+' %)','#94a3b8'),'statut:forge_creation':e=>{nForgeCreation(e.c,e.s==='piege');forgeBadge(e.c,e.s==='piege'?'trap':'magic',0)}});
 async function jouer(res){
  file.push(res);if(enCours)return;enCours=true;
@@ -1785,9 +1799,10 @@ async function jouer(res){
    $('#ban').className=e.t;$('#ban').textContent=e.txt;$('#log').innerHTML+=e.txt+'<br>';$('#log').scrollTop=1e5;
    if(e.t==='debut'||e.t==='prolongation'||e.t==='relais'||e.t==='controle'||e.t==='controle_fin'){chargerZones(e.joueurs);chargerChiffres(e.joueurs)}
    try{allumerEffets(e)}catch(_){}
-   if(e.t==='debut'){beltsDebut(R);EQUIPE=e.equipe?[{n:1,of:e.equipe},{n:1,of:e.equipe}]:[null,null];st={};fxL.length=0;fxAll.forEach(s=>s());fxAll.clear();if(e.orage||R.tempete)orageAmbiance(R.tempete||undefined);/* R.tempete : le fond orageux d'un combat de boss (83-boss-duel.sql) */JOUEURS=[];[0,1].forEach(i=>$('#p'+i).classList.remove('actif','idle'));e.joueurs.forEach((j,i)=>panneau(i,j));titreBan(e.joueurs);$('#scene').classList.add('on');maj(e);await wait(2200);   // les 3 dos de chaque joueur, puis les combattants se retournent
+   if(e.t==='debut'){beltsDebut(R);EQUIPE=e.equipe?[{n:1,of:e.equipe},{n:1,of:e.equipe}]:[null,null];st={};fxL.length=0;fxAll.forEach(s=>s());fxAll.clear();TERRAIN=null;TERRAIN_STOP=null;ORAGE_FOND=!!(e.orage||R.tempete);if(ORAGE_FOND)orageAmbiance(R.tempete||undefined);/* R.tempete : le fond orageux d'un combat de boss (83-boss-duel.sql) */JOUEURS=[];[0,1].forEach(i=>$('#p'+i).classList.remove('actif','idle'));e.joueurs.forEach((j,i)=>panneau(i,j));titreBan(e.joueurs);$('#scene').classList.add('on');maj(e);await wait(2200);   // les 3 dos de chaque joueur, puis les combattants se retournent
     await Promise.all([0,1].map(i=>retourner($('#p'+i+' .card'),()=>{const d=$('#p'+i+' .dosf');if(d)d.remove()})));await wait(900);continue}
-   if(e.t==='prolongation'){await prolongation(e);continue}
+   if(e.t==='prolongation'){await prolongation(e);if(ORAGE_FOND)orageAmbiance(R.tempete||undefined);if(TERRAIN){const t=TERRAIN;TERRAIN_STOP=null;terrainAmbiance(t)}continue}
+   if(e.t==='terrain'){terrainAmbiance(e.terrain);$('#ban').animate([{transform:'scale(1)'},{transform:'scale(1.2)'},{transform:'scale(1)'}],{duration:700});await wait(1800);continue}
    if(e.t==='relais'){await relais(e);continue}
    if(e.t==='controle'){await marionnette(e,R.journal[ix+1]);continue}   // fils : prise de contrôle
    if(e.t==='controle_fin'){await finControle(e);continue}
@@ -2032,6 +2047,7 @@ if(DEMO){
   ['Orage','Orage : éclairs lointains, puis un éclair frappe la carte',async c=>{const stop=orageAmbiance(1);await wait(1200);nOrage(c);await wait(1500);stop()},3000],
   ['Orage','Orage intensité 3 : éclairs sur tout l\'écran, flashs dans le ciel',async c=>{const stop=orageAmbiance(3);await wait(4500);nOrage(c);await wait(1500);stop()},6000],
   ['Orage','Orage intensité 5 : la tempête (ciel assombri)',async c=>{const stop=orageAmbiance(5);await wait(5000);nOrage(c);await wait(1500);stop()},7000],
+  ['Terrain','Terrain Essaim : les insectes volent au-dessus du combat, puis une piqûre',async c=>{const stop=essaimAmbiance();await wait(2500);nEssaim(c);await wait(1500);stop()},4500],
   ['Laser','Tir laser : cible pleine de vie',c=>nLaser(c,1-c,30,100),1800],
   ['Laser','Tir laser : cible presque morte (15 % de PV)',c=>nLaser(c,1-c,3,15),1800],
   ['Forge','Forge de création : une nouvelle magie',async c=>{nForgeCreation(c,false)},2400],

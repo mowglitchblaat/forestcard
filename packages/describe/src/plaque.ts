@@ -19,6 +19,8 @@ const ROOTS: Record<string, string> = {
   empoisonne: 'Enracinement empoisonné',
   inhibiteur: 'Enracinement inhibiteur',
 };
+const TERRAINS: Record<string, string> = { orage: 'Terrain : Orage', essaim: 'Terrain : Essaim' };
+const terrainLabel = (e: Fx) => TERRAINS[String(e.terrain)] ?? 'Terrain';
 const rootLabel = (e: Fx) => ROOTS[String(e.variante)] ?? 'Enracinement';
 
 const BREATHS: Record<string, string> = {
@@ -115,6 +117,7 @@ const EFFECT_LABELS: Record<EffectType, (e: Fx) => string> = {
   sangsue_toxique: () => 'Sangsue toxique',
   injection_virulente: () => 'Injection virulente',
   surcharge: () => 'Surcharge',
+  terrain: terrainLabel,
   forge: () => 'Forge',
   forge_creation: () => 'Forge de création',
   fils: () => 'Fils',
@@ -177,6 +180,7 @@ const PASSIVE_LABELS: Record<PassiveType, (p: Fx) => string> = {
   fureur_incandescente: () => 'Fureur incandescente',
   sangsue_toxique: () => 'Sangsue toxique',
   accumulateur: () => 'Accumulateur',
+  terrain: terrainLabel,
   forge: () => 'Forge',
   forge_creation: () => 'Forge de création',
   fils: () => 'Fils',

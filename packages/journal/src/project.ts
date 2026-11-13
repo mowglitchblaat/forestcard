@@ -19,6 +19,14 @@ import type {
   StatusKind,
 } from '@forestcard/engine';
 
+// The terrains (packages/engine/src/mechanics/terrain.ts): their name, and their rule in one line.
+const TERRAIN_NAMES = { orage: "l'Orage", essaim: "l'Essaim" } as const;
+const TERRAIN_RULES = {
+  orage: 'Des éclairs peuvent frapper les combattants ; les cartes de foudre frappent plus fort.',
+  essaim:
+    "L'essaim pique les combattants (saignement) ; les Xénoptera sont épargnés et frappent plus fort.",
+} as const;
+
 export type JournalLine = {
   t: string;
   txt: string;
@@ -601,6 +609,24 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
         t: 'statut',
         txt: `⚡ ORAGE ! Un éclair frappe ${name(e.side)} !`,
         o: { c: e.side, k: 'orage' },
+      };
+    case 'terrainChanged': {
+      const terrain = TERRAIN_NAMES[e.terrain];
+      const txt =
+        e.side === undefined
+          ? `Terrain : ${terrain} ! ${TERRAIN_RULES[e.terrain]}`
+          : `${name(e.side)} invoque ${terrain}${e.cause === 'passif' ? ' en entrant en jeu' : ''} ! ${TERRAIN_RULES[e.terrain]}`;
+      return {
+        t: 'terrain',
+        txt,
+        o: { terrain: e.terrain, cause: e.cause, ...(e.side === undefined ? {} : { c: e.side }) },
+      };
+    }
+    case 'stung':
+      return {
+        t: 'statut',
+        txt: `🐝 L'essaim pique ${name(e.side)} !`,
+        o: { c: e.side, k: 'essaim' },
       };
     case 'scaled': {
       const scythe = e.kind === 'fauche';

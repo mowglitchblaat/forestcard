@@ -210,6 +210,7 @@ function SettingsForms({ v }: { v: Settings }) {
   const bounty = useAction();
   const storm = useAction();
   const referral = useAction();
+  const terrains = useAction();
   const recycling = useAction();
   const exchanges = useAction();
   const images = useAction();
@@ -796,6 +797,164 @@ function SettingsForms({ v }: { v: Settings }) {
             </Button>
           </div>
           <NoticeView notice={storm.notice} />
+        </form>
+      </AdminSection>
+
+      <AdminSection
+        title="🌍 Terrains"
+        description="Au début de chaque combat, un terrain est tiré au sort selon les poids (« aucun » compris) ; il vaut pour les deux combattants jusqu'à la fin du combat, ou jusqu'à ce qu'une carte en invoque un autre (effet ou passif « Invocation de terrain », valable même tirage éteint). Chaque terrain avantage ses cartes : la foudre sous l'Orage, les Xénoptera dans l'Essaim."
+      >
+        <form
+          className="flex flex-col gap-3"
+          onSubmit={(e) => {
+            const f = form(e);
+            terrains.run(async () => {
+              await saveSettings({
+                terrain_actif: f.get('on') === 'on' ? 1 : 0,
+                terrain_poids_aucun: clamp(f.get('pa'), 0, 1000),
+                terrain_poids_orage: clamp(f.get('po'), 0, 1000),
+                terrain_poids_essaim: clamp(f.get('pe'), 0, 1000),
+                terrain_orage_chance: clamp(f.get('och'), 0, 100),
+                terrain_orage_degats: clamp(f.get('odeg'), 0, 10000),
+                terrain_orage_bonus: clamp(f.get('obon'), 0, 1000),
+                terrain_essaim_chance: clamp(f.get('ech'), 0, 100),
+                terrain_essaim_niveau: clamp(f.get('eniv'), 1, 3),
+                terrain_essaim_tours: clamp(f.get('etr'), 1, 20),
+                terrain_essaim_bonus: clamp(f.get('ebon'), 0, 1000),
+              });
+              return 'Terrains enregistrés.';
+            });
+          }}
+        >
+          <Choice>
+            <Checkbox name="on" defaultChecked={setting(v, 'terrain_actif', 0) === '1'} /> Tirage
+            d'un terrain au début de chaque combat
+          </Choice>
+          <Row>
+            <Field label="Poids : aucun terrain">
+              <Input
+                name="pa"
+                type="number"
+                min={0}
+                max={1000}
+                defaultValue={setting(v, 'terrain_poids_aucun', 2)}
+                className="w-24"
+              />
+            </Field>
+            <Field label="Poids : Orage">
+              <Input
+                name="po"
+                type="number"
+                min={0}
+                max={1000}
+                defaultValue={setting(v, 'terrain_poids_orage', 1)}
+                className="w-24"
+              />
+            </Field>
+            <Field label="Poids : Essaim">
+              <Input
+                name="pe"
+                type="number"
+                min={0}
+                max={1000}
+                defaultValue={setting(v, 'terrain_poids_essaim', 1)}
+                className="w-24"
+              />
+            </Field>
+          </Row>
+          <p className="text-sm font-medium">
+            ⛈️ Orage : un éclair peut frapper l'un des combattants au début de chaque tour ; les
+            cartes au passif foudre frappent plus fort
+          </p>
+          <Row>
+            <Field label="Chance d'un éclair à chaque tour %">
+              <Input
+                name="och"
+                type="number"
+                min={0}
+                max={100}
+                defaultValue={setting(v, 'terrain_orage_chance', 10)}
+                className="w-24"
+              />
+            </Field>
+            <Field label="Dégâts de l'éclair">
+              <Input
+                name="odeg"
+                type="number"
+                min={0}
+                max={10000}
+                defaultValue={setting(v, 'terrain_orage_degats', 18)}
+                className="w-24"
+              />
+            </Field>
+            <Field label="Bonus de dégâts des cartes foudre %">
+              <Input
+                name="obon"
+                type="number"
+                min={0}
+                max={1000}
+                defaultValue={setting(v, 'terrain_orage_bonus', 10)}
+                className="w-24"
+              />
+            </Field>
+          </Row>
+          <p className="text-sm font-medium">
+            🐝 Essaim : le combattant qui joue peut être piqué (saignement) ; les Xénoptera ne sont
+            jamais piqués et frappent plus fort
+          </p>
+          <Row>
+            <Field label="Chance de piqûre à chaque tour %">
+              <Input
+                name="ech"
+                type="number"
+                min={0}
+                max={100}
+                defaultValue={setting(v, 'terrain_essaim_chance', 20)}
+                className="w-24"
+              />
+            </Field>
+            <Field label="Niveau du saignement (1 à 3)">
+              <Input
+                name="eniv"
+                type="number"
+                min={1}
+                max={3}
+                defaultValue={setting(v, 'terrain_essaim_niveau', 1)}
+                className="w-24"
+              />
+            </Field>
+            <Field label="Tours de saignement">
+              <Input
+                name="etr"
+                type="number"
+                min={1}
+                max={20}
+                defaultValue={setting(v, 'terrain_essaim_tours', 2)}
+                className="w-24"
+              />
+            </Field>
+            <Field label="Bonus de dégâts des Xénoptera %">
+              <Input
+                name="ebon"
+                type="number"
+                min={0}
+                max={1000}
+                defaultValue={setting(v, 'terrain_essaim_bonus', 10)}
+                className="w-24"
+              />
+            </Field>
+          </Row>
+          <p className="text-sm text-muted-foreground">
+            {setting(v, 'terrain_actif', 0) === '1'
+              ? '🌍 Tirage actif : chaque combat commence sur un terrain tiré au sort.'
+              : 'Tirage éteint : seules les cartes qui invoquent un terrain en posent un.'}
+          </p>
+          <div>
+            <Button type="submit" disabled={terrains.pending}>
+              Enregistrer
+            </Button>
+          </div>
+          <NoticeView notice={terrains.notice} />
         </form>
       </AdminSection>
 

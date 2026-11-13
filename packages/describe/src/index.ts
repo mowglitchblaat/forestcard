@@ -99,6 +99,14 @@ const blazeTxt = `Embrasement : la carte s'enflamme pendant 2 de ses tours : ATQ
 const furyTxt = `Fureur incandescente : chaque perte de PV donne +${L.fureurPct} % d'ATQ à ses coups (jusqu'à +${L.fureurMax} %) ; chaque soin en retire un`;
 const leechTxt = `Sangsue toxique : à chaque tic de poison de l'adversaire, récupère ${L.sangsue[0]} / ${L.sangsue[1]} / ${L.sangsue[2]} % de ses dégâts (poison I / II / III)`;
 const injectionTxt = `Injection virulente : sans poison, pose un poison I (3 tours) ; empoisonné, son poison monte d'un niveau ; au poison III, dégâts bruts : ${L.injection} % des dégâts de poison restants (le poison reste)`;
+// The terrains (packages/engine/src/mechanics/terrain.ts): the one a card invokes, and its rule.
+const TERRAIN_TXT: Record<string, string> = {
+  orage:
+    "l'Orage (à chaque tour, un éclair peut frapper l'un des combattants ; les cartes de foudre frappent plus fort)",
+  essaim:
+    "l'Essaim (à chaque tour, le combattant qui joue peut être piqué : saignement ; les Xénoptera sont épargnés et frappent plus fort)",
+};
+const terrainTxt = (e: Fx) => TERRAIN_TXT[String(e.terrain)] ?? 'un terrain';
 const overloadTxt = `Surcharge : s'électrocute (${L.surchargeAuto} % de ses PV max), puis pendant 2 tours : ATQ −${L.surchargeAtq} %, ${L.surchargeEnchainement} % de chances d'enchaîner (jusqu'à 3 coups), chaque coup pose la foudre`;
 const forgeTxt = `Forge : améliore au hasard une de ses cartes (son combattant, sa magie ou son piège encore armé, ${L.forgeMax} forges max par carte) : ATQ ou PV max (+${L.forgeStatMin} à ${L.forgeStatMax} %), ou une valeur déjà inscrite (+${L.forgeValeurMin} à ${L.forgeValeurMax} %, chance +${L.forgeChanceMin} à ${L.forgeChanceMax} points, durée +1 tour, niveau +1) ; un piège peut gagner un déclenchement (${L.forgeDeclenchement} % de chances, une fois)`;
 const forgeCreationTxt =
@@ -160,7 +168,7 @@ const ELEMENTS = ['brulure', 'gel', 'malediction', 'poison', 'saignement', 'fati
 // A leveled status takes the effect's level (`niveau`), else the level of its old value (`sval`).
 const elementText = (el: string, v: number, e: Fx): string | undefined =>
   (
-    {
+    ({
       brulure: burnTxt({ niveau: e.niveau, pctpv: v }),
       gel: `gel ${v} % d'attaque annulée`,
       malediction: `malédiction ${curseTxt}`,
@@ -168,7 +176,7 @@ const elementText = (el: string, v: number, e: Fx): string | undefined =>
       saignement: bleedTxt({ niveau: e.niveau, pctpv: v }),
       fatigue: fatigueTxt({ niveau: e.niveau, fatval: v }),
       foudre: 'poser un niveau de marque de foudre',
-    } as Record<string, string>
+    }) as Record<string, string>
   )[el];
 
 // The riposte of a block (bloque_attaque), once, on the first strike it blocks.
@@ -288,6 +296,7 @@ const PASSIVE_TEXT: Record<PassiveType, (p: Fx, x: PassiveContext) => string> = 
   foudre: (_, { c }) => `${c} % de chances, à chaque coup, de ${lightningTxt}`,
   fureur_incandescente: () => furyTxt,
   sangsue_toxique: () => leechTxt,
+  terrain: (p) => `En entrant en jeu, invoque ${terrainTxt(p)}, jusqu'à la fin du combat`,
   accumulateur: () =>
     `Accumulateur : chaque marque de foudre posée lui donne une charge ; à ${L.accumulateurCharges} charges, sa prochaine attaque fait +${L.accumulateurBonus} %`,
   forge: (p) => forgeTxt.replace(/^Forge : a/, `Forge ${tousT(nz(p.tours) || 2)} : a`),
@@ -590,6 +599,7 @@ const EFFECT_TEXT: Record<EffectType, (e: Fx, x: EffectContext) => string[]> = {
   sangsue_toxique: (e) => [`${leechTxt}, ${trs(nz(e.tours) || 2)}`],
   injection_virulente: () => [injectionTxt],
   surcharge: () => [overloadTxt],
+  terrain: (e) => [`Invoque ${terrainTxt(e)}, jusqu'à la fin du combat`],
   forge: () => [forgeTxt],
   forge_creation: () => [forgeCreationTxt],
   fils: (e) => [`Pose ${threadsTxt(e)} sur l'adversaire ; ${controlTxt(e)}`],
