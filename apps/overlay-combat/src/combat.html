@@ -2352,7 +2352,7 @@ function annoncer(R){
  if(!msg){const f=R.journal&&R.journal[R.journal.length-1];msg=f&&f.t==='fin'&&f.txt?String(f.txt):'';diagLive('pas d\'annonce dans le combat reçu'+(msg?', texte de fin utilisé':''))}
  if(!msg)return;
  if(!wsLive||wsLive.readyState!==1){diagLive('WebSocket fermé : annonce perdue');return}
- const a=actionSB(ACTION_FIN);
+ const a=actionSB(ACTION_FIN)||actionSB('Combat - Résultat');   // le nom de l'URL (?action=) introuvable : l'action par défaut
  if(!a&&!ACTION_FIN_ID)diagLive('action « '+ACTION_FIN+' » introuvable dans Streamer.bot ('+actionsSB.length+' actions lues)');
  wsLive.send(JSON.stringify({request:'DoAction',id:'fin-combat',action:ACTION_FIN_ID?{id:ACTION_FIN_ID}:a?{id:a.id,name:a.name}:{name:ACTION_FIN},args:{message:msg}}));
  diagLive('annonce envoyée : '+msg);
