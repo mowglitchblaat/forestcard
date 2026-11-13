@@ -1681,6 +1681,24 @@ test('forge : un piège épuisé ne se forge pas ; un piège peut gagner un déc
   assert.ok(plus > 0, 'déjà vu en 40 combats');
 });
 
+test('forge de création : avec les cartes du jeu (regles.forgeCartes), elle forge une magie ou un piège existant, avec son image', () => {
+  const cartes = [
+    { id: 1, nom: 'Armure', type: 'magie', image: 'armure.webp', effet: { type: 'atq_mod', cible: 'soi', val: 5 } },
+    { id: 2, nom: 'Drain', type: 'piege', image: 'drain.webp', effet: { condition: { type: 'adv_attaque' }, effet: { type: 'degats', val: 3 }, declenchements: 1 } },
+  ];
+  const r = combat([C('A', 10, 1000, { passif: { type: 'forge_creation', tours: 1 } })], [C('B', 1, SOLIDE)], { regles: { maxTours: 4, maxProlong: 0, forgeCartes: cartes } });
+  const l = lignes(r, e => e.k === 'forge_creation');
+  assert.ok(l.length > 0);
+  for (const e of l) {
+    const carte = cartes.find(k => k.nom === e.carte);
+    assert.ok(carte, 'une carte existante');
+    assert.equal(e.img, carte.image);
+    assert.equal(e.s, carte.type);
+  }
+  const magie = l.find(e => e.s === 'magie');
+  if (magie) assert.ok(lignes(r, e => e.t === 'magie' && e.carte === 'Armure').length > 0, 'la magie forgée est jouée');
+});
+
 test('forge de création : une nouvelle magie ou un nouveau piège, la carte épuisée en priorité', () => {
   const r = combat([C('A', 10, 1000, { ultime: { type: 'forge_creation', apres_tours: 1, utilisations: 1 } })], [C('B', 1, SOLIDE)], { regles: { maxTours: 4, maxProlong: 0 } });
   const l = lignes(r, e => e.k === 'forge_creation');

@@ -384,7 +384,7 @@ export type DomainEvent =
       side: SideIndex;
       kind: 'magie' | 'piege';
       card: Card;
-      effect: RandomEffectKey;
+      effect?: RandomEffectKey; // absent: one of the game's existing cards (rules.forgeCartes)
       replaced: boolean;
       condition?: string;
     }

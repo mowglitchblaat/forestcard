@@ -18,8 +18,10 @@
 //     LIVING_WEAPON.forgeMax forges (6) instead of forgeMax, and each time it is forged, LIVING_WEAPON.double %
 //     (50) of chances to be forged once more (a double forge counts for two). A burn laid on it
 //     forges it instead (mechanics/living-weapon.ts).
-//   - Creation forge (forge_creation): forges a new magic or a new trap, whose effect is drawn
-//     among the game's effects (the pool of the random effect), and puts it in play in its slot. A spent
+//   - Creation forge (forge_creation): forges a magic or a trap and puts it in play in its slot. It is
+//     one of the game's existing magics or traps (rules.forgeCartes, drawn at random; a magic is then
+//     revealed and acts as when a combat starts), else a new card whose effect is drawn among the
+//     game's effects (the pool of the random effect). A spent
 //     slot (no magic acting or waiting, no armed trap) is filled first; with both or neither spent,
 //     magic or trap is drawn. A replaced magic's effects are undone. A forged trap gets a condition
 //     drawn from a short list, and one trigger.
@@ -32,6 +34,7 @@ import type { ForgeField, ForgeSlot, RandomEffectKey } from '../events.ts';
 import type { Card, EffectData, TrapCondition } from '../model/card.ts';
 import { MAX_LEVEL } from '../model/levels.ts';
 import { randomEffectPool } from './random.ts';
+import { revealMagic } from './magic-timing.ts';
 import { undoMagic } from './theft.ts';
 
 // Living weapon (passive arme_vivante): forges its fighter can take, % of chances of a double forge.
@@ -375,6 +378,11 @@ export function forgeCreation(c: Combat, o: Side): void {
   const t = trapSpent(o, c);
   const kind: 'magie' | 'piege' =
     m !== t ? (m ? 'magie' : 'piege') : c.random() < 0.5 ? 'magie' : 'piege';
+  const existing = (c.rules.forgeCartes ?? []).filter((k) => k && k.type === kind && k.effet);
+  if (existing.length) {
+    forgeExisting(c, o, kind, existing, kind === 'magie' ? !m : !t);
+    return;
+  }
   const pool = randomEffectPool(c, o, x);
   const [key, make] = pool[Math.floor(c.random() * pool.length)] as [
     RandomEffectKey,
@@ -421,6 +429,45 @@ export function forgeCreation(c: Combat, o: Side): void {
       effect: key,
       replaced,
       condition: condition.type,
+    });
+  }
+  c.sides.forEach((s) => (s.cardActivated = 1));
+}
+
+// The creation forge forges one of the game's existing cards: a copy of it (its own identity in this
+// combat), in its slot.
+function forgeExisting(
+  c: Combat,
+  o: Side,
+  kind: 'magie' | 'piege',
+  pool: Card[],
+  replaced: boolean,
+): void {
+  const card: Card = { ...(pool[Math.floor(c.random() * pool.length)] as Card) };
+  if (kind === 'magie') {
+    if (o.magicActive && !o.magicStolen && !o.magic.vide) undoMagic(o);
+    o.magic = card;
+    o.magicActive = 1;
+    o.magicStolen = 0;
+    o.magicCancelStage = 0;
+    o.magicCancelTurns = 0;
+    o.magicStartTurn = 0;
+    o.magicTurnsLeft = 0;
+    emit(c, { type: 'forgeCreated', side: id(c, o), kind, card, replaced });
+    revealMagic(c, o);
+  } else {
+    o.trap = card;
+    o.trapActive = 1;
+    o.trapTriggers = 0;
+    o.trapBlocked = 0;
+    const condition = payloadOf(c, card)?.condition?.type;
+    emit(c, {
+      type: 'forgeCreated',
+      side: id(c, o),
+      kind,
+      card,
+      replaced,
+      ...(condition ? { condition } : {}),
     });
   }
   c.sides.forEach((s) => (s.cardActivated = 1));
