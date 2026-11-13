@@ -456,8 +456,9 @@ export type EventDraft = {
 
 // The lightning a defense can put at stake: the latest one that fell (a successful vote with its
 // strike point).
+const Ids = z.array(z.object({ id: Num }));
 async function latestLightning(): Promise<number | null> {
-  const rows = z.array(z.object({ id: Num })).parse(
+  const rows = Ids.parse(
     await call(
       supabase
         .from('evenements')
