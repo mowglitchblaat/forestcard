@@ -1,5 +1,38 @@
 [
   {
+    "date": "2026-11-13",
+    "intro": "Affrontez le boss en 1 contre 1, invitez vos amis et découvrez une Forge de création qui fabrique de vraies cartes du jeu.",
+    "groupes": [
+      {
+        "titre": "Combat",
+        "points": [
+          "Forge de création : elle forge maintenant une vraie magie ou un vrai piège du jeu, avec son image, qui prend sa place sur le terrain.",
+          "Foudre niveau II : l’éclair rebondit désormais une ou deux fois (au hasard) au lieu de toujours deux."
+        ]
+      },
+      {
+        "titre": "Site",
+        "points": [
+          "Boss en 1 contre 1 : depuis les événements du Lore, affrontez la carte du boss (bien plus forte) avec un combattant de votre collection, 3 essais par jour, sur fond d’orage ; plus vous lui retirez de PV, plus vous gagnez de gold.",
+          "Le boss peut aussi entrer dans une contestation : chaque essai perdu contre lui lui rapporte des points.",
+          "Parrainage : partagez votre lien depuis votre profil ; votre filleul reçoit du gold à son arrivée, et vous êtes récompensé quand il a joué quelques combats."
+        ]
+      },
+      {
+        "titre": "Boutique et boosters",
+        "points": [
+          "Boosters de bienvenue : chaque nouveau joueur reçoit un booster de chaque édition en vente dans la boutique."
+        ]
+      },
+      {
+        "titre": "Animations",
+        "points": [
+          "Le début de combat affiche de nouveau les cartes, le ciel assombri ne recouvre plus l’image du stream, et le site charge toujours la dernière version des animations."
+        ]
+      }
+    ]
+  },
+  {
     "date": "2026-11-12",
     "intro": "L’orage gronde : tempête sur la carte du monde, foudre dans le souffle élémentaire et éclairs plus imprévisibles.",
     "groupes": [
