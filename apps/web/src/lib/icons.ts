@@ -99,6 +99,7 @@ import {
   type LucideIcon,
   Upload,
   User,
+  UserPlus,
   UserRound,
   Users,
   UserX,
@@ -163,6 +164,7 @@ export const ICONS = {
   patchNotes: ScrollText,
   proposals: Palette,
   gifts: Gift,
+  referral: UserPlus, // sponsorship: a player who brings a new one
   settings: SlidersHorizontal,
   votes: Vote,
   lore: Castle, // the lore: story, world map, events

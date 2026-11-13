@@ -7,10 +7,13 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { ThemeProvider } from '@/lib/theme';
 import { router } from '@/router';
 import { routerHash } from '@/views';
+import { captureReferral } from '@/data/referral';
 
 // Legacy anchors (bookmarks, links) are rewritten before the router reads the address.
 const rewritten = routerHash(location.hash);
 if (rewritten) history.replaceState(null, '', rewritten);
+// A sponsor's link (?parrain=…) is kept until the sign-in (data/referral.ts).
+captureReferral();
 
 // Data stays fresh 5 minutes: switching views or tabs, or coming back to the window, does not
 // re-read it (the author's Supabase quota). What must stay live says so itself (the gold, every

@@ -9,11 +9,13 @@ import type { Session } from '@supabase/supabase-js';
 import { type ReactNode, useState } from 'react';
 import { AppSidebar } from '@/components/app-sidebar';
 import { GiftNotes } from '@/components/gift-notes';
+import { ReferralNote } from '@/components/referral-note';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { fetchGameState, gameStateKey } from '@/data/admin';
+import { pendingReferral } from '@/data/referral';
 import { fetchIsAdmin, fetchPlayer, playerKeys, twitchAvatar, twitchNickname } from '@/data/player';
 import { TONES } from '@/lib/tones';
 import { signIn, useSession } from '@/lib/session';
@@ -51,6 +53,7 @@ function signInError(): string {
 function SignedOut() {
   const [signingIn, setSigningIn] = useState(false);
   const [error] = useState(signInError);
+  const [sponsor] = useState(pendingReferral);
   const banned = /banned|bann/i.test(error);
   return (
     <main className="mx-auto max-w-5xl p-4">
@@ -74,7 +77,15 @@ function SignedOut() {
           Ton accès au site est suspendu. Prends contact avec un fondateur pour en parler.
         </p>
       ) : (
-        <p className="mt-4">Connecte-toi avec ton compte Twitch pour voir ta collection.</p>
+        <>
+          {sponsor && (
+            <p className={`mt-4 rounded-xl p-4 ${TONES.gold.box}`}>
+              🤝 <b>{sponsor}</b> t'invite à jouer à Forest Card ! Crée ton compte avec Twitch : tu
+              reçois du gold de bienvenue et un booster de chaque édition de la boutique.
+            </p>
+          )}
+          <p className="mt-4">Connecte-toi avec ton compte Twitch pour voir ta collection.</p>
+        </>
       )}
     </main>
   );
@@ -109,6 +120,7 @@ function SignedIn({ session }: { session: Session }) {
           <Outlet />
         </div>
         <GiftNotes />
+        <ReferralNote userId={userId} />
       </SidebarInset>
     </SidebarProvider>
   );

@@ -9,7 +9,7 @@ import { fetchTrophies, tournamentKeys } from '@/data/tournaments';
 import { getRouteApi, Link } from '@tanstack/react-router';
 import { TONES } from '@/lib/tones';
 import { ICONS, type LucideIcon } from '@/lib/icons';
-import type { ReactNode } from 'react';
+import { type ReactNode, useState } from 'react';
 import { PageSkeleton } from '@/components/skeletons';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,7 @@ import { cardKeys, fetchCollection, fetchGameCards } from '@/data/cards';
 import { fetchMirror, imageKeys, imageUrl } from '@/data/images';
 import { twitchAvatar, twitchNickname } from '@/data/player';
 import { type CardRecord, combatSummary, fetchProfile, profileKeys } from '@/data/profile';
+import { fetchMyReferral, referralKeys, referralLink } from '@/data/referral';
 import { useSession } from '@/lib/session';
 import { pct, progress } from '@/views/collection/model';
 
@@ -150,8 +151,75 @@ export function ProfilePage() {
 
       <Trophies player={id} mine={mine} />
 
+      {mine && <Referral userId={me} nickname={p.pseudo} />}
+
       {mine && <MyCollection userId={me} opened={s?.boosters_ouverts ?? 0} />}
     </div>
+  );
+}
+
+// Sponsorship (84-parrainage.sql): the player's link to share, what it brings, and the newcomers
+// who came by it (combats played until the sponsor is paid).
+function Referral({ userId, nickname }: { userId: string; nickname: string }) {
+  const mine = useQuery({ queryKey: referralKeys.mine(userId), queryFn: fetchMyReferral });
+  const [copied, setCopied] = useState(false);
+  if (!mine.data) return null;
+  const r = mine.data;
+  const link = referralLink(nickname);
+  const copy = () =>
+    void navigator.clipboard.writeText(link).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  const paid = r.filleuls.filter((f) => f.paye).length;
+  return (
+    <section className="flex flex-col gap-3">
+      <h3 className="flex items-center gap-2 text-lg font-semibold">
+        <ICONS.referral className="size-5" /> Parrainage
+      </h3>
+      <Card className="py-4">
+        <CardContent className="flex flex-col gap-3 px-4">
+          <p className="text-sm text-muted-foreground">
+            Partage ton lien : un nouveau joueur qui crée son compte en passant par lui reçoit{' '}
+            <b className="text-foreground">{r.gain_filleul} gold</b> de bienvenue, et toi{' '}
+            <b className="text-foreground">{r.gain_parrain} gold</b> dès qu'il a joué {r.combats}{' '}
+            combats. Pas de limite de filleuls.
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <code className="min-w-0 flex-1 truncate rounded-md bg-muted px-2 py-1.5 text-sm">
+              {link}
+            </code>
+            <Button variant="outline" onClick={copy}>
+              {copied ? <ICONS.copied /> : <ICONS.copy />}
+              {copied ? 'Copié !' : 'Copier'}
+            </Button>
+          </div>
+          {r.parrain && (
+            <p className="text-sm text-muted-foreground">
+              Ton parrain : <b className="text-foreground">{r.parrain}</b>
+            </p>
+          )}
+          {r.filleuls.length > 0 && (
+            <div className="flex flex-col gap-1 text-sm">
+              <span className="text-muted-foreground">
+                {r.filleuls.length} filleul{r.filleuls.length > 1 ? 's' : ''}, {paid} récompensé
+                {paid > 1 ? 's' : ''} ({paid * r.gain_parrain} gold)
+              </span>
+              {r.filleuls.map((f) => (
+                <div key={f.pseudo} className="flex items-center justify-between gap-3">
+                  <span>{f.pseudo}</span>
+                  <span className={f.paye ? TONES.success.text : 'text-muted-foreground'}>
+                    {f.paye
+                      ? `+${r.gain_parrain} gold`
+                      : `${Math.min(f.combats, r.combats)} / ${r.combats} combats`}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </section>
   );
 }
 

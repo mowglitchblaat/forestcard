@@ -209,6 +209,7 @@ function SettingsForms({ v }: { v: Settings }) {
   const gains = useAction();
   const bounty = useAction();
   const storm = useAction();
+  const referral = useAction();
   const recycling = useAction();
   const exchanges = useAction();
   const images = useAction();
@@ -780,9 +781,9 @@ function SettingsForms({ v }: { v: Settings }) {
           </Row>
           <p className="text-sm text-muted-foreground">
             Intensité, sur l'écran du combat (OBS) : 1, quelques éclairs lointains entre les cartes
-            ; 3, des éclairs sur toute la largeur de l'écran et des flashs dans le ciel ; 5, la
-            tempête, le ciel s'assombrit sur les bords. N'agit que sur l'ambiance, pas sur les
-            dégâts.
+            ; 3, des éclairs sur toute la largeur de l'écran et des flashs dans le ciel ; 4 et 5, la
+            tempête, le ciel s'assombrit sur les bords (sur le site seulement : sur OBS, le voile
+            couvrirait le stream). N'agit que sur l'ambiance, pas sur les dégâts.
           </p>
           <p className="text-sm text-muted-foreground">
             {setting(v, 'orage_actif', 0) === '1'
@@ -795,6 +796,62 @@ function SettingsForms({ v }: { v: Settings }) {
             </Button>
           </div>
           <NoticeView notice={storm.notice} />
+        </form>
+      </AdminSection>
+
+      <AdminSection
+        title="🤝 Parrainage"
+        description="Chaque joueur a un lien de parrainage dans son profil. Un nouveau joueur qui crée son compte en passant par ce lien reçoit le gold de bienvenue tout de suite ; son parrain reçoit sa récompense quand le filleul a joué le nombre de combats demandé (une seule fois par filleul, sans limite de filleuls)."
+      >
+        <form
+          className="flex flex-col gap-3"
+          onSubmit={(e) => {
+            const f = form(e);
+            referral.run(async () => {
+              await saveSettings({
+                parrainage_gain_parrain: clamp(f.get('rp'), 0, 1000000),
+                parrainage_gain_filleul: clamp(f.get('rf'), 0, 1000000),
+                parrainage_combats: clamp(f.get('rc'), 1, 1000),
+              });
+              return 'Parrainage enregistré.';
+            });
+          }}
+        >
+          <Row>
+            <Field label="Gold du parrain">
+              <Input
+                name="rp"
+                type="number"
+                min={0}
+                defaultValue={setting(v, 'parrainage_gain_parrain', 1000)}
+                className="w-28"
+              />
+            </Field>
+            <Field label="Gold de bienvenue du filleul">
+              <Input
+                name="rf"
+                type="number"
+                min={0}
+                defaultValue={setting(v, 'parrainage_gain_filleul', 500)}
+                className="w-28"
+              />
+            </Field>
+            <Field label="Combats du filleul avant la récompense">
+              <Input
+                name="rc"
+                type="number"
+                min={1}
+                defaultValue={setting(v, 'parrainage_combats', 5)}
+                className="w-24"
+              />
+            </Field>
+          </Row>
+          <div>
+            <Button type="submit" disabled={referral.pending}>
+              Enregistrer
+            </Button>
+          </div>
+          <NoticeView notice={referral.notice} />
         </form>
       </AdminSection>
 
