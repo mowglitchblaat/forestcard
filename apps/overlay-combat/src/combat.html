@@ -1746,6 +1746,11 @@ function nForge(c,lv,slot,max){nfxStart();const b=nbox(c);if(!b)return;for(let i
 // Petit marteau avec le niveau de forge, sur la carte forgée (combattant, magie ou piège) ; une carte neuve (forge de création) repart sans marteau
 function forgeBadge(c,slot,n){const el=slot==='fighter'?$('#p'+c+' .cw'):$((slot==='magic'?'#m':'#g')+c);if(!el)return;let b=el.querySelector(':scope>.forgeb');if(!n){if(b)b.remove();return}
  if(!b){b=document.createElement('span');b.className='forgeb'+(slot==='fighter'?'':' sm');el.appendChild(b)}b.innerHTML='🔨<b>'+n+'</b>';b.classList.remove('pop');void b.offsetWidth;b.classList.add('pop')}
+// Forge de création d'une carte existante (e.carte, e.img) : son emplacement la montre. Magie : face visible (la ligne « Magie de… »
+// qui suit la montre en grand) ; piège : armé, face cachée (il se révèle avec son image quand il se déclenche).
+function forgeSlot(e){if(!e.carte)return;const j=JOUEURS[e.c];
+ if(e.s==='magie'){const m=$('#m'+e.c);if(j){j.magie=e.carte;j.magieImg=e.img||null}if(!m)return;m.className='mini';m.style.visibility='';m.style.backgroundImage=e.img?`url('${urlImg(e.img)}')`:'';m.textContent=e.img?'':e.carte}
+ else{const g=$('#g'+e.c);if(j){j.piege=e.carte;j.piegeImg=e.img||null}if(!g)return;g.className='mini back'+(j&&j.dos?' dos':'');g.style.visibility='';g.style.backgroundImage=j&&j.dos?`url('${urlImg(j.dos)}')`:'';g.textContent=j&&j.dos?'':'?'}}
 function nForgeCreation(c,piege){nfxStart();const b=nbox(c);if(!b)return;for(let i=0;i<3;i++)setTimeout(()=>{nshards(b.cx,b.cy,18,'#fb923c',.3,9);nshake(c,.4)},i*230);setTimeout(()=>{nring(b.cx,b.cy,b.w*.2,b.w*.95,'rgba(253,224,71,.85)',5,30);nglow(b.cx,b.cy,26,'#fde047',4,14,50,0,.8);nflash(c,'#fde047',600)},700);flot(c,piege?'PIÈGE FORGÉ !':'MAGIE FORGÉE !','#fde047','big')}
 function nEtreinte(c){nfxStart();const b=nbox(c);if(b)nring(b.cx,b.cy,b.w*.9,b.w*.35,'rgba(168,85,247,.85)',5,34);flot(c,'Étreinte maudite','#c084fc')}
 function nEtreinteSerre(c){nfxStart();const b=nbox(c);if(b)nring(b.cx,b.cy,b.w*.7,b.w*.3,'rgba(168,85,247,.7)',4,24)}
@@ -1804,7 +1809,7 @@ Object.assign(NK,{
  'statut:forge':e=>{nForge(e.c,e.n,e.s,e.m);forgeBadge(e.c,e.s,e.n)},'statut:forge_vide':e=>flot(e.c,'Plus rien à forger','#fdba74'),
  'statut:arme_immunite':e=>flot(e.c,'⚔️ Arme vivante : insensible','#fdba74'),'statut:arme_feu':e=>flot(e.c,e.f?'🔥 Le feu la forge !':'🔥 Sans effet','#fb923c',e.f?'big':undefined),'statut:fauche':e=>nFauche(e.c,e.cible,e.n,e.p,e.a),'statut:laser':e=>nLaser(e.c,e.cible,e.n,e.p),
  'statut:orage':e=>nOrage(e.c),'statut:essaim':e=>nTerrain(e.c,'essaim'),'statut:foret':e=>nTerrain(e.c,'foret'),'statut:cathedrale':e=>nTerrain(e.c,'cathedrale'),'statut:lune':e=>nTerrain(e.c,'lune'),'statut:grimoire':e=>nTerrain(e.c,'grimoire'),
- 'statut:reconstruction_ratee':e=>flot(e.c,'🔧 Reconstruction ratée ('+e.n+' %)','#94a3b8'),'statut:forge_creation':e=>{nForgeCreation(e.c,e.s==='piege');forgeBadge(e.c,e.s==='piege'?'trap':'magic',0)}});
+ 'statut:reconstruction_ratee':e=>flot(e.c,'🔧 Reconstruction ratée ('+e.n+' %)','#94a3b8'),'statut:forge_creation':e=>{nForgeCreation(e.c,e.s==='piege');forgeBadge(e.c,e.s==='piege'?'trap':'magic',0);forgeSlot(e)}});
 async function jouer(res){
  file.push(res);if(enCours)return;enCours=true;
  while(file.length){const R=file.shift();await verrouPrendre('combat');await chargerMiroir();   // liste des images copiées sur GitHub, relue à chaque combat : OBS ouvert longtemps ne repasse jamais par Supabase pour une image copiée

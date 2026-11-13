@@ -66,7 +66,8 @@ async function championnat(b) {
     await ajouterRaretes([...(a.deck || []), ...(adv.deck || [])]);
     const niveaux = await reglesNiveaux(), orage = await reglesOrage(), terrain = await reglesTerrain();
     res = simulerRelais({ pseudo: a.pseudo, deck: a.deck, dos: dos[a.id] }, { pseudo: adv.pseudo, deck: adv.deck, dos: dos[adv.id] },
-      { seed: Math.floor(Math.random() * 1e9), regles: { ...REGLES, gain, perte, nul: perte, equipe: 3, niveaux, orage, terrain } });
+      { seed: Math.floor(Math.random() * 1e9), regles: { ...REGLES, gain, perte, nul: perte, equipe: 3, niveaux, orage, terrain, forgeCartes: await forgeCartes(a.deck, adv.deck) } });
+    if (res && res.regles) delete res.regles.forgeCartes;   // le moteur s'en est servi ; inutile dans la réponse
     res.ceintures = await ceinturesDe([a.id, adv.id]);   // avant le combat (titre_conclure n'a pas encore eu lieu)
   } catch (e) {
     console.error('titre :', String(e));
@@ -155,7 +156,8 @@ async function tournoiSuivant() {
     await ajouterRaretes([...(A.deck || []), ...(B.deck || [])]);
     const niveaux = await reglesNiveaux(), orage = await reglesOrage(), terrain = await reglesTerrain();
     res = simulerRelais({ pseudo: A.pseudo, deck: A.deck, dos: dos[A.id] }, { pseudo: B.pseudo, deck: B.deck, dos: dos[B.id] },
-      { seed: Math.floor(Math.random() * 1e9), regles: { ...REGLES, gain: 0, perte: 0, nul: 0, equipe: 3, niveaux, orage, terrain } });
+      { seed: Math.floor(Math.random() * 1e9), regles: { ...REGLES, gain: 0, perte: 0, nul: 0, equipe: 3, niveaux, orage, terrain, forgeCartes: await forgeCartes(A.deck, B.deck) } });
+    if (res && res.regles) delete res.regles.forgeCartes;   // le moteur s'en est servi ; inutile dans la réponse
     res.ceintures = await ceinturesDe([A.id, B.id]);
   } catch (e) {
     console.error('tournoi :', String(e));
@@ -270,6 +272,15 @@ async function reglesNiveaux() {
     const v = r.ok && Array.isArray(r.data) && r.data[0] ? r.data[0].valeur : '';
     const o = v ? JSON.parse(v) : null;
     return o && typeof o === 'object' ? o : undefined;
+  } catch { return undefined; }
+}
+// Forge de création (87-forge-cartes-existantes.sql) : les magies et les pièges du jeu (avec leur image), parmi lesquels elle
+// forge. Lus seulement si un deck du combat a une forge de création (sinon : aucune requête de plus).
+async function forgeCartes(...decks) {
+  if (!JSON.stringify(decks).includes('forge_creation')) return undefined;
+  try {
+    const r = await rpc('forge_cartes', {});
+    return r.ok && Array.isArray(r.data) && r.data.length ? r.data : undefined;
   } catch { return undefined; }
 }
 // Événement Orage (Admin > Réglages) : pendant les combats, au début de chaque tour, une chance qu'un éclair frappe
@@ -449,7 +460,8 @@ async function bossCombat(site, b) {
   let res;
   try {
     res = simuler({ pseudo: d.a.pseudo, deck: d.a.deck }, { pseudo: d.b.pseudo, deck: d.b.deck },
-      { seed: d.seed, regles: { ...REGLES, maxTours: 60, maxProlong: 0, gain: 0, perte: 0, nul: 0, terrain: await reglesTerrain(false), ...(d.niveaux ? { niveaux: d.niveaux } : {}) } });
+      { seed: d.seed, regles: { ...REGLES, maxTours: 60, maxProlong: 0, gain: 0, perte: 0, nul: 0, terrain: await reglesTerrain(false), forgeCartes: await forgeCartes(d.a.deck, d.b.deck), ...(d.niveaux ? { niveaux: d.niveaux } : {}) } });
+    if (res && res.regles) delete res.regles.forgeCartes;   // le moteur s'en est servi ; inutile dans la réponse
   } catch (e) {
     await rpc('boss_conclure', { p_essai: d.essai, p_gagne: false, p_degats: 0 });
     return txt('Le combat de boss a échoué : ' + String(e && e.message || e), 500);
@@ -615,7 +627,8 @@ async function traiter(req) {
     const niveaux = await reglesNiveaux(), orage = await reglesOrage(), terrain = await reglesTerrain();
     await ajouterRaretes([...(a.deck || []), ...(adv.deck || [])]);
     res = simuler({ pseudo: a.pseudo, deck: a.deck, dos: dos[a.id] }, { pseudo: adv.pseudo, deck: adv.deck, dos: dos[adv.id] },
-      { seed: Math.floor(Math.random() * 1e9), regles: { ...REGLES, gain: G.gain, perte: G.perte, nul: G.nul, niveaux, orage, terrain } });
+      { seed: Math.floor(Math.random() * 1e9), regles: { ...REGLES, gain: G.gain, perte: G.perte, nul: G.nul, niveaux, orage, terrain, forgeCartes: await forgeCartes(a.deck, adv.deck) } });
+    if (res && res.regles) delete res.regles.forgeCartes;   // le moteur s'en est servi ; inutile dans la réponse
     res.ceintures = await ceinturesDe([a.id, adv.id]);
   } catch (e) {
     if (mode === 'quotidien') await rpc('rendre_combat_quotidien', { p_joueur: a.id });

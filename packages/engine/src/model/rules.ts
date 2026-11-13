@@ -1,6 +1,7 @@
 // Combat rules. Keys stay in French: the edge function passes them and the result echoes them
 // (`regles`), so they are part of the contract.
 
+import type { Card } from './card.ts';
 import type { StatusLevels } from './levels.ts';
 
 export type Rules = {
@@ -22,6 +23,9 @@ export type Rules = {
     tirage?: { terrain: string | null; poids: number }[];
     [terrain: string]: unknown; // each terrain's settings (mechanics/terrain.ts, TERRAIN_DEFAULTS)
   };
+  // The game's existing magics and traps (with their image): the creation forge forges one of them
+  // (mechanics/forge.ts). Absent or empty: it forges a new card with an effect drawn at random.
+  forgeCartes?: Card[];
 };
 
 export const DEFAULT_RULES: Rules = {

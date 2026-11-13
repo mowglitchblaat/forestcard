@@ -706,15 +706,25 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
               : `Les fils se relâchent : ${e.puppet.nom} retourne auprès de ${pseudo(e.from)}, ${name(e.side)} revient sur le terrain`,
         o: { c: e.side, from: e.from, raison: e.reason, joueurs: players() },
       };
-    case 'forgeCreated':
+    case 'forgeCreated': {
+      // a new card with a drawn effect, or one of the game's existing cards (its name, its image)
+      const what = e.effect ? RANDOM_EFFECT_LABELS[e.effect] : e.card.nom;
+      const armed = FORGE_CONDITION_LABELS[e.condition ?? ''];
       return {
         t: 'statut',
         txt:
           e.kind === 'magie'
-            ? `FORGE ! ${name(e.side)} forge une nouvelle magie${e.replaced ? ' (elle remplace la sienne)' : ''} : ${RANDOM_EFFECT_LABELS[e.effect]} !`
-            : `FORGE ! ${name(e.side)} forge un nouveau piège${e.replaced ? ' (il remplace le sien)' : ''}, armé ${FORGE_CONDITION_LABELS[e.condition ?? ''] ?? ''} : ${RANDOM_EFFECT_LABELS[e.effect]}`,
-        o: { c: e.side, k: 'forge_creation', s: e.kind, r: e.replaced ? 1 : 0 },
+            ? `FORGE ! ${name(e.side)} forge une nouvelle magie${e.replaced ? ' (elle remplace la sienne)' : ''} : ${what} !`
+            : `FORGE ! ${name(e.side)} forge un nouveau piège${e.replaced ? ' (il remplace le sien)' : ''}${armed ? `, armé ${armed}` : ''} : ${what}`,
+        o: {
+          c: e.side,
+          k: 'forge_creation',
+          s: e.kind,
+          r: e.replaced ? 1 : 0,
+          ...(e.effect ? {} : { carte: e.card.nom, img: e.card.image || null }),
+        },
       };
+    }
     case 'randomEffectDrawn':
       return {
         t: 'statut',
