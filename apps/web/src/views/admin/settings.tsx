@@ -192,6 +192,83 @@ function Row({ children }: { children: ReactNode }) {
   return <div className="flex flex-wrap items-end gap-3">{children}</div>;
 }
 
+// The terrains (86-terrains.sql, packages/engine/src/mechanics/terrain.ts): each one's settings in
+// Admin > Réglages, as the edge function reads them (terrain_<key>_<field>), with their default.
+type TerrainField = { key: string; label: string; fallback: number; min: number; max: number };
+const pctField = (key: string, label: string, fallback: number): TerrainField => ({
+  key,
+  label,
+  fallback,
+  min: 0,
+  max: 100,
+});
+const TERRAIN_SETTINGS: { key: string; title: string; fields: TerrainField[] }[] = [
+  {
+    key: 'orage',
+    title:
+      "⛈️ Orage : un éclair peut frapper l'un des combattants à chaque tour ; les cartes au passif foudre frappent plus fort",
+    fields: [
+      pctField('chance', "Chance d'un éclair %", 10),
+      { key: 'degats', label: "Dégâts de l'éclair", fallback: 18, min: 0, max: 10000 },
+      pctField('bonus', 'Bonus de dégâts foudre %', 10),
+    ],
+  },
+  {
+    key: 'essaim',
+    title:
+      '🐝 Essaim : le combattant qui joue peut être piqué (saignement) ; les Xénoptera sont épargnés et frappent plus fort',
+    fields: [
+      pctField('chance', 'Chance de piqûre %', 20),
+      { key: 'niveau', label: 'Niveau du saignement', fallback: 1, min: 1, max: 3 },
+      { key: 'tours', label: 'Tours de saignement', fallback: 2, min: 1, max: 20 },
+      pctField('bonus', 'Bonus de dégâts Xénoptera %', 10),
+    ],
+  },
+  {
+    key: 'foret',
+    title:
+      '🌿 Forêt Enchantée : chaque combattant se soigne à son tour ; les cartes Basique davantage',
+    fields: [pctField('pct', 'Soin, % des PV max', 3), pctField('bonus', 'Soin Basique %', 6)],
+  },
+  {
+    key: 'cathedrale',
+    title:
+      '⛪ Cathédrale de programmation : le combattant qui joue peut lancer une programmation (la première est passive)',
+    fields: [
+      pctField('chance', 'Chance de programmation %', 15),
+      pctField('bonus', 'Chance en plus, Mécanique et Technologie', 10),
+    ],
+  },
+  {
+    key: 'lune',
+    title:
+      '🌕 Lune de sang : le combattant qui joue peut être maudit ; les Horreurs & Chasseurs sont épargnés et frappent plus fort',
+    fields: [
+      pctField('chance', 'Chance de malédiction %', 20),
+      { key: 'tours', label: 'Tours de malédiction', fallback: 2, min: 1, max: 20 },
+      pctField('bonus', 'Bonus de dégâts H&C %', 10),
+    ],
+  },
+  {
+    key: 'sakura',
+    title:
+      '🌸 Jardin de sakura : tous les combattants esquivent plus ; les cartes Nihon Densetsu encore plus',
+    fields: [
+      pctField('esquive', "Points d'esquive", 10),
+      pctField('bonus', "Points d'esquive Nihon", 20),
+    ],
+  },
+  {
+    key: 'grimoire',
+    title:
+      "📖 Grimoire ouvert : le combattant qui joue peut recevoir un effet au hasard ; la Bibliothèque de l'Auteur plus souvent",
+    fields: [
+      pctField('chance', "Chance d'un effet %", 15),
+      pctField('bonus', 'Chance Bibliothèque %', 30),
+    ],
+  },
+];
+
 export function SettingsAdmin() {
   const settings = useQuery({ queryKey: adminKeys.settings, queryFn: fetchSettings });
   if (settings.error) return <AdminError error={settings.error} />;
@@ -802,26 +879,27 @@ function SettingsForms({ v }: { v: Settings }) {
 
       <AdminSection
         title="🌍 Terrains"
-        description="Au début de chaque combat, un terrain est tiré au sort selon les poids (« aucun » compris) ; il vaut pour les deux combattants jusqu'à la fin du combat, ou jusqu'à ce qu'une carte en invoque un autre (effet ou passif « Invocation de terrain », valable même tirage éteint). Chaque terrain avantage ses cartes : la foudre sous l'Orage, les Xénoptera dans l'Essaim."
+        description="Au début de chaque combat, un terrain est tiré au sort selon les poids (« aucun » compris) ; il vaut pour les deux combattants jusqu'à la fin du combat, ou jusqu'à ce qu'une carte en invoque un autre (effet ou passif « Invocation de terrain », valable même tirage éteint). Chaque terrain avantage les cartes de sa collection (l'Orage : les cartes au passif foudre)."
       >
         <form
           className="flex flex-col gap-3"
           onSubmit={(e) => {
             const f = form(e);
             terrains.run(async () => {
-              await saveSettings({
+              const values: Record<string, number> = {
                 terrain_actif: f.get('on') === 'on' ? 1 : 0,
-                terrain_poids_aucun: clamp(f.get('pa'), 0, 1000),
-                terrain_poids_orage: clamp(f.get('po'), 0, 1000),
-                terrain_poids_essaim: clamp(f.get('pe'), 0, 1000),
-                terrain_orage_chance: clamp(f.get('och'), 0, 100),
-                terrain_orage_degats: clamp(f.get('odeg'), 0, 10000),
-                terrain_orage_bonus: clamp(f.get('obon'), 0, 1000),
-                terrain_essaim_chance: clamp(f.get('ech'), 0, 100),
-                terrain_essaim_niveau: clamp(f.get('eniv'), 1, 3),
-                terrain_essaim_tours: clamp(f.get('etr'), 1, 20),
-                terrain_essaim_bonus: clamp(f.get('ebon'), 0, 1000),
-              });
+                terrain_poids_aucun: clamp(f.get('terrain_poids_aucun'), 0, 1000),
+              };
+              for (const t of TERRAIN_SETTINGS) {
+                values[`terrain_poids_${t.key}`] = clamp(f.get(`terrain_poids_${t.key}`), 0, 1000);
+                for (const x of t.fields)
+                  values[`terrain_${t.key}_${x.key}`] = clamp(
+                    f.get(`terrain_${t.key}_${x.key}`),
+                    x.min,
+                    x.max,
+                  );
+              }
+              await saveSettings(values);
               return 'Terrains enregistrés.';
             });
           }}
@@ -833,7 +911,7 @@ function SettingsForms({ v }: { v: Settings }) {
           <Row>
             <Field label="Poids : aucun terrain">
               <Input
-                name="pa"
+                name="terrain_poids_aucun"
                 type="number"
                 min={0}
                 max={1000}
@@ -841,109 +919,36 @@ function SettingsForms({ v }: { v: Settings }) {
                 className="w-24"
               />
             </Field>
-            <Field label="Poids : Orage">
-              <Input
-                name="po"
-                type="number"
-                min={0}
-                max={1000}
-                defaultValue={setting(v, 'terrain_poids_orage', 1)}
-                className="w-24"
-              />
-            </Field>
-            <Field label="Poids : Essaim">
-              <Input
-                name="pe"
-                type="number"
-                min={0}
-                max={1000}
-                defaultValue={setting(v, 'terrain_poids_essaim', 1)}
-                className="w-24"
-              />
-            </Field>
           </Row>
-          <p className="text-sm font-medium">
-            ⛈️ Orage : un éclair peut frapper l'un des combattants au début de chaque tour ; les
-            cartes au passif foudre frappent plus fort
-          </p>
-          <Row>
-            <Field label="Chance d'un éclair à chaque tour %">
-              <Input
-                name="och"
-                type="number"
-                min={0}
-                max={100}
-                defaultValue={setting(v, 'terrain_orage_chance', 10)}
-                className="w-24"
-              />
-            </Field>
-            <Field label="Dégâts de l'éclair">
-              <Input
-                name="odeg"
-                type="number"
-                min={0}
-                max={10000}
-                defaultValue={setting(v, 'terrain_orage_degats', 18)}
-                className="w-24"
-              />
-            </Field>
-            <Field label="Bonus de dégâts des cartes foudre %">
-              <Input
-                name="obon"
-                type="number"
-                min={0}
-                max={1000}
-                defaultValue={setting(v, 'terrain_orage_bonus', 10)}
-                className="w-24"
-              />
-            </Field>
-          </Row>
-          <p className="text-sm font-medium">
-            🐝 Essaim : le combattant qui joue peut être piqué (saignement) ; les Xénoptera ne sont
-            jamais piqués et frappent plus fort
-          </p>
-          <Row>
-            <Field label="Chance de piqûre à chaque tour %">
-              <Input
-                name="ech"
-                type="number"
-                min={0}
-                max={100}
-                defaultValue={setting(v, 'terrain_essaim_chance', 20)}
-                className="w-24"
-              />
-            </Field>
-            <Field label="Niveau du saignement (1 à 3)">
-              <Input
-                name="eniv"
-                type="number"
-                min={1}
-                max={3}
-                defaultValue={setting(v, 'terrain_essaim_niveau', 1)}
-                className="w-24"
-              />
-            </Field>
-            <Field label="Tours de saignement">
-              <Input
-                name="etr"
-                type="number"
-                min={1}
-                max={20}
-                defaultValue={setting(v, 'terrain_essaim_tours', 2)}
-                className="w-24"
-              />
-            </Field>
-            <Field label="Bonus de dégâts des Xénoptera %">
-              <Input
-                name="ebon"
-                type="number"
-                min={0}
-                max={1000}
-                defaultValue={setting(v, 'terrain_essaim_bonus', 10)}
-                className="w-24"
-              />
-            </Field>
-          </Row>
+          {TERRAIN_SETTINGS.map((t) => (
+            <div key={t.key} className="flex flex-col gap-2">
+              <p className="text-sm font-medium">{t.title}</p>
+              <Row>
+                <Field label="Poids au tirage">
+                  <Input
+                    name={`terrain_poids_${t.key}`}
+                    type="number"
+                    min={0}
+                    max={1000}
+                    defaultValue={setting(v, `terrain_poids_${t.key}`, 1)}
+                    className="w-24"
+                  />
+                </Field>
+                {t.fields.map((x) => (
+                  <Field key={x.key} label={x.label}>
+                    <Input
+                      name={`terrain_${t.key}_${x.key}`}
+                      type="number"
+                      min={x.min}
+                      max={x.max}
+                      defaultValue={setting(v, `terrain_${t.key}_${x.key}`, x.fallback)}
+                      className="w-24"
+                    />
+                  </Field>
+                ))}
+              </Row>
+            </div>
+          ))}
           <p className="text-sm text-muted-foreground">
             {setting(v, 'terrain_actif', 0) === '1'
               ? '🌍 Tirage actif : chaque combat commence sur un terrain tiré au sort.'

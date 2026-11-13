@@ -36,6 +36,9 @@ export type SideView = {
 };
 export type CombatView = { readonly round: number; readonly sides: readonly SideView[] };
 
+// The terrains (mechanics/terrain.ts).
+export type Terrain = 'orage' | 'essaim' | 'foret' | 'cathedrale' | 'lune' | 'sakura' | 'grimoire';
+
 export type StatusKind =
   | 'curse'
   | 'bleed'
@@ -274,11 +277,12 @@ export type DomainEvent =
   // or a passive
   | {
       type: 'terrainChanged';
-      terrain: 'orage' | 'essaim';
+      terrain: Terrain;
       cause: 'tirage' | 'effet' | 'passif';
       by?: SideIndex;
     }
-  | { type: 'stung'; side: SideIndex } // the swarm terrain stings the card playing (a bleed follows)
+  // The terrain acts on the card playing (a sting, a curse, a heal, a programming, a random effect)
+  | { type: 'terrainActs'; terrain: Exclude<Terrain, 'orage' | 'sakura'>; side: SideIndex }
   | { type: 'turnStarted'; side: SideIndex; turn: number }
   | { type: 'overtimeStarted'; period: number; first: number }
   // Relay combat (relay.ts): the next fighter of a player enters (index: its rank, of: team size)

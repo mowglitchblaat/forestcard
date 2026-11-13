@@ -4,67 +4,78 @@
 //     Without a weight there is no draw at all: combats without terrains are unchanged.
 //   - Invoked by a card: the effect `terrain` (a magic, an ultimate, a trap) or the passive `terrain`
 //     (when the card comes into play). It lasts until the end of the combat.
-// Each terrain has its rule, for both sides, and a bonus for the cards it favours:
+// Each terrain has its rule, for both sides, and a bonus for the cards it favours (the cards of its
+// collection, `collection`; 0 is Basique, the cards without a collection):
 //   - orage (storm): at the start of each card's turn, `chance` % that a bolt strikes either fighter
-//     (mechanics/storm.ts); the cards with the lightning passive (`foudre`) deal `bonus` % more.
-//   - essaim (swarm): at the start of each card's turn, `chance` % that the card playing is stung (a
-//     bleed of `niveau`, `tours` turns); the cards of the swarm's collection (`collection`, the
-//     Xénoptera) are never stung and deal `bonus` % more.
+//     (mechanics/storm.ts). Favoured: the cards with the lightning passive (`foudre`), `bonus` % of
+//     their ATQ more on each strike.
+//   - essaim (swarm, Xénoptera): at the start of its turn, `chance` % that the card playing is stung
+//     (a bleed of `niveau`, `tours` turns). Favoured: never stung, `bonus` % of ATQ more per strike.
+//   - foret (Enchanted Forest, Basique): at the start of its turn, the card heals `pct` % of its max
+//     HP. Favoured: `bonus` % instead.
+//   - cathedrale (Programming Cathedral, Mechanics and Technology): at the start of its turn, `chance`
+//     % that the card runs a programming (mechanics/programming.ts; its first one is passive).
+//     Favoured: `bonus` points of chance more.
+//   - lune (Blood Moon, Horrors & Hunters): at the start of its turn, `chance` % that the card playing
+//     is cursed (`tours` turns). Favoured: never cursed, `bonus` % of ATQ more per strike.
+//   - sakura (Sakura Garden, Nihon Densetsu): every card dodges `esquive` points more. Favoured:
+//     `bonus` points instead.
+//   - grimoire (Open Grimoire, the Author's Library): at the start of its turn, `chance` % that the
+//     card playing casts an effect drawn at random (mechanics/random.ts). Favoured: `bonus` % instead.
 
 import type { Strike, StrikeStep } from '../combat/attack.ts';
-import { emit, id, raw, roll, round, type Combat } from '../combat/combat.ts';
+import { amount, emit, id, opponent, raw, roll, round, type Combat } from '../combat/combat.ts';
+import { heal } from '../combat/damage.ts';
 import type { EffectContext, EffectRules } from '../combat/effect-context.ts';
 import type { Flow } from '../combat/flow.ts';
 import type { Side } from '../combat/state.ts';
+import type { Terrain as EventTerrain } from '../events.ts';
 import { bleed } from './bleed.ts';
+import { curse } from './curse.ts';
+import { program } from './programming.ts';
+import { randomEffect } from './random.ts';
 import { stormBolt } from './storm.ts';
 
-export const TERRAINS = ['orage', 'essaim'] as const;
-export type Terrain = (typeof TERRAINS)[number];
+export const TERRAINS = [
+  'orage',
+  'essaim',
+  'foret',
+  'cathedrale',
+  'lune',
+  'sakura',
+  'grimoire',
+] as const satisfies readonly EventTerrain[];
+export type Terrain = EventTerrain;
 export const isTerrain = (t: unknown): t is Terrain => TERRAINS.includes(t as Terrain);
 
-// Each terrain's settings when the rules do not give them.
-export const TERRAIN_DEFAULTS = {
+// Each terrain's settings when the rules do not give them (`collection`: the one it favours).
+export const TERRAIN_DEFAULTS: Record<Terrain, Record<string, number>> = {
   orage: { chance: 10, degats: 18, bonus: 10 },
-  essaim: { chance: 20, niveau: 1, tours: 2, bonus: 10 },
-} as const;
+  essaim: { chance: 20, niveau: 1, tours: 2, bonus: 10, collection: 10 },
+  foret: { pct: 3, bonus: 6, collection: 0 },
+  cathedrale: { chance: 15, bonus: 10, collection: 8 },
+  lune: { chance: 20, tours: 2, bonus: 10, collection: 1 },
+  sakura: { esquive: 10, bonus: 20, collection: 7 },
+  grimoire: { chance: 15, bonus: 30, collection: 11 },
+};
 
 const num = (v: unknown, fallback: number): number => {
   const n = Number(v);
   return v === null || v === undefined || v === '' || !Number.isFinite(n) ? fallback : n;
 };
 
-const stormSettings = (c: Combat) => {
-  const o = c.rules.terrain?.orage;
-  const d = TERRAIN_DEFAULTS.orage;
-  return {
-    chance: num(o?.chance, d.chance),
-    degats: num(o?.degats, d.degats),
-    bonus: num(o?.bonus, d.bonus),
-  };
-};
+// A setting of a terrain: the rules' value, else its default.
+function setting(c: Combat, t: Terrain, key: string): number {
+  const given = c.rules.terrain?.[t] as Record<string, unknown> | undefined;
+  return num(given?.[key], TERRAIN_DEFAULTS[t][key] ?? 0);
+}
 
-const swarmSettings = (c: Combat) => {
-  const o = c.rules.terrain?.essaim;
-  const d = TERRAIN_DEFAULTS.essaim;
-  return {
-    chance: num(o?.chance, d.chance),
-    niveau: Math.max(1, Math.round(num(o?.niveau, d.niveau))),
-    tours: Math.max(1, Math.round(num(o?.tours, d.tours))),
-    bonus: num(o?.bonus, d.bonus),
-    collection: o?.collection ?? null,
-  };
-};
-
-// Favoured by the terrain in play: the lightning passive under the storm, the swarm's collection in
-// the swarm.
+// Favoured by the terrain in play: the lightning passive under the storm, else its collection.
 function favoured(c: Combat, s: Side): boolean {
-  if (c.terrain === 'orage') return s.passives.some((p) => p.type === 'foudre');
-  if (c.terrain === 'essaim') {
-    const k = swarmSettings(c).collection;
-    return k !== null && k !== undefined && Number(s.fighter.collection_id) === Number(k);
-  }
-  return false;
+  const t = c.terrain;
+  if (!t) return false;
+  if (t === 'orage') return s.passives.some((p) => p.type === 'foudre');
+  return (Number(s.fighter.collection_id) || 0) === setting(c, t, 'collection');
 }
 
 export function setTerrain(
@@ -105,26 +116,55 @@ export function terrainPassives(c: Combat, order: Side[]): void {
 // Start of a card's turn: the terrain acts. The storm terrain does nothing more while the storm
 // event is on (one storm is enough).
 export function terrainAtStart(c: Combat, s: Side): Flow {
-  if (c.terrain === 'orage' && !c.rules.orage) {
-    const o = stormSettings(c);
-    return o.chance > 0 ? stormBolt(c, s, o.chance, o.degats) : undefined;
+  const t = c.terrain;
+  if (!t || s.hp <= 0) return undefined;
+  if (t === 'orage') {
+    if (c.rules.orage) return undefined;
+    const chance = setting(c, t, 'chance');
+    return chance > 0 ? stormBolt(c, s, chance, setting(c, t, 'degats')) : undefined;
   }
-  if (c.terrain === 'essaim') {
-    const o = swarmSettings(c);
-    if (s.hp <= 0 || favoured(c, s) || !(o.chance > 0) || !roll(c, o.chance)) return undefined;
-    emit(c, { type: 'stung', side: id(c, s) });
-    bleed(c, s, o.niveau, o.tours);
+  const fav = favoured(c, s);
+  if (t === 'foret') {
+    const pct = setting(c, t, fav ? 'bonus' : 'pct');
+    if (pct > 0 && s.hp < s.maxHp) {
+      emit(c, { type: 'terrainActs', terrain: t, side: id(c, s) });
+      heal(c, s, amount({ u: 'pct', val: pct }, s.maxHp));
+    }
+    return undefined;
   }
-  return undefined;
+  if (t === 'sakura') return undefined; // a dodge bonus (terrainDodge)
+  if ((t === 'essaim' || t === 'lune') && fav) return undefined; // never stung, never cursed
+  const chance =
+    t === 'cathedrale'
+      ? setting(c, t, 'chance') + (fav ? setting(c, t, 'bonus') : 0)
+      : setting(c, t, t === 'grimoire' && fav ? 'bonus' : 'chance');
+  if (!(chance > 0) || !roll(c, chance)) return undefined;
+  emit(c, { type: 'terrainActs', terrain: t, side: id(c, s) });
+  if (t === 'essaim')
+    bleed(
+      c,
+      s,
+      Math.max(1, Math.round(setting(c, t, 'niveau'))),
+      Math.max(1, Math.round(setting(c, t, 'tours'))),
+    );
+  else if (t === 'lune') curse(c, s, Math.max(1, Math.round(setting(c, t, 'tours'))));
+  else if (t === 'cathedrale') program(c, s, { chance: 100, nbpassif: 1 });
+  else randomEffect(c, s, opponent(c, s));
+  return s.hp <= 0 ? 'stop' : undefined;
 }
 
-// Each strike of a card the terrain favours: `bonus` % of its ATQ more.
+// Each strike of a card the terrain favours (storm, swarm, blood moon): `bonus` % of its ATQ more.
 export const terrainStrike: StrikeStep = (c: Combat, { a }, st: Strike) => {
-  if (!c.terrain || st.n <= 0 || !favoured(c, a)) return undefined;
-  const bonus = c.terrain === 'orage' ? stormSettings(c).bonus : swarmSettings(c).bonus;
-  st.n += Math.max(0, round((raw(a.atq) * bonus) / 100));
+  const t = c.terrain;
+  if ((t !== 'orage' && t !== 'essaim' && t !== 'lune') || st.n <= 0 || !favoured(c, a))
+    return undefined;
+  st.n += Math.max(0, round((raw(a.atq) * setting(c, t, 'bonus')) / 100));
   return undefined;
 };
+
+// The sakura garden: the dodge chance it adds (mechanics/dodge.ts).
+export const terrainDodge = (c: Combat, d: Side): number =>
+  c.terrain === 'sakura' ? setting(c, 'sakura', favoured(c, d) ? 'bonus' : 'esquive') : 0;
 
 function terrainEffect({ c, e, o }: EffectContext): void {
   if (isTerrain(e.terrain)) setTerrain(c, e.terrain, 'effet', o);

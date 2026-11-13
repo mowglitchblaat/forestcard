@@ -105,6 +105,15 @@ const TERRAIN_TXT: Record<string, string> = {
     "l'Orage (à chaque tour, un éclair peut frapper l'un des combattants ; les cartes de foudre frappent plus fort)",
   essaim:
     "l'Essaim (à chaque tour, le combattant qui joue peut être piqué : saignement ; les Xénoptera sont épargnés et frappent plus fort)",
+  foret:
+    'la Forêt Enchantée (à chaque tour, le combattant qui joue se soigne ; les cartes Basique davantage)',
+  cathedrale:
+    'la Cathédrale de programmation (à chaque tour, le combattant qui joue peut lancer une programmation ; les cartes Mécanique et Technologie plus souvent)',
+  lune: 'la Lune de sang (à chaque tour, le combattant qui joue peut être maudit ; les Horreurs & Chasseurs sont épargnés et frappent plus fort)',
+  sakura:
+    'le Jardin de sakura (tous les combattants esquivent plus souvent ; les cartes Nihon Densetsu encore plus)',
+  grimoire:
+    "le Grimoire ouvert (à chaque tour, le combattant qui joue peut recevoir un effet au hasard ; les cartes de la Bibliothèque de l'Auteur plus souvent)",
 };
 const terrainTxt = (e: Fx) => TERRAIN_TXT[String(e.terrain)] ?? 'un terrain';
 const overloadTxt = `Surcharge : s'électrocute (${L.surchargeAuto} % de ses PV max), puis pendant 2 tours : ATQ −${L.surchargeAtq} %, ${L.surchargeEnchainement} % de chances d'enchaîner (jusqu'à 3 coups), chaque coup pose la foudre`;

@@ -9,6 +9,7 @@ import type { StrikeFlow } from '../combat/flow.ts';
 import type { Side } from '../combat/state.ts';
 import { frostDodgeMalus } from './frost.ts';
 import { gagOnDodge } from './gag.ts';
+import { terrainDodge } from './terrain.ts';
 
 // Its part of a card's status (combat/state.ts).
 export type DodgeState = {
@@ -21,7 +22,8 @@ const dodgeChance = (c: Combat, d: Side): number =>
   Math.min(
     c.rules.plafondEsquive,
     d.passives.filter((p) => p.type === 'esquive').reduce((q, p) => q + (p.chance || 0), 0) +
-      d.status.dodgeBonus -
+      d.status.dodgeBonus +
+      terrainDodge(c, d) - // the sakura garden (mechanics/terrain.ts)
       frostDodgeMalus(d), // a frozen card dodges less
   );
 

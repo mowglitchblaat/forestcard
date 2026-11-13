@@ -19,7 +19,15 @@ const ROOTS: Record<string, string> = {
   empoisonne: 'Enracinement empoisonné',
   inhibiteur: 'Enracinement inhibiteur',
 };
-const TERRAINS: Record<string, string> = { orage: 'Terrain : Orage', essaim: 'Terrain : Essaim' };
+const TERRAINS: Record<string, string> = {
+  orage: 'Terrain : Orage',
+  essaim: 'Terrain : Essaim',
+  foret: 'Terrain : Forêt Enchantée',
+  cathedrale: 'Terrain : Cathédrale',
+  lune: 'Terrain : Lune de sang',
+  sakura: 'Terrain : Jardin de sakura',
+  grimoire: 'Terrain : Grimoire ouvert',
+};
 const terrainLabel = (e: Fx) => TERRAINS[String(e.terrain)] ?? 'Terrain';
 const rootLabel = (e: Fx) => ROOTS[String(e.variante)] ?? 'Enracinement';
 

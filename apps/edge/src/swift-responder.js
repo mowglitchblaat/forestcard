@@ -287,6 +287,15 @@ async function reglesOrage() {
 // Terrains (Admin > Réglages, moteur : mechanics/terrain.ts) : au début de chaque combat, un terrain tiré au sort selon
 // les poids (« aucun » compris), et les réglages de chaque terrain. Éteint : pas de tirage, mais une carte qui invoque un
 // terrain l'invoque quand même, avec ces réglages. Sans tirage (tirer = false : combat de boss), seules les cartes en invoquent.
+const TERRAINS_REGLAGES = {   // chaque terrain : ses réglages par défaut (moteur : TERRAIN_DEFAULTS) et leur maximum
+  orage: { chance: [10, 100], degats: [18, 10000], bonus: [10, 1000] },
+  essaim: { chance: [20, 100], niveau: [1, 3], tours: [2, 20], bonus: [10, 1000], collection: [10, 1e9] },
+  foret: { pct: [3, 100], bonus: [6, 100], collection: [0, 1e9] },
+  cathedrale: { chance: [15, 100], bonus: [10, 100], collection: [8, 1e9] },
+  lune: { chance: [20, 100], tours: [2, 20], bonus: [10, 1000], collection: [1, 1e9] },
+  sakura: { esquive: [10, 100], bonus: [20, 100], collection: [7, 1e9] },
+  grimoire: { chance: [15, 100], bonus: [30, 100], collection: [11, 1e9] },
+};
 async function reglesTerrain(tirer = true) {
   const v = {};
   try {
@@ -295,20 +304,13 @@ async function reglesTerrain(tirer = true) {
   } catch { return undefined; }
   const nb = (x, d, max) => { const n = parseFloat(x); return Number.isFinite(n) && n >= 0 ? Math.min(n, max) : d; };
   const actif = tirer && String(v.terrain_actif) === '1';
-  const collection = parseInt(v.terrain_essaim_collection, 10);
-  return {
-    tirage: actif ? [
-      { terrain: null, poids: nb(v.terrain_poids_aucun, 0, 1000) },
-      { terrain: 'orage', poids: nb(v.terrain_poids_orage, 1, 1000) },
-      { terrain: 'essaim', poids: nb(v.terrain_poids_essaim, 1, 1000) },
-    ] : [],
-    orage: { chance: nb(v.terrain_orage_chance, 10, 100), degats: Math.round(nb(v.terrain_orage_degats, 18, 10000)), bonus: nb(v.terrain_orage_bonus, 10, 1000) },
-    essaim: {
-      chance: nb(v.terrain_essaim_chance, 20, 100), niveau: Math.max(1, Math.min(3, Math.round(nb(v.terrain_essaim_niveau, 1, 3)))),
-      tours: Math.max(1, Math.round(nb(v.terrain_essaim_tours, 2, 20))), bonus: nb(v.terrain_essaim_bonus, 10, 1000),
-      collection: Number.isFinite(collection) ? collection : 10,
-    },
-  };
+  const out = { tirage: actif ? [{ terrain: null, poids: nb(v.terrain_poids_aucun, 0, 1000) }] : [] };
+  for (const [t, champs] of Object.entries(TERRAINS_REGLAGES)) {
+    if (actif) out.tirage.push({ terrain: t, poids: nb(v['terrain_poids_' + t], 0, 1000) });
+    out[t] = {};
+    for (const [k, [d, max]] of Object.entries(champs)) out[t][k] = nb(v['terrain_' + t + '_' + k], d, max);
+  }
+  return out;
 }
 // Gains des combats (Admin > Réglages) : gold par victoire / défaite / nul, multiplicateur des soirées spéciales (×2…) avec heure de fin facultative
 async function reglesGains() {

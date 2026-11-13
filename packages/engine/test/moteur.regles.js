@@ -1838,6 +1838,46 @@ test('orage (terrain) : des éclairs, et les cartes au passif foudre frappent +1
   assert.equal(lignes(r, e => e.t === 'degats' && e.c === 1 && !e.k)[0].n, 22);
 });
 
+const TERRAIN = (t, reglage = {}) => ({ terrain: { tirage: [{ terrain: t, poids: 1 }], [t]: reglage } });
+
+test('forêt enchantée : chaque combattant se soigne de 3 % de ses PV max à son tour, une carte Basique de 6 %', () => {
+  const r = combat([C('Basique', 1, 100)], [C('Loup', 30, 100, { collection_id: 1 })], { regles: { maxTours: 3, maxProlong: 0, ...TERRAIN('foret') } });
+  const soins = lignes(r, e => e.t === 'soin');
+  assert.ok(soins.some(e => e.c === 0 && e.n === 6), 'la carte Basique récupère 6');
+  assert.ok(lignes(r, e => e.k === 'foret').length > 0);
+});
+
+test('lune de sang : le combattant qui joue peut être maudit, jamais une carte Horreurs & Chasseurs (qui frappe +10 %)', () => {
+  const r = combat([C('Chasseur', 20, SOLIDE, { collection_id: 1 })], [C('B', 20, SOLIDE)], { regles: { maxTours: 4, maxProlong: 0, ...TERRAIN('lune', { chance: 100 }) } });
+  const maudits = lignes(r, e => e.k === 'lune');
+  assert.ok(maudits.length > 0 && maudits.every(e => e.c === 1));
+  assert.equal(lignes(r, e => e.t === 'degats' && e.c === 1 && !e.k)[0].n, 22);
+});
+
+test('jardin de sakura : esquive +10 pour tous, +20 pour une carte Nihon Densetsu', () => {
+  const N = 40;
+  let esqA = 0, esqB = 0;
+  for (let seed = 1; seed <= N; seed++) {
+    const r = combat([C('Samouraï', 1, SOLIDE, { collection_id: 7 })], [C('B', 1, SOLIDE)], { seed, regles: { maxTours: 10, maxProlong: 0, ...TERRAIN('sakura', { esquive: 0, bonus: 100 }) } });
+    esqA += lignes(r, e => e.t === 'esquive' && e.c === 0).length;
+    esqB += lignes(r, e => e.t === 'esquive' && e.c === 1).length;
+  }
+  assert.ok(esqA > N * 10 * 0.6 && esqA < N * 10 * 0.9, 'la carte Nihon esquive environ 75 % (bonus 100, plafond d\'esquive 75)');
+  assert.equal(esqB, 0);
+});
+
+test('cathédrale de programmation : une programmation (la première passive), plus souvent pour une carte Mécanique', () => {
+  const r = combat([C('Robot', 1, SOLIDE, { collection_id: 8 })], [C('B', 1, SOLIDE)], { regles: { maxTours: 3, maxProlong: 0, ...TERRAIN('cathedrale', { chance: 0, bonus: 100 }) } });
+  assert.ok(lignes(r, e => e.k === 'cathedrale' && e.c === 0).length > 0);
+  assert.ok(!lignes(r, e => e.k === 'cathedrale' && e.c === 1).length, 'chance 0 pour les autres');
+});
+
+test('grimoire ouvert : un effet au hasard, plus souvent pour une carte de la Bibliothèque', () => {
+  const r = combat([C('Auteur', 1, SOLIDE, { collection_id: 11 })], [C('B', 1, SOLIDE)], { regles: { maxTours: 3, maxProlong: 0, ...TERRAIN('grimoire', { chance: 0, bonus: 100 }) } });
+  assert.ok(lignes(r, e => e.k === 'grimoire' && e.c === 0).length > 0);
+  assert.ok(!lignes(r, e => e.k === 'grimoire' && e.c === 1).length);
+});
+
 test('invocation de terrain : une magie, un passif (en entrant en jeu), un ultime ou un piège le changent jusqu\'à la fin', () => {
   const magie = combat([C('A', 1, SOLIDE), MAG('Appel', { type: 'terrain', terrain: 'orage' })], [C('B', 1, SOLIDE)], { regles: { maxTours: 2, maxProlong: 0, ...ESSAIM(0) } });
   const t = lignes(magie, e => e.t === 'terrain');

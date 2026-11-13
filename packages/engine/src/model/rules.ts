@@ -20,14 +20,7 @@ export type Rules = {
   // combat is unchanged; a card can still invoke a terrain.
   terrain?: {
     tirage?: { terrain: string | null; poids: number }[];
-    orage?: { chance?: number; degats?: number; bonus?: number };
-    essaim?: {
-      chance?: number;
-      niveau?: number;
-      tours?: number;
-      bonus?: number;
-      collection?: number | null;
-    };
+    [terrain: string]: unknown; // each terrain's settings (mechanics/terrain.ts, TERRAIN_DEFAULTS)
   };
 };
 
