@@ -613,13 +613,13 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
     case 'terrainChanged': {
       const terrain = TERRAIN_NAMES[e.terrain];
       const txt =
-        e.side === undefined
+        e.by === undefined
           ? `Terrain : ${terrain} ! ${TERRAIN_RULES[e.terrain]}`
-          : `${name(e.side)} invoque ${terrain}${e.cause === 'passif' ? ' en entrant en jeu' : ''} ! ${TERRAIN_RULES[e.terrain]}`;
+          : `${name(e.by)} invoque ${terrain}${e.cause === 'passif' ? ' en entrant en jeu' : ''} ! ${TERRAIN_RULES[e.terrain]}`;
       return {
         t: 'terrain',
         txt,
-        o: { terrain: e.terrain, cause: e.cause, ...(e.side === undefined ? {} : { c: e.side }) },
+        o: { terrain: e.terrain, cause: e.cause, ...(e.by === undefined ? {} : { c: e.by }) },
       };
     }
     case 'stung':

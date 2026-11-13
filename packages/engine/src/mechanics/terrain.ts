@@ -78,7 +78,7 @@ export function setTerrain(
     type: 'terrainChanged',
     terrain,
     cause,
-    ...(by ? { side: id(c, by) } : {}),
+    ...(by ? { by: id(c, by) } : {}),
   });
 }
 

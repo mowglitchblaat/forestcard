@@ -270,13 +270,13 @@ export type DomainEvent =
   // team: relay combat, fighters per player; storm: the storm event is on (mechanics/storm.ts)
   | { type: 'combatStarted'; first: number; team?: number; storm?: true }
   | { type: 'stormStruck'; side: SideIndex } // a bolt of the storm falls on this fighter
-  // The terrain (mechanics/terrain.ts): drawn at the start, or invoked by a card (side) with an effect
+  // The terrain (mechanics/terrain.ts): drawn at the start, or invoked by a card (by) with an effect
   // or a passive
   | {
       type: 'terrainChanged';
       terrain: 'orage' | 'essaim';
       cause: 'tirage' | 'effet' | 'passif';
-      side?: SideIndex;
+      by?: SideIndex;
     }
   | { type: 'stung'; side: SideIndex } // the swarm terrain stings the card playing (a bleed follows)
   | { type: 'turnStarted'; side: SideIndex; turn: number }
