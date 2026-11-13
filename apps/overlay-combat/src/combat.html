@@ -1687,6 +1687,69 @@ function orageAmbiance(niv){nfxStart();const L=Math.max(1,Math.min(5,Math.round(
   t=setTimeout(loop,L>=3?600:1800);
   const stop=()=>{if(!on)return;on=false;clearTimeout(t);if(nuit){nuit.style.opacity='0';setTimeout(()=>nuit.remove(),2600)}if(ciel)ciel.remove()};
   fxAll.add(stop);return stop}
+// Terrains (packages/engine/src/mechanics/terrain.ts) : l'ambiance du terrain en jeu, remplacée quand une carte en invoque un autre.
+// ORAGE_FOND : l'orage de fond de l'événement Orage ou d'un combat de boss (lancé au début) ; le terrain Orage ne le double pas.
+let TERRAIN=null,TERRAIN_STOP=null,ORAGE_FOND=false;
+// Chaque terrain : sa direction artistique, faite d'éléments animés (WAAPI) au-dessus du combat. Sur OBS, le fond est transparent :
+// seulement des éléments qui passent (particules, engrenages, lune) ; sur le site (SITE), en plus, le décor de fond (voile, rayons,
+// brume, motifs). col : la couleur du terrain (flash et texte quand il agit sur une carte).
+const TERRAINS_FX={essaim:{col:'#bef264'},foret:{col:'#86efac'},cathedrale:{col:'#67e8f9'},lune:{col:'#f87171'},sakura:{col:'#f9a8d4'},grimoire:{col:'#fcd34d'}};
+function terrainAmbiance(t){if(TERRAIN_STOP){TERRAIN_STOP();TERRAIN_STOP=null}TERRAIN=t;
+ if(t==='orage'){if(!ORAGE_FOND)TERRAIN_STOP=orageAmbiance()}else if(TERRAINS_FX[t])TERRAIN_STOP=terrainDecor(t)}
+function terrainDecor(t){const box=orageCouche('z-index:8;overflow:hidden'),fond=SITE?orageCouche('z-index:7;overflow:hidden;opacity:0;transition:opacity 2.5s'):null,an=[];
+ const el=(par,css,txt)=>{const d=document.createElement('div');d.style.cssText='position:absolute;left:0;top:0;pointer-events:none;'+css;if(txt)d.textContent=txt;par.appendChild(d);return d};
+ const go=(d,kf,o)=>{an.push(d.animate(kf,Object.assign({iterations:Infinity,easing:'linear'},o)))};
+ // mouvements : tombe en se balançant, monte en ondulant, erre en tous sens, scintille sur place
+ const tombe=(d,dur,rot=360)=>{const x=R(-5,100),sw=R(3,9);go(d,[0,.25,.5,.75,1].map((k,i)=>({transform:`translate(${x+(i%2?sw:-sw)*(i?1:0)}vw,${-8+k*116}vh) rotate(${k*rot}deg)`})),{duration:dur,delay:-R(0,dur)})};
+ const monte=(d,dur)=>{const x=R(0,100);go(d,[0,.33,.66,1].map((k,i)=>({transform:`translate(${x+(i%2?R(2,5):-R(2,5))}vw,${105-k*115}vh)`,opacity:[0,1,1,0][i]})),{duration:dur,delay:-R(0,dur)})};
+ const erre=(d,dur,n=6)=>{const pts=Array.from({length:n},()=>[R(-5,105),R(0,100)]);pts.push(pts[0]);go(d,pts.map(([x,y])=>({transform:`translate(${x}vw,${y}vh)`})),{duration:dur,delay:-R(0,dur),easing:'ease-in-out'})};
+ const brille=(d,x,y,dur)=>{d.style.transform=`translate(${x}vw,${y}vh)`;go(d,[{opacity:0},{opacity:1},{opacity:.2},{opacity:1},{opacity:0}],{duration:dur,delay:-R(0,dur),easing:'ease-in-out'})};
+ const fondu=()=>{if(fond)requestAnimationFrame(()=>{fond.style.opacity='1'})};
+ const voile=c=>{if(fond)el(fond,'width:100%;height:100%;background:radial-gradient(ellipse at 50% 55%,transparent 38%,'+c+' 100%)')};
+ if(t==='essaim'){
+  voile('rgba(63,98,18,.45)');
+  if(fond)el(fond,`width:100%;height:100%;opacity:.13;background-image:url("data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="56" height="97"><path d="M28 0l28 16v32L28 64 0 48V16zM28 64l28 16v32M28 64L0 80v32" fill="none" stroke="#facc15" stroke-width="2"/></svg>')}");background-size:5vh auto`);
+  for(let i=0;i<18;i++){const d=el(box,'');erre(d,R(5000,9000),8);   // l'insecte erre ; dedans, il vrombit
+   const b=el(d,'font-size:'+R(2.2,3.4).toFixed(1)+'vh;filter:drop-shadow(0 0 2px #000)',['🐝','🪰','🦟','🐝','🪲'][i%5]);go(b,[{transform:'translate(0,0)'},{transform:'translate(.35vh,-.3vh)'},{transform:'translate(-.3vh,.25vh)'},{transform:'translate(0,0)'}],{duration:R(140,220)})}
+ }else if(t==='foret'){
+  voile('rgba(20,83,45,.45)');
+  if(fond)for(let i=0;i<5;i++){const r=el(fond,`left:${R(5,85)}vw;top:-20vh;width:${R(6,12)}vw;height:150vh;transform:rotate(${R(18,28)}deg);transform-origin:top;background:linear-gradient(180deg,rgba(254,249,195,.22),transparent 75%);filter:blur(1.2vh)`);go(r,[{opacity:.4},{opacity:1},{opacity:.4}],{duration:R(5000,9000),easing:'ease-in-out'})}
+  for(let i=0;i<14;i++)tombe(el(box,'font-size:'+R(2.2,3.4).toFixed(1)+'vh;filter:drop-shadow(0 0 2px #000)',['🍃','🍂','🍃','🌿'][i%4]),R(9000,15000),R(200,540));
+  for(let i=0;i<22;i++){const g=R(.5,1.1);brille(el(box,`width:${g}vh;height:${g}vh;border-radius:50%;background:#fef08a;box-shadow:0 0 1.2vh .5vh rgba(250,204,21,.85)`),R(2,98),R(10,95),R(2200,4200))}
+ }else if(t==='cathedrale'){
+  voile('rgba(30,27,75,.55)');
+  if(fond){for(let i=0;i<4;i++){const v=el(fond,`left:${10+i*22}vw;top:-10vh;width:9vw;height:130vh;transform:skewX(-12deg);background:linear-gradient(180deg,${['rgba(56,189,248,.25)','rgba(167,139,250,.25)','rgba(45,212,191,.22)','rgba(99,102,241,.25)'][i]},transparent 70%);filter:blur(.8vh)`);go(v,[{opacity:.35},{opacity:.9},{opacity:.35}],{duration:R(4000,7000),easing:'ease-in-out'})}
+   const sv=el(fond,'width:100%;height:100%');sv.innerHTML='<svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none"><g fill="none" stroke="#22d3ee" stroke-width=".25" opacity=".55">'+Array.from({length:9},(_,k)=>{const y=R(5,95),x=R(0,40);return `<path class="ci" d="M${x} ${y}H${x+R(10,25)}V${y+R(-15,15)}H${x+R(35,60)}V${y+R(-10,10)}H100"/>`}).join('')+'</g></svg>';
+   sv.querySelectorAll('.ci').forEach(pth=>{pth.style.strokeDasharray='4 40';go(pth,[{strokeDashoffset:44},{strokeDashoffset:0}],{duration:R(1500,3200)})})}
+  [[-4,-6,20],[88,70,16],[-3,78,13],[90,-5,12]].forEach(([x,y,z],k)=>{const g=el(box,`left:${x}vw;top:${y}vh;font-size:${z}vh;line-height:1;opacity:.28;filter:grayscale(.3) drop-shadow(0 0 .6vh #22d3ee)`,'⚙️');go(g,[{transform:'rotate(0deg)'},{transform:`rotate(${k%2?-360:360}deg)`}],{duration:R(14000,22000)})});
+  for(let i=0;i<26;i++)tombe(el(box,'font:700 '+R(2,3.2).toFixed(1)+'vh monospace;color:#67e8f9;text-shadow:0 0 .8vh #22d3ee;opacity:.8',Math.random()<.5?'0':'1'),R(5000,9000),0);
+  for(let i=0;i<5;i++)erre(el(box,'font-size:'+R(2,3).toFixed(1)+'vh;filter:drop-shadow(0 0 2px #000)',['🔩','⚙️','🔧'][i%3]),R(12000,18000));
+ }else if(t==='lune'){
+  voile('rgba(69,10,10,.6)');
+  if(fond){const m=el(fond,'left:0;bottom:0;top:auto;width:100%;height:30vh;background:linear-gradient(0deg,rgba(127,29,29,.55),transparent);filter:blur(1vh)');go(m,[{transform:'translateX(-3vw)'},{transform:'translateX(3vw)'},{transform:'translateX(-3vw)'}],{duration:12000,easing:'ease-in-out'})}
+  const lu=el(box,'left:calc(50% - 6vh);top:2.5vh;width:12vh;height:12vh;border-radius:50%;background:radial-gradient(circle at 38% 35%,#fecaca 0,#ef4444 30%,#991b1b 62%,#450a0a 100%);box-shadow:0 0 5vh 1.5vh rgba(220,38,38,.6),inset -1.5vh -1vh 2.5vh rgba(0,0,0,.45)');
+  [[30,30,2.4],[58,55,1.6],[45,70,1.2]].forEach(([x,y,z])=>el(lu,`left:${x}%;top:${y}%;width:${z}vh;height:${z}vh;border-radius:50%;background:rgba(69,10,10,.35)`));
+  go(lu,[{boxShadow:'0 0 4vh 1vh rgba(220,38,38,.5),inset -1.5vh -1vh 2.5vh rgba(0,0,0,.45)'},{boxShadow:'0 0 7vh 2.5vh rgba(220,38,38,.75),inset -1.5vh -1vh 2.5vh rgba(0,0,0,.45)'},{boxShadow:'0 0 4vh 1vh rgba(220,38,38,.5),inset -1.5vh -1vh 2.5vh rgba(0,0,0,.45)'}],{duration:4000,easing:'ease-in-out'});
+  for(let i=0;i<9;i++){const b=el(box,'font-size:'+R(2.4,3.6).toFixed(1)+'vh;filter:drop-shadow(0 0 3px #7f1d1d) brightness(.8)','🦇');erre(b,R(6000,10000),7)}
+  for(let i=0;i<12;i++)monte(el(box,`width:${R(.3,.6)}vh;height:${R(.3,.6)}vh;border-radius:50%;background:#f87171;box-shadow:0 0 .8vh #dc2626`),R(6000,11000));
+ }else if(t==='sakura'){
+  voile('rgba(131,24,67,.35)');
+  if(fond)el(fond,'left:-10vw;top:-15vh;width:60vw;height:45vh;background:radial-gradient(ellipse,rgba(251,207,232,.35),transparent 65%);filter:blur(2vh)');
+  for(let i=0;i<30;i++){const z=R(1.7,2.8);const pe=el(box,`width:${z}vh;height:${z*.7}vh;border-radius:100% 0 100% 0;background:linear-gradient(135deg,#fdf2f8,#f9a8d4 60%,#ec4899);box-shadow:0 0 .4vh rgba(236,72,153,.5);opacity:.92`);tombe(pe,R(7000,12000),R(360,900))}
+  for(let i=0;i<4;i++)tombe(el(box,'font-size:'+R(2.2,3).toFixed(1)+'vh;filter:drop-shadow(0 0 2px #831843)','🌸'),R(9000,14000),R(180,360));
+ }else if(t==='grimoire'){
+  voile('rgba(69,26,3,.55)');
+  if(fond){const f=el(fond,'width:100%;height:100%;background:radial-gradient(ellipse at 50% 100%,rgba(251,191,36,.28),transparent 60%)');go(f,[{opacity:.7},{opacity:1},{opacity:.6},{opacity:.95},{opacity:.7}],{duration:2600,easing:'ease-in-out'})}
+  for(let i=0;i<9;i++){const pg=el(box,`width:3.2vh;height:4.2vh;border-radius:.3vh;background:repeating-linear-gradient(180deg,#fdf6e3 0 .55vh,#d6c7a1 .55vh .62vh);box-shadow:0 .3vh .8vh rgba(0,0,0,.5);border:1px solid #c8b78f`);
+   const pts=Array.from({length:5},()=>[R(-3,100),R(5,92)]);pts.push(pts[0]);go(pg,pts.map(([x,y])=>({transform:`translate(${x}vw,${y}vh) rotate(${R(-50,50)}deg) rotateY(${R(0,70)}deg)`})),{duration:R(14000,20000),delay:-R(0,14000),easing:'ease-in-out'})}
+  for(let i=0;i<18;i++)monte(el(box,'font:700 '+R(2.6,4).toFixed(1)+'vh serif;color:#fde68a;text-shadow:0 0 1vh #f59e0b,0 0 .3vh #fff',['ᚠ','ᚱ','✶','ᛟ','ᚨ','✧','ᛉ','§'][i%8]),R(6000,10000));
+ }
+ fondu();
+ let on=true;const stop=()=>{if(!on)return;on=false;an.forEach(a=>a.cancel());box.remove();if(fond){fond.style.opacity='0';setTimeout(()=>fond.remove(),2600)}};
+ fxAll.add(stop);return stop}
+// Le terrain agit sur une carte (piqûre, sève, programmation, malédiction, page du grimoire)
+const TERRAIN_ACTE={essaim:'🐝 PIQÛRE !',foret:'🌿 Sève',cathedrale:'⛪ Programmation',lune:'🌕 Maudit !',grimoire:'📖 Page du grimoire'};
+function nTerrain(c,t){nfxStart();const b=nbox(c),T=TERRAINS_FX[t];if(!b||!T)return;if(t==='essaim'||t==='lune')nshake(c,.5);nflash(c,T.col,300);nburst(b.cx,b.cy,14,T.col,4,2.5,30);flot(c,TERRAIN_ACTE[t],T.col,'big')}
 function nOrage(c){nfxStart();const b=nbox(c);if(!b)return;const x=b.cx+R(-b.w*.12,b.w*.12);
  nbolt(x+R(-70,70),0,x,b.cy-b.h*.05,'#e0e7ff',5.5,24);setTimeout(()=>nbolt(x+R(-50,50),0,b.cx+R(-b.w*.2,b.w*.2),b.cy+b.h*.1,'#a5b4fc',3,16),90);
  setTimeout(()=>{nflash(c,'#c7d2fe',520);nshake(c,.9);nring(b.cx,b.cy,b.w*.08,b.w*.95,'rgba(224,231,255,.95)',5,26);nglow(b.cx,b.cy,16,'#e0e7ff',4.5,12,32);nburst(b.cx,b.cy,18,'#ffffff',6,2.5,30)},60);
@@ -1780,7 +1843,7 @@ Object.assign(NK,{
  'statut:fils':e=>nFils(e.c,e.n,e.of),'statut:fils_cout':e=>flot(e.c,'🎭 Marionnettiste -'+e.n+' PV ('+e.hp+'/'+e.m+')','#e879f9'),
  'statut:forge':e=>{nForge(e.c,e.n,e.s,e.m);forgeBadge(e.c,e.s,e.n)},'statut:forge_vide':e=>flot(e.c,'Plus rien à forger','#fdba74'),
  'statut:arme_immunite':e=>flot(e.c,'⚔️ Arme vivante : insensible','#fdba74'),'statut:arme_feu':e=>flot(e.c,e.f?'🔥 Le feu la forge !':'🔥 Sans effet','#fb923c',e.f?'big':undefined),'statut:fauche':e=>nFauche(e.c,e.cible,e.n,e.p,e.a),'statut:laser':e=>nLaser(e.c,e.cible,e.n,e.p),
- 'statut:orage':e=>nOrage(e.c),
+ 'statut:orage':e=>nOrage(e.c),'statut:essaim':e=>nTerrain(e.c,'essaim'),'statut:foret':e=>nTerrain(e.c,'foret'),'statut:cathedrale':e=>nTerrain(e.c,'cathedrale'),'statut:lune':e=>nTerrain(e.c,'lune'),'statut:grimoire':e=>nTerrain(e.c,'grimoire'),
  'statut:reconstruction_ratee':e=>flot(e.c,'🔧 Reconstruction ratée ('+e.n+' %)','#94a3b8'),'statut:forge_creation':e=>{nForgeCreation(e.c,e.s==='piege');forgeBadge(e.c,e.s==='piege'?'trap':'magic',0);forgeSlot(e)}});
 async function jouer(res){
  file.push(res);if(enCours)return;enCours=true;
@@ -1790,9 +1853,10 @@ async function jouer(res){
    $('#ban').className=e.t;$('#ban').textContent=e.txt;$('#log').innerHTML+=e.txt+'<br>';$('#log').scrollTop=1e5;
    if(e.t==='debut'||e.t==='prolongation'||e.t==='relais'||e.t==='controle'||e.t==='controle_fin'){chargerZones(e.joueurs);chargerChiffres(e.joueurs)}
    try{allumerEffets(e)}catch(_){}
-   if(e.t==='debut'){beltsDebut(R);EQUIPE=e.equipe?[{n:1,of:e.equipe},{n:1,of:e.equipe}]:[null,null];st={};fxL.length=0;fxAll.forEach(s=>s());fxAll.clear();if(e.orage||R.tempete)orageAmbiance(R.tempete||undefined);/* R.tempete : le fond orageux d'un combat de boss (83-boss-duel.sql) */JOUEURS=[];[0,1].forEach(i=>$('#p'+i).classList.remove('actif','idle'));e.joueurs.forEach((j,i)=>panneau(i,j));titreBan(e.joueurs);$('#scene').classList.add('on');maj(e);await wait(2200);   // les 3 dos de chaque joueur, puis les combattants se retournent
+   if(e.t==='debut'){beltsDebut(R);EQUIPE=e.equipe?[{n:1,of:e.equipe},{n:1,of:e.equipe}]:[null,null];st={};fxL.length=0;fxAll.forEach(s=>s());fxAll.clear();TERRAIN=null;TERRAIN_STOP=null;ORAGE_FOND=!!(e.orage||R.tempete);if(ORAGE_FOND)orageAmbiance(R.tempete||undefined);/* R.tempete : le fond orageux d'un combat de boss (83-boss-duel.sql) */JOUEURS=[];[0,1].forEach(i=>$('#p'+i).classList.remove('actif','idle'));e.joueurs.forEach((j,i)=>panneau(i,j));titreBan(e.joueurs);$('#scene').classList.add('on');maj(e);await wait(2200);   // les 3 dos de chaque joueur, puis les combattants se retournent
     await Promise.all([0,1].map(i=>retourner($('#p'+i+' .card'),()=>{const d=$('#p'+i+' .dosf');if(d)d.remove()})));await wait(900);continue}
-   if(e.t==='prolongation'){await prolongation(e);continue}
+   if(e.t==='prolongation'){await prolongation(e);if(ORAGE_FOND)orageAmbiance(R.tempete||undefined);if(TERRAIN){const t=TERRAIN;TERRAIN_STOP=null;terrainAmbiance(t)}continue}
+   if(e.t==='terrain'){terrainAmbiance(e.terrain);$('#ban').animate([{transform:'scale(1)'},{transform:'scale(1.2)'},{transform:'scale(1)'}],{duration:700});await wait(1800);continue}
    if(e.t==='relais'){await relais(e);continue}
    if(e.t==='controle'){await marionnette(e,R.journal[ix+1]);continue}   // fils : prise de contrôle
    if(e.t==='controle_fin'){await finControle(e);continue}
@@ -2039,6 +2103,12 @@ if(DEMO){
   ['Orage','Orage : éclairs lointains, puis un éclair frappe la carte',async c=>{const stop=orageAmbiance(1);await wait(1200);nOrage(c);await wait(1500);stop()},3000],
   ['Orage','Orage intensité 3 : éclairs sur tout l\'écran, flashs dans le ciel',async c=>{const stop=orageAmbiance(3);await wait(4500);nOrage(c);await wait(1500);stop()},6000],
   ['Orage','Orage intensité 5 : la tempête (ciel assombri)',async c=>{const stop=orageAmbiance(5);await wait(5000);nOrage(c);await wait(1500);stop()},7000],
+  ['Terrain','Terrain Essaim : les insectes volent au-dessus du combat, puis une piqûre',async c=>{const stop=terrainDecor('essaim');await wait(2500);nTerrain(c,'essaim');await wait(1500);stop()},4500],
+  ['Terrain','Terrain Forêt Enchantée : rayons de lumière, feuilles et lucioles, puis la sève soigne',async c=>{const stop=terrainDecor('foret');await wait(2500);nTerrain(c,'foret');await wait(1500);stop()},4500],
+  ['Terrain','Terrain Cathédrale de programmation : engrenages, code et circuits, puis une programmation',async c=>{const stop=terrainDecor('cathedrale');await wait(2500);nTerrain(c,'cathedrale');await wait(1500);stop()},4500],
+  ['Terrain','Terrain Lune de sang : la lune rouge et les chauves-souris, puis une malédiction',async c=>{const stop=terrainDecor('lune');await wait(2500);nTerrain(c,'lune');await wait(1500);stop()},4500],
+  ['Terrain','Terrain Jardin de sakura : les pétales tombent',async c=>{const stop=terrainDecor('sakura');await wait(4000);stop()},4500],
+  ['Terrain','Terrain Grimoire ouvert : les pages volent, puis une page touche la carte',async c=>{const stop=terrainDecor('grimoire');await wait(2500);nTerrain(c,'grimoire');await wait(1500);stop()},4500],
   ['Laser','Tir laser : cible pleine de vie',c=>nLaser(c,1-c,30,100),1800],
   ['Laser','Tir laser : cible presque morte (15 % de PV)',c=>nLaser(c,1-c,3,15),1800],
   ['Forge','Forge de création : une nouvelle magie',async c=>{nForgeCreation(c,false)},2400],

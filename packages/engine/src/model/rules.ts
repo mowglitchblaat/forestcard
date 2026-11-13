@@ -16,6 +16,13 @@ export type Rules = {
   // Storm, a combat event (mechanics/storm.ts): at the start of each turn, `chance` % that a bolt
   // strikes a fighter for `degats` damage and a lightning mark. Absent: no storm.
   orage?: { chance: number; degats: number };
+  // Terrains (mechanics/terrain.ts): drawn at the start of the combat among `tirage` (weights; a
+  // null terrain: none), and each terrain's settings (defaults when absent). No weight: no draw, the
+  // combat is unchanged; a card can still invoke a terrain.
+  terrain?: {
+    tirage?: { terrain: string | null; poids: number }[];
+    [terrain: string]: unknown; // each terrain's settings (mechanics/terrain.ts, TERRAIN_DEFAULTS)
+  };
   // The game's existing magics and traps (with their image): the creation forge forges one of them
   // (mechanics/forge.ts). Absent or empty: it forges a new card with an effect drawn at random.
   forgeCartes?: Card[];

@@ -36,6 +36,7 @@ import {
 import { TURN } from './combat/moments.ts';
 import type { Side } from './combat/state.ts';
 import { settleMagicCancellations } from './mechanics/magic-cancel.ts';
+import { drawTerrain, terrainPassives } from './mechanics/terrain.ts';
 import { revealMagic } from './mechanics/magic-timing.ts';
 import { endControl, payControl, puppetFell, takeControl } from './mechanics/threads.ts';
 import { triggersOf } from './mechanics/triggers.ts';
@@ -74,6 +75,7 @@ export function simulateRelay(
 
   const first = c.random() < 0.5 ? 0 : 1;
   emit(c, { type: 'combatStarted', first, team, ...(rules.orage ? { storm: true as const } : {}) });
+  drawTerrain(c); // the terrain of the combat, if the rules give some (mechanics/terrain.ts)
   revealMagics(c, [c.sides[first] as Side, c.sides[1 - first] as Side]);
 
   const canSend = (i: number) => fielded[i]! < team && fielded[i]! < (fighters[i] ?? 0);
@@ -219,6 +221,7 @@ export function simulateRelay(
 
 // As in simulate.ts: magic cancellation settled first, then each magic of `order` acts.
 function revealMagics(c: ReturnType<typeof createCombat>, order: Side[]): void {
+  terrainPassives(c, order); // cards coming into play invoke their terrain (mechanics/terrain.ts)
   settleMagicCancellations(c, order);
   order.forEach((s) => {
     if (

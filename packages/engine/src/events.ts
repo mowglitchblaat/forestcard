@@ -36,6 +36,9 @@ export type SideView = {
 };
 export type CombatView = { readonly round: number; readonly sides: readonly SideView[] };
 
+// The terrains (mechanics/terrain.ts).
+export type Terrain = 'orage' | 'essaim' | 'foret' | 'cathedrale' | 'lune' | 'sakura' | 'grimoire';
+
 export type StatusKind =
   | 'curse'
   | 'bleed'
@@ -270,6 +273,16 @@ export type DomainEvent =
   // team: relay combat, fighters per player; storm: the storm event is on (mechanics/storm.ts)
   | { type: 'combatStarted'; first: number; team?: number; storm?: true }
   | { type: 'stormStruck'; side: SideIndex } // a bolt of the storm falls on this fighter
+  // The terrain (mechanics/terrain.ts): drawn at the start, or invoked by a card (by) with an effect
+  // or a passive
+  | {
+      type: 'terrainChanged';
+      terrain: Terrain;
+      cause: 'tirage' | 'effet' | 'passif';
+      by?: SideIndex;
+    }
+  // The terrain acts on the card playing (a sting, a curse, a heal, a programming, a random effect)
+  | { type: 'terrainActs'; terrain: Exclude<Terrain, 'orage' | 'sakura'>; side: SideIndex }
   | { type: 'turnStarted'; side: SideIndex; turn: number }
   | { type: 'overtimeStarted'; period: number; first: number }
   // Relay combat (relay.ts): the next fighter of a player enters (index: its rank, of: team size)

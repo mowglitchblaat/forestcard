@@ -15,6 +15,7 @@ export type CardType = 'combattant' | 'magie' | 'piege';
 export type EffectData = {
   type?: string;
   briques?: (EffectData | null)[];
+  terrain?: string; // the terrain an effect or a passive invokes (mechanics/terrain.ts)
 
   // Targeting: `cible` for stat and swap effects, `ciblem` for statuses ("soi" | "adversaire").
   cible?: string;
@@ -197,6 +198,7 @@ export type Card = {
   image?: string | null;
   imageCombat?: string | null;
   rar?: unknown;
+  collection_id?: Num; // its collection (a terrain favours its own: mechanics/terrain.ts)
   // Set on the engine's "no magic" / "no trap" placeholders only.
   vide?: number;
 };

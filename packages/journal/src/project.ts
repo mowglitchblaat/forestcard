@@ -19,6 +19,36 @@ import type {
   StatusKind,
 } from '@forestcard/engine';
 
+// The terrains (packages/engine/src/mechanics/terrain.ts): their name, and their rule in one line.
+const TERRAIN_NAMES = {
+  orage: "l'Orage",
+  essaim: "l'Essaim",
+  foret: 'la Forêt Enchantée',
+  cathedrale: 'la Cathédrale de programmation',
+  lune: 'la Lune de sang',
+  sakura: 'le Jardin de sakura',
+  grimoire: 'le Grimoire ouvert',
+} as const;
+const TERRAIN_RULES = {
+  orage: 'Des éclairs peuvent frapper les combattants ; les cartes de foudre frappent plus fort.',
+  essaim:
+    "L'essaim pique les combattants (saignement) ; les Xénoptera sont épargnés et frappent plus fort.",
+  foret: 'La sève soigne les combattants à chaque tour ; les cartes Basique se soignent davantage.',
+  cathedrale:
+    'Les combattants peuvent lancer une programmation à chaque tour ; les cartes Mécanique et Technologie davantage.',
+  lune: 'La lune maudit les combattants ; les Horreurs & Chasseurs sont épargnés et frappent plus fort.',
+  sakura: 'Les combattants esquivent plus souvent ; les cartes Nihon Densetsu encore plus.',
+  grimoire:
+    "Une page du grimoire peut donner un effet au hasard ; les cartes de la Bibliothèque de l'Auteur plus souvent.",
+} as const;
+const TERRAIN_ACTS = {
+  essaim: (n: string) => `🐝 L'essaim pique ${n} !`,
+  foret: (n: string) => `🌿 La sève de la forêt soigne ${n}`,
+  cathedrale: (n: string) => `⛪ La cathédrale programme ${n}`,
+  lune: (n: string) => `🌕 La lune de sang maudit ${n} !`,
+  grimoire: (n: string) => `📖 Une page du grimoire s'envole vers ${n}`,
+} as const;
+
 export type JournalLine = {
   t: string;
   txt: string;
@@ -601,6 +631,24 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
         t: 'statut',
         txt: `⚡ ORAGE ! Un éclair frappe ${name(e.side)} !`,
         o: { c: e.side, k: 'orage' },
+      };
+    case 'terrainChanged': {
+      const terrain = TERRAIN_NAMES[e.terrain];
+      const txt =
+        e.by === undefined
+          ? `Terrain : ${terrain} ! ${TERRAIN_RULES[e.terrain]}`
+          : `${name(e.by)} invoque ${terrain}${e.cause === 'passif' ? ' en entrant en jeu' : ''} ! ${TERRAIN_RULES[e.terrain]}`;
+      return {
+        t: 'terrain',
+        txt,
+        o: { terrain: e.terrain, cause: e.cause, ...(e.by === undefined ? {} : { c: e.by }) },
+      };
+    }
+    case 'terrainActs':
+      return {
+        t: 'statut',
+        txt: TERRAIN_ACTS[e.terrain](name(e.side)),
+        o: { c: e.side, k: e.terrain },
       };
     case 'scaled': {
       const scythe = e.kind === 'fauche';

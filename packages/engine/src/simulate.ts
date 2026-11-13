@@ -22,6 +22,7 @@ import {
 } from './combat/combat.ts';
 import { TURN } from './combat/moments.ts';
 import { settleMagicCancellations } from './mechanics/magic-cancel.ts';
+import { drawTerrain, terrainPassives } from './mechanics/terrain.ts';
 import { revealMagic } from './mechanics/magic-timing.ts';
 import { endControl, payControl, takeControl } from './mechanics/threads.ts';
 import { triggersOf } from './mechanics/triggers.ts';
@@ -81,6 +82,7 @@ export function simulate(
     giveBack: () => {},
   };
   emit(c, { type: 'combatStarted', first, ...(rules.orage ? { storm: true as const } : {}) });
+  drawTerrain(c); // the terrain of the combat, if the rules give some (mechanics/terrain.ts)
   revealMagics(c, cards());
 
   // Overtime: at the last round, if no card fell, each player draws 3 new cards from their deck (1
@@ -155,6 +157,7 @@ export function simulate(
 // reveals and acts, in turn order: a magic destroyed by the one played before it does not play.
 // The magics of the start do not count as "a card activates" (sur_carte ultimates).
 function revealMagics(c: Combat, order: Side[]): void {
+  terrainPassives(c, order); // cards coming into play invoke their terrain (mechanics/terrain.ts)
   settleMagicCancellations(c, order);
   order.forEach((s) => {
     if (

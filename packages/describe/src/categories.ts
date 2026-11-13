@@ -47,6 +47,7 @@ export const CATEGORY_LABELS: Record<string, string> = {
   fils: 'Fils / contrôle',
   fauche: 'Fauche',
   laser: 'Tir laser',
+  terrain: 'Terrain',
   autre: 'Autres',
 };
 // Category (legend colour) of each effect and passive type.
@@ -141,6 +142,7 @@ const CATEGORY_OF: Record<string, string> = {
   injection_virulente: 'poison',
   surcharge: 'foudre',
   accumulateur: 'foudre',
+  terrain: 'terrain',
   brisure_volonte: 'mal',
   etreinte_maudite: 'mal',
   verrouillage_total: 'headshot',
@@ -205,5 +207,6 @@ export const CATEGORY_STYLES: Record<
   fils: { background: '#2e1065', color: '#f5d0fe', border: '1px solid #c026d3' },
   fauche: { background: '#3b0a0a', color: '#fecaca', border: '1px solid #b91c1c' },
   laser: { background: '#082f49', color: '#a5f3fc', border: '1px solid #22d3ee' },
+  terrain: { background: '#14532d', color: '#fef3c7', border: '1px solid #ca8a04' },
   autre: { background: '#6b7280', color: '#fff' },
 };

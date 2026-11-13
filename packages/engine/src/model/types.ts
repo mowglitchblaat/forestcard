@@ -102,6 +102,7 @@ export const EFFECT_TYPES = [
   'forge_creation',
   'fils',
   'atk_fils',
+  'terrain',
 ] as const;
 export type EffectType = (typeof EFFECT_TYPES)[number];
 
@@ -163,6 +164,7 @@ export const PASSIVE_TYPES = [
   'reconstruction',
   'fauche',
   'laser',
+  'terrain',
 ] as const;
 export type PassiveType = (typeof PASSIVE_TYPES)[number];
 

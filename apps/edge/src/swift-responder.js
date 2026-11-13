@@ -64,9 +64,9 @@ async function championnat(b) {
   try {
     const dos = await dosDe([a.id, adv.id]);
     await ajouterRaretes([...(a.deck || []), ...(adv.deck || [])]);
-    const niveaux = await reglesNiveaux(), orage = await reglesOrage();
+    const niveaux = await reglesNiveaux(), orage = await reglesOrage(), terrain = await reglesTerrain();
     res = simulerRelais({ pseudo: a.pseudo, deck: a.deck, dos: dos[a.id] }, { pseudo: adv.pseudo, deck: adv.deck, dos: dos[adv.id] },
-      { seed: Math.floor(Math.random() * 1e9), regles: { ...REGLES, gain, perte, nul: perte, equipe: 3, niveaux, orage, forgeCartes: await forgeCartes(a.deck, adv.deck) } });
+      { seed: Math.floor(Math.random() * 1e9), regles: { ...REGLES, gain, perte, nul: perte, equipe: 3, niveaux, orage, terrain, forgeCartes: await forgeCartes(a.deck, adv.deck) } });
     if (res && res.regles) delete res.regles.forgeCartes;   // le moteur s'en est servi ; inutile dans la réponse
     res.ceintures = await ceinturesDe([a.id, adv.id]);   // avant le combat (titre_conclure n'a pas encore eu lieu)
   } catch (e) {
@@ -154,9 +154,9 @@ async function tournoiSuivant() {
   try {
     const dos = await dosDe([A.id, B.id]);
     await ajouterRaretes([...(A.deck || []), ...(B.deck || [])]);
-    const niveaux = await reglesNiveaux(), orage = await reglesOrage();
+    const niveaux = await reglesNiveaux(), orage = await reglesOrage(), terrain = await reglesTerrain();
     res = simulerRelais({ pseudo: A.pseudo, deck: A.deck, dos: dos[A.id] }, { pseudo: B.pseudo, deck: B.deck, dos: dos[B.id] },
-      { seed: Math.floor(Math.random() * 1e9), regles: { ...REGLES, gain: 0, perte: 0, nul: 0, equipe: 3, niveaux, orage, forgeCartes: await forgeCartes(A.deck, B.deck) } });
+      { seed: Math.floor(Math.random() * 1e9), regles: { ...REGLES, gain: 0, perte: 0, nul: 0, equipe: 3, niveaux, orage, terrain, forgeCartes: await forgeCartes(A.deck, B.deck) } });
     if (res && res.regles) delete res.regles.forgeCartes;   // le moteur s'en est servi ; inutile dans la réponse
     res.ceintures = await ceinturesDe([A.id, B.id]);
   } catch (e) {
@@ -295,6 +295,34 @@ async function reglesOrage() {
   const nb = (x, d, max) => { const n = parseFloat(x); return Number.isFinite(n) && n >= 0 ? Math.min(n, max) : d; };
   return { chance: nb(v.orage_chance, 10, 100), degats: Math.round(nb(v.orage_degats, 18, 10000)) };
 }
+// Terrains (Admin > Réglages, moteur : mechanics/terrain.ts) : au début de chaque combat, un terrain tiré au sort selon
+// les poids (« aucun » compris), et les réglages de chaque terrain. Éteint : pas de tirage, mais une carte qui invoque un
+// terrain l'invoque quand même, avec ces réglages. Sans tirage (tirer = false : combat de boss), seules les cartes en invoquent.
+const TERRAINS_REGLAGES = {   // chaque terrain : ses réglages par défaut (moteur : TERRAIN_DEFAULTS) et leur maximum
+  orage: { chance: [10, 100], degats: [18, 10000], bonus: [10, 1000] },
+  essaim: { chance: [20, 100], niveau: [1, 3], tours: [2, 20], bonus: [10, 1000], collection: [10, 1e9] },
+  foret: { pct: [3, 100], bonus: [6, 100], collection: [0, 1e9] },
+  cathedrale: { chance: [15, 100], bonus: [10, 100], collection: [8, 1e9] },
+  lune: { chance: [20, 100], tours: [2, 20], bonus: [10, 1000], collection: [1, 1e9] },
+  sakura: { esquive: [10, 100], bonus: [20, 100], collection: [7, 1e9] },
+  grimoire: { chance: [15, 100], bonus: [30, 100], collection: [11, 1e9] },
+};
+async function reglesTerrain(tirer = true) {
+  const v = {};
+  try {
+    const r = await rest('reglages_jeu?cle=like.terrain_*&select=cle,valeur');
+    if (r.ok && Array.isArray(r.data)) r.data.forEach(x => { v[x.cle] = x.valeur; });
+  } catch { return undefined; }
+  const nb = (x, d, max) => { const n = parseFloat(x); return Number.isFinite(n) && n >= 0 ? Math.min(n, max) : d; };
+  const actif = tirer && String(v.terrain_actif) === '1';
+  const out = { tirage: actif ? [{ terrain: null, poids: nb(v.terrain_poids_aucun, 0, 1000) }] : [] };
+  for (const [t, champs] of Object.entries(TERRAINS_REGLAGES)) {
+    if (actif) out.tirage.push({ terrain: t, poids: nb(v['terrain_poids_' + t], 0, 1000) });
+    out[t] = {};
+    for (const [k, [d, max]] of Object.entries(champs)) out[t][k] = nb(v['terrain_' + t + '_' + k], d, max);
+  }
+  return out;
+}
 // Gains des combats (Admin > Réglages) : gold par victoire / défaite / nul, multiplicateur des soirées spéciales (×2…) avec heure de fin facultative
 async function reglesGains() {
   const v = {};
@@ -432,7 +460,7 @@ async function bossCombat(site, b) {
   let res;
   try {
     res = simuler({ pseudo: d.a.pseudo, deck: d.a.deck }, { pseudo: d.b.pseudo, deck: d.b.deck },
-      { seed: d.seed, regles: { ...REGLES, maxTours: 60, maxProlong: 0, gain: 0, perte: 0, nul: 0, forgeCartes: await forgeCartes(d.a.deck, d.b.deck), ...(d.niveaux ? { niveaux: d.niveaux } : {}) } });
+      { seed: d.seed, regles: { ...REGLES, maxTours: 60, maxProlong: 0, gain: 0, perte: 0, nul: 0, terrain: await reglesTerrain(false), forgeCartes: await forgeCartes(d.a.deck, d.b.deck), ...(d.niveaux ? { niveaux: d.niveaux } : {}) } });
     if (res && res.regles) delete res.regles.forgeCartes;   // le moteur s'en est servi ; inutile dans la réponse
   } catch (e) {
     await rpc('boss_conclure', { p_essai: d.essai, p_gagne: false, p_degats: 0 });
@@ -596,10 +624,10 @@ async function traiter(req) {
   try {
     const dos = await dosDe([a.id, adv.id]);
     G = await reglesGains();
-    const niveaux = await reglesNiveaux(), orage = await reglesOrage();
+    const niveaux = await reglesNiveaux(), orage = await reglesOrage(), terrain = await reglesTerrain();
     await ajouterRaretes([...(a.deck || []), ...(adv.deck || [])]);
     res = simuler({ pseudo: a.pseudo, deck: a.deck, dos: dos[a.id] }, { pseudo: adv.pseudo, deck: adv.deck, dos: dos[adv.id] },
-      { seed: Math.floor(Math.random() * 1e9), regles: { ...REGLES, gain: G.gain, perte: G.perte, nul: G.nul, niveaux, orage, forgeCartes: await forgeCartes(a.deck, adv.deck) } });
+      { seed: Math.floor(Math.random() * 1e9), regles: { ...REGLES, gain: G.gain, perte: G.perte, nul: G.nul, niveaux, orage, terrain, forgeCartes: await forgeCartes(a.deck, adv.deck) } });
     if (res && res.regles) delete res.regles.forgeCartes;   // le moteur s'en est servi ; inutile dans la réponse
     res.ceintures = await ceinturesDe([a.id, adv.id]);
   } catch (e) {
