@@ -1435,6 +1435,7 @@ async function verrouPrendre(nom){if(TEST||DEMO||SITE)return;const t0=Date.now()
  clearInterval(battement);battement=setInterval(ecrire,1500)}
 function verrouLacher(nom){clearInterval(battement);const v=lireVerrou();if(v&&v.o===nom){try{localStorage.removeItem(VERROU)}catch{}}}
 const ACTION_FIN=new URLSearchParams(location.search).get('action')||'Combat - Résultat';
+const ACTION_FIN_ID=new URLSearchParams(location.search).get('actionId')||'';   // l'id de l'action (clic droit > Copy Action Id dans Streamer.bot) : appelée par son id, quel que soit son nom
 // ---------- Nouvelles mécaniques : headshot, ciblage, brume, lien parasitaire, mutation, mue ----------
 const NFX={cv:null,x:null,mist:[0,0],lien:null,P:[],O:[],on:false,t:0};
 function nfxCanvas(){if(NFX.cv)return;
@@ -2352,8 +2353,8 @@ function annoncer(R){
  if(!msg)return;
  if(!wsLive||wsLive.readyState!==1){diagLive('WebSocket fermé : annonce perdue');return}
  const a=actionSB(ACTION_FIN);
- if(!a)diagLive('action « '+ACTION_FIN+' » introuvable dans Streamer.bot ('+actionsSB.length+' actions lues)');
- wsLive.send(JSON.stringify({request:'DoAction',id:'fin-combat',action:a?{id:a.id,name:a.name}:{name:ACTION_FIN},args:{message:msg}}));
+ if(!a&&!ACTION_FIN_ID)diagLive('action « '+ACTION_FIN+' » introuvable dans Streamer.bot ('+actionsSB.length+' actions lues)');
+ wsLive.send(JSON.stringify({request:'DoAction',id:'fin-combat',action:ACTION_FIN_ID?{id:ACTION_FIN_ID}:a?{id:a.id,name:a.name}:{name:ACTION_FIN},args:{message:msg}}));
  diagLive('annonce envoyée : '+msg);
 }
 function connect(){const ws=new WebSocket('ws://127.0.0.1:8080/');wsLive=ws;
