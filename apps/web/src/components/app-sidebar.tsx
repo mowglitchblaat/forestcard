@@ -206,6 +206,7 @@ const ENCYCLOPEDIA_ICONS: Record<EncyclopediaPage, LucideIcon> = {
   catalogue: ICONS.catalogue,
   raretes: ICONS.rarities,
   effets: ICONS.effects,
+  terrains: ICONS.terrains,
 };
 
 function EncyclopediaLink({ page }: { page: EncyclopediaPage }) {

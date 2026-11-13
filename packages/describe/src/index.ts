@@ -100,21 +100,77 @@ const furyTxt = `Fureur incandescente : chaque perte de PV donne +${L.fureurPct}
 const leechTxt = `Sangsue toxique : à chaque tic de poison de l'adversaire, récupère ${L.sangsue[0]} / ${L.sangsue[1]} / ${L.sangsue[2]} % de ses dégâts (poison I / II / III)`;
 const injectionTxt = `Injection virulente : sans poison, pose un poison I (3 tours) ; empoisonné, son poison monte d'un niveau ; au poison III, dégâts bruts : ${L.injection} % des dégâts de poison restants (le poison reste)`;
 // The terrains (packages/engine/src/mechanics/terrain.ts): the one a card invokes, and its rule.
-const TERRAIN_TXT: Record<string, string> = {
-  orage:
-    "l'Orage (à chaque tour, un éclair peut frapper l'un des combattants ; les cartes de foudre frappent plus fort)",
-  essaim:
-    "l'Essaim (à chaque tour, le combattant qui joue peut être piqué : saignement ; les Xénoptera sont épargnés et frappent plus fort)",
-  foret:
-    'la Forêt Enchantée (à chaque tour, le combattant qui joue se soigne ; les cartes Basique davantage)',
-  cathedrale:
-    'la Cathédrale de programmation (à chaque tour, le combattant qui joue peut lancer une programmation ; les cartes Mécanique et Technologie plus souvent)',
-  lune: 'la Lune de sang (à chaque tour, le combattant qui joue peut être maudit ; les Horreurs & Chasseurs sont épargnés et frappent plus fort)',
-  sakura:
-    'le Jardin de sakura (tous les combattants esquivent plus souvent ; les cartes Nihon Densetsu encore plus)',
-  grimoire:
-    "le Grimoire ouvert (à chaque tour, le combattant qui joue peut recevoir un effet au hasard ; les cartes de la Bibliothèque de l'Auteur plus souvent)",
-};
+// The terrains (packages/engine/src/mechanics/terrain.ts): each one's name, the collection it
+// favours, its rule for both sides and its bonus. One wording for the cards and the encyclopedia.
+export const TERRAIN_INFO = [
+  {
+    key: 'orage',
+    emoji: '⛈️',
+    nom: "l'Orage",
+    titre: 'Orage',
+    camp: 'les cartes au passif foudre',
+    regle: "à chaque tour, un éclair peut frapper l'un des combattants",
+    bonus: 'les cartes de foudre frappent plus fort',
+  },
+  {
+    key: 'essaim',
+    emoji: '🐝',
+    nom: "l'Essaim",
+    titre: 'Essaim',
+    camp: 'Xénoptera',
+    regle: 'à chaque tour, le combattant qui joue peut être piqué : saignement',
+    bonus: 'les Xénoptera sont épargnés et frappent plus fort',
+  },
+  {
+    key: 'foret',
+    emoji: '🌿',
+    nom: 'la Forêt Enchantée',
+    titre: 'Forêt Enchantée',
+    camp: 'Basique',
+    regle: 'à chaque tour, le combattant qui joue se soigne',
+    bonus: 'les cartes Basique se soignent davantage',
+  },
+  {
+    key: 'cathedrale',
+    emoji: '⛪',
+    nom: 'la Cathédrale de programmation',
+    titre: 'Cathédrale de programmation',
+    camp: 'Mécanique et Technologie',
+    regle:
+      'à chaque tour, le combattant qui joue peut lancer une programmation (la première est passive)',
+    bonus: 'les cartes Mécanique et Technologie plus souvent',
+  },
+  {
+    key: 'lune',
+    emoji: '🌕',
+    nom: 'la Lune de sang',
+    titre: 'Lune de sang',
+    camp: 'Horreurs & Chasseurs',
+    regle: 'à chaque tour, le combattant qui joue peut être maudit',
+    bonus: 'les Horreurs & Chasseurs sont épargnés et frappent plus fort',
+  },
+  {
+    key: 'sakura',
+    emoji: '🌸',
+    nom: 'le Jardin de sakura',
+    titre: 'Jardin de sakura',
+    camp: 'Nihon Densetsu',
+    regle: 'tous les combattants esquivent plus souvent',
+    bonus: 'les cartes Nihon Densetsu encore plus',
+  },
+  {
+    key: 'grimoire',
+    emoji: '📖',
+    nom: 'le Grimoire ouvert',
+    titre: 'Grimoire ouvert',
+    camp: "la Bibliothèque de l'Auteur",
+    regle: 'à chaque tour, le combattant qui joue peut recevoir un effet au hasard',
+    bonus: "les cartes de la Bibliothèque de l'Auteur plus souvent",
+  },
+] as const;
+const TERRAIN_TXT: Record<string, string> = Object.fromEntries(
+  TERRAIN_INFO.map((t) => [t.key, `${t.nom} (${t.regle} ; ${t.bonus})`]),
+);
 const terrainTxt = (e: Fx) => TERRAIN_TXT[String(e.terrain)] ?? 'un terrain';
 const overloadTxt = `Surcharge : s'électrocute (${L.surchargeAuto} % de ses PV max), puis pendant 2 tours : ATQ −${L.surchargeAtq} %, ${L.surchargeEnchainement} % de chances d'enchaîner (jusqu'à 3 coups), chaque coup pose la foudre`;
 const forgeTxt = `Forge : améliore au hasard une de ses cartes (son combattant, sa magie ou son piège encore armé, ${L.forgeMax} forges max par carte) : ATQ ou PV max (+${L.forgeStatMin} à ${L.forgeStatMax} %), ou une valeur déjà inscrite (+${L.forgeValeurMin} à ${L.forgeValeurMax} %, chance +${L.forgeChanceMin} à ${L.forgeChanceMax} points, durée +1 tour, niveau +1) ; un piège peut gagner un déclenchement (${L.forgeDeclenchement} % de chances, une fois)`;

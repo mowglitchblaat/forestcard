@@ -25,6 +25,7 @@ export const ENCYCLOPEDIA_PAGES = {
   catalogue: 'Catalogue',
   raretes: 'Raretés',
   effets: 'Effets',
+  terrains: 'Terrains',
 } as const;
 export type EncyclopediaPage = keyof typeof ENCYCLOPEDIA_PAGES;
 

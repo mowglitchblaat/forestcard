@@ -19,7 +19,8 @@ import { CollectionSearch } from '@/views/collection/search';
 import { CataloguePage } from '@/views/encyclopedia/catalogue-page';
 import { EffectsPage } from '@/views/encyclopedia/effects-page';
 import { RaritiesPage } from '@/views/encyclopedia/rarities-page';
-import { EffectsSearch, RaritiesSearch } from '@/views/encyclopedia/search';
+import { EffectsSearch, RaritiesSearch, TerrainsSearch } from '@/views/encyclopedia/search';
+import { TerrainsPage } from '@/views/encyclopedia/terrains-page';
 import { HistoryPage } from '@/views/history/page';
 import { HistorySearch } from '@/views/history/search';
 import { LeaderboardPage } from '@/views/leaderboard/page';
@@ -141,6 +142,13 @@ const effectsRoute = createRoute({
   component: EffectsPage,
 });
 
+const terrainsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: 'encyclopedie/terrains',
+  validateSearch: (search) => TerrainsSearch.parse(search),
+  component: TerrainsPage,
+});
+
 // Pages of the site alone (SITE_PAGES).
 const liveRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -217,6 +225,7 @@ export const router = createRouter({
     catalogueRoute,
     raritiesRoute,
     effectsRoute,
+    terrainsRoute,
     liveRoute,
     playRoute,
     announcementsRoute,

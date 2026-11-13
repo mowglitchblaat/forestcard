@@ -21,7 +21,7 @@ export const PLAYER_GROUPS: { label: string; items: NavItem[] }[] = [
   { label: 'Combats', items: views('historique', 'classement', 'ceintures', 'tournois') },
   {
     label: 'Encyclopédie',
-    items: [{ page: 'catalogue' }, { page: 'raretes' }, { page: 'effets' }],
+    items: [{ page: 'catalogue' }, { page: 'raretes' }, { page: 'effets' }, { page: 'terrains' }],
   },
   { label: 'Communauté', items: [...views('profil', 'propos', 'patch'), { site: 'votes' }] },
 ];

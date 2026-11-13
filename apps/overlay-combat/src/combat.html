@@ -1694,9 +1694,10 @@ let TERRAIN=null,TERRAIN_STOP=null,ORAGE_FOND=false;
 // seulement des éléments qui passent (particules, engrenages, lune) ; sur le site (SITE), en plus, le décor de fond (voile, rayons,
 // brume, motifs). col : la couleur du terrain (flash et texte quand il agit sur une carte).
 const TERRAINS_FX={essaim:{col:'#bef264'},foret:{col:'#86efac'},cathedrale:{col:'#67e8f9'},lune:{col:'#f87171'},sakura:{col:'#f9a8d4'},grimoire:{col:'#fcd34d'}};
-function terrainAmbiance(t){if(TERRAIN_STOP){TERRAIN_STOP();TERRAIN_STOP=null}TERRAIN=t;
- if(t==='orage'){if(!ORAGE_FOND)TERRAIN_STOP=orageAmbiance()}else if(TERRAINS_FX[t])TERRAIN_STOP=terrainDecor(t)}
-function terrainDecor(t){const box=orageCouche('z-index:8;overflow:hidden'),fond=SITE?orageCouche('z-index:7;overflow:hidden;opacity:0;transition:opacity 2.5s'):null,an=[];
+// fond : le décor de fond même hors du site (l'aperçu des terrains de l'encyclopédie)
+function terrainAmbiance(t,fond){if(TERRAIN_STOP){TERRAIN_STOP();TERRAIN_STOP=null}TERRAIN=t;
+ if(t==='orage'){if(!ORAGE_FOND)TERRAIN_STOP=orageAmbiance(fond?4:undefined)}else if(TERRAINS_FX[t])TERRAIN_STOP=terrainDecor(t,fond)}
+function terrainDecor(t,avecFond){const box=orageCouche('z-index:8;overflow:hidden'),fond=SITE||avecFond?orageCouche('z-index:7;overflow:hidden;opacity:0;transition:opacity 2.5s'):null,an=[];
  const el=(par,css,txt)=>{const d=document.createElement('div');d.style.cssText='position:absolute;left:0;top:0;pointer-events:none;'+css;if(txt)d.textContent=txt;par.appendChild(d);return d};
  const go=(d,kf,o)=>{an.push(d.animate(kf,Object.assign({iterations:Infinity,easing:'linear'},o)))};
  // mouvements : tombe en se balançant, monte en ondulant, erre en tous sens, scintille sur place

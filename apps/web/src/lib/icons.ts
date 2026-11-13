@@ -61,6 +61,7 @@ import {
   Monitor,
   MonitorPlay,
   Moon,
+  Mountain,
   Palette,
   PartyPopper,
   Pencil,
@@ -165,6 +166,7 @@ export const ICONS = {
   proposals: Palette,
   gifts: Gift,
   referral: UserPlus, // sponsorship: a player who brings a new one
+  terrains: Mountain, // the terrains a combat is fought on (encyclopedia)
   settings: SlidersHorizontal,
   votes: Vote,
   lore: Castle, // the lore: story, world map, events

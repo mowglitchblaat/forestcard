@@ -25,6 +25,21 @@
   };
 
   const PREVIEW = {
+    // The terrains (mechanics/terrain.ts): the terrain's scenery, with its background, then what it
+    // does to the opponent (a bolt, a sting, the sap, a programming, a curse, a page).
+    ...Object.fromEntries(
+      ['orage', 'essaim', 'foret', 'cathedrale', 'lune', 'sakura', 'grimoire'].map((t) => [
+        'terrain_' + t,
+        {
+          on: 'both',
+          play: (s, o) => {
+            terrainAmbiance(t, true);
+            if (t === 'sakura') return;
+            setTimeout(() => (t === 'orage' ? nOrage(o) : nTerrain(o, t)), 2200);
+          },
+        },
+      ]),
+    ),
     poison: { on: 'opponent', play: (s, o) => statut(o, 'poison', true) },
     brulure: { on: 'opponent', play: (s, o) => statut(o, 'brulure', true) },
     saignement: { on: 'opponent', play: (s, o) => statut(o, 'saignement', true) },

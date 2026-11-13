@@ -7,3 +7,4 @@ const optional = z.string().optional().catch(undefined);
 
 export const EffectsSearch = z.object({ effet: optional });
 export const RaritiesSearch = z.object({ rarete: optional });
+export const TerrainsSearch = z.object({ terrain: optional });
