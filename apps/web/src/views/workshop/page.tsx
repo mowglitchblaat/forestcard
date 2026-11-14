@@ -35,23 +35,25 @@ import { TONES } from '@/lib/tones';
 
 // The reels' symbols, by case of the wheel (a loss, a little gain, double, the jackpot).
 const SYMBOLS = ['\u{1F480}', '\u{1F352}', '\u{1F514}', '7'];
-// Where things sit on TAC-002's portrait (746 × 597): the window of its drum (three slots, 10 px
+// Where things sit on TAC-002's portrait (1402 × 1122): the window of its drum (three slots, 17 px
 // apart), the lever on its left, its cannon's muzzle; shares of the picture.
 const pct = (n: number, of: number) => `${((n / of) * 100).toFixed(2)}%`;
+const ART_W = 1402;
+const ART_H = 1122;
 const ART_AT = {
-  '--reels-x': pct(211, 746),
-  '--reels-y': pct(251, 597),
-  '--reels-w': pct(330, 746),
-  '--reels-h': pct(109, 597),
-  '--reels-gap': pct(10, 330),
-  '--lever-x': pct(22, 746),
-  '--lever-y': pct(110, 597),
-  '--lever-h': pct(210, 597),
-  '--fire-x': pct(560, 746),
-  '--fire-y': pct(30, 597),
-  '--fire-w': pct(180, 746),
-  '--fire-cx': pct(690, 746),
-  '--fire-cy': pct(110, 597),
+  '--reels-x': pct(395, ART_W),
+  '--reels-y': pct(472, ART_H),
+  '--reels-w': pct(622, ART_W),
+  '--reels-h': pct(206, ART_H),
+  '--reels-gap': pct(17, 622),
+  '--lever-x': pct(41, ART_W),
+  '--lever-y': pct(207, ART_H),
+  '--lever-h': pct(395, ART_H),
+  '--fire-x': pct(1052, ART_W),
+  '--fire-y': pct(56, ART_H),
+  '--fire-w': pct(338, ART_W),
+  '--fire-cx': pct(1297, ART_W),
+  '--fire-cy': pct(207, ART_H),
 };
 // Each reel stops a little after the previous one, after more turns.
 const REEL_STOPS = [
