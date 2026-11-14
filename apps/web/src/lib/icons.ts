@@ -4,6 +4,7 @@
 // imports lucide-react.
 
 import {
+  Anvil,
   ArrowDown,
   ArrowDownWideNarrow,
   ArrowLeftRight,
@@ -25,6 +26,7 @@ import {
   CircleHelp,
   Clock,
   CloudLightning,
+  Cog,
   Coins,
   Copy,
   CopyCheck,
@@ -167,6 +169,8 @@ export const ICONS = {
   gifts: Gift,
   referral: UserPlus, // sponsorship: a player who brings a new one
   terrains: Mountain, // the terrains a combat is fought on (encyclopedia)
+  workshop: Cog, // L'atelier, and TAC-001's machine in it
+  forge: Anvil, // the forge of the atelier (the blacksmith)
   settings: SlidersHorizontal,
   votes: Vote,
   lore: Castle, // the lore: story, world map, events

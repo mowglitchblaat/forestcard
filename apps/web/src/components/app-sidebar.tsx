@@ -230,6 +230,7 @@ const SITE_ICONS: Record<SitePage, LucideIcon> = {
   lore: ICONS.lore,
   live: ICONS.live,
   votes: ICONS.votes,
+  atelier: ICONS.workshop,
 };
 
 function SiteLink({ page, isAdmin }: { page: SitePage; isAdmin: boolean }) {

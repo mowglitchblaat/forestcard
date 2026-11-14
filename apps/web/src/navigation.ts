@@ -17,7 +17,7 @@ export const PLAYER_GROUPS: { label: string; items: NavItem[] }[] = [
     items: [{ site: 'annonces' }, { site: 'lore' }, { site: 'jouer' }, { site: 'live' }],
   },
   { label: 'Mes cartes', items: views('collection', 'deck', 'dos', 'echanges') },
-  { label: 'Gold', items: views('jeux', 'boutique') },
+  { label: 'Gold', items: [...views('jeux', 'boutique'), { site: 'atelier' }] },
   { label: 'Combats', items: views('historique', 'classement', 'ceintures', 'tournois') },
   {
     label: 'Encyclopédie',

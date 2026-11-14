@@ -36,6 +36,7 @@ export const SITE_PAGES = {
   lore: 'Lore',
   live: 'Le live',
   votes: 'Votes',
+  atelier: "L'atelier",
 } as const;
 export type SitePage = keyof typeof SITE_PAGES;
 

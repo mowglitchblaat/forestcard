@@ -38,6 +38,7 @@ import { LorePage } from '@/views/lore/page';
 import { LoreSearch } from '@/views/lore/search';
 import { ViewSearch } from '@/views/shop/search';
 import { VotesPage } from '@/views/votes/page';
+import { WorkshopPage } from '@/views/workshop/page';
 import { VotesSearch } from '@/views/votes/search';
 import {
   ADMIN_VIEWS,
@@ -183,6 +184,12 @@ const votesRoute = createRoute({
   component: VotesPage,
 });
 
+const workshopRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: 'atelier',
+  component: WorkshopPage,
+});
+
 export const viewRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '$view',
@@ -231,6 +238,7 @@ export const router = createRouter({
     announcementsRoute,
     loreRoute,
     votesRoute,
+    workshopRoute,
     viewRoute,
     adminRoute,
   ]),
