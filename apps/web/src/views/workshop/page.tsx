@@ -36,15 +36,15 @@ import leverRod from './art/lever-rod.webp';
 import symbol7 from './art/symbol-7.webp';
 import symbolBell from './art/symbol-bell.webp';
 import symbolCherries from './art/symbol-cherries.webp';
+import symbolSkull from './art/symbol-skull.webp';
 import tacArt from './art/tac-002.webp';
 import { Forge } from './forge';
 import { TONES } from '@/lib/tones';
 
 // The reels' symbols, by case of the wheel (a loss, a little gain, double, the jackpot): their
-// picture (in TAC-002's style; the skull's is still to come: its emoji meanwhile) and their sign in
-// the texts.
+// picture (in TAC-002's style) and their sign in the texts.
 const SYMBOLS = ['\u{1F480}', '\u{1F352}', '\u{1F514}', '7'];
-const SYMBOL_ART: (string | null)[] = [null, symbolCherries, symbolBell, symbol7];
+const SYMBOL_ART: (string | null)[] = [symbolSkull, symbolCherries, symbolBell, symbol7];
 // Where things sit on TAC-002's portrait (1402 × 1122): the window of its drum (three slots, 17 px
 // apart), the lever on its left, its cannon's muzzle; shares of the picture.
 const pct = (n: number, of: number) => `${((n / of) * 100).toFixed(2)}%`;
