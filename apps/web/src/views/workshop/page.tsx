@@ -1,7 +1,7 @@
-// L'atelier. Part 1: TAC-001, the slot machine of the Mécanique et Technologie collection, turns the
+// L'atelier. Part 1: TAC-002, the slot machine of the Mécanique et Technologie collection, turns the
 // fragments of recycling into rarity fragments. The player picks a tier (Épique, Légendaire, GGEZ,
 // each with its rate), stakes what they want (at least the minimum) and pulls the lever: the three
-// reels on TAC-001's belly spin and stop, one after the other, each on its own case (a skull ×0,5,
+// reels on TAC-002's belly spin and stop, one after the other, each on its own case (a skull ×0,5,
 // cherries ×1,2, a bell ×2, 7 ×3), and the pull is worth their product (three 7: ×27, the jackpot).
 // The draw is the database's (atelier_tac): the reels only show it. Part 2, the forge: forge.tsx.
 
@@ -29,13 +29,13 @@ import {
 } from '@/data/workshop';
 import { ICONS } from '@/lib/icons';
 import { useSession } from '@/lib/session';
-import tacArt from './art/tac-001.webp';
+import tacArt from './art/tac-002.webp';
 import { Forge } from './forge';
 import { TONES } from '@/lib/tones';
 
 // The reels' symbols, by case of the wheel (a loss, a little gain, double, the jackpot).
 const SYMBOLS = ['\u{1F480}', '\u{1F352}', '\u{1F514}', '7'];
-// Where things sit on TAC-001's portrait (746 × 597): the window of its drum (three slots, 10 px
+// Where things sit on TAC-002's portrait (746 × 597): the window of its drum (three slots, 10 px
 // apart), the lever on its left, its cannon's muzzle; shares of the picture.
 const pct = (n: number, of: number) => `${((n / of) * 100).toFixed(2)}%`;
 const ART_AT = {
@@ -70,7 +70,7 @@ export function WorkshopPage() {
   return (
     <div className="flex flex-col gap-6">
       <p className="text-muted-foreground">
-        Dans l'atelier, tes fragments deviennent des fragments de rareté. Glisse-les dans TAC-001,
+        Dans l'atelier, tes fragments deviennent des fragments de rareté. Glisse-les dans TAC-002,
         tire le levier… et croise les doigts. Puis la première Forgeronne te forge les cartes de ton
         choix.
       </p>
@@ -104,7 +104,7 @@ function Reel({ cases, at, ms }: { cases: number; at: number; ms: number }) {
   );
 }
 
-// TAC-001: its war-machine portrait (art/tac-001.webp), the three reels set in the window of its
+// TAC-002: its war-machine portrait (art/tac-002.webp), the three reels set in the window of its
 // drum, its lever on the left. While it works: it shakes, the window's frame and the cannon's fire
 // blaze, sparks fly from the muzzle; the lever comes down when pulled; the jackpot makes it flash.
 function Machine({
@@ -130,7 +130,7 @@ function Machine({
       }`}
       style={ART_AT}
     >
-      <img src={tacArt} alt={w.tac?.nom ?? 'TAC-001'} className="block w-full rounded-2xl" />
+      <img src={tacArt} alt="TAC-002" className="block w-full rounded-2xl" />
       {/* The cannon's fire, blazing while it works. */}
       <div
         className={`absolute top-(--fire-y) left-(--fire-x) aspect-square w-(--fire-w) rounded-full bg-forge-heat/60 blur-2xl transition-opacity duration-500 ${
@@ -282,13 +282,13 @@ function Tac({ w }: { w: Workshop }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex flex-wrap items-center gap-2 text-base">
-          <ICONS.workshop className="size-4" /> TAC-001, la machine à fragments
+          <ICONS.workshop className="size-4" /> TAC-002, la machine à fragments
           <Badge variant="outline" className="ml-auto">
             Mécanique et Technologie
           </Badge>
         </CardTitle>
         <CardDescription>
-          Mise tes fragments (au moins {w.mise_min}) et choisis ce que TAC-001 te rend : des
+          Mise tes fragments (au moins {w.mise_min}) et choisis ce que TAC-002 te rend : des
           fragments Épiques, Légendaires ou GGEZ, multipliés par ce qui tombe sur ses rouleaux.
         </CardDescription>
       </CardHeader>
@@ -311,7 +311,7 @@ function Tac({ w }: { w: Workshop }) {
             {result.cases.map((k) => multLabel(caseMult(k))).join(' × ')} ={' '}
             <b>{multLabel(result.mult)}</b> : tes {result.mise} fragments deviennent{' '}
             <b>{result.gain}</b> fragments {tierName(result.palier)}.
-            {result.mult < 1 && ' TAC-001 a des ratés… retente ta chance !'}
+            {result.mult < 1 && ' TAC-002 a des ratés… retente ta chance !'}
           </p>
         )}
         <p className="text-center text-sm">

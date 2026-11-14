@@ -27,5 +27,5 @@ test('a tier and a search, accents and case aside', () => {
 });
 
 test('the refusals, in words', () => {
-  expect(forgeError(new Error('FRAGMENTS_INSUFFISANTS'))).toMatch(/TAC-001/);
+  expect(forgeError(new Error('FRAGMENTS_INSUFFISANTS'))).toMatch(/TAC-002/);
 });

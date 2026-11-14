@@ -1,5 +1,5 @@
 // L'atelier, part 2: the forge of the first Forgeronne (forge_catalogue, forge_forger;
-// db/migrations/94-forge.sql). A card is forged with the rarity fragments of its tier (TAC-001's):
+// db/migrations/94-forge.sql). A card is forged with the rarity fragments of its tier (TAC-002's):
 // Épique 600, Légendaire 1 200, GGEZ 1 600, twice that for a rare alternative version (FULLEP,
 // FULLEG); all settings (reglages_jeu, forge_*). Forgeable: the active cards of an active collection,
 // not the Fondateurs, Épique and up, in their standard or rare alternative version.
@@ -56,7 +56,7 @@ export async function forgeCard(variant: number): Promise<Forged> {
 }
 
 const REFUSALS: Record<string, string> = {
-  FRAGMENTS_INSUFFISANTS: 'Pas assez de fragments de cette rareté : passe voir TAC-001.',
+  FRAGMENTS_INSUFFISANTS: 'Pas assez de fragments de cette rareté : passe voir TAC-002.',
   NON_FORGEABLE: 'Cette carte ne peut pas être forgée.',
   NON_CONNECTE: 'Connecte-toi pour utiliser la forge.',
 };

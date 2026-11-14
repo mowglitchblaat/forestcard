@@ -1,4 +1,4 @@
-// L'atelier, part 1: TAC-001 turns the fragments of recycling into rarity fragments (Épique,
+// L'atelier, part 1: TAC-002 turns the fragments of recycling into rarity fragments (Épique,
 // Légendaire, GGEZ), through the three reels on its belly (atelier_etat, atelier_tac;
 // db/migrations/90-atelier-tac.sql, 92-atelier-mise-libre.sql, 93-atelier-trois-rouleaux.sql). The
 // player stakes what they want (at least `mise_min`); each reel draws a case of the wheel, and the
@@ -70,9 +70,9 @@ export async function spinTac({
 const REFUSALS: Record<string, string> = {
   FRAGMENTS_INSUFFISANTS:
     'Pas assez de fragments pour cette mise : recycle des cartes pour en gagner.',
-  MISE_TROP_PETITE: 'Mise trop petite pour TAC-001.',
+  MISE_TROP_PETITE: 'Mise trop petite pour TAC-002.',
   PALIER_INCONNU: 'Ce palier n’existe pas.',
-  ROUE_VIDE: 'La roue de TAC-001 est en panne pour le moment.',
+  ROUE_VIDE: 'La roue de TAC-002 est en panne pour le moment.',
   NON_CONNECTE: 'Connecte-toi pour utiliser l’atelier.',
 };
 export const workshopError = (e: unknown): string => {
@@ -93,7 +93,7 @@ export const pullMultiplier = (mults: number[]) => mults.reduce((p, m) => p * m,
 export const conversion = (stake: number, mult: number, rate: number) =>
   Math.floor((stake * mult) / Math.max(1, rate) + 1e-9);
 
-// A reel of TAC-001's belly: a strip of the wheel's cases, `cases` long, repeated. The reel stands on
+// A reel of TAC-002's belly: a strip of the wheel's cases, `cases` long, repeated. The reel stands on
 // cell `from`; to stop on case `index` after at least `turns` full rounds of the strip's cases, it
 // goes to the next cell showing that case past them.
 export function reelTarget(from: number, index: number, cases: number, turns: number): number {
