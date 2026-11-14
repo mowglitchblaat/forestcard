@@ -14,7 +14,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { fetchMirror, imageKeys, imageUrl } from '@/data/images';
 import { playerKeys } from '@/data/player';
 import {
   conversion,
@@ -37,12 +36,31 @@ const BRASS = {
   frame: '#2a1a0e',
   bulb: '#ffd35a',
   bulbOff: '#6b4a1e',
+  light: '#e7b552',
+  mid: '#b07a2a',
+  dark: '#5e3a12',
+  copper: '#b5582e',
+  copperDark: '#6e2f14',
+  iron: '#3a3632',
+  ironLight: '#6d665e',
+  glass: '#140d08',
+  ember: '#ff4b2b',
+  emberGlow: '#ffb199',
+  plate: '#1c120a',
+  steam: '#e9e6e1',
+  gear: '#8a7f72',
+  gearDark: '#4f4840',
 };
 
 // The reels' symbols, by case of the wheel (a loss, a little gain, double, the jackpot).
 const SYMBOLS = ['\u{1F480}', '\u{1F352}', '\u{1F514}', '7'];
-// Where the reels sit on TAC-001's illustration (its belly), as shares of the picture shown.
-const REELS_AT = { '--reels-x': '27%', '--reels-y': '50%', '--reels-w': '44%', '--reels-h': '34%' };
+// Where the reels sit in TAC-001's belly: its window in the drawing (viewBox 400 × 320), as shares.
+const REELS_AT = {
+  '--reels-x': `${(108 / 400) * 100}%`,
+  '--reels-y': `${(150 / 320) * 100}%`,
+  '--reels-w': `${(184 / 400) * 100}%`,
+  '--reels-h': `${(86 / 320) * 100}%`,
+};
 // Each reel stops a little after the previous one, after more turns.
 const REEL_STOPS = [
   { ms: 1700, turns: 6 },
@@ -93,78 +111,279 @@ function Reel({ cases, at, ms }: { cases: number; at: number; ms: number }) {
   );
 }
 
-// TAC-001: its illustration, cropped on the machine, with the three reels over its belly; bulbs
-// around it that blink while it works; it shakes while the reels spin, flashes on the jackpot.
+// A gear's outline: `teeth` teeth around a circle of radius r.
+function gearPath(cx: number, cy: number, r: number, teeth: number): string {
+  const points: string[] = [];
+  const step = (Math.PI * 2) / teeth;
+  for (let i = 0; i < teeth; i++) {
+    const a = i * step;
+    for (const [da, rr] of [
+      [0, r * 0.8],
+      [step * 0.18, r],
+      [step * 0.5, r],
+      [step * 0.68, r * 0.8],
+    ] as const)
+      points.push(
+        `${(cx + Math.cos(a + da) * rr).toFixed(1)},${(cy + Math.sin(a + da) * rr).toFixed(1)}`,
+      );
+  }
+  return `M${points.join('L')}Z`;
+}
+
+function Gear({ teeth, motion }: { teeth: number; motion: string }) {
+  return (
+    <svg viewBox="0 0 100 100" className={`size-full ${motion}`} aria-hidden>
+      <path
+        d={gearPath(50, 50, 48, teeth)}
+        fill={BRASS.gear}
+        stroke={BRASS.gearDark}
+        strokeWidth="3"
+      />
+      <circle cx="50" cy="50" r="17" fill={BRASS.gearDark} />
+      <circle cx="50" cy="50" r="7" fill={BRASS.light} />
+    </svg>
+  );
+}
+
+// TAC-001, drawn: a brass slot machine with a copper chimney, two ember eyes, its name plate, the
+// three reels in its belly and its lever on the left. Its gears turn (fast while it works), steam
+// puffs from the chimney, the bulbs of its arch blink, the lever comes down when pulled; it shakes
+// while the reels spin, flashes on the jackpot.
 function Machine({
   w,
   reels,
   moving,
+  pulled,
   working,
   jackpot,
 }: {
   w: Workshop;
   reels: number[];
   moving: boolean;
+  pulled: boolean;
   working: boolean;
   jackpot: boolean;
 }) {
-  const mirror = useQuery({
-    queryKey: imageKeys.mirror,
-    queryFn: fetchMirror,
-    staleTime: Infinity,
-  });
-  const src = mirror.data ? imageUrl(w.tac?.image ?? null, mirror.data) : null;
-  const bulbs = Array.from({ length: 14 }, (_, i) => i);
   const lit = working || jackpot;
+  const arch = Array.from({ length: 11 }, (_, i) => i);
+  const rivets = [
+    [92, 110],
+    [308, 110],
+    [92, 262],
+    [308, 262],
+    [200, 262],
+  ];
   return (
     <div
       className={`relative mx-auto w-full max-w-md ${working ? 'animate-tac-shake' : ''} ${
         jackpot ? 'animate-jackpot' : ''
       }`}
     >
-      <div className="relative aspect-4/3 overflow-hidden rounded-2xl border-4 border-border bg-muted shadow-lg">
-        {src && (
-          <img
-            src={src}
-            alt={w.tac?.nom ?? 'TAC-001'}
-            className="absolute inset-x-0 top-0 w-full"
-          />
-        )}
-        <div
-          className="absolute top-(--reels-y) left-(--reels-x) flex h-(--reels-h) w-(--reels-w) gap-1 rounded-lg p-1 ring-2 ring-border"
-          style={REELS_AT}
-        >
-          {reels.map((at, i) => (
-            <Reel
-              key={i}
-              cases={w.roue.length || 4}
-              at={at}
-              ms={moving ? (REEL_STOPS[i]?.ms ?? 0) : 0}
-            />
-          ))}
-        </div>
-      </div>
-      {/* The bulbs, top and bottom: they blink while TAC-001 works. */}
-      {(['top', 'bottom'] as const).map((side) => (
-        <svg
-          key={side}
-          viewBox="0 0 280 12"
-          className={`absolute inset-x-2 ${side === 'top' ? '-top-2' : '-bottom-2'}`}
-          aria-hidden
-        >
-          <rect x="0" y="2" width="280" height="8" rx="4" fill={BRASS.frame} />
-          {bulbs.map((i) => (
+      <svg viewBox="0 0 400 320" className="w-full" role="img" aria-label={w.tac?.nom ?? 'TAC-001'}>
+        <defs>
+          <linearGradient id="tac-brass" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor={BRASS.light} />
+            <stop offset="55%" stopColor={BRASS.mid} />
+            <stop offset="100%" stopColor={BRASS.dark} />
+          </linearGradient>
+          <linearGradient id="tac-copper" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor={BRASS.copperDark} />
+            <stop offset="50%" stopColor={BRASS.copper} />
+            <stop offset="100%" stopColor={BRASS.copperDark} />
+          </linearGradient>
+          <radialGradient id="tac-ember" cx="50%" cy="40%" r="60%">
+            <stop offset="0%" stopColor={BRASS.emberGlow} />
+            <stop offset="60%" stopColor={BRASS.ember} />
+            <stop offset="100%" stopColor={BRASS.copperDark} />
+          </radialGradient>
+        </defs>
+        {/* The chimney, its pipe into the machine. */}
+        <rect x="300" y="18" width="28" height="70" rx="4" fill="url(#tac-copper)" />
+        <rect x="294" y="12" width="40" height="12" rx="3" fill={BRASS.copperDark} />
+        <path
+          d="M314 88 L314 104 L290 104"
+          stroke="url(#tac-copper)"
+          strokeWidth="12"
+          fill="none"
+        />
+        {/* The arch over the machine, with its bulbs. */}
+        <path
+          d="M78 112 Q200 18 322 112 Z"
+          fill="url(#tac-brass)"
+          stroke={BRASS.frame}
+          strokeWidth="4"
+        />
+        {arch.map((i) => {
+          const t = i / (arch.length - 1);
+          const x = 90 + t * 220;
+          const y = 108 - Math.sin(t * Math.PI) * 74;
+          return (
             <circle
               key={i}
-              cx={10 + i * 20}
-              cy="6"
-              r="3.2"
+              cx={x}
+              cy={y}
+              r="5"
               fill={lit || i % 3 === 0 ? BRASS.bulb : BRASS.bulbOff}
               className={lit && i % 2 === 0 ? 'animate-pulse' : ''}
             />
-          ))}
-        </svg>
-      ))}
+          );
+        })}
+        {/* Its eyes and its name. */}
+        <circle cx="168" cy="76" r="11" fill={BRASS.iron} />
+        <circle cx="232" cy="76" r="11" fill={BRASS.iron} />
+        <circle
+          cx="168"
+          cy="76"
+          r="7"
+          fill="url(#tac-ember)"
+          className={lit ? 'animate-pulse' : ''}
+        />
+        <circle
+          cx="232"
+          cy="76"
+          r="7"
+          fill="url(#tac-ember)"
+          className={lit ? 'animate-pulse' : ''}
+        />
+        <rect
+          x="160"
+          y="92"
+          width="80"
+          height="18"
+          rx="3"
+          fill={BRASS.plate}
+          stroke={BRASS.light}
+        />
+        <text
+          x="200"
+          y="105"
+          textAnchor="middle"
+          fontSize="12"
+          fontWeight="800"
+          letterSpacing="2"
+          fill={BRASS.bulb}
+        >
+          {w.tac?.nom ?? 'TAC-001'}
+        </text>
+        {/* The body. */}
+        <rect
+          x="78"
+          y="112"
+          width="244"
+          height="168"
+          rx="14"
+          fill="url(#tac-brass)"
+          stroke={BRASS.frame}
+          strokeWidth="4"
+        />
+        {/* The belly's window, around the reels. */}
+        <rect
+          x="100"
+          y="142"
+          width="200"
+          height="102"
+          rx="10"
+          fill={BRASS.iron}
+          stroke={BRASS.frame}
+          strokeWidth="3"
+        />
+        <rect x="106" y="148" width="188" height="90" rx="6" fill={BRASS.glass} />
+        {/* The coin tray. */}
+        <rect
+          x="150"
+          y="252"
+          width="100"
+          height="16"
+          rx="5"
+          fill={BRASS.iron}
+          stroke={BRASS.frame}
+          strokeWidth="2"
+        />
+        <rect x="170" y="257" width="60" height="5" rx="2" fill={BRASS.glass} />
+        {rivets.map(([x, y]) => (
+          <circle
+            key={`${x}-${y}`}
+            cx={x}
+            cy={y}
+            r="4"
+            fill={BRASS.dark}
+            stroke={BRASS.light}
+            strokeWidth="1"
+          />
+        ))}
+        {/* The feet. */}
+        <rect x="96" y="278" width="40" height="18" rx="4" fill={BRASS.iron} />
+        <rect x="264" y="278" width="40" height="18" rx="4" fill={BRASS.iron} />
+        {/* The lever's mount, then the lever: it comes down when pulled. */}
+        <rect
+          x="56"
+          y="186"
+          width="26"
+          height="34"
+          rx="6"
+          fill={BRASS.iron}
+          stroke={BRASS.frame}
+          strokeWidth="2"
+        />
+        <g
+          className={`origin-bottom transition-transform duration-300 transform-fill ${
+            pulled ? '-rotate-75' : 'rotate-0'
+          }`}
+        >
+          <rect
+            x="64"
+            y="100"
+            width="10"
+            height="104"
+            rx="5"
+            fill={BRASS.ironLight}
+            stroke={BRASS.frame}
+            strokeWidth="2"
+          />
+          <circle
+            cx="69"
+            cy="98"
+            r="15"
+            fill="url(#tac-ember)"
+            stroke={BRASS.copperDark}
+            strokeWidth="2"
+          />
+        </g>
+      </svg>
+      {/* The reels, in the belly's window. */}
+      <div
+        className="absolute top-(--reels-y) left-(--reels-x) flex h-(--reels-h) w-(--reels-w) gap-1"
+        style={REELS_AT}
+      >
+        {reels.map((at, i) => (
+          <Reel
+            key={i}
+            cases={w.roue.length || 4}
+            at={at}
+            ms={moving ? (REEL_STOPS[i]?.ms ?? 0) : 0}
+          />
+        ))}
+      </div>
+      {/* Gears on its flanks. */}
+      <div className="absolute top-1/2 -left-1 size-14">
+        <Gear teeth={12} motion={working ? 'animate-gear-fast' : 'animate-gear'} />
+      </div>
+      <div className="absolute right-0 bottom-6 size-12">
+        <Gear teeth={9} motion={working ? 'animate-gear-fast' : 'animate-gear-back'} />
+      </div>
+      {/* Steam from the chimney. */}
+      <div className="absolute top-0 right-1/5" aria-hidden>
+        {[0, 800, 1600].map((d) => (
+          <svg
+            key={d}
+            viewBox="0 0 20 20"
+            className="absolute size-7 animate-steam opacity-0"
+            style={{ '--delay': `${working ? d / 3 : d}ms` }}
+          >
+            <circle cx="10" cy="10" r="8" fill={BRASS.steam} />
+          </svg>
+        ))}
+      </div>
     </div>
   );
 }
@@ -201,6 +420,7 @@ function Tac({ w }: { w: Workshop }) {
   const [stakeText, setStakeText] = useState(String(w.mise_min));
   const [reels, setReels] = useState([0, 0, 0]);
   const [moving, setMoving] = useState(false);
+  const [pulled, setPulled] = useState(false);
   const [phase, setPhase] = useState<'idle' | 'spinning' | 'done'>('idle');
   const [result, setResult] = useState<Spin | null>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -224,6 +444,8 @@ function Tac({ w }: { w: Workshop }) {
     if (!tier || !stakeOk) return;
     setResult(null);
     setPhase('spinning');
+    setPulled(true);
+    later(() => setPulled(false), 450);
     spin.mutate(
       { tier: tier.cle, stake },
       {
@@ -280,7 +502,14 @@ function Tac({ w }: { w: Workshop }) {
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-5">
-        <Machine w={w} reels={reels} moving={moving} working={busy} jackpot={jackpot} />
+        <Machine
+          w={w}
+          reels={reels}
+          moving={moving}
+          pulled={pulled}
+          working={busy}
+          jackpot={jackpot}
+        />
         {phase === 'done' && result && (
           <p
             className={`rounded-lg border p-3 text-center text-sm ${
