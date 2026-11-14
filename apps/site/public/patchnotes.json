@@ -1,5 +1,32 @@
 [
   {
+    "date": "2026-11-14",
+    "intro": "Les combats changent de décor avec les terrains, deux nouveaux jeux du jour arrivent et l’Atelier ouvre ses portes.",
+    "groupes": [
+      {
+        "titre": "Combat",
+        "points": [
+          "Terrains : un combat peut se jouer sur un terrain (Orage, Essaim, Forêt Enchantée, Cathédrale de programmation, Lune de sang, Jardin de sakura, Grimoire ouvert, Grand Théâtre), tiré au sort ou invoqué par une carte, avec sa propre règle pour les deux camps.",
+          "Chaque terrain avantage les cartes de sa collection, et le Grand Théâtre révèle la collection Marionnettia."
+        ]
+      },
+      {
+        "titre": "Animations",
+        "points": [
+          "Chaque terrain a son décor animé pendant le combat : orage, insectes, lucioles, engrenages, lune rouge et chauves-souris, pétales, pages de grimoire ou rideaux de théâtre."
+        ]
+      },
+      {
+        "titre": "Site",
+        "points": [
+          "Deux nouveaux jeux du jour : « Les différences de Marionnettia » (trouvez le bon nombre de différences pour gagner un booster) et « Le théâtre d’ombres » (reconnaissez le combattant derrière l’écran, jusqu’à 5 manches de gold).",
+          "L’Atelier : la machine à sous TAC-002 transforme vos fragments en fragments de rareté, et la Forgeronne s’en sert pour forger la carte Épique ou plus de votre choix.",
+          "Encyclopédie : un onglet Terrains présente la règle, l’avantage et l’animation de chaque terrain ; dans le Lore, l’attaque de Drag’Orage se repousse par vagues de 5 combattants et une défense peut mettre en jeu l’éclair tombé."
+        ]
+      }
+    ]
+  },
+  {
     "date": "2026-11-13",
     "intro": "Affrontez le boss en 1 contre 1, invitez vos amis et découvrez une Forge de création qui fabrique de vraies cartes du jeu.",
     "groupes": [
