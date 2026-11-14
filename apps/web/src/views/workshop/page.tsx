@@ -1,8 +1,9 @@
-// L'atelier. Part 1: TAC-001, the machine of the Mécanique et Technologie collection, turns the
-// fragments of recycling into rarity fragments: the player picks a tier (Épique, Légendaire, GGEZ),
-// holds to stake its fragments, and TAC-001 spins its wheel (×0,5, ×1,2, ×2, ×3 the jackpot, each case
-// as wide as its chance). The draw is the database's (atelier_tac): the wheel only shows it, slowing
-// down onto the case drawn. Part 2, the forge, comes later: a card says so.
+// L'atelier. Part 1: TAC-001, the slot machine of the Mécanique et Technologie collection, turns the
+// fragments of recycling into rarity fragments. The player picks a tier (Épique, Légendaire, GGEZ,
+// each with its rate), stakes what they want (at least the minimum) and pulls the lever: the three
+// reels on TAC-001's belly spin and stop, one after the other, each on its own case (a skull ×0,5,
+// cherries ×1,2, a bell ×2, 7 ×3), and the pull is worth their product (three 7: ×27, the jackpot).
+// The draw is the database's (atelier_tac): the reels only show it. Part 2, the forge, comes later: a card says so.
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
@@ -10,17 +11,19 @@ import { HoldButton } from '@/components/hold-button';
 import { Fragments } from '@/components/money';
 import { PageSkeleton } from '@/components/skeletons';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { fetchMirror, imageKeys, imageUrl } from '@/data/images';
 import { playerKeys } from '@/data/player';
 import {
+  conversion,
   fetchWorkshop,
-  landingRotation,
   multLabel,
+  reelTarget,
   type Spin,
   spinTac,
   type Tier,
-  wheelArcs,
   type Workshop,
   workshopError,
   workshopKeys,
@@ -29,27 +32,25 @@ import { ICONS } from '@/lib/icons';
 import { useSession } from '@/lib/session';
 import { TONES } from '@/lib/tones';
 
-// The machine's own colours: an illustration (iron, brass, the wheel's ink), not meanings.
-const IRON = {
-  rim: '#34383d',
-  rimEdge: '#1d2024',
-  bolt: '#c9a227',
-  hub: '#5b6168',
-  ink: '#1c1a17',
-  gear: '#7b828a',
-  gearDark: '#4d5359',
-  steam: '#e6e8ea',
-  lamp: '#ffcf4d',
+// The machine's own colours: an illustration (brass, bulbs), not meanings.
+const BRASS = {
+  frame: '#2a1a0e',
+  bulb: '#ffd35a',
+  bulbOff: '#6b4a1e',
 };
 
-// The wheel's cases, by order (a loss, a little gain, double, the jackpot).
-const CASE_TONES = [
-  TONES.danger.colour,
-  TONES.info.colour,
-  TONES.success.colour,
-  TONES.gold.colour,
+// The reels' symbols, by case of the wheel (a loss, a little gain, double, the jackpot).
+const SYMBOLS = ['\u{1F480}', '\u{1F352}', '\u{1F514}', '7'];
+// Where the reels sit on TAC-001's illustration (its belly), as shares of the picture shown.
+const REELS_AT = { '--reels-x': '27%', '--reels-y': '50%', '--reels-w': '44%', '--reels-h': '34%' };
+// Each reel stops a little after the previous one, after more turns.
+const REEL_STOPS = [
+  { ms: 1700, turns: 6 },
+  { ms: 2400, turns: 8 },
+  { ms: 3100, turns: 10 },
 ];
-const SPIN_MS = 4800;
+const SPIN_MS = (REEL_STOPS.at(-1)?.ms ?? 3000) + 250;
+const STRIP = 4 * 40; // cells on a reel's strip: enough for one pull (it rewinds before each)
 
 export function WorkshopPage() {
   const state = useQuery({ queryKey: workshopKeys.state, queryFn: fetchWorkshop });
@@ -59,9 +60,8 @@ export function WorkshopPage() {
   return (
     <div className="flex flex-col gap-6">
       <p className="text-muted-foreground">
-        Dans l'atelier, tes fragments deviennent des fragments de rareté. TAC-001 les avale, fait
-        tourner sa roue… et te rend des fragments Épiques, Légendaires ou GGEZ. Bientôt, ils te
-        serviront à forger des cartes.
+        Dans l'atelier, tes fragments deviennent des fragments de rareté. Glisse-les dans TAC-001,
+        tire le levier… et croise les doigts. Bientôt, ils te serviront à forger des cartes.
       </p>
       <Tac w={state.data} />
       <Forge />
@@ -69,196 +69,107 @@ export function WorkshopPage() {
   );
 }
 
-// A gear's outline: `teeth` teeth around a circle of radius r.
-function gearPath(cx: number, cy: number, r: number, teeth: number): string {
-  const points: string[] = [];
-  const step = (Math.PI * 2) / teeth;
-  for (let i = 0; i < teeth; i++) {
-    const a = i * step;
-    for (const [da, rr] of [
-      [0, r * 0.82],
-      [step * 0.18, r],
-      [step * 0.5, r],
-      [step * 0.68, r * 0.82],
-    ] as const) {
-      points.push(
-        `${(cx + Math.cos(a + da) * rr).toFixed(1)},${(cy + Math.sin(a + da) * rr).toFixed(1)}`,
-      );
-    }
-  }
-  return `M${points.join('L')}Z`;
-}
-
-function Gear({ size, teeth, motion }: { size: number; teeth: number; motion: string }) {
+// One reel: a strip of the cases' symbols, standing on cell `at` (moving there in `ms`, or at once).
+function Reel({ cases, at, ms }: { cases: number; at: number; ms: number }) {
   return (
-    <svg
-      viewBox="0 0 100 100"
-      className={`${motion} pointer-events-none`}
-      width={size}
-      height={size}
-      aria-hidden
-    >
-      <path
-        d={gearPath(50, 50, 48, teeth)}
-        fill={IRON.gear}
-        stroke={IRON.gearDark}
-        strokeWidth="3"
-      />
-      <circle cx="50" cy="50" r="16" fill={IRON.gearDark} />
-      <circle cx="50" cy="50" r="7" fill={IRON.bolt} />
-    </svg>
-  );
-}
-
-// The arc of a wheel case, as a pie slice (angles clockwise from the top, in degrees).
-function slice(start: number, end: number, r: number): string {
-  const at = (deg: number) => {
-    const rad = ((deg - 90) * Math.PI) / 180;
-    return `${(100 + Math.cos(rad) * r).toFixed(2)} ${(100 + Math.sin(rad) * r).toFixed(2)}`;
-  };
-  const large = end - start > 180 ? 1 : 0;
-  return `M100 100 L${at(start)} A${r} ${r} 0 ${large} 1 ${at(end)} Z`;
-}
-
-function Wheel({ w, rotation, jackpot }: { w: Workshop; rotation: number; jackpot: boolean }) {
-  const arcs = wheelArcs(w.roue);
-  return (
-    <div className={`relative mx-auto aspect-square w-64 ${jackpot ? 'animate-jackpot' : ''}`}>
-      {/* The pointer, a brass claw at the top. */}
-      <svg
-        viewBox="0 0 40 40"
-        className="absolute top-0 left-1/2 z-10 size-10 -translate-x-1/2 -translate-y-1/3"
-        aria-hidden
-      >
-        <path d="M8 4 L32 4 L20 30 Z" fill={IRON.bolt} stroke={IRON.rimEdge} strokeWidth="2" />
-        <circle cx="20" cy="9" r="3" fill={IRON.rimEdge} />
-      </svg>
+    <div className="relative h-full flex-1 overflow-hidden rounded-md bg-background/85 ring-1 ring-border">
       <div
-        className="size-full rotate-(--spin) transition-transform duration-(--spin-ms) ease-wheel"
-        style={{ '--spin': `${rotation}deg`, '--spin-ms': `${SPIN_MS}ms` }}
+        className="flex h-full translate-y-(--y) flex-col transition-transform duration-(--ms) ease-wheel"
+        style={{ '--y': `${-at * 100}%`, '--ms': `${ms}ms` }}
       >
-        <svg viewBox="0 0 200 200" className="size-full" role="img" aria-label="La roue de TAC-001">
-          <circle cx="100" cy="100" r="98" fill={IRON.rimEdge} />
-          <circle cx="100" cy="100" r="93" fill={IRON.rim} />
-          {w.roue.map((c, i) => {
-            const arc = arcs[i] ?? { start: 0, end: 0 };
-            if (arc.end - arc.start <= 0) return null;
-            const mid = ((arc.start + arc.end) / 2 - 90) * (Math.PI / 180);
-            const small = arc.end - arc.start < 30;
-            return (
-              <g key={i}>
-                <path
-                  d={slice(arc.start, arc.end, 84)}
-                  fill={CASE_TONES[i % CASE_TONES.length]}
-                  stroke={IRON.rimEdge}
-                  strokeWidth="1.5"
-                />
-                <text
-                  x={100 + Math.cos(mid) * (small ? 70 : 58)}
-                  y={100 + Math.sin(mid) * (small ? 70 : 58)}
-                  textAnchor="middle"
-                  dominantBaseline="central"
-                  fontSize={small ? 10 : 15}
-                  fontWeight="800"
-                  fill={IRON.ink}
-                  transform={`rotate(${(arc.start + arc.end) / 2} ${100 + Math.cos(mid) * (small ? 70 : 58)} ${100 + Math.sin(mid) * (small ? 70 : 58)})`}
-                >
-                  {multLabel(c.mult)}
-                </text>
-              </g>
-            );
-          })}
-          {/* The bolts around the rim. */}
-          {Array.from({ length: 16 }, (_, i) => {
-            const a = (i / 16) * Math.PI * 2;
-            return (
-              <circle
-                key={i}
-                cx={100 + Math.cos(a) * 89}
-                cy={100 + Math.sin(a) * 89}
-                r="2.2"
-                fill={IRON.bolt}
-              />
-            );
-          })}
-          <path
-            d={gearPath(100, 100, 20, 10)}
-            fill={IRON.hub}
-            stroke={IRON.rimEdge}
-            strokeWidth="1.5"
-          />
-          <circle cx="100" cy="100" r="7" fill={IRON.bolt} />
-        </svg>
+        {Array.from({ length: STRIP }, (_, i) => (
+          <div key={i} className="flex h-full shrink-0 items-center justify-center">
+            <span
+              className={`text-3xl leading-none font-black ${i % cases === 3 ? TONES.danger.text : ''}`}
+            >
+              {SYMBOLS[i % cases] ?? '?'}
+            </span>
+          </div>
+        ))}
       </div>
+      {/* The glass over the reel. */}
+      <div className="pointer-events-none absolute inset-0 bg-linear-to-b from-foreground/30 via-transparent to-foreground/30" />
     </div>
   );
 }
 
-// TAC-001 at work: its portrait in a porthole, gears turning around it (fast while it works), steam
-// from its chimney, lamps that blink while the wheel spins.
-function Machine({ w, working }: { w: Workshop; working: boolean }) {
+// TAC-001: its illustration, cropped on the machine, with the three reels over its belly; bulbs
+// around it that blink while it works; it shakes while the reels spin, flashes on the jackpot.
+function Machine({
+  w,
+  reels,
+  moving,
+  working,
+  jackpot,
+}: {
+  w: Workshop;
+  reels: number[];
+  moving: boolean;
+  working: boolean;
+  jackpot: boolean;
+}) {
   const mirror = useQuery({
     queryKey: imageKeys.mirror,
     queryFn: fetchMirror,
     staleTime: Infinity,
   });
   const src = mirror.data ? imageUrl(w.tac?.image ?? null, mirror.data) : null;
+  const bulbs = Array.from({ length: 14 }, (_, i) => i);
+  const lit = working || jackpot;
   return (
-    <div className={`relative mx-auto w-56 ${working ? 'animate-tac-shake' : ''}`}>
-      <div className="absolute -top-4 -left-6 z-10">
-        <Gear size={64} teeth={12} motion={working ? 'animate-gear-fast' : 'animate-gear'} />
-      </div>
-      <div className="absolute -right-5 -bottom-3 z-10">
-        <Gear size={48} teeth={9} motion={working ? 'animate-gear-fast' : 'animate-gear-back'} />
-      </div>
-      {/* Steam from the chimney. */}
-      <div className="absolute -top-2 right-6 z-10" aria-hidden>
-        {[0, 700, 1400].map((d) => (
-          <svg
-            key={d}
-            viewBox="0 0 20 20"
-            className="absolute size-6 animate-steam opacity-0"
-            style={{ '--delay': `${working ? d / 3 : d}ms` }}
-          >
-            <circle cx="10" cy="10" r="8" fill={IRON.steam} />
-          </svg>
-        ))}
-      </div>
-      <div className="overflow-hidden rounded-2xl border-4 border-border bg-muted shadow-lg">
-        {src ? (
-          <img src={src} alt={w.tac?.nom ?? 'TAC-001'} className="aspect-5/7 w-full object-cover" />
-        ) : (
-          <div className="aspect-5/7 w-full" />
-        )}
-      </div>
-      {/* Lamps under the porthole. */}
-      <svg viewBox="0 0 120 16" className="mx-auto mt-2 w-32" aria-hidden>
-        {[15, 45, 75, 105].map((x, i) => (
-          <circle
-            key={x}
-            cx={x}
-            cy="8"
-            r="6"
-            fill={working || i === 0 ? IRON.lamp : IRON.gearDark}
-            className={working ? 'animate-pulse' : ''}
+    <div
+      className={`relative mx-auto w-full max-w-md ${working ? 'animate-tac-shake' : ''} ${
+        jackpot ? 'animate-jackpot' : ''
+      }`}
+    >
+      <div className="relative aspect-4/3 overflow-hidden rounded-2xl border-4 border-border bg-muted shadow-lg">
+        {src && (
+          <img
+            src={src}
+            alt={w.tac?.nom ?? 'TAC-001'}
+            className="absolute inset-x-0 top-0 w-full"
           />
-        ))}
-      </svg>
+        )}
+        <div
+          className="absolute top-(--reels-y) left-(--reels-x) flex h-(--reels-h) w-(--reels-w) gap-1 rounded-lg p-1 ring-2 ring-border"
+          style={REELS_AT}
+        >
+          {reels.map((at, i) => (
+            <Reel
+              key={i}
+              cases={w.roue.length || 4}
+              at={at}
+              ms={moving ? (REEL_STOPS[i]?.ms ?? 0) : 0}
+            />
+          ))}
+        </div>
+      </div>
+      {/* The bulbs, top and bottom: they blink while TAC-001 works. */}
+      {(['top', 'bottom'] as const).map((side) => (
+        <svg
+          key={side}
+          viewBox="0 0 280 12"
+          className={`absolute inset-x-2 ${side === 'top' ? '-top-2' : '-bottom-2'}`}
+          aria-hidden
+        >
+          <rect x="0" y="2" width="280" height="8" rx="4" fill={BRASS.frame} />
+          {bulbs.map((i) => (
+            <circle
+              key={i}
+              cx={10 + i * 20}
+              cy="6"
+              r="3.2"
+              fill={lit || i % 3 === 0 ? BRASS.bulb : BRASS.bulbOff}
+              className={lit && i % 2 === 0 ? 'animate-pulse' : ''}
+            />
+          ))}
+        </svg>
+      ))}
     </div>
   );
 }
 
-function TierTile({
-  tier,
-  chosen,
-  affordable,
-  onPick,
-}: {
-  tier: Tier;
-  chosen: boolean;
-  affordable: boolean;
-  onPick: () => void;
-}) {
+function TierTile({ tier, chosen, onPick }: { tier: Tier; chosen: boolean; onPick: () => void }) {
   return (
     <button
       type="button"
@@ -266,7 +177,7 @@ function TierTile({
       aria-pressed={chosen}
       className={`flex cursor-pointer flex-col items-center gap-1 rounded-lg border p-3 text-center transition hover:-translate-y-0.5 ${
         chosen ? 'border-primary bg-primary/10' : ''
-      } ${affordable ? '' : 'opacity-60'}`}
+      }`}
     >
       <span className="flex items-center gap-1.5 font-semibold">
         <span
@@ -276,7 +187,7 @@ function TierTile({
         {tier.nom}
       </span>
       <small className="text-muted-foreground">
-        Mise <Fragments n={tier.mise} />
+        {tier.taux === 1 ? '1 pour 1' : `${tier.taux} fragments pour 1`}
       </small>
       <small className="tabular-nums">Tu en as {tier.solde}</small>
     </button>
@@ -286,66 +197,103 @@ function TierTile({
 function Tac({ w }: { w: Workshop }) {
   const client = useQueryClient();
   const userId = useSession()?.user.id ?? '';
-  const [tier, setTier] = useState<Tier['cle']>('epique');
-  const [rotation, setRotation] = useState(0);
+  const [tierKey, setTierKey] = useState<Tier['cle']>('epique');
+  const [stakeText, setStakeText] = useState(String(w.mise_min));
+  const [reels, setReels] = useState([0, 0, 0]);
+  const [moving, setMoving] = useState(false);
   const [phase, setPhase] = useState<'idle' | 'spinning' | 'done'>('idle');
   const [result, setResult] = useState<Spin | null>(null);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   useEffect(
     () => () => {
-      if (timer.current) clearTimeout(timer.current);
+      for (const t of timers.current) clearTimeout(t);
     },
     [],
   );
   const spin = useMutation({ mutationFn: spinTac });
-  const chosen = w.paliers.find((t) => t.cle === tier) ?? w.paliers[0];
-  const affordable = !!chosen && w.fragments >= chosen.mise;
+  const tier = w.paliers.find((t) => t.cle === tierKey) ?? w.paliers[0];
+  const stake = Math.floor(Number(stakeText));
+  const stakeOk = Number.isFinite(stake) && stake >= w.mise_min && stake <= w.fragments;
   const busy = phase === 'spinning' || spin.isPending;
-  const refresh = () =>
-    Promise.all([
-      client.invalidateQueries({ queryKey: workshopKeys.state }),
-      client.invalidateQueries({ queryKey: playerKeys.player(userId) }),
-    ]);
+  const cases = w.roue.length || 4;
+  const later = (fn: () => void, delay: number) => {
+    timers.current.push(setTimeout(fn, delay));
+  };
 
-  const launch = () => {
-    if (!chosen) return;
+  const pull = () => {
+    if (!tier || !stakeOk) return;
     setResult(null);
     setPhase('spinning');
-    spin.mutate(chosen.cle, {
-      onSuccess: (r) => {
-        setRotation((from) => landingRotation(wheelArcs(w.roue), r.case, from, Math.random()));
-        timer.current = setTimeout(() => {
-          setResult(r);
-          setPhase('done');
-          void refresh();
-        }, SPIN_MS + 150);
+    spin.mutate(
+      { tier: tier.cle, stake },
+      {
+        onSuccess: (r) => {
+          // Rewind the strips at once (each still shows the same symbol), then run them to the case.
+          setMoving(false);
+          setReels((now) => now.map((at) => at % cases));
+          later(() => {
+            setMoving(true);
+            setReels((now) =>
+              now.map((at, i) => reelTarget(at, r.cases[i] ?? 0, cases, REEL_STOPS[i]?.turns ?? 6)),
+            );
+          }, 40);
+          later(() => {
+            setResult(r);
+            setPhase('done');
+            void Promise.all([
+              client.invalidateQueries({ queryKey: workshopKeys.state }),
+              client.invalidateQueries({ queryKey: playerKeys.player(userId) }),
+            ]);
+          }, SPIN_MS + 40);
+        },
+        onError: () => setPhase('idle'),
       },
-      onError: () => setPhase('idle'),
-    });
+    );
   };
 
   const tierName = (cle: string) => w.paliers.find((t) => t.cle === cle)?.nom ?? cle;
-  const jackpot = phase === 'done' && !!result && result.case === w.roue.length - 1;
+  const jackpot =
+    phase === 'done' &&
+    !!result &&
+    result.cases.length > 0 &&
+    result.cases.every((k) => k === cases - 1);
+  const caseMult = (k: number) => w.roue[k]?.mult ?? 1;
+  const extremes = w.roue.length
+    ? [Math.min(...w.roue.map((c) => c.mult)), Math.max(...w.roue.map((c) => c.mult))]
+    : [1, 1];
+  const quick = [...new Set([w.mise_min, 100, 250, 500])].filter(
+    (n) => n >= w.mise_min && n <= w.fragments,
+  );
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex flex-wrap items-center gap-2 text-base">
-          <ICONS.workshop className="size-4" /> TAC-001, le convertisseur
+          <ICONS.workshop className="size-4" /> TAC-001, la machine à fragments
           <Badge variant="outline" className="ml-auto">
             Mécanique et Technologie
           </Badge>
         </CardTitle>
         <CardDescription>
-          Choisis un palier et mise tes fragments : TAC-001 te rend {w.gain_base} fragments de ce
-          palier, multipliés par la case de sa roue.
+          Mise tes fragments (au moins {w.mise_min}) et choisis ce que TAC-001 te rend : des
+          fragments Épiques, Légendaires ou GGEZ, multipliés par ce qui tombe sur ses rouleaux.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-5">
-        <div className="grid items-center gap-8 md:grid-cols-2">
-          <Machine w={w} working={busy} />
-          <Wheel w={w} rotation={rotation} jackpot={jackpot} />
-        </div>
+        <Machine w={w} reels={reels} moving={moving} working={busy} jackpot={jackpot} />
+        {phase === 'done' && result && (
+          <p
+            className={`rounded-lg border p-3 text-center text-sm ${
+              result.mult >= 1 ? TONES.success.box : 'bg-muted/40'
+            }`}
+          >
+            {jackpot && <b className={`block text-lg ${TONES.gold.text}`}>JACKPOT !</b>}
+            {result.cases.map((k) => multLabel(caseMult(k))).join(' × ')} ={' '}
+            <b>{multLabel(result.mult)}</b> : tes {result.mise} fragments deviennent{' '}
+            <b>{result.gain}</b> fragments {tierName(result.palier)}.
+            {result.mult < 1 && ' TAC-001 a des ratés… retente ta chance !'}
+          </p>
+        )}
         <p className="text-center text-sm">
           Tes fragments :{' '}
           <b>
@@ -357,34 +305,68 @@ function Tac({ w }: { w: Workshop }) {
             <TierTile
               key={t.cle}
               tier={t}
-              chosen={t.cle === tier}
-              affordable={w.fragments >= t.mise}
-              onPick={() => !busy && setTier(t.cle)}
+              chosen={t.cle === tierKey}
+              onPick={() => !busy && setTierKey(t.cle)}
             />
           ))}
         </div>
-        <HoldButton disabled={busy || !affordable} onConfirm={launch}>
+        <div className="flex flex-wrap items-center gap-2">
+          <label htmlFor="tac-stake" className="text-sm">
+            Mise
+          </label>
+          <Input
+            id="tac-stake"
+            type="number"
+            inputMode="numeric"
+            min={w.mise_min}
+            max={w.fragments}
+            value={stakeText}
+            disabled={busy}
+            onChange={(e) => setStakeText(e.target.value)}
+            className="w-28"
+          />
+          {quick.map((n) => (
+            <Button
+              key={n}
+              variant="outline"
+              size="sm"
+              disabled={busy}
+              onClick={() => setStakeText(String(n))}
+            >
+              {n}
+            </Button>
+          ))}
+          {w.fragments >= w.mise_min && (
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={busy}
+              onClick={() => setStakeText(String(w.fragments))}
+            >
+              Tout
+            </Button>
+          )}
+        </div>
+        {tier && stakeOk && (
+          <p className="text-center text-xs text-muted-foreground tabular-nums">
+            Les trois rouleaux se multiplient : à ×1, {conversion(stake, 1, tier.taux)} fragments{' '}
+            {tier.nom} ; de {conversion(stake, (extremes[0] ?? 1) ** 3, tier.taux)} (trois{' '}
+            {SYMBOLS[0]}) à {conversion(stake, (extremes[1] ?? 1) ** 3, tier.taux)} (trois{' '}
+            {SYMBOLS[cases - 1] ?? '7'}, le jackpot).
+          </p>
+        )}
+        <HoldButton disabled={busy || !stakeOk} onConfirm={pull}>
           {busy
-            ? 'TAC-001 calcule…'
-            : affordable
-              ? `Maintiens pour nourrir TAC-001 (${chosen?.mise ?? 0} fragments, palier ${chosen?.nom ?? ''})`
-              : `Il te faut ${chosen?.mise ?? 0} fragments pour ce palier`}
+            ? 'Les rouleaux tournent…'
+            : stakeOk
+              ? `Maintiens pour tirer le levier (${stake} fragments, ${tier?.nom ?? ''})`
+              : w.fragments < w.mise_min
+                ? `Il te faut au moins ${w.mise_min} fragments : recycle des cartes`
+                : `Mise entre ${w.mise_min} et ${w.fragments} fragments`}
         </HoldButton>
         {spin.error && (
           <p role="alert" className="text-sm text-destructive">
             {workshopError(spin.error)}
-          </p>
-        )}
-        {phase === 'done' && result && (
-          <p
-            className={`rounded-lg border p-3 text-center text-sm ${
-              result.mult >= 1 ? TONES.success.box : 'bg-muted/40'
-            }`}
-          >
-            {jackpot && <b className={`block text-lg ${TONES.gold.text}`}>JACKPOT !</b>}
-            <b>{multLabel(result.mult)}</b> : TAC-001 te rend <b>{result.gain}</b> fragments{' '}
-            {tierName(result.palier)}.
-            {result.mult < 1 && ' La machine a des ratés… retente ta chance !'}
           </p>
         )}
         <WheelOdds w={w} />
@@ -393,7 +375,7 @@ function Tac({ w }: { w: Workshop }) {
             <b>Tes derniers tours</b>
             {w.derniers.map((d) => (
               <span key={d.le} className="tabular-nums">
-                {tierName(d.palier)} · {multLabel(d.mult)} · +{d.gain} fragments
+                {d.mise} fragments · {multLabel(d.mult)} · +{d.gain} {tierName(d.palier)}
               </span>
             ))}
           </div>
@@ -403,13 +385,17 @@ function Tac({ w }: { w: Workshop }) {
   );
 }
 
-// The wheel's chances, said plainly.
+// The chances of each reel's cases, said plainly.
 function WheelOdds({ w }: { w: Workshop }) {
   const total = w.roue.reduce((s, c) => s + c.poids, 0) || 1;
   return (
     <p className="text-center text-xs text-muted-foreground">
+      Sur chaque rouleau :{' '}
       {w.roue
-        .map((c) => `${multLabel(c.mult)} : ${Math.round((c.poids / total) * 100)} %`)
+        .map(
+          (c, i) =>
+            `${SYMBOLS[i] ?? ''} ${multLabel(c.mult)} : ${Math.round((c.poids / total) * 100)} %`,
+        )
         .join(' · ')}
     </p>
   );

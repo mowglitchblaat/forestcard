@@ -1,7 +1,11 @@
 // L'atelier, part 1: TAC-001 turns the fragments of recycling into rarity fragments (Épique,
-// Légendaire, GGEZ), through its wheel (atelier_etat, atelier_tac; db/migrations/90-atelier-tac.sql).
-// The stake, the base gain and the wheel's cases are settings (reglages_jeu, atelier_*): the page
-// draws what the database sends.
+// Légendaire, GGEZ), through the three reels on its belly (atelier_etat, atelier_tac;
+// db/migrations/90-atelier-tac.sql, 92-atelier-mise-libre.sql, 93-atelier-trois-rouleaux.sql). The
+// player stakes what they want (at least `mise_min`); each reel draws a case of the wheel, and the
+// pull's multiplier is their product (×0,5 × ×0,5 × ×1,2 = ×0,3); a tier's rate says how many
+// fragments make one of its own (Épique 1, Légendaire 3, GGEZ 10); the gain is the stake times the
+// multiplier, divided by the rate, rounded down. All of
+// it is settings (reglages_jeu, atelier_*): the page shows what the database sends.
 
 import { z } from 'zod';
 import { supabase } from '@/lib/supabase';
@@ -9,7 +13,7 @@ import { supabase } from '@/lib/supabase';
 const Tier = z.object({
   cle: z.enum(['epique', 'legendaire', 'ggez']),
   nom: z.string(),
-  mise: z.number(),
+  taux: z.number(),
   solde: z.number(),
   couleur: z.string().nullish(),
 });
@@ -20,17 +24,29 @@ export type WheelCase = z.infer<typeof Case>;
 
 const Workshop = z.object({
   fragments: z.number(),
-  gain_base: z.number(),
+  mise_min: z.number(),
   roue: z.array(Case),
   paliers: z.array(Tier),
   tac: z.object({ nom: z.string(), image: z.string().nullish() }).nullish(),
   derniers: z.array(
-    z.object({ palier: z.string(), mult: z.number(), gain: z.number(), le: z.string() }),
+    z.object({
+      palier: z.string(),
+      mise: z.number(),
+      mult: z.number(),
+      gain: z.number(),
+      le: z.string(),
+    }),
   ),
 });
 export type Workshop = z.infer<typeof Workshop>;
 
-const Spin = z.object({ case: z.number(), mult: z.number(), gain: z.number(), palier: z.string() });
+const Spin = z.object({
+  cases: z.array(z.number()),
+  mult: z.number(),
+  gain: z.number(),
+  palier: z.string(),
+  mise: z.number(),
+});
 export type Spin = z.infer<typeof Spin>;
 
 export async function fetchWorkshop(): Promise<Workshop> {
@@ -39,8 +55,14 @@ export async function fetchWorkshop(): Promise<Workshop> {
   return Workshop.parse(data);
 }
 
-export async function spinTac(tier: Tier['cle']): Promise<Spin> {
-  const { data, error } = await supabase.rpc('atelier_tac', { p_palier: tier });
+export async function spinTac({
+  tier,
+  stake,
+}: {
+  tier: Tier['cle'];
+  stake: number;
+}): Promise<Spin> {
+  const { data, error } = await supabase.rpc('atelier_tac', { p_palier: tier, p_mise: stake });
   if (error) throw new Error(error.message);
   return Spin.parse(data);
 }
@@ -58,38 +80,24 @@ export const workshopError = (e: unknown): string => {
   return code ? (REFUSALS[code] as string) : message;
 };
 
-// "×1,2": a case of the wheel, as the page writes it.
-export const multLabel = (mult: number) => `×${String(mult).replace('.', ',')}`;
+// "×1,2": a case of the wheel or a pull's multiplier, as the page writes it (at most 3 decimals).
+export const multLabel = (mult: number) =>
+  `×${String(Math.round(mult * 1000) / 1000).replace('.', ',')}`;
 
-// The wheel's cases as arcs, clockwise from the top, each as wide as its chance: start and end in
-// degrees. A case with no weight takes no room.
-export function wheelArcs(cases: WheelCase[]): { start: number; end: number }[] {
-  const total = cases.reduce((sum, c) => sum + Math.max(0, c.poids), 0) || 1;
-  let at = 0;
-  return cases.map((c) => {
-    const start = at;
-    at += (Math.max(0, c.poids) / total) * 360;
-    return { start, end: at };
-  });
-}
+// A pull's multiplier: the product of its reels' cases.
+export const pullMultiplier = (mults: number[]) => mults.reduce((p, m) => p * m, 1);
 
-// The wheel's next rotation, to stop on case `index` under the pointer (at the top): at least
-// `turns` whole turns more than `from`, landing at `share` (0 to 1) of the case's width, away from
-// its edges.
-export function landingRotation(
-  arcs: { start: number; end: number }[],
-  index: number,
-  from: number,
-  share: number,
-  turns = 6,
-): number {
-  const arc = arcs[index] ?? { start: 0, end: 0 };
-  const width = arc.end - arc.start;
-  const target = arc.start + width * (0.15 + 0.7 * share);
-  // The wheel turned by r shows at the top the angle (360 - r) mod 360.
-  const wanted = (((360 - target) % 360) + 360) % 360;
-  const now = ((from % 360) + 360) % 360;
-  return from + turns * 360 + ((wanted - now + 360) % 360);
+// What a stake brings back at a multiplier: the stake times it, in the tier's fragments (`rate`
+// fragments make one), rounded down, as atelier_tac counts it.
+export const conversion = (stake: number, mult: number, rate: number) =>
+  Math.floor((stake * mult) / Math.max(1, rate) + 1e-9);
+
+// A reel of TAC-001's belly: a strip of the wheel's cases, `cases` long, repeated. The reel stands on
+// cell `from`; to stop on case `index` after at least `turns` full rounds of the strip's cases, it
+// goes to the next cell showing that case past them.
+export function reelTarget(from: number, index: number, cases: number, turns: number): number {
+  const base = from + turns * cases;
+  return base + ((index - (base % cases) + cases) % cases);
 }
 
 export const workshopKeys = { state: ['workshop'] as const };
