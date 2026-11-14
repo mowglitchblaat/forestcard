@@ -1,6 +1,7 @@
 // The daily games' state for the player, through the database functions the legacy page calls
 // (champignons_etat, duel_atq_etat, plusmoins_etat, ticket_etat; db/migrations/24-jeux-du-jour.sql),
-// and the two puppet-show games (differences_etat, ombres_etat; 89-jeux-differences-ombres.sql).
+// and the two puppet-show games (differences_etat, ombres_etat; 89-jeux-differences-ombres.sql,
+// 91-ombres-manches.sql).
 // The day ends at midnight in Paris: the database dates a game with (now() at time zone
 // 'Europe/Paris')::date.
 
@@ -81,17 +82,29 @@ const Differences = z.object({
 export const differenceCount = (k: number) => Math.floor(k / 37);
 export const WATCH_SECONDS = 60;
 
-// Shadow theatre: a fighter's silhouette (its image, `image`), four names to choose from; the right
-// one wins `gain` gold (ombres_gain). `bonne`, the right card, comes once answered.
+// Shadow theatre, in rounds (91-ombres-manches.sql): a fighter's shadow (its drawing, `image`), four
+// names to choose from (`choix`). Each right answer wins its round's gold (`gains`, paid at once)
+// and brings a new shadow; a wrong one, or the last round, ends the game, the gold kept (`total`).
+// `derniere`: the round just played, to reveal it.
 const Shadows = z.object({
   joue: z.boolean(),
-  image: z.string().optional(),
+  gains: z.array(z.number()).optional(),
+  manche: z.number().optional(),
+  image: z.string().nullish(),
   fini: z.boolean().optional(),
   choix: z.array(z.object({ id: z.number(), nom: z.string() })).nullish(),
-  reponse: z.number().nullish(),
-  bonne: z.number().nullish(),
   gagne: z.boolean().nullish(),
-  gain: z.number().optional(),
+  total: z.number().nullish(),
+  derniere: z
+    .object({
+      manche: z.number(),
+      image: z.string(),
+      ok: z.boolean(),
+      gain: z.number(),
+      bonne: z.string(),
+      reponse: z.string(),
+    })
+    .nullish(),
 });
 
 export type DailyGames = {

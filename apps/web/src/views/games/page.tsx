@@ -1049,59 +1049,74 @@ function Differences({
   );
 }
 
-// Whether an image is a cut-out (its corners transparent): its shadow is then a plain silhouette;
-// a full illustration is shown as a dark sepia shadow instead. Unknown (not read yet, or the image
-// can't be read): null.
-function useCutout(url: string | null): boolean | null {
-  const [cutout, setCutout] = useState<{ url: string; is: boolean } | null>(null);
-  useEffect(() => {
-    if (!url) return;
-    let cancelled = false;
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      let is = false;
-      try {
-        const canvas = document.createElement('canvas');
-        canvas.width = 16;
-        canvas.height = 16;
-        const ctx = canvas.getContext('2d');
-        ctx?.drawImage(img, 0, 0, 16, 16);
-        const corner = (x: number, y: number) => ctx?.getImageData(x, y, 1, 1).data[3] ?? 255;
-        is = [corner(0, 0), corner(15, 0), corner(0, 15), corner(15, 15)].every((a) => a < 40);
-      } catch {
-        is = false;
-      }
-      if (!cancelled) setCutout({ url, is });
-    };
-    img.onerror = () => !cancelled && setCutout({ url, is: false });
-    img.src = url;
-    return () => {
-      cancelled = true;
-    };
-  }, [url]);
-  return cutout && cutout.url === url ? cutout.is : null;
+// The shadow screen: the drawing as a shadow behind warm paper (blurred, colourless, its darks
+// pushed to ink and its lights to the paper's glow: the drawings have a background, so a plain
+// silhouette is not possible), or revealed as it is.
+function ShadowScreen({ url, revealed }: { url: string; revealed: boolean }) {
+  const ramp = { type: 'linear', slope: 2.6, intercept: -0.95 } as const;
+  return (
+    <svg viewBox="0 0 240 280" role="img" aria-label="L'écran d'ombres" className="mx-auto w-56">
+      <defs>
+        <radialGradient id="lamp" cx="50%" cy="45%" r="65%">
+          <stop offset="0%" stopColor={SCENE.paperGlow} />
+          <stop offset="70%" stopColor={SCENE.paper} />
+          <stop offset="100%" stopColor={SCENE.paperEdge} />
+        </radialGradient>
+        <filter id="shadow" x="0" y="0" width="1" height="1">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="3.2" result="soft" />
+          <feColorMatrix in="soft" type="saturate" values="0" result="grey" />
+          <feComponentTransfer in="grey" result="ink">
+            <feFuncR {...ramp} />
+            <feFuncG {...ramp} />
+            <feFuncB {...ramp} />
+          </feComponentTransfer>
+          <feFlood floodColor={SCENE.paperGlow} result="paper" />
+          <feBlend in="ink" in2="paper" mode="multiply" />
+        </filter>
+      </defs>
+      <rect width="240" height="280" rx="10" fill={SCENE.frame} />
+      <rect x="12" y="12" width="216" height="256" rx="4" fill="url(#lamp)" />
+      <image
+        href={url}
+        x="22"
+        y="22"
+        width="196"
+        height="236"
+        preserveAspectRatio="xMidYMid slice"
+        filter={revealed ? undefined : 'url(#shadow)'}
+      />
+      {!revealed && (
+        <rect x="12" y="12" width="216" height="256" rx="4" fill="url(#lamp)" opacity="0.25" />
+      )}
+    </svg>
+  );
 }
 
 function Shadows({ state: s }: { state: DailyGames['ombres'] }) {
   const start = useMove(startShadows);
   const answer = useMove(answerShadows);
-  const card: GameCard[] = s.image ? [{ nom: '', image: s.image }] : [];
+  // The round just played is revealed until the player moves on (its number, once moved on).
+  const [seen, setSeen] = useState<number | null>(null);
+  const gains = s.gains ?? [];
+  const last = s.derniere;
+  const revealing = !!last && (s.fini || last.manche !== seen);
+  const image = revealing ? last?.image : s.image;
+  const card: GameCard[] = image ? [{ nom: '', image }] : [];
   const src = useCardImages(card);
   const url = src && card[0] ? src(card[0]) : null;
-  const cutout = useCutout(url);
   const over = !!s.fini;
-  const shadow = cutout ? 'brightness-0 opacity-90' : 'grayscale sepia contrast-200 brightness-50';
+  const round = s.manche ?? 1;
   return (
     <Game
       icon={E.candle}
       title="Le théâtre d'ombres"
-      next="une nouvelle ombre"
+      next="un nouveau spectacle d'ombres"
       over={over}
       rule={
         <>
-          Derrière l'écran de papier, l'ombre d'un combattant du jeu : qui est-ce ? Le bon nom
-          rapporte <Gold n={s.gain} />.
+          {gains.length} ombres de combattants derrière l'écran de papier : chaque bon nom rapporte
+          de plus en plus (jusqu'à <Gold n={gains.reduce((t, g) => t + g, 0)} />
+          ). Une erreur arrête la partie, tu gardes tes gains.
         </>
       }
     >
@@ -1113,61 +1128,80 @@ function Shadows({ state: s }: { state: DailyGames['ombres'] }) {
           </HoldButton>
           <Refusal error={start.error} />
         </>
-      ) : !url || cutout === null ? (
-        <Loading />
       ) : (
         <>
-          <svg
-            viewBox="0 0 240 280"
-            role="img"
-            aria-label="L'écran d'ombres"
-            className="mx-auto w-56"
-          >
-            <defs>
-              <radialGradient id="lamp" cx="50%" cy="45%" r="65%">
-                <stop offset="0%" stopColor={SCENE.paperGlow} />
-                <stop offset="70%" stopColor={SCENE.paper} />
-                <stop offset="100%" stopColor={SCENE.paperEdge} />
-              </radialGradient>
-            </defs>
-            <rect width="240" height="280" rx="10" fill={SCENE.frame} />
-            <rect x="12" y="12" width="216" height="256" rx="4" fill="url(#lamp)" />
-            <image
-              href={url}
-              x="22"
-              y="22"
-              width="196"
-              height="236"
-              preserveAspectRatio="xMidYMid meet"
-              className={`transition duration-700 ${over ? '' : shadow}`}
-            />
-          </svg>
-          <div className="grid grid-cols-2 gap-2">
-            {(s.choix ?? []).map((c) => {
-              const right = over && c.id === s.bonne;
-              const wrong = over && c.id === s.reponse && !s.gagne;
+          <div className="flex flex-wrap justify-center gap-1.5">
+            {gains.map((g, i) => {
+              const n = i + 1;
+              const won =
+                n < round ||
+                (over && !!s.gagne && n === round) ||
+                (!!last?.ok && last.manche === n);
+              const lost = over && !s.gagne && n === round;
               return (
-                <Button
-                  key={c.id}
-                  variant={right ? 'default' : wrong ? 'destructive' : 'outline'}
-                  disabled={over || answer.isPending}
-                  onClick={() => answer.mutate(c.id)}
+                <Badge
+                  key={n}
+                  variant={
+                    won
+                      ? 'success'
+                      : lost
+                        ? 'destructive'
+                        : n === round && !over
+                          ? 'info'
+                          : 'outline'
+                  }
                 >
-                  {c.nom}
-                </Button>
+                  <Gold n={g} />
+                </Badge>
               );
             })}
           </div>
-          {over && (
-            <Result won={!!s.gagne}>
-              {s.gagne ? (
-                <>
-                  Bien vu ! Tu gagnes <Gold n={s.gain} />.
-                </>
-              ) : (
-                "Ce n'était pas lui… l'ombre t'a joué un tour. Revanche demain !"
+          {!url ? <Loading /> : <ShadowScreen url={url} revealed={revealing} />}
+          {revealing && last ? (
+            <>
+              <Result won={last.ok}>
+                {last.ok ? (
+                  <>
+                    Bien vu, c'était <b>{last.bonne}</b> ! <Gold n={last.gain} sign />
+                  </>
+                ) : (
+                  <>
+                    Raté : c'était <b>{last.bonne}</b> (pas {last.reponse}).
+                  </>
+                )}
+                {over && (
+                  <>
+                    {' '}
+                    Fin du spectacle : tu repars avec <Gold n={s.total ?? 0} />.
+                  </>
+                )}
+              </Result>
+              {!over && (
+                <Button onClick={() => setSeen(last.manche)}>
+                  {E.candle} Ombre suivante (manche {round} sur {gains.length})
+                </Button>
               )}
-            </Result>
+            </>
+          ) : (
+            !over && (
+              <>
+                <p className="text-center text-sm text-muted-foreground">
+                  Manche {round} sur {gains.length} : qui se cache derrière l'écran ?
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  {(s.choix ?? []).map((c) => (
+                    <Button
+                      key={c.id}
+                      variant="outline"
+                      disabled={answer.isPending}
+                      onClick={() => answer.mutate(c.id)}
+                    >
+                      {c.nom}
+                    </Button>
+                  ))}
+                </div>
+              </>
+            )
           )}
           <Refusal error={answer.error} />
         </>
