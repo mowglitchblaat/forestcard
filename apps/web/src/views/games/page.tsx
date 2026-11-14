@@ -1049,11 +1049,11 @@ function Differences({
   );
 }
 
-// The shadow screen: the drawing as a shadow behind warm paper (blurred, colourless, its darks
-// pushed to ink and its lights to the paper's glow: the drawings have a background, so a plain
-// silhouette is not possible), or revealed as it is.
+// The shadow screen: the drawing seen through warm paper lit from behind (softened, colourless, its
+// darks deepened, tinted by the paper: the colours, which give most cards away, are gone; the shapes
+// stay readable), or revealed as it is.
 function ShadowScreen({ url, revealed }: { url: string; revealed: boolean }) {
-  const ramp = { type: 'linear', slope: 2.6, intercept: -0.95 } as const;
+  const ramp = { type: 'gamma', amplitude: 1.25, exponent: 1.6, offset: 0 } as const;
   return (
     <svg viewBox="0 0 240 280" role="img" aria-label="L'écran d'ombres" className="mx-auto w-56">
       <defs>
@@ -1062,8 +1062,8 @@ function ShadowScreen({ url, revealed }: { url: string; revealed: boolean }) {
           <stop offset="70%" stopColor={SCENE.paper} />
           <stop offset="100%" stopColor={SCENE.paperEdge} />
         </radialGradient>
-        <filter id="shadow" x="0" y="0" width="1" height="1">
-          <feGaussianBlur in="SourceGraphic" stdDeviation="3.2" result="soft" />
+        <filter id="shadow" x="0" y="0" width="1" height="1" colorInterpolationFilters="sRGB">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="1.3" result="soft" />
           <feColorMatrix in="soft" type="saturate" values="0" result="grey" />
           <feComponentTransfer in="grey" result="ink">
             <feFuncR {...ramp} />
@@ -1086,7 +1086,7 @@ function ShadowScreen({ url, revealed }: { url: string; revealed: boolean }) {
         filter={revealed ? undefined : 'url(#shadow)'}
       />
       {!revealed && (
-        <rect x="12" y="12" width="216" height="256" rx="4" fill="url(#lamp)" opacity="0.25" />
+        <rect x="12" y="12" width="216" height="256" rx="4" fill="url(#lamp)" opacity="0.15" />
       )}
     </svg>
   );
