@@ -3,7 +3,7 @@
 // each with its rate), stakes what they want (at least the minimum) and pulls the lever: the three
 // reels on TAC-001's belly spin and stop, one after the other, each on its own case (a skull ×0,5,
 // cherries ×1,2, a bell ×2, 7 ×3), and the pull is worth their product (three 7: ×27, the jackpot).
-// The draw is the database's (atelier_tac): the reels only show it. Part 2, the forge, comes later: a card says so.
+// The draw is the database's (atelier_tac): the reels only show it. Part 2, the forge: forge.tsx.
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
@@ -29,6 +29,7 @@ import {
 } from '@/data/workshop';
 import { ICONS } from '@/lib/icons';
 import { useSession } from '@/lib/session';
+import { Forge } from './forge';
 import { TONES } from '@/lib/tones';
 
 // The machine's own colours: an illustration (iron, bronze, fire), not meanings.
@@ -74,7 +75,8 @@ export function WorkshopPage() {
     <div className="flex flex-col gap-6">
       <p className="text-muted-foreground">
         Dans l'atelier, tes fragments deviennent des fragments de rareté. Glisse-les dans TAC-001,
-        tire le levier… et croise les doigts. Bientôt, ils te serviront à forger des cartes.
+        tire le levier… et croise les doigts. Puis la première Forgeronne te forge les cartes de ton
+        choix.
       </p>
       <Tac w={state.data} />
       <Forge />
@@ -640,25 +642,5 @@ function WheelOdds({ w }: { w: Workshop }) {
         )
         .join(' · ')}
     </p>
-  );
-}
-
-// Part 2, to come: the forge.
-function Forge() {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
-          <ICONS.forge className="size-4" /> La forge
-          <Badge variant="secondary" className="ml-auto">
-            Bientôt
-          </Badge>
-        </CardTitle>
-        <CardDescription>
-          La première Forgeronne rallume ses braises… Bientôt, tes fragments de rareté lui serviront
-          à te forger des cartes, des dos de cartes et d'autres trésors.
-        </CardDescription>
-      </CardHeader>
-    </Card>
   );
 }

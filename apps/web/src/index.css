@@ -35,11 +35,63 @@
   --animate-tac-shake: tac-shake 0.18s ease-in-out infinite;
   --animate-jackpot: jackpot-flash 0.5s ease-in-out 6;
   --ease-wheel: cubic-bezier(0.12, 0.75, 0.16, 1);
+  /* The forge (views/workshop/forge.tsx): the hammer strikes the anvil three times, sparks fly off
+     each strike, each --delay after the previous one, to --dx; then the forged card rises. */
+  --animate-hammer: hammer-strike 0.7s ease-in 3;
+  --animate-spark: spark-fly 0.7s ease-out var(--delay, 0ms) 3;
+  --animate-forge-reveal: forge-reveal 0.9s ease-out both;
+  @keyframes hammer-strike {
+    0%,
+    100% {
+      transform: rotate(-55deg);
+    }
+    55% {
+      transform: rotate(-55deg);
+    }
+    80% {
+      transform: rotate(8deg);
+    }
+  }
+  @keyframes spark-fly {
+    0%,
+    75% {
+      opacity: 0;
+      transform: translate(0, 0) scale(0.4);
+    }
+    80% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+      transform: translate(var(--dx, 0), -2.2rem) scale(1);
+    }
+  }
+  @keyframes forge-reveal {
+    0% {
+      opacity: 0;
+      transform: translateY(1.5rem) scale(0.6);
+      filter: brightness(3) blur(4px);
+    }
+    60% {
+      opacity: 1;
+      filter: brightness(1.6) blur(0);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      filter: brightness(1);
+    }
+  }
   /* TAC-001's reels: dark glass, flame-coloured symbols, the red 7, the night shading the glass. */
   --color-tac-glass: #120a07;
   --color-tac-flare: #ffc04a;
   --color-tac-red: #d4141e;
   --color-tac-night: #1a0806;
+  /* The forge: the anvil's iron, the glow of the hot metal. */
+  --color-forge-iron: #2b2826;
+  --color-forge-steel: #6f6a64;
+  --color-forge-heat: #ff7a1a;
+  --color-forge-spark: #ffd27a;
   @keyframes gear-turn {
     to {
       transform: rotate(360deg);
