@@ -8,6 +8,10 @@ import type { Gain } from '@/data/recycling';
 const CURRENCIES = {
   gold: { symbol: '\u{1FA99}', name: 'Gold' },
   fragments: { symbol: '\u{1F9E9}', name: 'Fragments' },
+  // The rarity fragments of the atelier, each in its rarity's colour.
+  epique: { symbol: '\u{1F7E3}', name: 'Fragments épiques' },
+  legendaire: { symbol: '\u{1F7E0}', name: 'Fragments légendaires' },
+  ggez: { symbol: '\u{26AA}', name: 'Fragments GGEZ' },
 } as const;
 
 function Amount({
@@ -42,6 +46,13 @@ export const Gold = (props: { n?: number; sign?: boolean }) => (
 export const Fragments = (props: { n: number; sign?: boolean }) => (
   <Amount {...props} currency="fragments" />
 );
+
+// Rarity fragments (the atelier's): Épique, Légendaire or GGEZ.
+export const TierFragments = (props: {
+  n: number;
+  tier: 'epique' | 'legendaire' | 'ggez';
+  sign?: boolean;
+}) => <Amount n={props.n} sign={props.sign} currency={props.tier} />;
 
 // What recycling pays: gold, and fragments when there are some.
 export function GainAmount({ gain }: { gain: Gain }) {

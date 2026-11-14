@@ -10,6 +10,10 @@ export const Player = z.object({
   pseudo: z.string(),
   monnaie: z.number(),
   fragments: z.number().nullable(),
+  // Rarity fragments, from TAC-001 in the atelier (90-atelier-tac.sql).
+  fragments_epique: z.number().nullish(),
+  fragments_legendaire: z.number().nullish(),
+  fragments_ggez: z.number().nullish(),
 });
 export type Player = z.infer<typeof Player>;
 

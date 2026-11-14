@@ -31,7 +31,7 @@ import {
   SidebarRail,
 } from '@/components/ui/sidebar';
 import type { Player } from '@/data/player';
-import { Fragments, Gold } from '@/components/money';
+import { Fragments, Gold, TierFragments } from '@/components/money';
 import { signOut } from '@/lib/session';
 import { usePatchNotesFingerprint } from '@/data/patchnotes-query';
 import { patchNotesNew, rulesSeen, SEEN_KEYS, unseen, useSeen } from '@/lib/seen';
@@ -416,6 +416,31 @@ function PlayerMenu({
   nickname: string | null;
 }) {
   const { monnaie, fragments } = player;
+  // The atelier's rarity fragments the player has.
+  const tiers = (
+    [
+      ['epique', player.fragments_epique],
+      ['legendaire', player.fragments_legendaire],
+      ['ggez', player.fragments_ggez],
+    ] as const
+  ).filter(([, n]) => (n ?? 0) > 0);
+  const wallet = (
+    <>
+      <Gold n={monnaie} />
+      {fragments !== null && fragments > 0 && (
+        <>
+          {' · '}
+          <Fragments n={fragments} />
+        </>
+      )}
+      {tiers.map(([tier, n]) => (
+        <span key={tier}>
+          {' · '}
+          <TierFragments tier={tier} n={n ?? 0} />
+        </span>
+      ))}
+    </>
+  );
   // The Twitch display name, with its capitals; the pseudo of `joueurs` when absent.
   const pseudo = nickname ?? player.pseudo;
   return (
@@ -432,29 +457,13 @@ function PlayerMenu({
               </Avatar>
               <div className="grid flex-1 text-left leading-tight">
                 <span className="truncate font-medium">{pseudo}</span>
-                <span className="truncate text-xs text-muted-foreground">
-                  <Gold n={monnaie} />
-                  {fragments !== null && fragments > 0 && (
-                    <>
-                      {' · '}
-                      <Fragments n={fragments} />
-                    </>
-                  )}
-                </span>
+                <span className="truncate text-xs text-muted-foreground">{wallet}</span>
               </div>
               <ICONS.menu className="ml-auto" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent side="right" align="end">
-            <DropdownMenuLabel>
-              <Gold n={monnaie} />
-              {fragments !== null && fragments > 0 && (
-                <>
-                  {' · '}
-                  <Fragments n={fragments} />
-                </>
-              )}
-            </DropdownMenuLabel>
+            <DropdownMenuLabel>{wallet}</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={() => void signOut()}>
               <ICONS.logOut />
