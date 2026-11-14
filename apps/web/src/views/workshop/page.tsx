@@ -29,33 +29,29 @@ import {
 } from '@/data/workshop';
 import { ICONS } from '@/lib/icons';
 import { useSession } from '@/lib/session';
+import tacArt from './art/tac-001.webp';
 import { Forge } from './forge';
 import { TONES } from '@/lib/tones';
 
-// The machine's own colours: an illustration (iron, bronze, fire), not meanings.
-const TAC = {
-  night: '#1a0806',
-  ember: '#6e1408',
-  fire: '#ff6a1a',
-  flare: '#ffc04a',
-  white: '#fff4dc',
-  iron: '#1f1714',
-  bronze: '#8a5a24',
-  bronzeLight: '#c8954a',
-  chain: '#2c2420',
-  glass: '#120a07',
-  red: '#d4141e',
-  redDark: '#5a0508',
-};
-
 // The reels' symbols, by case of the wheel (a loss, a little gain, double, the jackpot).
 const SYMBOLS = ['\u{1F480}', '\u{1F352}', '\u{1F514}', '7'];
-// Where the reels sit on TAC-001's drum: its three windows in the drawing (viewBox 400 × 320).
-const REELS_AT = {
-  '--reels-x': `${(151 / 400) * 100}%`,
-  '--reels-y': `${(185 / 320) * 100}%`,
-  '--reels-w': `${(150.6 / 400) * 100}%`,
-  '--reels-h': `${(88 / 320) * 100}%`,
+// Where things sit on TAC-001's portrait (746 × 597): the window of its drum (three slots, 10 px
+// apart), the lever on its left, its cannon's muzzle; shares of the picture.
+const pct = (n: number, of: number) => `${((n / of) * 100).toFixed(2)}%`;
+const ART_AT = {
+  '--reels-x': pct(211, 746),
+  '--reels-y': pct(251, 597),
+  '--reels-w': pct(330, 746),
+  '--reels-h': pct(109, 597),
+  '--reels-gap': pct(10, 330),
+  '--lever-x': pct(22, 746),
+  '--lever-y': pct(110, 597),
+  '--lever-h': pct(210, 597),
+  '--fire-x': pct(560, 746),
+  '--fire-y': pct(30, 597),
+  '--fire-w': pct(180, 746),
+  '--fire-cx': pct(690, 746),
+  '--fire-cy': pct(110, 597),
 };
 // Each reel stops a little after the previous one, after more turns.
 const REEL_STOPS = [
@@ -108,11 +104,9 @@ function Reel({ cases, at, ms }: { cases: number; at: number; ms: number }) {
   );
 }
 
-// TAC-001, drawn after its card: a war slot machine. A great iron drum, ringed with bronze bands
-// and glowing seams, carries the three reels on its front; a segmented cannon rises from its back and
-// arcs over it, its spiked muzzle spitting fire; a lever with a red ball stands at its left end;
-// chains hang between them, on a background of embers. While it works: it shakes, the seams and the
-// muzzle blaze, sparks fly; the lever comes down when pulled; the jackpot makes it all flash.
+// TAC-001: its war-machine portrait (art/tac-001.webp), the three reels set in the window of its
+// drum, its lever on the left. While it works: it shakes, the window's frame and the cannon's fire
+// blaze, sparks fly from the muzzle; the lever comes down when pulled; the jackpot makes it flash.
 function Machine({
   w,
   reels,
@@ -129,253 +123,25 @@ function Machine({
   jackpot: boolean;
 }) {
   const lit = working || jackpot;
-  const glow = lit ? 'animate-pulse' : '';
-  // The muzzle's spikes.
-  const spikes = Array.from({ length: 10 }, (_, i) => {
-    const a = (i / 10) * Math.PI * 2;
-    const at = (r: number, da = 0) =>
-      `${(322 + Math.cos(a + da) * r).toFixed(1)},${(96 + Math.sin(a + da) * r).toFixed(1)}`;
-    return `M${at(34, -0.16)}L${at(46)}L${at(34, 0.16)}Z`;
-  });
   return (
     <div
-      className={`relative mx-auto w-full max-w-md ${working ? 'animate-tac-shake' : ''} ${
+      className={`relative mx-auto w-full max-w-lg ${working ? 'animate-tac-shake' : ''} ${
         jackpot ? 'animate-jackpot' : ''
       }`}
+      style={ART_AT}
     >
-      <svg
-        viewBox="0 0 400 320"
-        className="w-full rounded-2xl"
-        role="img"
-        aria-label={w.tac?.nom ?? 'TAC-001'}
-      >
-        <defs>
-          <radialGradient id="tac-sky" cx="85%" cy="25%" r="90%">
-            <stop offset="0%" stopColor={TAC.flare} />
-            <stop offset="25%" stopColor={TAC.fire} />
-            <stop offset="55%" stopColor={TAC.ember} />
-            <stop offset="100%" stopColor={TAC.night} />
-          </radialGradient>
-          <linearGradient id="tac-drum" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={TAC.iron} />
-            <stop offset="35%" stopColor={TAC.bronze} />
-            <stop offset="55%" stopColor={TAC.bronzeLight} />
-            <stop offset="100%" stopColor={TAC.iron} />
-          </linearGradient>
-          <linearGradient id="tac-pipe" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={TAC.bronzeLight} />
-            <stop offset="50%" stopColor={TAC.bronze} />
-            <stop offset="100%" stopColor={TAC.iron} />
-          </linearGradient>
-          <radialGradient id="tac-blast" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor={TAC.white} />
-            <stop offset="35%" stopColor={TAC.flare} />
-            <stop offset="75%" stopColor={TAC.fire} />
-            <stop offset="100%" stopColor={TAC.ember} stopOpacity="0" />
-          </radialGradient>
-          <radialGradient id="tac-ball" cx="35%" cy="30%" r="70%">
-            <stop offset="0%" stopColor={TAC.white} />
-            <stop offset="18%" stopColor={TAC.red} />
-            <stop offset="100%" stopColor={TAC.redDark} />
-          </radialGradient>
-        </defs>
-        {/* The sky of embers. */}
-        <rect width="400" height="320" fill="url(#tac-sky)" />
-        {/* The cannon: from the drum's back, up and over, to its spiked muzzle. */}
-        <path
-          id="tac-cannon"
-          d="M118 200 C 92 150, 104 92, 160 78 S 270 70, 300 92"
-          stroke={TAC.iron}
-          strokeWidth="46"
-          fill="none"
-          strokeLinecap="round"
-        />
-        <path
-          d="M118 200 C 92 150, 104 92, 160 78 S 270 70, 300 92"
-          stroke="url(#tac-pipe)"
-          strokeWidth="38"
-          fill="none"
-          strokeLinecap="round"
-        />
-        {/* Its rings, and the fire glowing between them. */}
-        <path
-          d="M118 200 C 92 150, 104 92, 160 78 S 270 70, 300 92"
-          stroke={TAC.iron}
-          strokeWidth="42"
-          strokeDasharray="5 15"
-          fill="none"
-        />
-        <path
-          d="M118 200 C 92 150, 104 92, 160 78 S 270 70, 300 92"
-          stroke={TAC.fire}
-          strokeWidth="14"
-          strokeDasharray="8 12"
-          strokeDashoffset="-6"
-          fill="none"
-          className={glow}
-        />
-        {/* The muzzle and its blast. */}
-        <circle
-          cx="322"
-          cy="96"
-          r={lit ? 70 : 52}
-          fill="url(#tac-blast)"
-          className={`transition-all duration-500 ${glow}`}
-        />
-        {spikes.map((d) => (
-          <path key={d} d={d} fill={TAC.bronze} stroke={TAC.iron} strokeWidth="1.5" />
-        ))}
-        <circle cx="322" cy="96" r="34" fill="none" stroke={TAC.bronze} strokeWidth="9" />
-        <circle
-          cx="322"
-          cy="96"
-          r="34"
-          fill="none"
-          stroke={TAC.iron}
-          strokeWidth="2"
-          strokeDasharray="3 6"
-        />
-        {/* Chains, from the cannon to the drum. */}
-        <g stroke={TAC.chain} strokeWidth="3" strokeDasharray="4 3" fill="none" opacity="0.9">
-          <path d="M175 96 Q 190 140 205 170" />
-          <path d="M235 88 Q 255 130 262 170" />
-          <path d="M140 120 Q 128 165 118 205" />
-        </g>
-        {/* The drum: its body, the bands at its left end, its right cap. */}
-        <rect
-          x="88"
-          y="168"
-          width="258"
-          height="122"
-          rx="56"
-          fill="url(#tac-drum)"
-          stroke={TAC.iron}
-          strokeWidth="4"
-        />
-        {[96, 112, 128].map((x, i) => (
-          <ellipse
-            key={x}
-            cx={x}
-            cy="229"
-            rx={14 - i * 2}
-            ry={58 - i * 5}
-            fill="none"
-            stroke={i === 1 ? TAC.fire : TAC.bronzeLight}
-            strokeWidth={i === 1 ? 2.5 : 5}
-            className={i === 1 ? glow : ''}
-          />
-        ))}
-        <ellipse
-          cx="338"
-          cy="229"
-          rx="12"
-          ry="50"
-          fill={TAC.iron}
-          stroke={TAC.bronze}
-          strokeWidth="4"
-        />
-        {/* The red lights on top of the drum. */}
-        {[196, 252].map((x) => (
-          <rect
-            key={x}
-            x={x - 13}
-            y="160"
-            width="26"
-            height="12"
-            rx="2"
-            fill={TAC.red}
-            stroke={TAC.iron}
-            strokeWidth="2"
-            className={glow}
-          />
-        ))}
-        {/* The reels' frame: three windows, their seams glowing. */}
-        <rect
-          x="146"
-          y="180"
-          width="160"
-          height="98"
-          rx="10"
-          fill={TAC.iron}
-          stroke={TAC.bronzeLight}
-          strokeWidth="3"
-        />
-        {[0, 1, 2].map((i) => (
-          <rect
-            key={i}
-            x={151 + i * 51.3}
-            y="185"
-            width="48"
-            height="88"
-            rx="7"
-            fill={TAC.glass}
-            stroke={TAC.fire}
-            strokeWidth="2"
-            className={glow}
-          />
-        ))}
-        {/* The name plate, under the reels. */}
-        <rect
-          x="186"
-          y="282"
-          width="80"
-          height="18"
-          rx="3"
-          fill={TAC.iron}
-          stroke={TAC.bronze}
-          strokeWidth="2"
-        />
-        <text
-          x="226"
-          y="295"
-          textAnchor="middle"
-          fontSize="11"
-          fontWeight="800"
-          letterSpacing="2"
-          fill={TAC.flare}
-        >
-          {w.tac?.nom ?? 'TAC-001'}
-        </text>
-        {/* The lever at the left end: it comes down when pulled. */}
-        <rect
-          x="70"
-          y="214"
-          width="28"
-          height="30"
-          rx="6"
-          fill={TAC.iron}
-          stroke={TAC.bronze}
-          strokeWidth="2"
-        />
-        <g
-          className={`origin-bottom transition-transform duration-300 transform-fill ${
-            pulled ? '-rotate-75' : 'rotate-0'
-          }`}
-        >
-          <rect
-            x="79"
-            y="118"
-            width="10"
-            height="108"
-            rx="5"
-            fill={TAC.bronze}
-            stroke={TAC.iron}
-            strokeWidth="2"
-          />
-          <circle
-            cx="84"
-            cy="114"
-            r="17"
-            fill="url(#tac-ball)"
-            stroke={TAC.redDark}
-            strokeWidth="1.5"
-          />
-        </g>
-      </svg>
-      {/* The reels, in the drum's windows. */}
+      <img src={tacArt} alt={w.tac?.nom ?? 'TAC-001'} className="block w-full rounded-2xl" />
+      {/* The cannon's fire, blazing while it works. */}
       <div
-        className="absolute top-(--reels-y) left-(--reels-x) flex h-(--reels-h) w-(--reels-w) gap-1"
-        style={REELS_AT}
+        className={`absolute top-(--fire-y) left-(--fire-x) aspect-square w-(--fire-w) rounded-full bg-forge-heat/60 blur-2xl transition-opacity duration-500 ${
+          lit ? 'animate-pulse opacity-100' : 'opacity-0'
+        }`}
+      />
+      {/* The reels, in the drum's window, its frame glowing while it works. */}
+      <div
+        className={`absolute top-(--reels-y) left-(--reels-x) flex h-(--reels-h) w-(--reels-w) gap-(--reels-gap) rounded-sm ${
+          lit ? 'animate-pulse ring-2 ring-forge-heat' : ''
+        }`}
       >
         {reels.map((at, i) => (
           <Reel
@@ -386,17 +152,27 @@ function Machine({
           />
         ))}
       </div>
+      {/* The lever, on the drum's left: it comes down when pulled. */}
+      <svg
+        viewBox="0 0 40 120"
+        className={`absolute top-(--lever-y) left-(--lever-x) aspect-1/3 h-(--lever-h) origin-bottom transition-transform duration-300 ${
+          pulled ? '-rotate-75' : 'rotate-0'
+        }`}
+        aria-hidden
+      >
+        <rect x="16" y="22" width="8" height="92" rx="4" className="fill-forge-steel" />
+        <rect x="8" y="106" width="24" height="14" rx="4" className="fill-forge-iron" />
+        <circle cx="20" cy="18" r="15" className="fill-tac-red" />
+        <circle cx="15" cy="12" r="5" className="fill-tac-flare opacity-60" />
+      </svg>
       {/* Sparks from the muzzle. */}
-      <div className="absolute top-1/4 right-1/6" aria-hidden>
-        {[0, 500, 1000, 1500].map((d) => (
-          <svg
+      <div className="absolute top-(--fire-cy) left-(--fire-cx)" aria-hidden>
+        {[0, 400, 800, 1200].map((d) => (
+          <span
             key={d}
-            viewBox="0 0 20 20"
-            className="absolute size-3 animate-steam opacity-0"
+            className="absolute size-1.5 animate-steam rounded-full bg-tac-flare opacity-0"
             style={{ '--delay': `${lit ? d / 3 : d}ms` }}
-          >
-            <circle cx="10" cy="10" r="8" fill={TAC.flare} />
-          </svg>
+          />
         ))}
       </div>
     </div>
