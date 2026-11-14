@@ -53,7 +53,7 @@ import {
   TICKET_CELLS,
   WATCH_SECONDS,
 } from '@/data/daily-games';
-import { PuppetScene, puppetGame } from './puppet-scene';
+import { PuppetScene, puppetGame, SCENE } from './puppet-scene';
 import { fetchMirror, imageKeys, imageUrl } from '@/data/images';
 import { fetchPlayer, playerKeys } from '@/data/player';
 import { useSession } from '@/lib/session';
@@ -1125,12 +1125,12 @@ function Shadows({ state: s }: { state: DailyGames['ombres'] }) {
           >
             <defs>
               <radialGradient id="lamp" cx="50%" cy="45%" r="65%">
-                <stop offset="0%" stopColor="#fbe7bf" />
-                <stop offset="70%" stopColor="#e9b46a" />
-                <stop offset="100%" stopColor="#8a4f1d" />
+                <stop offset="0%" stopColor={SCENE.paperGlow} />
+                <stop offset="70%" stopColor={SCENE.paper} />
+                <stop offset="100%" stopColor={SCENE.paperEdge} />
               </radialGradient>
             </defs>
-            <rect width="240" height="280" rx="10" fill="#4a2a12" />
+            <rect width="240" height="280" rx="10" fill={SCENE.frame} />
             <rect x="12" y="12" width="216" height="256" rx="4" fill="url(#lamp)" />
             <image
               href={url}
