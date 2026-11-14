@@ -31,7 +31,8 @@ import { ICONS } from '@/lib/icons';
 import { useSession } from '@/lib/session';
 import flameArt from './art/flame.webp';
 import leverBase from './art/lever-base.webp';
-import leverShaft from './art/lever-shaft.webp';
+import leverBall from './art/lever-ball.webp';
+import leverRod from './art/lever-rod.webp';
 import symbol7 from './art/symbol-7.webp';
 import symbolBell from './art/symbol-bell.webp';
 import symbolCherries from './art/symbol-cherries.webp';
@@ -55,12 +56,15 @@ const ART_AT = {
   '--reels-w': pct(622, ART_W),
   '--reels-h': pct(206, ART_H),
   '--reels-gap': pct(17, 622),
-  // The lever, standing on the drum's left: 240 × 725 in all, its shaft (240 × 631) ending on the
-  // pivot, 61 px down its base (240 × 155), whose hub covers the shaft's end.
+  // The lever, standing on the drum's left: 240 × 725 in all; its ball (240 × 136) on its rod (240 ×
+  // 502, from 129 px down), which ends on the pivot, 61 px down its base (240 × 155), whose hub
+  // covers the rod's end.
   '--lever-x': pct(6, ART_W),
-  '--lever-y': pct(250, ART_H),
-  '--lever-h': pct(470, ART_H),
-  '--shaft-h': pct(631, 725),
+  '--lever-y': pct(150, ART_H),
+  '--lever-h': pct(570, ART_H),
+  '--ball-h': pct(136, 725),
+  '--rod-y': pct(129, 725),
+  '--rod-h': pct(502, 725),
   '--base-y': pct(631 - 61, 725),
   // The cannon's muzzle, where its flames start.
   '--flame-x': pct(1190, ART_W),
@@ -140,7 +144,7 @@ function Reel({
 }
 
 // TAC-002: its war-machine portrait (art/tac-002.webp), the three reels set in the window of its
-// drum, its lever on the left. Pulled, the lever swings down and springs back; while the reels spin,
+// drum, its lever on the left. Pulled, the lever comes towards you and springs back; while the reels spin,
 // the machine shakes, the window's frame blazes and its cannon roars flames; the jackpot makes it
 // all flash.
 function Machine({
@@ -194,17 +198,27 @@ function Machine({
             />
           ))}
         </div>
-        {/* The lever on the drum's left: its shaft swings on the base's pivot, under the hub. */}
-        <div className="absolute top-(--lever-y) left-(--lever-x) aspect-240/725 h-(--lever-h)">
+        {/* The lever on the drum's left. Pulled, it comes towards you: its rod shortens into its base
+            while the ball comes down and grows, then it springs back. */}
+        <div
+          key={pulls}
+          className="absolute top-(--lever-y) left-(--lever-x) aspect-240/725 h-(--lever-h)"
+        >
           <img
-            key={pulls}
-            src={leverShaft}
+            src={leverRod}
             alt=""
-            className={`absolute inset-x-0 top-0 h-(--shaft-h) w-full origin-bottom ${
-              pulls ? 'animate-lever-pull' : ''
+            className={`absolute inset-x-0 top-(--rod-y) h-(--rod-h) w-full origin-bottom ${
+              pulls ? 'animate-lever-rod' : ''
             }`}
           />
           <img src={leverBase} alt="" className="absolute inset-x-0 top-(--base-y) w-full" />
+          <img
+            src={leverBall}
+            alt=""
+            className={`absolute inset-x-0 top-0 h-(--ball-h) w-full ${
+              pulls ? 'animate-lever-ball' : ''
+            }`}
+          />
         </div>
       </div>
     </div>

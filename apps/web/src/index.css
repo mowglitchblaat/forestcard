@@ -35,28 +35,46 @@
   --animate-tac-shake: tac-shake 0.18s ease-in-out infinite;
   --animate-jackpot: jackpot-flash 0.5s ease-in-out 6;
   --ease-wheel: cubic-bezier(0.12, 0.75, 0.16, 1);
-  /* TAC-002's lever: pulled down, it springs back with a bounce; its cannon's flames roar in
-     bursts while it works. */
-  --animate-lever-pull: lever-pull 1s ease-out both;
+  /* TAC-002's lever, pulled towards you: its rod shortens (seen end on) while its ball comes down
+     with it (the rod is 502/136 of the ball's height: a rod at s, the ball (1 − s) × 369 % lower)
+     and grows, then it springs back; its cannon's flames roar in bursts while it works. */
+  --animate-lever-rod: lever-rod 1s ease-out both;
+  --animate-lever-ball: lever-ball 1s ease-out both;
   --animate-flame-roar: flame-roar 0.9s ease-in-out infinite;
-  @keyframes lever-pull {
-    0% {
-      transform: rotate(0);
+  @keyframes lever-rod {
+    0%,
+    100% {
+      transform: scaleY(1);
     }
     28% {
-      transform: rotate(45deg);
+      transform: scaleY(0.4);
     }
     40% {
-      transform: rotate(37deg);
+      transform: scaleY(0.48);
     }
     50% {
-      transform: rotate(43deg);
+      transform: scaleY(0.42);
     }
     80% {
-      transform: rotate(-6deg);
+      transform: scaleY(1.04);
     }
+  }
+  @keyframes lever-ball {
+    0%,
     100% {
-      transform: rotate(0);
+      transform: translateY(0) scale(1);
+    }
+    28% {
+      transform: translateY(221%) scale(1.15);
+    }
+    40% {
+      transform: translateY(192%) scale(1.12);
+    }
+    50% {
+      transform: translateY(214%) scale(1.14);
+    }
+    80% {
+      transform: translateY(-15%) scale(0.98);
     }
   }
   @keyframes flame-roar {
