@@ -35,6 +35,45 @@
   --animate-tac-shake: tac-shake 0.18s ease-in-out infinite;
   --animate-jackpot: jackpot-flash 0.5s ease-in-out 6;
   --ease-wheel: cubic-bezier(0.12, 0.75, 0.16, 1);
+  /* TAC-002's lever: pulled down, it springs back with a bounce; its cannon's flames roar in
+     bursts while it works. */
+  --animate-lever-pull: lever-pull 1s ease-out both;
+  --animate-flame-roar: flame-roar 0.9s ease-in-out infinite;
+  @keyframes lever-pull {
+    0% {
+      transform: rotate(0);
+    }
+    28% {
+      transform: rotate(45deg);
+    }
+    40% {
+      transform: rotate(37deg);
+    }
+    50% {
+      transform: rotate(43deg);
+    }
+    80% {
+      transform: rotate(-6deg);
+    }
+    100% {
+      transform: rotate(0);
+    }
+  }
+  @keyframes flame-roar {
+    0%,
+    100% {
+      opacity: 0.75;
+      transform: scaleX(0.7) scaleY(0.9);
+    }
+    35% {
+      opacity: 1;
+      transform: scaleX(1.05) scaleY(1.1);
+    }
+    65% {
+      opacity: 0.85;
+      transform: scaleX(0.88) scaleY(0.95);
+    }
+  }
   /* The forge (views/workshop/forge.tsx): the hammer strikes the anvil three times, sparks fly off
      each strike, each --delay after the previous one, to --dx; then the forged card rises. */
   --animate-hammer: hammer-strike 0.7s ease-in 3;

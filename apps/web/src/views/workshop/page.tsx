@@ -29,12 +29,21 @@ import {
 } from '@/data/workshop';
 import { ICONS } from '@/lib/icons';
 import { useSession } from '@/lib/session';
+import flameArt from './art/flame.webp';
+import leverBase from './art/lever-base.webp';
+import leverShaft from './art/lever-shaft.webp';
+import symbol7 from './art/symbol-7.webp';
+import symbolBell from './art/symbol-bell.webp';
+import symbolCherries from './art/symbol-cherries.webp';
 import tacArt from './art/tac-002.webp';
 import { Forge } from './forge';
 import { TONES } from '@/lib/tones';
 
-// The reels' symbols, by case of the wheel (a loss, a little gain, double, the jackpot).
+// The reels' symbols, by case of the wheel (a loss, a little gain, double, the jackpot): their
+// picture (in TAC-002's style; the skull's is still to come: its emoji meanwhile) and their sign in
+// the texts.
 const SYMBOLS = ['\u{1F480}', '\u{1F352}', '\u{1F514}', '7'];
+const SYMBOL_ART: (string | null)[] = [null, symbolCherries, symbolBell, symbol7];
 // Where things sit on TAC-002's portrait (1402 × 1122): the window of its drum (three slots, 17 px
 // apart), the lever on its left, its cannon's muzzle; shares of the picture.
 const pct = (n: number, of: number) => `${((n / of) * 100).toFixed(2)}%`;
@@ -46,9 +55,17 @@ const ART_AT = {
   '--reels-w': pct(622, ART_W),
   '--reels-h': pct(206, ART_H),
   '--reels-gap': pct(17, 622),
-  '--lever-x': pct(41, ART_W),
-  '--lever-y': pct(207, ART_H),
-  '--lever-h': pct(395, ART_H),
+  // The lever, standing on the drum's left: 240 × 725 in all, its shaft (240 × 631) ending on the
+  // pivot, 61 px down its base (240 × 155), whose hub covers the shaft's end.
+  '--lever-x': pct(6, ART_W),
+  '--lever-y': pct(250, ART_H),
+  '--lever-h': pct(470, ART_H),
+  '--shaft-h': pct(631, 725),
+  '--base-y': pct(631 - 61, 725),
+  // The cannon's muzzle, where its flames start.
+  '--flame-x': pct(1190, ART_W),
+  '--flame-y': pct(95, ART_H),
+  '--flame-w': pct(620, ART_W),
   '--fire-x': pct(1052, ART_W),
   '--fire-y': pct(56, ART_H),
   '--fire-w': pct(338, ART_W),
@@ -82,23 +99,39 @@ export function WorkshopPage() {
   );
 }
 
-// One reel: a strip of the cases' symbols, standing on cell `at` (moving there in `ms`, or at once).
-function Reel({ cases, at, ms }: { cases: number; at: number; ms: number }) {
+// One reel: a strip of the cases' symbols, standing on cell `at` (moving there in `ms`, or at once),
+// blurred by its speed while it spins.
+function Reel({
+  cases,
+  at,
+  ms,
+  spinning,
+}: {
+  cases: number;
+  at: number;
+  ms: number;
+  spinning: boolean;
+}) {
   return (
     <div className="relative h-full flex-1 overflow-hidden rounded-md bg-tac-glass text-tac-flare">
       <div
-        className="flex h-full translate-y-(--y) flex-col transition-transform duration-(--ms) ease-wheel"
+        className={`flex h-full translate-y-(--y) flex-col transition-transform duration-(--ms) ease-wheel ${
+          spinning ? 'blur-xs' : ''
+        }`}
         style={{ '--y': `${-at * 100}%`, '--ms': `${ms}ms` }}
       >
-        {Array.from({ length: STRIP }, (_, i) => (
-          <div key={i} className="flex h-full shrink-0 items-center justify-center">
-            <span
-              className={`text-3xl leading-none font-black ${i % cases === cases - 1 ? 'text-tac-red' : ''}`}
-            >
-              {SYMBOLS[i % cases] ?? '?'}
-            </span>
-          </div>
-        ))}
+        {Array.from({ length: STRIP }, (_, i) => {
+          const art = SYMBOL_ART[i % cases];
+          return (
+            <div key={i} className="flex h-full shrink-0 items-center justify-center p-1">
+              {art ? (
+                <img src={art} alt="" className="size-full object-contain drop-shadow-lg" />
+              ) : (
+                <span className="text-4xl leading-none">{SYMBOLS[i % cases] ?? '?'}</span>
+              )}
+            </div>
+          );
+        })}
       </div>
       {/* The glass over the reel. */}
       <div className="pointer-events-none absolute inset-0 bg-linear-to-b from-tac-night via-transparent to-tac-night opacity-60" />
@@ -107,20 +140,23 @@ function Reel({ cases, at, ms }: { cases: number; at: number; ms: number }) {
 }
 
 // TAC-002: its war-machine portrait (art/tac-002.webp), the three reels set in the window of its
-// drum, its lever on the left. While it works: it shakes, the window's frame and the cannon's fire
-// blaze, sparks fly from the muzzle; the lever comes down when pulled; the jackpot makes it flash.
+// drum, its lever on the left. Pulled, the lever swings down and springs back; while the reels spin,
+// the machine shakes, the window's frame blazes and its cannon roars flames; the jackpot makes it
+// all flash.
 function Machine({
   w,
   reels,
   moving,
-  pulled,
+  stopped,
+  pulls,
   working,
   jackpot,
 }: {
   w: Workshop;
   reels: number[];
   moving: boolean;
-  pulled: boolean;
+  stopped: boolean[];
+  pulls: number;
   working: boolean;
   jackpot: boolean;
 }) {
@@ -132,50 +168,44 @@ function Machine({
       }`}
       style={ART_AT}
     >
-      <img src={tacArt} alt="TAC-002" className="block w-full rounded-2xl" />
-      {/* The cannon's fire, blazing while it works. */}
-      <div
-        className={`absolute top-(--fire-y) left-(--fire-x) aspect-square w-(--fire-w) rounded-full bg-forge-heat/60 blur-2xl transition-opacity duration-500 ${
-          lit ? 'animate-pulse opacity-100' : 'opacity-0'
-        }`}
-      />
-      {/* The reels, in the drum's window, its frame glowing while it works. */}
-      <div
-        className={`absolute top-(--reels-y) left-(--reels-x) flex h-(--reels-h) w-(--reels-w) gap-(--reels-gap) rounded-sm ${
-          lit ? 'animate-pulse ring-2 ring-forge-heat' : ''
-        }`}
-      >
-        {reels.map((at, i) => (
-          <Reel
-            key={i}
-            cases={w.roue.length || 4}
-            at={at}
-            ms={moving ? (REEL_STOPS[i]?.ms ?? 0) : 0}
+      <div className="relative overflow-hidden rounded-2xl">
+        <img src={tacArt} alt="TAC-002" className="block w-full" />
+        {/* The cannon's flames, roaring while it works. */}
+        <img
+          src={flameArt}
+          alt=""
+          className={`absolute top-(--flame-y) left-(--flame-x) w-(--flame-w) origin-left mix-blend-screen ${
+            lit ? 'animate-flame-roar' : 'opacity-0'
+          }`}
+        />
+        {/* The reels, in the drum's window, its frame glowing while it works. */}
+        <div
+          className={`absolute top-(--reels-y) left-(--reels-x) flex h-(--reels-h) w-(--reels-w) gap-(--reels-gap) rounded-sm ${
+            lit ? 'animate-pulse ring-2 ring-forge-heat' : ''
+          }`}
+        >
+          {reels.map((at, i) => (
+            <Reel
+              key={i}
+              cases={w.roue.length || 4}
+              at={at}
+              ms={moving ? (REEL_STOPS[i]?.ms ?? 0) : 0}
+              spinning={moving && !stopped[i]}
+            />
+          ))}
+        </div>
+        {/* The lever on the drum's left: its shaft swings on the base's pivot, under the hub. */}
+        <div className="absolute top-(--lever-y) left-(--lever-x) aspect-240/725 h-(--lever-h)">
+          <img
+            key={pulls}
+            src={leverShaft}
+            alt=""
+            className={`absolute inset-x-0 top-0 h-(--shaft-h) w-full origin-bottom ${
+              pulls ? 'animate-lever-pull' : ''
+            }`}
           />
-        ))}
-      </div>
-      {/* The lever, on the drum's left: it comes down when pulled. */}
-      <svg
-        viewBox="0 0 40 120"
-        className={`absolute top-(--lever-y) left-(--lever-x) aspect-1/3 h-(--lever-h) origin-bottom transition-transform duration-300 ${
-          pulled ? '-rotate-75' : 'rotate-0'
-        }`}
-        aria-hidden
-      >
-        <rect x="16" y="22" width="8" height="92" rx="4" className="fill-forge-steel" />
-        <rect x="8" y="106" width="24" height="14" rx="4" className="fill-forge-iron" />
-        <circle cx="20" cy="18" r="15" className="fill-tac-red" />
-        <circle cx="15" cy="12" r="5" className="fill-tac-flare opacity-60" />
-      </svg>
-      {/* Sparks from the muzzle. */}
-      <div className="absolute top-(--fire-cy) left-(--fire-cx)" aria-hidden>
-        {[0, 400, 800, 1200].map((d) => (
-          <span
-            key={d}
-            className="absolute size-1.5 animate-steam rounded-full bg-tac-flare opacity-0"
-            style={{ '--delay': `${lit ? d / 3 : d}ms` }}
-          />
-        ))}
+          <img src={leverBase} alt="" className="absolute inset-x-0 top-(--base-y) w-full" />
+        </div>
       </div>
     </div>
   );
@@ -213,7 +243,8 @@ function Tac({ w }: { w: Workshop }) {
   const [stakeText, setStakeText] = useState(String(w.mise_min));
   const [reels, setReels] = useState([0, 0, 0]);
   const [moving, setMoving] = useState(false);
-  const [pulled, setPulled] = useState(false);
+  const [pulls, setPulls] = useState(0);
+  const [stopped, setStopped] = useState([true, true, true]);
   const [phase, setPhase] = useState<'idle' | 'spinning' | 'done'>('idle');
   const [result, setResult] = useState<Spin | null>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -237,8 +268,7 @@ function Tac({ w }: { w: Workshop }) {
     if (!tier || !stakeOk) return;
     setResult(null);
     setPhase('spinning');
-    setPulled(true);
-    later(() => setPulled(false), 450);
+    setPulls((n) => n + 1);
     spin.mutate(
       { tier: tier.cle, stake },
       {
@@ -248,6 +278,13 @@ function Tac({ w }: { w: Workshop }) {
           setReels((now) => now.map((at) => at % cases));
           later(() => {
             setMoving(true);
+            setStopped([false, false, false]);
+            REEL_STOPS.forEach((stop, i) =>
+              later(
+                () => setStopped((now) => now.map((s, k) => (k === i ? true : s))),
+                stop.ms - 350,
+              ),
+            );
             setReels((now) =>
               now.map((at, i) => reelTarget(at, r.cases[i] ?? 0, cases, REEL_STOPS[i]?.turns ?? 6)),
             );
@@ -299,7 +336,8 @@ function Tac({ w }: { w: Workshop }) {
           w={w}
           reels={reels}
           moving={moving}
-          pulled={pulled}
+          stopped={stopped}
+          pulls={pulls}
           working={busy}
           jackpot={jackpot}
         />
