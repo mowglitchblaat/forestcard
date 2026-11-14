@@ -69,7 +69,8 @@ export async function spinTac({
 
 const REFUSALS: Record<string, string> = {
   FRAGMENTS_INSUFFISANTS:
-    'Pas assez de fragments pour ce palier : recycle des cartes pour en gagner.',
+    'Pas assez de fragments pour cette mise : recycle des cartes pour en gagner.',
+  MISE_TROP_PETITE: 'Mise trop petite pour TAC-001.',
   PALIER_INCONNU: 'Ce palier n’existe pas.',
   ROUE_VIDE: 'La roue de TAC-001 est en panne pour le moment.',
   NON_CONNECTE: 'Connecte-toi pour utiliser l’atelier.',
