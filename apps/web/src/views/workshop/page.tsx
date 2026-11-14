@@ -85,10 +85,7 @@ export function WorkshopPage() {
 // One reel: a strip of the cases' symbols, standing on cell `at` (moving there in `ms`, or at once).
 function Reel({ cases, at, ms }: { cases: number; at: number; ms: number }) {
   return (
-    <div
-      className="relative h-full flex-1 overflow-hidden rounded-md bg-(--reel) text-(--reel-ink)"
-      style={{ '--reel': TAC.glass, '--reel-ink': TAC.flare }}
-    >
+    <div className="relative h-full flex-1 overflow-hidden rounded-md bg-tac-glass text-tac-flare">
       <div
         className="flex h-full translate-y-(--y) flex-col transition-transform duration-(--ms) ease-wheel"
         style={{ '--y': `${-at * 100}%`, '--ms': `${ms}ms` }}
@@ -96,8 +93,7 @@ function Reel({ cases, at, ms }: { cases: number; at: number; ms: number }) {
         {Array.from({ length: STRIP }, (_, i) => (
           <div key={i} className="flex h-full shrink-0 items-center justify-center">
             <span
-              className={`text-3xl leading-none font-black ${i % cases === cases - 1 ? 'text-(--seven)' : ''}`}
-              style={{ '--seven': TAC.red }}
+              className={`text-3xl leading-none font-black ${i % cases === cases - 1 ? 'text-tac-red' : ''}`}
             >
               {SYMBOLS[i % cases] ?? '?'}
             </span>
@@ -105,10 +101,7 @@ function Reel({ cases, at, ms }: { cases: number; at: number; ms: number }) {
         ))}
       </div>
       {/* The glass over the reel. */}
-      <div
-        className="pointer-events-none absolute inset-0 bg-linear-to-b from-(--shade) via-transparent to-(--shade) opacity-60"
-        style={{ '--shade': TAC.night }}
-      />
+      <div className="pointer-events-none absolute inset-0 bg-linear-to-b from-tac-night via-transparent to-tac-night opacity-60" />
     </div>
   );
 }

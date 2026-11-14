@@ -35,6 +35,11 @@
   --animate-tac-shake: tac-shake 0.18s ease-in-out infinite;
   --animate-jackpot: jackpot-flash 0.5s ease-in-out 6;
   --ease-wheel: cubic-bezier(0.12, 0.75, 0.16, 1);
+  /* TAC-001's reels: dark glass, flame-coloured symbols, the red 7, the night shading the glass. */
+  --color-tac-glass: #120a07;
+  --color-tac-flare: #ffc04a;
+  --color-tac-red: #d4141e;
+  --color-tac-night: #1a0806;
   @keyframes gear-turn {
     to {
       transform: rotate(360deg);
