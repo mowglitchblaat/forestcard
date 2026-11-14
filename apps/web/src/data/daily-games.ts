@@ -1,5 +1,6 @@
 // The daily games' state for the player, through the database functions the legacy page calls
-// (champignons_etat, duel_atq_etat, plusmoins_etat, ticket_etat; db/migrations/24-jeux-du-jour.sql).
+// (champignons_etat, duel_atq_etat, plusmoins_etat, ticket_etat; db/migrations/24-jeux-du-jour.sql),
+// and the two puppet-show games (differences_etat, ombres_etat; 89-jeux-differences-ombres.sql).
 // The day ends at midnight in Paris: the database dates a game with (now() at time zone
 // 'Europe/Paris')::date.
 
@@ -61,11 +62,45 @@ const Ticket = z.object({
   booster: WonBooster,
 });
 
+// Spot the differences: two puppet-theatre scenes drawn from `graine`, watched 60 s from `debut`
+// (`maintenant`: the database's clock, for a device's own being off), then one answer: the number of
+// differences. `k` holds that number lightly scrambled (the scenes need it to be drawn): differenceCount.
+// `nb`, the plain number, comes once answered. Exact, a booster.
+const Differences = z.object({
+  joue: z.boolean(),
+  graine: z.number().optional(),
+  k: z.number().optional(),
+  debut: z.string().optional(),
+  maintenant: z.string().optional(),
+  fini: z.boolean().optional(),
+  reponse: z.number().nullish(),
+  nb: z.number().nullish(),
+  gagne: z.boolean().nullish(),
+  booster: WonBooster,
+});
+export const differenceCount = (k: number) => Math.floor(k / 37);
+export const WATCH_SECONDS = 60;
+
+// Shadow theatre: a fighter's silhouette (its image, `image`), four names to choose from; the right
+// one wins `gain` gold (ombres_gain). `bonne`, the right card, comes once answered.
+const Shadows = z.object({
+  joue: z.boolean(),
+  image: z.string().optional(),
+  fini: z.boolean().optional(),
+  choix: z.array(z.object({ id: z.number(), nom: z.string() })).nullish(),
+  reponse: z.number().nullish(),
+  bonne: z.number().nullish(),
+  gagne: z.boolean().nullish(),
+  gain: z.number().optional(),
+});
+
 export type DailyGames = {
   champignons: z.infer<typeof Mushrooms>;
   duel: z.infer<typeof Duel>;
   plusmoins: z.infer<typeof HigherLower>;
   ticket: z.infer<typeof Ticket>;
+  differences: z.infer<typeof Differences>;
+  ombres: z.infer<typeof Shadows>;
 };
 
 async function state<T>(fn: string, schema: z.ZodType<T>): Promise<T> {
@@ -75,13 +110,15 @@ async function state<T>(fn: string, schema: z.ZodType<T>): Promise<T> {
 }
 
 export async function fetchDailyGames(): Promise<DailyGames> {
-  const [champignons, duel, plusmoins, ticket] = await Promise.all([
+  const [champignons, duel, plusmoins, ticket, differences, ombres] = await Promise.all([
     state('champignons_etat', Mushrooms),
     state('duel_atq_etat', Duel),
     state('plusmoins_etat', HigherLower),
     state('ticket_etat', Ticket),
+    state('differences_etat', Differences),
+    state('ombres_etat', Shadows),
   ]);
-  return { champignons, duel, plusmoins, ticket };
+  return { champignons, duel, plusmoins, ticket, differences, ombres };
 }
 
 // A game's move. The database refuses with a code (raise exception 'DEJA_JOUE'): the error carries
@@ -115,6 +152,18 @@ export async function takeTicket(): Promise<void> {
 export async function cashTicket(): Promise<void> {
   await play('ticket_encaisser');
 }
+export async function startDifferences(): Promise<void> {
+  await play('differences_commencer');
+}
+export async function answerDifferences(count: number): Promise<void> {
+  await play('differences_repondre', { p_nb: count });
+}
+export async function startShadows(): Promise<void> {
+  await play('ombres_commencer');
+}
+export async function answerShadows(card: number): Promise<void> {
+  await play('ombres_repondre', { p_carte: card });
+}
 
 // The refusals' wording, as the legacy page gives it; another error shows as is.
 const REFUSALS: Record<string, string> = {
@@ -125,6 +174,7 @@ const REFUSALS: Record<string, string> = {
   PAS_ENCORE_JOUE: "Tu n'as pas encore commencé ce jeu.",
   RIEN_A_ENCAISSER: 'Rien à encaisser pour le moment.',
   AUCUNE_CARTE: 'Aucune carte disponible pour ce jeu.',
+  CHOIX_INCONNU: 'Ce nom ne fait pas partie des choix proposés.',
   NON_CONNECTE: 'Connecte-toi pour jouer.',
 };
 export const gameError = (e: unknown): string => {
@@ -161,10 +211,17 @@ export function higherLowerOdds(
 //     trace: waiting for it would never end the game);
 //   - ATQ duel: played (one go);
 //   - higher or lower: the run ended (a mistake, or cashed in);
-//   - scratch ticket: fully scratched, its gain cashed.
+//   - scratch ticket: fully scratched, its gain cashed;
+//   - spot the differences, shadow theatre: answered.
 export const gamesLeft = (g: DailyGames): number =>
-  [g.champignons.joue, g.duel.joue, !!g.plusmoins.fini, !!g.ticket.encaisse].filter((over) => !over)
-    .length;
+  [
+    g.champignons.joue,
+    g.duel.joue,
+    !!g.plusmoins.fini,
+    !!g.ticket.encaisse,
+    !!g.differences.fini,
+    !!g.ombres.fini,
+  ].filter((over) => !over).length;
 export const gamesOver = (g: DailyGames): boolean => gamesLeft(g) === 0;
 
 // The streak's gains, step by step (plusmoins_gain).

@@ -1,4 +1,4 @@
-// "Jeux du jour", reimagined: the four games as cards, each showing where the player is today (to
+// "Jeux du jour", reimagined: the six games as cards, each showing where the player is today (to
 // play, in progress, over and what it gave), the time left until they open again (midnight in
 // Paris), and the rules in a dialog opened on the first visit and reopened by "?".
 //
@@ -10,7 +10,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { TONES } from '@/lib/tones';
 import { ICONS } from '@/lib/icons';
-import { type ReactNode, type RefObject, useEffect, useRef, useState } from 'react';
+import { type ReactNode, type RefObject, useEffect, useMemo, useRef, useState } from 'react';
 import { HoldButton } from '@/components/hold-button';
 import { Gold } from '@/components/money';
 import { PageSkeleton } from '@/components/skeletons';
@@ -28,11 +28,14 @@ import {
 import { backKeys, fetchBacks } from '@/data/backs';
 import { cardKeys, fetchGameCardsFull } from '@/data/cards';
 import {
+  answerDifferences,
+  answerShadows,
   cashHigherLower,
   cashTicket,
   countdown,
   type DailyGames,
   dailyGamesKeys,
+  differenceCount,
   doubleMushroom,
   fetchDailyGames,
   type GameCard,
@@ -43,10 +46,14 @@ import {
   pickMushroom,
   playDuel,
   STREAK_GAINS,
+  startDifferences,
   startHigherLower,
+  startShadows,
   takeTicket,
   TICKET_CELLS,
+  WATCH_SECONDS,
 } from '@/data/daily-games';
+import { PuppetScene, puppetGame } from './puppet-scene';
 import { fetchMirror, imageKeys, imageUrl } from '@/data/images';
 import { fetchPlayer, playerKeys } from '@/data/player';
 import { useSession } from '@/lib/session';
@@ -60,6 +67,8 @@ const E = {
   ticket: '\u{1F39F}\u{FE0F}',
   booster: '\u{1F3B4}',
   coin: '\u{1FA99}',
+  masks: '\u{1F3AD}',
+  candle: '\u{1F56F}\u{FE0F}',
   tree: '\u{1F332}',
 };
 
@@ -126,6 +135,8 @@ export function GamesPage() {
         <Duel state={g.duel} />
         <HigherLower state={g.plusmoins} />
         <Ticket state={g.ticket} />
+        <Differences state={g.differences} fetchedAt={games.dataUpdatedAt} />
+        <Shadows state={g.ombres} />
       </div>
       <Rules open={rulesOpen} onOpenChange={closeRules} />
     </div>
@@ -919,7 +930,253 @@ function Scratch({
   return <canvas ref={canvas} className="absolute inset-0 size-full cursor-pointer touch-none" />;
 }
 
-// The rules of the four games: opened on the first visit, reopened by "?".
+// The seconds left to watch the scenes: counted on the database's clock (`maintenant` when the
+// state was read, `fetchedAt` on this device), so a device's clock being off changes nothing.
+function useWatchLeft(s: DailyGames['differences'], fetchedAt: number): number | null {
+  const [now, setNow] = useState(() => Date.now());
+  const ends =
+    s.debut && s.maintenant
+      ? fetchedAt + WATCH_SECONDS * 1000 - (Date.parse(s.maintenant) - Date.parse(s.debut))
+      : null;
+  const watching = ends !== null && !s.fini && now < ends;
+  useEffect(() => {
+    if (!watching) return;
+    const tick = setInterval(() => setNow(Date.now()), 250);
+    return () => clearInterval(tick);
+  }, [watching]);
+  return ends === null ? null : Math.max(0, Math.ceil((ends - now) / 1000));
+}
+
+function Differences({
+  state: s,
+  fetchedAt,
+}: {
+  state: DailyGames['differences'];
+  fetchedAt: number;
+}) {
+  const start = useMove(startDifferences);
+  const answer = useMove(answerDifferences);
+  const [guess, setGuess] = useState<number | null>(null);
+  const game = useMemo(
+    () =>
+      s.graine !== undefined && s.k !== undefined
+        ? puppetGame(s.graine, differenceCount(s.k))
+        : null,
+    [s.graine, s.k],
+  );
+  const left = useWatchLeft(s, fetchedAt);
+  const over = !!s.fini;
+  const scenes = (marks: boolean) =>
+    game && (
+      <div className="grid gap-2 sm:grid-cols-2">
+        <PuppetScene scene={game.a} label="La première scène" />
+        <PuppetScene
+          scene={game.b}
+          marks={marks ? game.marks : undefined}
+          label="La seconde scène"
+        />
+      </div>
+    );
+  return (
+    <Game
+      icon={E.masks}
+      title="Les différences de Marionnettia"
+      next="un nouveau spectacle"
+      over={over}
+      rule={`Le rideau se lève ${WATCH_SECONDS} secondes sur deux scènes presque pareilles : combien de différences ? Le nombre exact rapporte un booster.`}
+    >
+      {!s.joue ? (
+        <>
+          <ToPlay />
+          <HoldButton disabled={start.isPending} onConfirm={() => start.mutate(undefined)}>
+            {E.masks} Maintiens pour lever le rideau ({WATCH_SECONDS} s)
+          </HoldButton>
+          <Refusal error={start.error} />
+        </>
+      ) : over ? (
+        <>
+          {scenes(true)}
+          <Result won={!!s.gagne}>
+            {s.gagne ? (
+              <>
+                Bravo, il y avait bien {s.nb} différences ! Tu gagnes{' '}
+                <b>{s.booster?.nom ?? 'un booster'}</b> {E.booster} : ouvre-le en live avec{' '}
+                <code>!booster</code>.
+              </>
+            ) : (
+              <>
+                Raté : il y avait {s.nb} différences (tu en as vu {s.reponse}). Elles sont entourées
+                sur la seconde scène.
+              </>
+            )}
+          </Result>
+        </>
+      ) : left !== null && left > 0 ? (
+        <>
+          {scenes(false)}
+          <p className="text-center text-sm tabular-nums text-muted-foreground">
+            Le rideau tombe dans <b>{left} s</b>
+          </p>
+        </>
+      ) : (
+        <>
+          <p className="text-sm">
+            {E.masks} Le rideau est tombé. Combien de différences as-tu vues ?
+          </p>
+          <div className="grid grid-cols-6 gap-2">
+            {Array.from({ length: 12 }, (_, i) => i + 1).map((n) => (
+              <Button
+                key={n}
+                variant={guess === n ? 'default' : 'outline'}
+                onClick={() => setGuess(n)}
+              >
+                {n}
+              </Button>
+            ))}
+          </div>
+          <HoldButton
+            disabled={guess === null || answer.isPending}
+            onConfirm={() => guess !== null && answer.mutate(guess)}
+          >
+            {guess === null
+              ? 'Choisis un nombre'
+              : `Maintiens pour répondre ${guess} différence${guess > 1 ? 's' : ''}`}
+          </HoldButton>
+          <Refusal error={answer.error} />
+        </>
+      )}
+    </Game>
+  );
+}
+
+// Whether an image is a cut-out (its corners transparent): its shadow is then a plain silhouette;
+// a full illustration is shown as a dark sepia shadow instead. Unknown (not read yet, or the image
+// can't be read): null.
+function useCutout(url: string | null): boolean | null {
+  const [cutout, setCutout] = useState<{ url: string; is: boolean } | null>(null);
+  useEffect(() => {
+    if (!url) return;
+    let cancelled = false;
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      let is = false;
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = 16;
+        canvas.height = 16;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, 16, 16);
+        const corner = (x: number, y: number) => ctx?.getImageData(x, y, 1, 1).data[3] ?? 255;
+        is = [corner(0, 0), corner(15, 0), corner(0, 15), corner(15, 15)].every((a) => a < 40);
+      } catch {
+        is = false;
+      }
+      if (!cancelled) setCutout({ url, is });
+    };
+    img.onerror = () => !cancelled && setCutout({ url, is: false });
+    img.src = url;
+    return () => {
+      cancelled = true;
+    };
+  }, [url]);
+  return cutout && cutout.url === url ? cutout.is : null;
+}
+
+function Shadows({ state: s }: { state: DailyGames['ombres'] }) {
+  const start = useMove(startShadows);
+  const answer = useMove(answerShadows);
+  const card: GameCard[] = s.image ? [{ nom: '', image: s.image }] : [];
+  const src = useCardImages(card);
+  const url = src && card[0] ? src(card[0]) : null;
+  const cutout = useCutout(url);
+  const over = !!s.fini;
+  const shadow = cutout ? 'brightness-0 opacity-90' : 'grayscale sepia contrast-200 brightness-50';
+  return (
+    <Game
+      icon={E.candle}
+      title="Le théâtre d'ombres"
+      next="une nouvelle ombre"
+      over={over}
+      rule={
+        <>
+          Derrière l'écran de papier, l'ombre d'un combattant du jeu : qui est-ce ? Le bon nom
+          rapporte <Gold n={s.gain} />.
+        </>
+      }
+    >
+      {!s.joue ? (
+        <>
+          <ToPlay />
+          <HoldButton disabled={start.isPending} onConfirm={() => start.mutate(undefined)}>
+            {E.candle} Maintiens pour allumer la bougie
+          </HoldButton>
+          <Refusal error={start.error} />
+        </>
+      ) : !url || cutout === null ? (
+        <Loading />
+      ) : (
+        <>
+          <svg
+            viewBox="0 0 240 280"
+            role="img"
+            aria-label="L'écran d'ombres"
+            className="mx-auto w-56"
+          >
+            <defs>
+              <radialGradient id="lamp" cx="50%" cy="45%" r="65%">
+                <stop offset="0%" stopColor="#fbe7bf" />
+                <stop offset="70%" stopColor="#e9b46a" />
+                <stop offset="100%" stopColor="#8a4f1d" />
+              </radialGradient>
+            </defs>
+            <rect width="240" height="280" rx="10" fill="#4a2a12" />
+            <rect x="12" y="12" width="216" height="256" rx="4" fill="url(#lamp)" />
+            <image
+              href={url}
+              x="22"
+              y="22"
+              width="196"
+              height="236"
+              preserveAspectRatio="xMidYMid meet"
+              className={`transition duration-700 ${over ? '' : shadow}`}
+            />
+          </svg>
+          <div className="grid grid-cols-2 gap-2">
+            {(s.choix ?? []).map((c) => {
+              const right = over && c.id === s.bonne;
+              const wrong = over && c.id === s.reponse && !s.gagne;
+              return (
+                <Button
+                  key={c.id}
+                  variant={right ? 'default' : wrong ? 'destructive' : 'outline'}
+                  disabled={over || answer.isPending}
+                  onClick={() => answer.mutate(c.id)}
+                >
+                  {c.nom}
+                </Button>
+              );
+            })}
+          </div>
+          {over && (
+            <Result won={!!s.gagne}>
+              {s.gagne ? (
+                <>
+                  Bien vu ! Tu gagnes <Gold n={s.gain} />.
+                </>
+              ) : (
+                "Ce n'était pas lui… l'ombre t'a joué un tour. Revanche demain !"
+              )}
+            </Result>
+          )}
+          <Refusal error={answer.error} />
+        </>
+      )}
+    </Game>
+  );
+}
+
+// The rules of the six games: opened on the first visit, reopened by "?".
 function Rules({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -949,6 +1206,15 @@ function Rules({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boo
             <b>{E.ticket} Ticket à gratter (bonus)</b> : gratte 6 cartes ; 3 fois la même rareté
             rapporte de <Gold n={15} /> à <Gold n={300} />, et 3 boosters {E.booster} font gagner un
             booster.
+          </p>
+          <p>
+            <b>{E.masks} Les différences de Marionnettia</b> : le rideau se lève {WATCH_SECONDS}{' '}
+            secondes sur deux scènes de théâtre de marionnettes presque pareilles, puis retombe.
+            Donne le nombre de différences : le nombre exact rapporte un booster.
+          </p>
+          <p>
+            <b>{E.candle} Le théâtre d'ombres</b> : l'ombre d'un combattant du jeu se dessine
+            derrière un écran de papier. Choisis son nom parmi 4 : le bon rapporte <Gold n={75} />.
           </p>
         </div>
       </DialogContent>

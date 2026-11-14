@@ -5,6 +5,7 @@ import { expect, test } from 'vite-plus/test';
 import {
   countdown,
   type DailyGames,
+  differenceCount,
   gameError,
   gamesLeft,
   gamesOver,
@@ -17,14 +18,24 @@ const all: DailyGames = {
   duel: { joue: true },
   plusmoins: { joue: true, fini: true },
   ticket: { joue: true, encaisse: true },
+  differences: { joue: true, fini: true },
+  ombres: { joue: true, fini: true },
 };
 
-test('over when every game is: picked, played, run ended, ticket cashed', () => {
+test('over when every game is: picked, played, run ended, ticket cashed, answered', () => {
   expect(gamesOver(all)).toBe(true);
   expect(gamesOver({ ...all, champignons: { joue: false } })).toBe(false);
   expect(gamesOver({ ...all, plusmoins: { joue: true, fini: false } })).toBe(false);
   expect(gamesOver({ ...all, ticket: { joue: true, encaisse: false } })).toBe(false);
   expect(gamesOver({ ...all, ticket: { joue: false } })).toBe(false);
+  // The differences watched but not answered yet: still to play.
+  expect(gamesOver({ ...all, differences: { joue: true, fini: false } })).toBe(false);
+  expect(gamesOver({ ...all, ombres: { joue: false } })).toBe(false);
+});
+
+test('the number of differences, unscrambled (differences_etat: nb * 37 + graine % 37)', () => {
+  for (const nb of [3, 5, 8])
+    for (const r of [0, 17, 36]) expect(differenceCount(nb * 37 + r)).toBe(nb);
 });
 
 test('the games left to play today', () => {
