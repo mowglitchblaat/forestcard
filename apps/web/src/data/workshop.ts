@@ -44,7 +44,7 @@ const Spin = z.object({
   cases: z.array(z.number()),
   mult: z.number(),
   gain: z.number(),
-  palier: z.string(),
+  palier: z.enum(['epique', 'legendaire', 'ggez']),
   mise: z.number(),
 });
 export type Spin = z.infer<typeof Spin>;

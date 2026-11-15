@@ -41,6 +41,7 @@
   --animate-lever-rod: lever-rod 1s ease-out both;
   --animate-lever-ball: lever-ball 1s ease-out both;
   --animate-muzzle-flash: muzzle-flash 0.5s ease-in-out infinite;
+  --animate-gain-pop: gain-pop 3.2s ease-out both;
   --animate-ember-fly: ember-fly 0.9s ease-out var(--delay, 0ms) infinite;
   @keyframes lever-rod {
     0%,
@@ -87,6 +88,27 @@
     50% {
       opacity: 0.95;
       scale: 1.25;
+    }
+  }
+  @keyframes gain-pop {
+    0% {
+      opacity: 0;
+      transform: translateY(0.6rem) scale(0.4);
+    }
+    12% {
+      opacity: 1;
+      transform: translateY(0) scale(1.2);
+    }
+    22% {
+      transform: scale(1);
+    }
+    80% {
+      opacity: 1;
+      transform: translateY(-0.4rem) scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(-1.2rem) scale(0.95);
     }
   }
   @keyframes ember-fly {

@@ -8,7 +8,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { HoldButton } from '@/components/hold-button';
-import { Fragments } from '@/components/money';
+import { Fragments, TierFragments } from '@/components/money';
 import { PageSkeleton } from '@/components/skeletons';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -163,6 +163,7 @@ function Machine({
   pulls,
   working,
   jackpot,
+  gain,
 }: {
   w: Workshop;
   reels: number[];
@@ -171,6 +172,8 @@ function Machine({
   pulls: number;
   working: boolean;
   jackpot: boolean;
+  // what the last pull brought: shown over the reels once they stop
+  gain: { tier: Tier['cle']; n: number; at: number } | null;
 }) {
   const lit = working || jackpot;
   return (
@@ -227,6 +230,21 @@ function Machine({
         burning={lit}
         className="pointer-events-none absolute top-(--fire-y) left-(--fire-x) z-0 h-(--fire-h) w-(--fire-w)"
       />
+      {/* What the pull brought, over the reels: it pops, floats a moment, fades. */}
+      {gain && (
+        <div
+          key={gain.at}
+          className="pointer-events-none absolute top-(--reels-y) left-(--reels-x) z-20 flex h-(--reels-h) w-(--reels-w) items-center justify-center"
+        >
+          <span
+            className={`animate-gain-pop rounded-full bg-background/85 px-5 py-2 text-3xl font-black tabular-nums shadow-lg ring-2 ${
+              jackpot ? `ring-forge-spark ${TONES.gold.text}` : 'ring-forge-heat'
+            }`}
+          >
+            <TierFragments tier={gain.tier} n={gain.n} sign />
+          </span>
+        </div>
+      )}
       {/* Embers flying from the mouth while it works. */}
       {lit && (
         <>
@@ -376,6 +394,9 @@ function Tac({ w }: { w: Workshop }) {
             pulls={pulls}
             working={busy}
             jackpot={jackpot}
+            gain={
+              phase === 'done' && result ? { tier: result.palier, n: result.gain, at: pulls } : null
+            }
           />
         </div>
         {phase === 'done' && result && (
