@@ -33,8 +33,8 @@ void main() {
   // two layers of noise streaming away from the mouth: broad swells, and fine tongues on them
   float n1 = fbm(vec2(u * 4.0 - t * 3.2, v * 7.0 + t * 0.6));
   float n2 = fbm(vec2(u * 9.0 - t * 6.5, v * 15.0 + n1 * 2.5));
-  // it widens and wavers as it goes, curling up a little at its end
-  float width = mix(0.03, 0.24, pow(u, 0.65)) * (0.75 + 0.6 * n1);
+  // as wide as the mouth where it leaves it, it widens and wavers as it goes, curling up a little
+  float width = mix(0.07, 0.26, pow(u, 0.6)) * (0.8 + 0.5 * n1);
   float centre = (n1 - 0.5) * 0.09 * u - u * u * 0.03;
   float across = abs(v - centre) / width;
   // how far it reaches: grows as it bursts out, its end torn by the noise
@@ -52,7 +52,7 @@ void main() {
   float smoke = (1.0 - smoothstep(0.2, 1.2, across * 0.6)) * smoothstep(0.45, 0.95, u) * along
     * smoothstep(0.45, 0.8, n1) * (1.0 - alpha);
   // the mouth glows white where the jet leaves it
-  float mouth = exp(-u * 18.0) * (1.0 - smoothstep(0.0, 1.0, abs(v) / 0.07)) * uGrow;
+  float mouth = exp(-u * 14.0) * (1.0 - smoothstep(0.0, 1.0, abs(v) / 0.1)) * uGrow;
   col = col * alpha + vec3(0.1, 0.07, 0.06) * smoke * 0.5 + vec3(1.0, 0.85, 0.5) * mouth;
   outColor = vec4(col, clamp(alpha + smoke * 0.5 + mouth, 0.0, 1.0));
 }`;

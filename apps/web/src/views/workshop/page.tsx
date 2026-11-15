@@ -66,14 +66,15 @@ const ART_AT = {
   '--rod-y': pct(129, 725),
   '--rod-h': pct(502, 725),
   '--base-y': pct(631 - 61, 725),
-  // The cannon's muzzle (the mouth's centre, 1150 × 170), where its flames start: the jet's tip sits
+  // The cannon's muzzle (the mouth's centre, 1160 × 150), where its flames start: the jet's root sits
   // in the mouth (flame-jet.tsx).
-  '--muzzle-x': pct(1150, ART_W),
-  '--muzzle-y': pct(170, ART_H),
+  '--muzzle-x': pct(1160, ART_W),
+  '--muzzle-y': pct(150, ART_H),
   '--muzzle-r': pct(190, ART_W),
-  '--flame-x': pct(1135, ART_W),
-  // the jet's box: the mouth at the middle of its left edge
-  '--jet-y': pct(170 - 150, ART_H),
+  '--flame-x': pct(1150, ART_W),
+  // the jet's box: the mouth at the middle of its left edge; turned 14° down, along the barrel's
+  // axis (from 900 × 85 to the mouth)
+  '--jet-y': pct(150 - 150, ART_H),
   '--jet-h': pct(300, ART_H),
   '--flame-w': pct(900, ART_W),
   '--fire-x': pct(1052, ART_W),
@@ -234,7 +235,7 @@ function Machine({
       {lit && (
         <>
           <div className="absolute top-(--muzzle-y) left-(--muzzle-x) aspect-square w-(--muzzle-r) -translate-1/2 animate-muzzle-flash rounded-full bg-forge-spark/70 blur-xl" />
-          <FlameJet className="absolute top-(--jet-y) left-(--flame-x) h-(--jet-h) w-(--flame-w) origin-left -rotate-6" />
+          <FlameJet className="absolute top-(--jet-y) left-(--flame-x) h-(--jet-h) w-(--flame-w) origin-left rotate-14" />
           <div className="absolute top-(--muzzle-y) left-(--muzzle-x)" aria-hidden>
             {EMBERS.map(([dx, dy, delay]) => (
               <span
