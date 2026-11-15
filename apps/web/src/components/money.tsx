@@ -1,17 +1,19 @@
 // Amounts of gold and fragments: the number, then the currency's symbol with its name in a tooltip
 // (and for screen readers). The only way the site writes an amount, so every one looks the same.
-// Symbols written as escapes: the source stays emoji-free.
+// Gold's symbol is an emoji, written as an escape (the source stays emoji-free); the fragments' are
+// drawn crystal shards (fragment-gem.tsx).
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { Gain } from '@/data/recycling';
+import { FragmentGem } from './fragment-gem';
 
 const CURRENCIES = {
   gold: { symbol: '\u{1FA99}', name: 'Gold' },
-  fragments: { symbol: '\u{1F9E9}', name: 'Fragments' },
+  fragments: { symbol: null, name: 'Fragments' },
   // The rarity fragments of the atelier, each in its rarity's colour.
-  epique: { symbol: '\u{1F7E3}', name: 'Fragments épiques' },
-  legendaire: { symbol: '\u{1F7E0}', name: 'Fragments légendaires' },
-  ggez: { symbol: '\u{26AA}', name: 'Fragments GGEZ' },
+  epique: { symbol: null, name: 'Fragments épiques' },
+  legendaire: { symbol: null, name: 'Fragments légendaires' },
+  ggez: { symbol: null, name: 'Fragments GGEZ' },
 } as const;
 
 function Amount({
@@ -30,8 +32,8 @@ function Amount({
       {n}
       <Tooltip>
         <TooltipTrigger asChild>
-          <span role="img" aria-label={name}>
-            {symbol}
+          <span role="img" aria-label={name} className="inline-flex">
+            {currency === 'gold' ? symbol : <FragmentGem kind={currency} />}
           </span>
         </TooltipTrigger>
         <TooltipContent>{name}</TooltipContent>
