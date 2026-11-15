@@ -37,7 +37,7 @@ import symbolBell from './art/symbol-bell.webp';
 import symbolCherries from './art/symbol-cherries.webp';
 import symbolSkull from './art/symbol-skull.webp';
 import tacArt from './art/tac-002.webp';
-import { FlameJet } from './flame-jet';
+import { TacFire, FIRE_BOX } from './tac-fire';
 import { Forge } from './forge';
 import { TONES } from '@/lib/tones';
 
@@ -51,6 +51,11 @@ const pct = (n: number, of: number) => `${((n / of) * 100).toFixed(2)}%`;
 const ART_W = 1402;
 const ART_H = 1122;
 const ART_AT = {
+  // the fire's canvas (tac-fire.tsx): around the portrait, with room for the jet and its smoke
+  '--fire-x': pct(FIRE_BOX.x, ART_W),
+  '--fire-y': pct(FIRE_BOX.y, ART_H),
+  '--fire-w': pct(FIRE_BOX.w, ART_W),
+  '--fire-h': pct(FIRE_BOX.h, ART_H),
   '--reels-x': pct(395, ART_W),
   '--reels-y': pct(472, ART_H),
   '--reels-w': pct(622, ART_W),
@@ -66,22 +71,9 @@ const ART_AT = {
   '--rod-y': pct(129, 725),
   '--rod-h': pct(502, 725),
   '--base-y': pct(631 - 61, 725),
-  // The cannon's muzzle (the mouth's centre, 1160 × 150), where its flames start: the jet's root sits
-  // in the mouth (flame-jet.tsx).
+  // The cannon's mouth (1160 × 150): the embers fly from there (the fire itself: tac-fire.tsx).
   '--muzzle-x': pct(1160, ART_W),
   '--muzzle-y': pct(150, ART_H),
-  '--muzzle-r': pct(190, ART_W),
-  '--flame-x': pct(1150, ART_W),
-  // the jet's box: the mouth at the middle of its left edge; turned 14° down, along the barrel's
-  // axis (from 900 × 85 to the mouth)
-  '--jet-y': pct(150 - 300, ART_H),
-  '--jet-h': pct(600, ART_H),
-  '--flame-w': pct(900, ART_W),
-  '--fire-x': pct(1052, ART_W),
-  '--fire-y': pct(56, ART_H),
-  '--fire-w': pct(338, ART_W),
-  '--fire-cx': pct(1297, ART_W),
-  '--fire-cy': pct(207, ART_H),
 };
 // Each reel stops a little after the previous one, after more turns.
 const REEL_STOPS = [
@@ -192,7 +184,7 @@ function Machine({
         <img src={tacArt} alt="TAC-002" className="block w-full" />
         {/* The reels, in the drum's window, its frame glowing while it works. */}
         <div
-          className={`absolute top-(--reels-y) left-(--reels-x) flex h-(--reels-h) w-(--reels-w) gap-(--reels-gap) rounded-sm ${
+          className={`absolute top-(--reels-y) left-(--reels-x) z-10 flex h-(--reels-h) w-(--reels-w) gap-(--reels-gap) rounded-sm ${
             lit ? 'animate-pulse ring-2 ring-forge-heat' : ''
           }`}
         >
@@ -210,7 +202,7 @@ function Machine({
             while the ball comes down and grows, then it springs back. */}
         <div
           key={pulls}
-          className="absolute top-(--lever-y) left-(--lever-x) aspect-240/725 h-(--lever-h)"
+          className="absolute top-(--lever-y) left-(--lever-x) z-10 aspect-240/725 h-(--lever-h)"
         >
           <img
             src={leverRod}
@@ -229,17 +221,15 @@ function Machine({
           />
         </div>
       </div>
-      <FlameJet
+      {/* The fire (tac-fire.tsx): the portrait redrawn under the heat, the jet, then the smoke. Under
+          the reels and the lever. */}
+      <TacFire
         burning={lit}
-        className="absolute top-(--jet-y) left-(--flame-x) h-(--jet-h) w-(--flame-w) origin-left rotate-14"
+        className="pointer-events-none absolute top-(--fire-y) left-(--fire-x) z-0 h-(--fire-h) w-(--fire-w)"
       />
-      {/* The cannon's fire, while it works: a flash in the muzzle, then the jet bursts out of it (it
-          grows from the mouth outwards, past the picture's edge) and roars, drawn live (flame-jet.tsx; it
-          smokes once it stops), embers flying ahead. The flash and the embers mount only then. */}
+      {/* Embers flying from the mouth while it works. */}
       {lit && (
         <>
-          <div className="absolute top-(--muzzle-y) left-(--muzzle-x) aspect-square w-(--muzzle-r) -translate-1/2 animate-muzzle-flash rounded-full bg-forge-spark/70 blur-xl" />
-
           <div className="absolute top-(--muzzle-y) left-(--muzzle-x)" aria-hidden>
             {EMBERS.map(([dx, dy, delay]) => (
               <span
