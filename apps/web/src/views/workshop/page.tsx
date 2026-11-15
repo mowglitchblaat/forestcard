@@ -66,10 +66,14 @@ const ART_AT = {
   '--rod-y': pct(129, 725),
   '--rod-h': pct(502, 725),
   '--base-y': pct(631 - 61, 725),
-  // The cannon's muzzle, where its flames start.
-  '--flame-x': pct(1150, ART_W),
-  '--flame-y': pct(69, ART_H),
-  '--flame-w': pct(620, ART_W),
+  // The cannon's muzzle (the mouth's centre, 1150 × 170), where its flames start: the jet's tip sits
+  // in the mouth (the flame picture is 900 × 293, its tip at mid-height on its left edge).
+  '--muzzle-x': pct(1150, ART_W),
+  '--muzzle-y': pct(170, ART_H),
+  '--muzzle-r': pct(190, ART_W),
+  '--flame-x': pct(1135, ART_W),
+  '--flame-y': pct(170 - 146, ART_H),
+  '--flame-w': pct(900, ART_W),
   '--fire-x': pct(1052, ART_W),
   '--fire-y': pct(56, ART_H),
   '--fire-w': pct(338, ART_W),
@@ -81,6 +85,15 @@ const REEL_STOPS = [
   { ms: 1700, turns: 6 },
   { ms: 2400, turns: 8 },
   { ms: 3100, turns: 10 },
+];
+// The embers the jet throws ahead: how far (px, right and up or down), and after how long (ms).
+const EMBERS: readonly (readonly [number, number, number])[] = [
+  [140, -30, 0],
+  [180, 10, 120],
+  [120, 25, 260],
+  [200, -12, 380],
+  [160, -40, 520],
+  [210, 30, 640],
 ];
 const SPIN_MS = (REEL_STOPS.at(-1)?.ms ?? 3000) + 250;
 const STRIP = 4 * 40; // cells on a reel's strip: enough for one pull (it rewinds before each)
@@ -174,14 +187,6 @@ function Machine({
     >
       <div className="relative overflow-hidden rounded-2xl">
         <img src={tacArt} alt="TAC-002" className="block w-full" />
-        {/* The cannon's flames, roaring while it works. */}
-        <img
-          src={flameArt}
-          alt=""
-          className={`absolute top-(--flame-y) left-(--flame-x) w-(--flame-w) origin-left mix-blend-screen ${
-            lit ? 'animate-flame-roar' : 'opacity-0'
-          }`}
-        />
         {/* The reels, in the drum's window, its frame glowing while it works. */}
         <div
           className={`absolute top-(--reels-y) left-(--reels-x) flex h-(--reels-h) w-(--reels-w) gap-(--reels-gap) rounded-sm ${
@@ -221,6 +226,31 @@ function Machine({
           />
         </div>
       </div>
+      {/* The cannon's fire, while it works: a flash in the muzzle, then the jet bursts out of it (it
+          grows from the mouth outwards, past the picture's edge) and roars, two flames twisting into
+          each other, embers flying ahead. Mounted only then, so the burst plays at every pull. */}
+      {lit && (
+        <>
+          <div className="absolute top-(--muzzle-y) left-(--muzzle-x) aspect-square w-(--muzzle-r) -translate-1/2 animate-muzzle-flash rounded-full bg-forge-spark mix-blend-screen blur-xl" />
+          <div className="absolute top-(--flame-y) left-(--flame-x) w-(--flame-w) origin-left -rotate-6 animate-flame-burst mix-blend-screen">
+            <img src={flameArt} alt="" className="block w-full origin-left animate-flame-roar" />
+            <img
+              src={flameArt}
+              alt=""
+              className="absolute inset-0 w-full origin-left animate-flame-twist opacity-70"
+            />
+          </div>
+          <div className="absolute top-(--muzzle-y) left-(--muzzle-x)" aria-hidden>
+            {EMBERS.map(([dx, dy, delay]) => (
+              <span
+                key={delay}
+                className="absolute size-1.5 animate-ember-fly rounded-full bg-forge-spark opacity-0"
+                style={{ '--dx': `${dx}px`, '--dy': `${dy}px`, '--delay': `${delay}ms` }}
+              />
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -346,15 +376,18 @@ function Tac({ w }: { w: Workshop }) {
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-5">
-        <Machine
-          w={w}
-          reels={reels}
-          moving={moving}
-          stopped={stopped}
-          pulls={pulls}
-          working={busy}
-          jackpot={jackpot}
-        />
+        {/* Room on the sides for the cannon's jet, clipped at the card's edge. */}
+        <div className="w-full overflow-x-clip">
+          <Machine
+            w={w}
+            reels={reels}
+            moving={moving}
+            stopped={stopped}
+            pulls={pulls}
+            working={busy}
+            jackpot={jackpot}
+          />
+        </div>
         {phase === 'done' && result && (
           <p
             className={`rounded-lg border p-3 text-center text-sm ${
