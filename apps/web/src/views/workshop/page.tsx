@@ -8,6 +8,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { HoldButton } from '@/components/hold-button';
+import { FragmentGem } from '@/components/fragment-gem';
 import { Fragments, TierFragments } from '@/components/money';
 import { PageSkeleton } from '@/components/skeletons';
 import { Badge } from '@/components/ui/badge';
@@ -274,16 +275,17 @@ function TierTile({ tier, chosen, onPick }: { tier: Tier; chosen: boolean; onPic
       }`}
     >
       <span className="flex items-center gap-1.5 font-semibold">
-        <span
-          className="size-3 rounded-full bg-(--rarity) ring-1 ring-border"
-          style={{ '--rarity': tier.couleur ?? 'var(--muted-foreground)' }}
-        />
+        <span className="text-xl">
+          <FragmentGem kind={tier.cle} />
+        </span>
         {tier.nom}
       </span>
-      <small className="text-muted-foreground">
-        {tier.taux === 1 ? '1 pour 1' : `${tier.taux} fragments pour 1`}
+      <small className="inline-flex items-center gap-1 text-muted-foreground">
+        <Fragments n={tier.taux} /> → <TierFragments tier={tier.cle} n={1} />
       </small>
-      <small className="tabular-nums">Tu en as {tier.solde}</small>
+      <small className="tabular-nums">
+        Tu en as <TierFragments tier={tier.cle} n={tier.solde} />
+      </small>
     </button>
   );
 }
