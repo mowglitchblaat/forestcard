@@ -29,7 +29,6 @@ import {
 } from '@/data/workshop';
 import { ICONS } from '@/lib/icons';
 import { useSession } from '@/lib/session';
-import flameArt from './art/flame.webp';
 import leverBase from './art/lever-base.webp';
 import leverBall from './art/lever-ball.webp';
 import leverRod from './art/lever-rod.webp';
@@ -38,6 +37,7 @@ import symbolBell from './art/symbol-bell.webp';
 import symbolCherries from './art/symbol-cherries.webp';
 import symbolSkull from './art/symbol-skull.webp';
 import tacArt from './art/tac-002.webp';
+import { FlameJet } from './flame-jet';
 import { Forge } from './forge';
 import { TONES } from '@/lib/tones';
 
@@ -67,12 +67,14 @@ const ART_AT = {
   '--rod-h': pct(502, 725),
   '--base-y': pct(631 - 61, 725),
   // The cannon's muzzle (the mouth's centre, 1150 × 170), where its flames start: the jet's tip sits
-  // in the mouth (the flame picture is 900 × 293, its tip at mid-height on its left edge).
+  // in the mouth (flame-jet.tsx).
   '--muzzle-x': pct(1150, ART_W),
   '--muzzle-y': pct(170, ART_H),
   '--muzzle-r': pct(190, ART_W),
   '--flame-x': pct(1135, ART_W),
-  '--flame-y': pct(170 - 146, ART_H),
+  // the jet's box: the mouth at the middle of its left edge
+  '--jet-y': pct(170 - 150, ART_H),
+  '--jet-h': pct(300, ART_H),
   '--flame-w': pct(900, ART_W),
   '--fire-x': pct(1052, ART_W),
   '--fire-y': pct(56, ART_H),
@@ -227,19 +229,12 @@ function Machine({
         </div>
       </div>
       {/* The cannon's fire, while it works: a flash in the muzzle, then the jet bursts out of it (it
-          grows from the mouth outwards, past the picture's edge) and roars, two flames twisting into
-          each other, embers flying ahead. Mounted only then, so the burst plays at every pull. */}
+          grows from the mouth outwards, past the picture's edge) and roars, drawn live (flame-jet.tsx),
+          embers flying ahead. Mounted only then, so the burst plays at every pull. */}
       {lit && (
         <>
-          <div className="absolute top-(--muzzle-y) left-(--muzzle-x) aspect-square w-(--muzzle-r) -translate-1/2 animate-muzzle-flash rounded-full bg-forge-spark mix-blend-screen blur-xl" />
-          <div className="absolute top-(--flame-y) left-(--flame-x) w-(--flame-w) origin-left -rotate-6 animate-flame-burst mix-blend-screen">
-            <img src={flameArt} alt="" className="block w-full origin-left animate-flame-roar" />
-            <img
-              src={flameArt}
-              alt=""
-              className="absolute inset-0 w-full origin-left animate-flame-twist opacity-70"
-            />
-          </div>
+          <div className="absolute top-(--muzzle-y) left-(--muzzle-x) aspect-square w-(--muzzle-r) -translate-1/2 animate-muzzle-flash rounded-full bg-forge-spark/70 blur-xl" />
+          <FlameJet className="absolute top-(--jet-y) left-(--flame-x) h-(--jet-h) w-(--flame-w) origin-left -rotate-6" />
           <div className="absolute top-(--muzzle-y) left-(--muzzle-x)" aria-hidden>
             {EMBERS.map(([dx, dy, delay]) => (
               <span

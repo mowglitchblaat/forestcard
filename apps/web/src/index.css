@@ -37,12 +37,9 @@
   --ease-wheel: cubic-bezier(0.12, 0.75, 0.16, 1);
   /* TAC-002's lever, pulled towards you: its rod shortens (seen end on) while its ball comes down
      with it (the rod is 502/136 of the ball's height: a rod at s, the ball (1 − s) × 369 % lower)
-     and grows, then it springs back; its cannon's flames roar in bursts while it works. */
+     and grows, then it springs back; its cannon's fire is drawn live (flame-jet.tsx). */
   --animate-lever-rod: lever-rod 1s ease-out both;
   --animate-lever-ball: lever-ball 1s ease-out both;
-  --animate-flame-roar: flame-roar 0.9s ease-in-out infinite;
-  --animate-flame-twist: flame-twist 0.65s ease-in-out infinite;
-  --animate-flame-burst: flame-burst 0.45s cubic-bezier(0.2, 0.9, 0.3, 1) both;
   --animate-muzzle-flash: muzzle-flash 0.5s ease-in-out infinite;
   --animate-ember-fly: ember-fly 0.9s ease-out var(--delay, 0ms) infinite;
   @keyframes lever-rod {
@@ -81,28 +78,6 @@
       transform: translateY(-15%) scale(0.98);
     }
   }
-  @keyframes flame-burst {
-    0% {
-      clip-path: inset(0 100% 0 0);
-      transform: scaleY(0.3);
-    }
-    60% {
-      transform: scaleY(1.15);
-    }
-    100% {
-      clip-path: inset(0 0 0 0);
-      transform: scaleY(1);
-    }
-  }
-  @keyframes flame-twist {
-    0%,
-    100% {
-      transform: scaleX(0.85) scaleY(-0.8);
-    }
-    50% {
-      transform: scaleX(1.05) scaleY(-1.05);
-    }
-  }
   @keyframes muzzle-flash {
     0%,
     100% {
@@ -125,21 +100,6 @@
     100% {
       opacity: 0;
       transform: translate(var(--dx, 0), var(--dy, 0)) scale(0.3);
-    }
-  }
-  @keyframes flame-roar {
-    0%,
-    100% {
-      opacity: 0.75;
-      transform: scaleX(0.7) scaleY(0.9);
-    }
-    35% {
-      opacity: 1;
-      transform: scaleX(1.05) scaleY(1.1);
-    }
-    65% {
-      opacity: 0.85;
-      transform: scaleX(0.88) scaleY(0.95);
     }
   }
   /* The forge (views/workshop/forge.tsx): the hammer strikes the anvil three times, sparks fly off
