@@ -67,8 +67,8 @@ const ART_AT = {
   '--rod-h': pct(502, 725),
   '--base-y': pct(631 - 61, 725),
   // The cannon's muzzle, where its flames start.
-  '--flame-x': pct(1190, ART_W),
-  '--flame-y': pct(95, ART_H),
+  '--flame-x': pct(1150, ART_W),
+  '--flame-y': pct(69, ART_H),
   '--flame-w': pct(620, ART_W),
   '--fire-x': pct(1052, ART_W),
   '--fire-y': pct(56, ART_H),
