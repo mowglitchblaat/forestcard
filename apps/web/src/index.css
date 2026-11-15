@@ -37,7 +37,7 @@
   --ease-wheel: cubic-bezier(0.12, 0.75, 0.16, 1);
   /* TAC-002's lever, pulled towards you: its rod shortens (seen end on) while its ball comes down
      with it (the rod is 502/136 of the ball's height: a rod at s, the ball (1 − s) × 369 % lower)
-     and grows, then it springs back; its cannon's fire is drawn live (flame-jet.tsx). */
+     and grows, then it springs back; its cannon's fire is drawn live (tac-fire.tsx). */
   --animate-lever-rod: lever-rod 1s ease-out both;
   --animate-lever-ball: lever-ball 1s ease-out both;
   --animate-muzzle-flash: muzzle-flash 0.5s ease-in-out infinite;
