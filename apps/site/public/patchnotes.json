@@ -1,5 +1,31 @@
 [
   {
+    "date": "2026-11-15",
+    "intro": "La machine à sous TAC-002 de l’Atelier fait peau neuve et crache maintenant un vrai jet de feu.",
+    "groupes": [
+      {
+        "titre": "Animations",
+        "points": [
+          "TAC-002 crache un jet de feu animé en direct depuis son canon, avec lueur sur le métal, onde de choc, chaleur qui fait onduler la machine, braises et fumée quand le jet s’arrête."
+        ]
+      },
+      {
+        "titre": "Site",
+        "points": [
+          "Atelier : TAC-002 a un portrait en pleine qualité, un levier à tirer vers soi, des symboles redessinés dans son style (dont un crâne) et des rouleaux qui floutent en tournant.",
+          "Le gain d’un tirage s’affiche par-dessus les rouleaux, et les fragments (simples, Épique, Légendaire, GGEZ) sont représentés par de vrais cristaux dessinés au lieu d’emojis.",
+          "Lore : le chapitre « L’orage s’est tu » a son illustration."
+        ]
+      },
+      {
+        "titre": "Boutique et boosters",
+        "points": [
+          "Le Booster de l’Orage (édition événement) a son image."
+        ]
+      }
+    ]
+  },
+  {
     "date": "2026-11-14",
     "intro": "Les combats changent de décor avec les terrains, deux nouveaux jeux du jour arrivent et l’Atelier ouvre ses portes.",
     "groupes": [
