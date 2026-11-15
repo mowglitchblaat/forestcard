@@ -1,8 +1,9 @@
 // TAC-002's jet of fire: a flame drawn live by a small WebGL shader (no picture), so it is never twice
 // the same. It bursts out of the cannon's mouth (its length grows in a fraction of a second), then
 // roars: ragged tongues streaming away from the mouth, a white-hot core cooling to yellow, orange and
-// red, smoke rising off its end, embers torn from it. The canvas covers the jet's box; its left edge's middle is the mouth.
-// Drawn only while mounted; without WebGL, nothing shows (the machine still works).
+// red, smoke rising off its end, embers torn from it; when it stops, thick smoke billows out of the
+// mouth. The canvas covers the jet's box; its left edge's middle is the mouth. Without WebGL, nothing
+// shows (the machine still works).
 
 import { useEffect, useRef } from 'react';
 
@@ -22,6 +23,7 @@ out vec4 outColor;
 uniform float uTime;
 uniform float uGrow;
 uniform float uAspect;
+uniform float uEnd;
 float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 float noise(vec2 p) {
   vec2 i = floor(p), f = fract(p), w = f * f * (3.0 - 2.0 * f);
@@ -78,7 +80,25 @@ void main() {
   float mouth = exp(-u * 12.0) * (1.0 - smoothstep(0.4, 1.0, abs(v) / 0.07)) * uGrow;
   vec3 rgb = col * a + vec3(0.09, 0.06, 0.05) * smoke * 0.7 + vec3(1.0, 0.75, 0.35) * spark * 1.5 + vec3(1.0, 0.92, 0.7) * mouth;
   float alpha = clamp(a + smoke * 0.55 + spark + mouth, 0.0, 1.0);
-  outColor = vec4(rgb, alpha);
+  // once the fire stops (uEnd: seconds since, -1 while it burns): the flame dies in a blink, and a
+  // thick smoke billows out of the mouth, drifts away rising and spreading, then thins out
+  float after = max(uEnd, 0.0);
+  float burning = uEnd < 0.0 ? 1.0 : 1.0 - smoothstep(0.0, 0.35, after);
+  rgb *= burning;
+  alpha *= burning;
+  float puff = uEnd < 0.0 ? 0.0 : smoothstep(0.0, 0.3, after) * (1.0 - smoothstep(1.6, 3.0, after));
+  float sy = v - (after * 0.07 + u * 0.09);
+  float spread = mix(0.07, 0.28 * (1.0 + after * 0.8), pow(u, 0.8));
+  float travel = 0.3 + after * 0.5;
+  float billow = fbm(vec2(u * 3.5 - after * 1.3 - t * 0.2, sy * 7.0 + t * 0.35));
+  float plume = (1.0 - smoothstep(0.35, 1.0, abs(sy) / spread)) * (1.0 - smoothstep(travel - 0.25, travel, u))
+    * smoothstep(0.2, 0.6, billow) * puff * smoothstep(0.0, 0.08, u);
+  vec3 grey = mix(vec3(0.55, 0.32, 0.2), vec3(0.36, 0.34, 0.33), smoothstep(0.0, 0.25, u + after * 0.3));
+  rgb += grey * plume * 0.9;
+  alpha = clamp(alpha + plume * 0.9, 0.0, 1.0);
+  // nothing ever touches the canvas's edges (no straight cut)
+  float frame = smoothstep(0.0, 0.18, vUv.y) * smoothstep(0.0, 0.18, 1.0 - vUv.y) * smoothstep(0.0, 0.12, 1.0 - u);
+  outColor = vec4(rgb, alpha) * frame;
 }`;
 
 const BURST_S = 0.35;
@@ -101,8 +121,18 @@ function compile(gl: WebGL2RenderingContext): WebGLProgram | null {
   return gl.getProgramParameter(program, gl.LINK_STATUS) ? program : null;
 }
 
-export function FlameJet({ className }: { className: string }) {
+const SMOKE_S = 3; // how long the smoke lasts once the fire stops
+
+// `burning`: the fire is on. Each time it comes on, the jet bursts out again; when it goes off, the
+// smoke plays, then the canvas stays clear and draws nothing (no frame asked) until the next time.
+export function FlameJet({ burning, className }: { burning: boolean; className: string }) {
   const canvas = useRef<HTMLCanvasElement>(null);
+  const state = useRef({
+    start: 0,
+    end: -1,
+    frame: 0,
+    draw: null as ((now: number) => void) | null,
+  });
   useEffect(() => {
     const el = canvas.current;
     const gl = el?.getContext('webgl2', { premultipliedAlpha: true, alpha: true });
@@ -118,32 +148,52 @@ export function FlameJet({ className }: { className: string }) {
     const uTime = gl.getUniformLocation(program, 'uTime');
     const uGrow = gl.getUniformLocation(program, 'uGrow');
     const uAspect = gl.getUniformLocation(program, 'uAspect');
-    const start = performance.now();
-    let frame = 0;
-    const draw = (now: number) => {
+    const uEnd = gl.getUniformLocation(program, 'uEnd');
+    const s = state.current;
+    const clear = () => {
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+    };
+    s.draw = (now: number) => {
       const width = Math.round(el.clientWidth * Math.min(devicePixelRatio, 2));
       const height = Math.round(el.clientHeight * Math.min(devicePixelRatio, 2));
       if (el.width !== width || el.height !== height) {
         el.width = width;
         el.height = height;
       }
-      const t = (now - start) / 1000;
-      const grow = Math.min(1, t / BURST_S);
       gl.viewport(0, 0, width, height);
-      gl.clearColor(0, 0, 0, 0);
-      gl.clear(gl.COLOR_BUFFER_BIT);
+      const after = s.end < 0 ? -1 : (now - s.end) / 1000;
+      clear();
+      if (after > SMOKE_S) {
+        s.frame = 0; // done: nothing more to draw until the fire comes on again
+        return;
+      }
+      const t = (now - s.start) / 1000;
+      const grow = Math.min(1, t / BURST_S);
       gl.uniform1f(uTime, t);
       gl.uniform1f(uGrow, 1 - (1 - grow) ** 3);
       gl.uniform1f(uAspect, height / Math.max(1, width));
+      gl.uniform1f(uEnd, after);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-      frame = requestAnimationFrame(draw);
+      s.frame = requestAnimationFrame((n) => s.draw?.(n));
     };
-    frame = requestAnimationFrame(draw);
     return () => {
-      cancelAnimationFrame(frame);
+      cancelAnimationFrame(s.frame);
+      s.frame = 0;
+      s.draw = null;
       gl.deleteProgram(program);
       gl.deleteBuffer(buffer);
     };
   }, []);
+  useEffect(() => {
+    const s = state.current;
+    const now = performance.now();
+    if (burning) {
+      s.start = now;
+      s.end = -1;
+    } else if (s.start && s.end < 0) s.end = now;
+    else return;
+    if (!s.frame && s.draw) s.frame = requestAnimationFrame((n) => s.draw?.(n));
+  }, [burning]);
   return <canvas ref={canvas} className={className} aria-hidden />;
 }

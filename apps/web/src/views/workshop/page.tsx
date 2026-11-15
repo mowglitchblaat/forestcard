@@ -74,8 +74,8 @@ const ART_AT = {
   '--flame-x': pct(1150, ART_W),
   // the jet's box: the mouth at the middle of its left edge; turned 14° down, along the barrel's
   // axis (from 900 × 85 to the mouth)
-  '--jet-y': pct(150 - 150, ART_H),
-  '--jet-h': pct(300, ART_H),
+  '--jet-y': pct(150 - 300, ART_H),
+  '--jet-h': pct(600, ART_H),
   '--flame-w': pct(900, ART_W),
   '--fire-x': pct(1052, ART_W),
   '--fire-y': pct(56, ART_H),
@@ -229,13 +229,17 @@ function Machine({
           />
         </div>
       </div>
+      <FlameJet
+        burning={lit}
+        className="absolute top-(--jet-y) left-(--flame-x) h-(--jet-h) w-(--flame-w) origin-left rotate-14"
+      />
       {/* The cannon's fire, while it works: a flash in the muzzle, then the jet bursts out of it (it
-          grows from the mouth outwards, past the picture's edge) and roars, drawn live (flame-jet.tsx),
-          embers flying ahead. Mounted only then, so the burst plays at every pull. */}
+          grows from the mouth outwards, past the picture's edge) and roars, drawn live (flame-jet.tsx; it
+          smokes once it stops), embers flying ahead. The flash and the embers mount only then. */}
       {lit && (
         <>
           <div className="absolute top-(--muzzle-y) left-(--muzzle-x) aspect-square w-(--muzzle-r) -translate-1/2 animate-muzzle-flash rounded-full bg-forge-spark/70 blur-xl" />
-          <FlameJet className="absolute top-(--jet-y) left-(--flame-x) h-(--jet-h) w-(--flame-w) origin-left rotate-14" />
+
           <div className="absolute top-(--muzzle-y) left-(--muzzle-x)" aria-hidden>
             {EMBERS.map(([dx, dy, delay]) => (
               <span
