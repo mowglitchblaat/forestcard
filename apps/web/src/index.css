@@ -976,17 +976,19 @@
    in two layers that flicker like an arc, with arcs crackling around its drawing (ElectricArcs); a
    place without a layer gets the halo on its pin. No label: the electricity says it. */
 @utility lore-electric {
-  filter: hue-rotate(185deg) saturate(3) brightness(0.9) drop-shadow(0 0 6px rgb(60 120 255));
+  filter: hue-rotate(185deg) saturate(2) brightness(0.85) drop-shadow(0 0 4px rgb(60 120 255));
+  --electric-max: 0.55;
   animation: lore-electric 2.3s steps(1, end) infinite;
 }
 @utility lore-electric-core {
-  filter: hue-rotate(185deg) saturate(1.4) brightness(1.7) drop-shadow(0 0 2px rgb(150 210 255));
+  filter: hue-rotate(185deg) saturate(1.3) brightness(1.3) drop-shadow(0 0 2px rgb(150 210 255));
+  --electric-max: 0.45;
   animation: lore-electric 1.3s steps(1, end) infinite;
 }
 @utility lore-arc-halo {
   fill: none;
-  stroke: rgb(60 130 255 / 0.85);
-  stroke-width: 7px;
+  stroke: rgb(60 130 255 / 0.5);
+  stroke-width: 4.5px;
   stroke-linejoin: round;
   stroke-linecap: round;
   vector-effect: non-scaling-stroke;
@@ -994,53 +996,53 @@
 }
 @utility lore-arc-core {
   fill: none;
-  stroke: rgb(240 248 255);
-  stroke-width: 2.2px;
+  stroke: rgb(240 248 255 / 0.75);
+  stroke-width: 1.5px;
   stroke-linejoin: miter;
   stroke-linecap: round;
   vector-effect: non-scaling-stroke;
 }
 /* a discharge: the whole electricity flares */
 @utility lore-arc-flash {
-  filter: drop-shadow(0 0 6px rgb(170 220 255)) drop-shadow(0 0 18px rgb(80 140 255));
+  filter: drop-shadow(0 0 4px rgb(170 220 255 / 0.6)) drop-shadow(0 0 10px rgb(80 140 255 / 0.5));
 }
 @keyframes lore-electric {
   0%,
   100% {
-    opacity: 0.6;
+    opacity: calc(var(--electric-max, 1) * 0.75);
   }
   6% {
-    opacity: 1;
+    opacity: calc(var(--electric-max, 1) * 0.95);
   }
   9% {
-    opacity: 0.2;
+    opacity: calc(var(--electric-max, 1) * 0.55);
   }
   12% {
-    opacity: 1;
+    opacity: calc(var(--electric-max, 1) * 0.95);
   }
   30% {
-    opacity: 0.7;
+    opacity: calc(var(--electric-max, 1) * 0.8);
   }
   47% {
-    opacity: 1;
+    opacity: calc(var(--electric-max, 1) * 0.95);
   }
   50% {
-    opacity: 0.3;
+    opacity: calc(var(--electric-max, 1) * 0.6);
   }
   53% {
-    opacity: 0.95;
+    opacity: calc(var(--electric-max, 1) * 0.93);
   }
   78% {
-    opacity: 0.65;
+    opacity: calc(var(--electric-max, 1) * 0.78);
   }
   81% {
-    opacity: 1;
+    opacity: calc(var(--electric-max, 1) * 0.95);
   }
 }
 @utility lore-electric-pin {
   box-shadow:
-    0 0 8px rgb(150 200 255),
-    0 0 20px rgb(90 130 255);
+    0 0 5px rgb(150 200 255 / 0.7),
+    0 0 12px rgb(90 130 255 / 0.6);
   animation: lore-electric 1.7s steps(1, end) infinite;
 }
 /* The storm over the world map (world-map.tsx, MapStorm; lore_carte.tempete): a darkened sky

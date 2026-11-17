@@ -892,9 +892,9 @@ function ElectricArcs({ shape }: { shape: Shape }) {
     };
     let timer: ReturnType<typeof setTimeout>;
     const tick = () => {
-      const flash = Math.random() < 0.07;
-      const crawls = Math.random() < 0.15 ? 0 : 2 + Math.floor(Math.random() * 3) + (flash ? 4 : 0);
-      const strikes = Math.random() < 0.55 ? 0 : 1 + (flash ? 3 : 0);
+      const flash = Math.random() < 0.03;
+      const crawls = Math.random() < 0.3 ? 0 : 1 + Math.floor(Math.random() * 2) + (flash ? 2 : 0);
+      const strikes = Math.random() < 0.8 ? 0 : 1 + (flash ? 1 : 0);
       setFrame({
         arcs: [
           ...Array.from({ length: crawls }, crawl),
@@ -902,7 +902,7 @@ function ElectricArcs({ shape }: { shape: Shape }) {
         ],
         flash,
       });
-      timer = setTimeout(tick, 60 + Math.random() * 70);
+      timer = setTimeout(tick, 90 + Math.random() * 110);
     };
     tick();
     return () => clearTimeout(timer);
