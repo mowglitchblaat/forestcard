@@ -1,5 +1,17 @@
 [
   {
+    "date": "2026-11-18",
+    "intro": "Petit réglage visuel sur la carte du monde du Lore.",
+    "groupes": [
+      {
+        "titre": "Site",
+        "points": [
+          "Lore : l’éclair qui entoure le lieu de la collection qui le détient est plus doux (halo moins lumineux, arcs plus fins et plus rares, clignotement apaisé)."
+        ]
+      }
+    ]
+  },
+  {
     "date": "2026-11-15",
     "intro": "La machine à sous TAC-002 de l’Atelier fait peau neuve et crache maintenant un vrai jet de feu.",
     "groupes": [
