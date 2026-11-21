@@ -1,5 +1,24 @@
 [
   {
+    "date": "2026-11-21",
+    "intro": "Le jeu suit maintenant le stream tout seul : il passe en live quand le stream démarre et revient en mode site quand il s’arrête.",
+    "groupes": [
+      {
+        "titre": "Site",
+        "points": [
+          "Plus besoin d’attendre qu’on bascule le jeu à la main : le mode live s’active dès que le stream commence et s’arrête avec lui.",
+          "Le championnat continue de compter normalement quand le jeu repasse hors live automatiquement."
+        ]
+      },
+      {
+        "titre": "Admin",
+        "points": [
+          "Nouveau mode Automatique dans les réglages, avec une case pour signaler qu’un live est un let’s play (elle se décoche toute seule à la fin du stream)."
+        ]
+      }
+    ]
+  },
+  {
     "date": "2026-11-18",
     "intro": "Petit réglage visuel sur la carte du monde du Lore.",
     "groupes": [
