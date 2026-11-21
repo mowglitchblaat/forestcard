@@ -50,3 +50,9 @@ Tant qu'un tournoi est en cours (`statut = 'en_cours'`), les autres combats atte
 ## Combat de boss (Lore)
 
 `db/migrations/83-boss-duel.sql`. Mode `boss`, depuis le site seulement (jeton du joueur), à toute heure, en live aussi : `{ mode: 'boss', evenement, variante }`. `boss_preparer` vérifie la carte (un combattant de sa collection) et les essais du jour, note l'essai et rend les deux decks (le boss avec son bonus d'ATQ et de PV), la graine et le tableau des niveaux. Le combat se calcule ici, jusqu'à la mort (`maxTours` 60, pas de prolongation, pas de récompense de combat), puis `boss_conclure` note l'issue et les dégâts faits au boss et verse le gold caché, exponentiel (`boss_or_10pv` la première tranche de 10 PV, puis `boss_or_croissance` % de plus à chaque tranche). La réponse est le combat, avec `tempete: 4` (fond orageux de l'overlay) et `boss: { gagne, degats, gain, restants }`.
+
+## Live automatique (statut-stream)
+
+`src/statut-stream.ts` est une seconde fonction, indépendante de swift-responder (`db/migrations/95-live-auto.sql`). pg_cron l'appelle chaque minute (secret `x-secret`, rangé dans la table privée `stream_auto`) ; elle demande à Twitch si la chaîne est en live (jeton d'application, mis en cache dans `stream_auto`) et écrit `reglages_jeu.stream_en_ligne`. Un déclencheur en base en déduit `jeu_live` quand le mode automatique est choisi (Admin > Réglages), sauf si « Ce live est un let's play » est coché. Le retour hors ligne n'est écrit qu'après 5 minutes sans live, pour qu'une coupure du stream ne bascule pas le jeu. Si Twitch ne répond pas, rien ne change.
+
+Déploiement, sans build : Supabase > Edge Functions > nouvelle fonction `statut-stream`, coller le fichier tel quel, **Verify JWT désactivé** ; secrets `TWITCH_CLIENT_ID` et `TWITCH_CLIENT_SECRET` (une application de la console développeur Twitch).

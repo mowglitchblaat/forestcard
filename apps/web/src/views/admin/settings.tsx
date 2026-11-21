@@ -305,7 +305,15 @@ function SettingsForms({ v }: { v: Settings }) {
   const [unused, setUnused] = useState<UnusedImages | null>(null);
 
   const closed = setting(v, 'jeu_ferme', 0) === '1';
-  const live = !closed && setting(v, 'jeu_live', 1) !== '0';
+  const auto = !closed && setting(v, 'jeu_auto', 0) === '1';
+  const live = !closed && !auto && setting(v, 'jeu_live', 1) !== '0';
+  const streaming = setting(v, 'stream_en_ligne', 0) === '1';
+  const letsPlay = setting(v, 'jeu_lets_play', 0) === '1';
+  const playedNow = closed
+    ? 'nulle part (fermé)'
+    : setting(v, 'jeu_live', 1) !== '0'
+      ? 'en live'
+      : 'sur le site';
   const storedLevels = readLevels(v.niveaux_statuts);
   const speedNow = String(Number(setting(v, 'vitesse_combat', 1)));
 
@@ -315,13 +323,16 @@ function SettingsForms({ v }: { v: Settings }) {
         title="🎬 Jeu en live"
         description={
           <>
-            <b>Fermé</b> : le jeu est coupé partout, en live (!combat, duels, !quotidien, !booster,
-            championnat répondent « jeu fermé ») comme sur le site (onglet « Jouer » masqué). Les
-            compteurs du championnat sont arrêtés ; collection, deck, boutique et jeux du jour
-            restent ouverts. <b>En pause</b> (pour tes let's play) : les commandes du live répondent
-            « jeu en pause » et l'onglet « 🎮 Jouer » s'ouvre sur le site : chacun y ouvre ses
-            boosters et fait ses combats, avec les mêmes animations et les mêmes limites du jour.
-            Pour couper aussi !booster, ferme Streamer.bot.
+            <b>Automatique</b> : le jeu passe tout seul en live quand ton stream démarre, et sur le
+            site (onglet « 🎮 Jouer ») quand il s'arrête (vérifié chaque minute auprès de Twitch ;
+            le retour sur le site attend 5 minutes hors ligne, pour ne pas basculer si le stream
+            coupe un instant). Pour un let's play, coche <b>« Ce live est un let's play »</b> avant
+            ou pendant le live : le jeu reste sur le site, et la case se décoche toute seule à la
+            fin du stream. <b>Fermé</b> : le jeu est coupé partout, en live (!combat, duels,
+            !quotidien, !booster, championnat répondent « jeu fermé ») comme sur le site.{' '}
+            <b>Manuel</b> : le jeu reste en live ou sur le site jusqu'à ce que tu changes. En pause
+            ou sur le site, les commandes du live répondent « jeu en pause » ; pour couper aussi
+            !booster, ferme Streamer.bot.
           </>
         }
       >
@@ -331,34 +342,58 @@ function SettingsForms({ v }: { v: Settings }) {
             const f = form(e);
             const mode = String(f.get('mode'));
             const price = clamp(f.get('prix'), 0, 100000);
+            const lp = f.get('lets_play') === 'on';
             game.run(async () => {
               await saveSettings({
-                jeu_live: mode === 'live' ? '1' : '0',
+                ...(mode === 'auto' ? {} : { jeu_live: mode === 'live' ? '1' : '0' }),
+                jeu_auto: mode === 'auto' ? '1' : '0',
                 jeu_ferme: mode === 'ferme' ? '1' : '0',
+                jeu_lets_play: lp ? '1' : '0',
                 duel_site_prix: price,
               });
               return mode === 'ferme'
                 ? '🔒 Jeu fermé partout : les commandes du live répondent « jeu fermé », !booster est refusé et l’onglet « Jouer » est masqué pour les joueurs.'
-                : mode === 'pause'
-                  ? '🎬 Jeu en pause : les joueurs jouent sur le site (onglet « 🎮 Jouer »). Pense à fermer Streamer.bot ou à mettre tes récompenses de points de chaîne en pause.'
-                  : '🎥 Jeu de nouveau en live : l’onglet « Jouer » est masqué pour les joueurs.';
+                : mode === 'auto'
+                  ? lp
+                    ? '🎬 Automatique, let’s play coché : le jeu reste sur le site pendant ce live. La case se décochera toute seule à la fin du stream.'
+                    : '🤖 Automatique : le jeu passe en live quand ton stream démarre, et sur le site quand il s’arrête.'
+                  : mode === 'pause'
+                    ? '🎬 Jeu en pause : les joueurs jouent sur le site (onglet « 🎮 Jouer »). Pense à fermer Streamer.bot ou à mettre tes récompenses de points de chaîne en pause.'
+                    : '🎥 Jeu de nouveau en live : l’onglet « Jouer » est masqué pour les joueurs.';
             });
           }}
         >
+          <p className="text-sm text-muted-foreground">
+            Twitch : {streaming ? '🔴 en live' : '⚫ hors ligne'} · le jeu se joue en ce moment{' '}
+            {playedNow}
+          </p>
           <Row>
             <Choice>
-              <Checkbox type="radio" name="mode" value="live" defaultChecked={live} /> 🎥 Jeu en
-              live
+              <Checkbox type="radio" name="mode" value="auto" defaultChecked={auto} /> 🤖
+              Automatique (selon ton stream)
             </Choice>
             <Choice>
-              <Checkbox type="radio" name="mode" value="pause" defaultChecked={!live && !closed} />{' '}
-              🎬 En pause : on joue sur le site
+              <Checkbox type="radio" name="mode" value="live" defaultChecked={live} /> 🎥 Toujours
+              en live
+            </Choice>
+            <Choice>
+              <Checkbox
+                type="radio"
+                name="mode"
+                value="pause"
+                defaultChecked={!live && !closed && !auto}
+              />{' '}
+              🎬 Toujours sur le site
             </Choice>
             <Choice>
               <Checkbox type="radio" name="mode" value="ferme" defaultChecked={closed} /> 🔒 Fermé
               partout
             </Choice>
           </Row>
+          <Choice>
+            <Checkbox name="lets_play" defaultChecked={letsPlay} /> 🎮 Ce live est un let's play :
+            le jeu reste sur le site (en automatique, se décoche à la fin du stream)
+          </Choice>
           <Field
             label="Prix d'un duel lancé depuis le site, en gold"
             hint="En live, un duel coûte des points de chaîne."

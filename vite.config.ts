@@ -4,6 +4,8 @@ import { defineConfig } from 'vite-plus';
 // docs/ is hand-written French prose and data snapshots: not formatted.
 const UNTOUCHED = [
   'apps/edge/src/swift-responder.js',
+  // Deno file pasted as-is in Supabase (db/migrations/95-live-auto.sql).
+  'apps/edge/src/statut-stream.ts',
   'apps/overlay-combat/src/combat.html',
   'apps/site/src/index.html',
   'apps/catalogue/src/catalogue.html',
