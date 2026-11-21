@@ -557,6 +557,7 @@ export function WorldMap() {
             .map(([place, shape]) => (
               <ElectricArcs key={`arcs-${place}`} shape={shape} />
             ))}
+          <MapGlow level={map.data?.lueur ?? 0} x={glowX(places, charged)} />
           <MapStorm level={map.data?.tempete ?? 0} />
           <MapLightnings places={places} />
           {pins.map((p) => (
@@ -732,6 +733,32 @@ function chargedPlaces(
 // The place of a collection; null (Basique, the cards of no collection): the place without one.
 function homeOf(places: Place[], collection: number | null): Place | undefined {
   return places.find((p) => p.collection_id === collection);
+}
+
+// The violet glow in the sky (Admin > Lore, lore_carte.lueur, 1 to 10): a light coming down from
+// the top of the map, above the place holding the lightning (else the middle), slowly breathing.
+// Barely there at 1; the higher, the stronger and the further down it reaches.
+const GLOW = {
+  alpha: [0, 0.05, 0.08, 0.12, 0.16, 0.21, 0.27, 0.34, 0.42, 0.52, 0.64],
+  reach: [0, 22, 28, 34, 40, 47, 54, 62, 70, 80, 92],
+} as const;
+function glowX(places: Place[], charged: Map<number, unknown>): number {
+  const holder = places.find((p) => charged.has(p.id));
+  return holder ? holder.x : 50;
+}
+function MapGlow({ level, x }: { level: number; x: number }) {
+  const L = Math.max(0, Math.min(10, Math.round(level)));
+  if (!L) return null;
+  return (
+    <div
+      style={{
+        '--glow-x': `${x}%`,
+        '--glow-alpha': String(GLOW.alpha[L] ?? 0),
+        '--glow-reach': `${GLOW.reach[L] ?? 0}%`,
+      }}
+      className="lore-sky-glow pointer-events-none absolute inset-0"
+    />
+  );
 }
 
 // The storm over the map (Admin > Lore, lore_carte.tempete, 1 to 5): the sky darkens, lightning

@@ -39,6 +39,7 @@ import {
   saveMapImage,
   savePlace,
   setCountEnd,
+  setMapGlow,
   setMapStorm,
   setPlaceRevealed,
 } from '@/data/lore';
@@ -753,6 +754,30 @@ function MapAdmin() {
           <option value="3">3 : éclairs partout, flashs dans le ciel</option>
           <option value="4">4 : tempête, ciel sombre et pluie</option>
           <option value="5">5 : déluge d'éclairs</option>
+        </NativeSelect>
+      </Field>
+      <Field label="Lueur violette dans le ciel (descend du haut de la carte, au-dessus du lieu qui détient l'éclair)">
+        <NativeSelect
+          value={String(map.data.lueur)}
+          onChange={(e) => {
+            const level = Number(e.target.value);
+            act.run(async () => {
+              await setMapGlow(level);
+              return level ? `Lueur violette : intensité ${level} sur 10.` : 'Lueur éteinte.';
+            });
+          }}
+        >
+          <option value="0">Éteinte</option>
+          <option value="1">1 : à peine visible</option>
+          <option value="2">2</option>
+          <option value="3">3 : on commence à la remarquer</option>
+          <option value="4">4</option>
+          <option value="5">5 : nette</option>
+          <option value="6">6</option>
+          <option value="7">7 : forte</option>
+          <option value="8">8</option>
+          <option value="9">9</option>
+          <option value="10">10 : ciel embrasé</option>
         </NativeSelect>
       </Field>
       {picture && (
