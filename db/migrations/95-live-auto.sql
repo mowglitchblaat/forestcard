@@ -135,3 +135,9 @@ select cron.schedule('statut-stream', '* * * * *', $job$
     body := '{}'::jsonb,
     timeout_milliseconds := 10000);
 $job$);
+
+-- L'historique de pg_cron grossit d'une ligne par minute : on ne garde que les 3 derniers jours.
+select cron.unschedule(jobid) from cron.job where jobname = 'statut-stream-menage';
+select cron.schedule('statut-stream-menage', '17 4 * * *', $job$
+  delete from cron.job_run_details where end_time < now() - interval '3 days';
+$job$);
