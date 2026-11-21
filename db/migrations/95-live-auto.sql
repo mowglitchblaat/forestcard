@@ -39,6 +39,7 @@ create table if not exists public.stream_auto (
 );
 alter table public.stream_auto enable row level security;
 revoke all on public.stream_auto from public, anon, authenticated;
+grant select, update on public.stream_auto to service_role;   -- lue et mise à jour par statut-stream
 insert into public.stream_auto (id, chaine_id)
   select 1, j.twitch_id::text from public.admins a join public.joueurs j on j.id = a.user_id limit 1
 on conflict (id) do nothing;
