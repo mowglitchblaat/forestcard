@@ -17,8 +17,7 @@ returns trigger language plpgsql security definer set search_path = public as $$
 begin
   if new.lueur >= 3 and coalesce(old.lueur, 0) < 3 and not new.lueur_annonce then
     insert into public.annonces (type, titre, texte)
-      values ('annonce', 'Mais qu''est-ce ? Que se passe-t-il ?',
-              'Une étrange lueur violette envahit le ciel au-dessus de la Forêt Enchantée… et elle ne cesse de grandir.');
+      values ('annonce', 'Mais qu''est-ce ? Que se passe-t-il ?', '');   -- rien de plus : ça reste mystérieux
     new.lueur_annonce := true;
   end if;
   return new;
