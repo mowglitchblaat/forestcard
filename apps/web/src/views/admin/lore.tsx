@@ -770,7 +770,9 @@ function MapAdmin() {
           <option value="0">Éteinte</option>
           <option value="1">1 : à peine visible</option>
           <option value="2">2</option>
-          <option value="3">3 : on commence à la remarquer</option>
+          <option value="3">
+            3 : on commence à la remarquer (publie l’annonce « Mais qu’est-ce ? »)
+          </option>
           <option value="4">4</option>
           <option value="5">5 : nette</option>
           <option value="6">6</option>
