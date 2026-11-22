@@ -739,8 +739,8 @@ function homeOf(places: Place[], collection: number | null): Place | undefined {
 // the top of the map, above the place holding the lightning (else the middle), slowly breathing.
 // Barely there at 1; the higher, the stronger and the further down it reaches.
 const GLOW = {
-  alpha: [0, 0.05, 0.08, 0.12, 0.16, 0.21, 0.27, 0.34, 0.42, 0.52, 0.64],
-  reach: [0, 22, 28, 34, 40, 47, 54, 62, 70, 80, 92],
+  alpha: [0, 0.12, 0.18, 0.25, 0.32, 0.4, 0.48, 0.56, 0.66, 0.78, 0.9],
+  reach: [0, 25, 31, 37, 44, 51, 58, 66, 74, 84, 95],
 } as const;
 function glowX(places: Place[], charged: Map<number, unknown>): number {
   const holder = places.find((p) => charged.has(p.id));

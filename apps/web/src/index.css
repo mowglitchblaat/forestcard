@@ -1050,9 +1050,9 @@
    --glow-reach, slowly breathing. */
 @utility lore-sky-glow {
   background: radial-gradient(
-    ellipse 60% var(--glow-reach) at var(--glow-x) 0%,
-    rgb(190 110 255 / var(--glow-alpha)),
-    rgb(140 50 230 / calc(var(--glow-alpha) * 0.55)) 45%,
+    ellipse 65% var(--glow-reach) at var(--glow-x) 0%,
+    rgb(200 120 255 / var(--glow-alpha)),
+    rgb(150 60 240 / calc(var(--glow-alpha) * 0.6)) 45%,
     transparent 100%
   );
   mix-blend-mode: screen;
