@@ -1046,22 +1046,38 @@
   animation: lore-electric 1.7s steps(1, end) infinite;
 }
 /* The violet glow in the sky of the world map (world-map.tsx, MapGlow; lore_carte.lueur): a light
-   coming down from the top, centred on --glow-x, as strong as --glow-alpha and reaching down to
-   --glow-reach, slowly breathing. */
+   falling from above the top edge, centred on --glow-x, as strong as --glow-alpha, --glow-width
+   wide and reaching down to --glow-reach, breathing very slowly; soft still rays (--glow-rays). */
 @utility lore-sky-glow {
   background: radial-gradient(
-    ellipse 65% var(--glow-reach) at var(--glow-x) 0%,
-    rgb(200 120 255 / var(--glow-alpha)),
-    rgb(150 60 240 / calc(var(--glow-alpha) * 0.6)) 45%,
+    ellipse var(--glow-width) var(--glow-reach) at var(--glow-x) -12%,
+    rgb(165 80 255 / var(--glow-alpha)),
+    rgb(165 80 255 / calc(var(--glow-alpha) * 0.55)) 35%,
+    rgb(165 80 255 / calc(var(--glow-alpha) * 0.18)) 70%,
     transparent 100%
   );
   mix-blend-mode: screen;
-  animation: lore-sky-glow 8s ease-in-out infinite;
+  animation: lore-sky-glow 10s ease-in-out infinite;
+}
+@utility lore-sky-rays {
+  opacity: var(--glow-rays);
+  background: repeating-conic-gradient(
+    from 135deg at var(--glow-x) -12%,
+    rgb(215 160 255 / 0) 0deg,
+    rgb(215 160 255 / 0.9) 2deg,
+    rgb(215 160 255 / 0) 5deg 11deg
+  );
+  mask-image: radial-gradient(
+    ellipse var(--glow-width) var(--glow-reach) at var(--glow-x) -12%,
+    black,
+    transparent
+  );
+  mix-blend-mode: screen;
 }
 @keyframes lore-sky-glow {
   0%,
   100% {
-    opacity: 0.7;
+    opacity: 0.85;
   }
   50% {
     opacity: 1;

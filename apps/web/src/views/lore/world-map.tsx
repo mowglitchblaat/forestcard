@@ -735,16 +735,19 @@ function homeOf(places: Place[], collection: number | null): Place | undefined {
   return places.find((p) => p.collection_id === collection);
 }
 
-// The violet glow in the sky (Admin > Lore, lore_carte.lueur, 1 to 10): a light coming down from
-// the top of the map, above the place holding the lightning (else the middle), slowly breathing.
-// Barely there at 1; the higher, the stronger and the further down it reaches.
+// The violet glow in the sky (Admin > Lore, lore_carte.lueur, 1 to 10): a light falling from above
+// the top of the map, over the place holding the lightning (else the middle), with soft rays from 2.
+// No sparkle: the light comes from the sky. Faint at 1; the higher, the stronger, the wider and the
+// further down it reaches. It breathes very slowly.
 const GLOW = {
-  alpha: [0, 0.12, 0.18, 0.25, 0.32, 0.4, 0.48, 0.56, 0.66, 0.78, 0.9],
-  reach: [0, 25, 31, 37, 44, 51, 58, 66, 74, 84, 95],
+  alpha: [0, 0.6, 0.67, 0.73, 0.79, 0.84, 0.88, 0.92, 0.95, 0.98, 1],
+  reach: [0, 50, 57, 64, 71, 78, 85, 92, 99, 106, 114],
+  width: [0, 45, 50, 55, 60, 66, 72, 78, 84, 90, 96],
+  rays: [0, 0, 0.06, 0.1, 0.14, 0.18, 0.22, 0.27, 0.32, 0.38, 0.45],
 } as const;
 function glowX(places: Place[], charged: Map<number, unknown>): number {
   const holder = places.find((p) => charged.has(p.id));
-  return holder ? holder.x : 50;
+  return holder ? Math.min(85, holder.x + 10) : 50;
 }
 function MapGlow({ level, x }: { level: number; x: number }) {
   const L = Math.max(0, Math.min(10, Math.round(level)));
@@ -755,9 +758,14 @@ function MapGlow({ level, x }: { level: number; x: number }) {
         '--glow-x': `${x}%`,
         '--glow-alpha': String(GLOW.alpha[L] ?? 0),
         '--glow-reach': `${GLOW.reach[L] ?? 0}%`,
+        '--glow-width': `${GLOW.width[L] ?? 0}%`,
+        '--glow-rays': String(GLOW.rays[L] ?? 0),
       }}
-      className="lore-sky-glow pointer-events-none absolute inset-0"
-    />
+      className="pointer-events-none absolute inset-0"
+    >
+      <div className="lore-sky-glow absolute inset-0" />
+      <div className="lore-sky-rays absolute inset-0" />
+    </div>
   );
 }
 
