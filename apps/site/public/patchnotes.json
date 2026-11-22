@@ -1,5 +1,24 @@
 [
   {
+    "date": "2026-11-22",
+    "intro": "Quelque chose se prépare dans le ciel de la carte du monde du Lore…",
+    "groupes": [
+      {
+        "titre": "Site",
+        "points": [
+          "Lore : une lueur violette peut désormais descendre du ciel sur la carte du monde, au-dessus du lieu qui détient l’éclair, avec des rayons doux qui respirent lentement.",
+          "Plus elle monte en intensité, plus elle devient forte, large et descend bas sur la carte : gardez un œil dessus au fil des jours."
+        ]
+      },
+      {
+        "titre": "Admin",
+        "points": [
+          "Nouveau réglage de la lueur violette (de éteinte à ciel embrasé), avec une annonce publiée automatiquement la première fois qu’elle devient bien visible."
+        ]
+      }
+    ]
+  },
+  {
     "date": "2026-11-21",
     "intro": "Le jeu suit maintenant le stream tout seul : il passe en live quand le stream démarre et revient en mode site quand il s’arrête.",
     "groupes": [
