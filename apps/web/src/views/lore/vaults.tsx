@@ -40,11 +40,6 @@ const GLOW: Record<Tint, string> = {
   violet: 'vault-glow-violet',
   or: 'vault-glow-or',
 };
-const LOOT: Record<Tint, string> = {
-  bleu: 'Un trésor de cartes rares',
-  violet: 'Un trésor de cartes épiques',
-  or: 'Un trésor de cartes légendaires',
-};
 
 const fr = (n: number) => n.toLocaleString('fr-FR');
 
@@ -127,10 +122,9 @@ function Heist({ heist, onOpened }: { heist: Heist; onOpened: (v: Vault) => void
           )}
         </CardTitle>
         <CardDescription>
-          Trois coffres-forts scellés renferment un trésor : de nouvelles cartes à venir. Achète des
-          foreuses, pose-les sur le coffre de ton choix : chaque foreuse perce la porte pour de bon.
-          Quand assez de trous sont faits, le coffre cède… et révèle les cartes qui seront créées
-          pour tout le monde.
+          Trois coffres-forts scellés. Achète des foreuses et pose-les sur le coffre de ton choix :
+          chaque foreuse perce la porte pour de bon. Combien en faudra-t-il ? Et que cachent-ils ?
+          Personne ne le sait…
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-5">
@@ -437,7 +431,7 @@ function VaultTile({
           ? v.tresor
             ? `Trésor : ${v.tresor.nb} nouvelles cartes ${v.tresor.rarete} à venir !`
             : 'Trésor révélé !'
-          : `${LOOT[v.teinte]}… mais combien ?`}
+          : 'Que cache-t-il ?'}
       </small>
       {!isOpen && canDrill && (
         <div className="flex flex-wrap justify-center gap-2">
