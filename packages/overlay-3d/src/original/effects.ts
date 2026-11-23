@@ -141,7 +141,7 @@ function faceCanvas(app: Application, c: LegacyCard): HTMLCanvasElement {
     return app.renderer.extract.canvas({ target: c.front, resolution: 1 }) as HTMLCanvasElement;
   } finally {
     for (const [o, filters, area] of off) {
-      o.filters = filters;
+      o.filters = filters ? [...filters] : null;
       o.filterArea = area;
     }
   }
