@@ -124,8 +124,27 @@ const nudge = (c: LegacyCard, a: [number, number], b: [number, number], ms: numb
   animate(c, [{}, { x: a[0], y: a[1] }, { x: b[0], y: b[1] }, {}], ms);
 
 // a card's face as a canvas (the legacy's texCarte), for its halves and its belly picture
+// Drawn without the face's filters (a status's shader): rendered off screen, a filter reading screen
+// positions came out empty, and a poisoned card broke into blank shards.
 function faceCanvas(app: Application, c: LegacyCard): HTMLCanvasElement {
-  return app.renderer.extract.canvas({ target: c.front, resolution: 1 }) as HTMLCanvasElement;
+  const off: [Container, Container['filters'], Container['filterArea']][] = [];
+  const strip = (o: Container) => {
+    if (o.filters) {
+      off.push([o, o.filters, o.filterArea]);
+      o.filters = null;
+      o.filterArea = undefined;
+    }
+    for (const ch of o.children) strip(ch);
+  };
+  strip(c.front);
+  try {
+    return app.renderer.extract.canvas({ target: c.front, resolution: 1 }) as HTMLCanvasElement;
+  } finally {
+    for (const [o, filters, area] of off) {
+      o.filters = filters ? [...filters] : null;
+      o.filterArea = area;
+    }
+  }
 }
 
 export type LegacyEffects = ReturnType<typeof legacyEffects>;
