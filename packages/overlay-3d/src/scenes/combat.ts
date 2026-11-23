@@ -464,9 +464,8 @@ export async function playCombat(ctx: CombatContext, m: CombatMessage): Promise<
 
   // A relay: side c's fighter fell; its player sends the next one, with a new magic and trap (face
   // down). The other side keeps everything.
-  // Legacy's relay (combat.html, relais): the fallen fighter breaks, unless it already lies cut; its
-  // magic and trap drop away; the next three come from the middle of the screen, small and turned,
-  // one after the other, and the fighter turns face up.
+  // A relay: the fallen fighter breaks like in the legacy (combat.html, relais), unless it already lies
+  // cut; its magic and trap drop away; the next three fly in from their player's edge.
   async function dropOut(card: Card, n: number): Promise<void> {
     const root = card.root,
       y0 = root.y,
@@ -482,31 +481,6 @@ export async function playCombat(ctx: CombatContext, m: CombatMessage): Promise<
         root.alpha = 1 - u;
       },
       'in-2',
-      root,
-    );
-  }
-  async function fromCentre(card: Card, side: number, n: number): Promise<void> {
-    const root = card.root,
-      tx = root.x,
-      ty = root.y,
-      k = root.scale.x;
-    const cx = stage.width / 2,
-      cy = stage.height * 0.45;
-    root.position.set(cx, cy);
-    root.scale.set(k * 0.25);
-    root.angle = side ? 18 : -18;
-    root.alpha = 0;
-    await wait(n * 320);
-    await tween(
-      700,
-      (u) => {
-        root.x = cx + (tx - cx) * u;
-        root.y = cy + (ty - cy) * u;
-        root.scale.set(k * (0.25 + 0.75 * u));
-        root.angle = (side ? 18 : -18) * (1 - u);
-        root.alpha = Math.min(1, u / 0.25);
-      },
-      'out-cubic',
       root,
     );
   }
@@ -536,9 +510,8 @@ export async function playCombat(ctx: CombatContext, m: CombatMessage): Promise<
     s.magic = hand0(p, 'magic', h.x, h.magic);
     s.trap = hand0(p, 'trap', h.x, h.trap);
     shown[c] = p.fighter.name;
-    const coming = [s.fighter.card, s.magic, s.trap].filter((x) => !!x);
-    await Promise.all(coming.map((x, n) => fromCentre(x, c, n)));
-    await wait(400);
+    // they fly in from their player's edge, like at the deal (liked on the live)
+    await inOrder([s], (x) => flyIn(x, c));
     await Promise.all([s.fighter.card.flip(app), enterBar(l, c, p)]);
     const of = num(l.raw['of']);
     if (l.t === 'relais' && of && l.n !== null)
