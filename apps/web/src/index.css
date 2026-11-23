@@ -1462,10 +1462,11 @@
 @utility vault-open-beam {
   background: radial-gradient(
     circle at 50% 50%,
-    rgb(255 255 255) 0 18%,
-    var(--glow) 40%,
-    transparent 70%
+    rgb(255 255 255 / 0.85) 0 12%,
+    var(--glow) 30%,
+    transparent 62%
   );
+  mix-blend-mode: screen;
   animation: vault-beam 1.6s ease-out both;
 }
 @utility vault-open-rays {

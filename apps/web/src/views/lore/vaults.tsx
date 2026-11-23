@@ -497,9 +497,11 @@ function Opening({ vault: v, onClose }: { vault: Vault; onClose: () => void }) {
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-h-dialog overflow-y-auto sm:max-w-4xl">
-        <DialogTitle className="flex items-center gap-2">
-          <ICONS.vault />
-          {v.nom} : il a cédé !
+        <DialogTitle>
+          <span className="flex items-center gap-2">
+            <ICONS.vault />
+            {v.nom} : il a cédé !
+          </span>
         </DialogTitle>
         <DialogDescription>
           {past('cards')
@@ -521,6 +523,12 @@ function Opening({ vault: v, onClose }: { vault: Vault; onClose: () => void }) {
             </div>
           )}
           <div className="relative mx-auto aspect-square w-full max-w-sm">
+            <img
+              src="cadres/coffre-interieur.webp"
+              alt=""
+              draggable={false}
+              className="absolute inset-0 size-full select-none"
+            />
             {past('swing') && (
               <>
                 <span aria-hidden className="vault-open-beam absolute inset-0 rounded-full" />
