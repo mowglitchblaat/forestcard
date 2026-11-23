@@ -25,3 +25,18 @@ jobs:
           git add -A
           git commit -m "Lockfile and format (overlay-3d branch)"
           git push
+  # the site builds and assembles with the new page (pages.yml does it on main only)
+  build:
+    needs: fix
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: overlay-3d
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run pages
+      - run: ls -la _site/combat-3d.html _site/overlay-3d
