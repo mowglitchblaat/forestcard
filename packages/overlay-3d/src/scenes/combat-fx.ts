@@ -80,7 +80,9 @@ export function mechanicsOf(ctx: MechanicsContext) {
           move(sideOf(raw['cible']), 'cancelled');
           return move(c, 'block');
         }
-        return awaitMove(c, 'ultimate');
+        // the legacy's red aura (original/effects.ts)
+        if (f) return ctx.legacy.ultimate(f.card);
+        return;
       case 'bloque':
         return move(c, 'block');
       case 'piege':
@@ -408,7 +410,8 @@ export function mechanicsOf(ctx: MechanicsContext) {
       case 'piege_amorce':
         return handMove(c, 'trap', 'buff');
       case 'ultime_desespoir':
-        return move(c, 'ultimate');
+        if (f) detach(ctx.legacy.ultimate(f.card));
+        return;
     }
   };
 }
