@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Forest Card — booster (overlay 3D)</title>
+    <!-- the plaque's fonts (the card composer's: packages/layout FONTS), loaded before any card is built -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Russo+One&family=Bangers&family=Cinzel+Decorative:wght@900&family=Pirata+One&family=Metamorphous&family=Rubik:wght@600&display=swap"
+    />
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        overflow: hidden;
+        background: transparent;
+        font-family: system-ui, sans-serif;
+        color: #fff;
+      }
+      body.test {
+        background: #101015;
+      }
+      #panel {
+        position: fixed;
+        left: 12px;
+        top: 12px;
+        display: none;
+        gap: 8px;
+        align-items: center;
+        z-index: 10;
+      }
+      body.test #panel {
+        display: flex;
+      }
+      #panel button {
+        background: #262634;
+        color: #fff;
+        border: 1px solid #44445a;
+        border-radius: 8px;
+        padding: 8px 12px;
+        font: inherit;
+        cursor: pointer;
+      }
+      #status {
+        font-size: 13px;
+        color: #a1a1b5;
+      }
+    </style>
+  </head>
+  <body data-mode="booster">
+    <div id="panel">
+      <button id="fight">⚔️ Combat de test</button>
+      <button id="relay">🏆 Combat en relais</button>
+      <button id="open">🎁 Ouvrir un booster</button>
+      <span id="status"></span>
+    </div>
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>

@@ -1,9 +1,10 @@
-// The WebGL combat overlay (combat-3d.html), for an OBS browser source next to the legacy combat.html.
+// The WebGL overlays for OBS, next to the legacy pages: combat-3d.html (combats, next to combat.html)
+// and booster-3d.html (booster openings, next to overlay.html). The page's mode: <body data-mode>.
 //
-//   in OBS        it listens to Streamer.bot (ws://127.0.0.1:8080, General.Custom), like combat.html,
-//                 and plays each combat it receives, one after the other;
-//   ?test         a panel to play combats computed here, by the engine, with the cards of the snapshot
-//                 (docs/legacy/cartes-*.json): to try the overlay without a live;
+//   in OBS        it listens to Streamer.bot (ws://127.0.0.1:8080, General.Custom), like the legacy
+//                 pages, and plays each combat (or opening) it receives, one after the other;
+//   ?test         a panel to play combats computed here by the engine, or openings, with the cards of
+//                 the snapshot (docs/legacy/cartes-*.json): to try the overlay without a live;
 //   ?qualite=eco  the eco quality (packages/overlay-3d, config/quality.ts): lighter on the GPU.
 //
 // It only shows: it announces nothing to Streamer.bot (combat.html keeps doing that while both run).
@@ -19,11 +20,18 @@ import {
   combatTextures,
   createStage,
   decodeImagesAsElements,
+  lookupBoosterImage,
+  playBooster,
   playCombat,
   qualityFromUrl,
+  qualityLevel,
+  readBoosterMessage,
   readCombatMessage,
   setErrorReporter,
   setQuality,
+  texturesOf,
+  toBoosterEvent,
+  type BoosterMessage,
   type CombatMessage,
   type TextureKeys,
 } from '@forestcard/overlay-3d';
@@ -31,11 +39,15 @@ import snapshot from '../../../docs/legacy/cartes-2026-10-19.json';
 
 const params = new URLSearchParams(location.search);
 const TEST = params.has('test');
+const MODE = document.body.dataset['mode'] === 'booster' ? 'booster' : 'combat';
 // before anything is built: the shaders are compiled with it
 setQuality(qualityFromUrl(location.search));
 
 // ---- images: the GitHub mirror when the image is there (copied each night), else Supabase ----------
-const STORAGE = 'https://bjsvqikjnvaomyoifiml.supabase.co/storage/v1/object/public/cartes/';
+const SUPABASE = 'https://bjsvqikjnvaomyoifiml.supabase.co';
+// the database's public key, like overlay.html: a booster's image is read by its name
+const PUBLIC_KEY = 'sb_publishable_-3cPqDCyE-zhb3z5r6dPhg_DJFKGAI6';
+const STORAGE = SUPABASE + '/storage/v1/object/public/cartes/';
 const MIRROR = 'https://mowglitchblaat.github.io/forestcard/img/';
 let mirrored = new Set<string>();
 async function loadMirror(): Promise<void> {
@@ -53,7 +65,8 @@ async function loadMirror(): Promise<void> {
     // no mirror list: Supabase serves every image
   }
 }
-const imageUrl = (path: string) => (mirrored.has(path) ? MIRROR + encodeURI(path) : STORAGE + path);
+const imageUrl = (path: string) =>
+  /^https?:/.test(path) ? path : mirrored.has(path) ? MIRROR + encodeURI(path) : STORAGE + path;
 // a texture's key is its address: the frames and plaques are the site's own (cadres/…)
 const keys: TextureKeys = { imageKey: imageUrl, drawingKey: imageUrl };
 const store = new TextureStore((key) => key);
@@ -78,6 +91,18 @@ async function loadFonts(): Promise<void> {
   await Promise.race([Promise.allSettled(wanted), new Promise((ok) => setTimeout(ok, 4000))]);
 }
 
+// a booster's image: the message's, else read by the booster's name (overlay.html, boosterImg)
+const boosterImages = new Map<string, string | null>();
+async function boosterImage(m: BoosterMessage): Promise<string | null> {
+  if (m.image_path) return imageUrl(m.image_path);
+  if (!boosterImages.has(m.booster)) {
+    const rest = SUPABASE + '/rest/v1';
+    boosterImages.set(m.booster, await lookupBoosterImage(m.booster, { rest, key: PUBLIC_KEY }));
+  }
+  const path = boosterImages.get(m.booster);
+  return path ? imageUrl(path) : null;
+}
+
 async function main(): Promise<void> {
   if (TEST) document.body.classList.add('test');
   const status = document.getElementById('status');
@@ -100,40 +125,61 @@ async function main(): Promise<void> {
   document.body.appendChild(app.canvas);
   capFrameRate(app);
   const stage = createStage(app);
-  const layer = new Container({ label: 'combats' });
+  const layer = new Container({ label: MODE });
   stage.root.addChild(layer);
   await Promise.all([loadFonts(), loadMirror()]);
   // a missing frame is reported and left out: the card falls back on the next one (packages/layout)
   await store.keep(frameUrls()).catch((err: unknown) => console.warn('frames', err));
-  const styles = CATEGORY_STYLES as CategoryStyles;
+  const deps = { textures: store.textures, styles: CATEGORY_STYLES as CategoryStyles };
 
-  // the combats, one after the other
-  const queue: CombatMessage[] = [];
+  async function show(m: CombatMessage | BoosterMessage): Promise<void> {
+    await loadMirror();
+    if ('journal' in m) {
+      const release = await store.hold(combatTextures(m, keys));
+      try {
+        await playCombat({ app, stage, layer, deps, keys }, m);
+      } finally {
+        release();
+      }
+      return;
+    }
+    // an image that does not load: the generic pack
+    let image = await boosterImage(m);
+    const release = await store.hold(texturesOf(m, keys));
+    let releaseImage = () => {};
+    if (image)
+      releaseImage = await store.hold([image]).catch(() => {
+        image = null;
+        return () => {};
+      });
+    try {
+      // the faces keep moving during a flip in full quality only (one more render per card)
+      const live = () => qualityLevel() === 'full';
+      await playBooster(
+        { app, stage, layer, deps, live },
+        toBoosterEvent(m, { ...keys, boosterImage: image }),
+      );
+    } finally {
+      releaseImage();
+      release();
+    }
+  }
+
+  // one after the other
+  const queue: (CombatMessage | BoosterMessage)[] = [];
   let playing = false;
-  async function play(m: CombatMessage): Promise<void> {
+  async function play(m: CombatMessage | BoosterMessage): Promise<void> {
     queue.push(m);
     if (playing) return;
     playing = true;
     try {
-      while (queue.length) {
-        const next = queue.shift()!;
-        await loadMirror();
-        const release = await store.hold(combatTextures(next, keys));
-        try {
-          await playCombat(
-            { app, stage, layer, deps: { textures: store.textures, styles }, keys },
-            next,
-          );
-        } finally {
-          release();
-        }
-      }
+      while (queue.length) await show(queue.shift()!);
     } finally {
       playing = false;
     }
   }
 
-  // Streamer.bot, like combat.html: General.Custom events carry the combat
+  // Streamer.bot, like the legacy pages: General.Custom events carry the combat or the opening
   if (!params.has('local')) {
     const connect = () => {
       const ws = new WebSocket('ws://127.0.0.1:8080/');
@@ -141,12 +187,12 @@ async function main(): Promise<void> {
         ws.send(
           JSON.stringify({
             request: 'Subscribe',
-            id: 'sub-combat-3d',
+            id: `sub-${MODE}-3d`,
             events: { General: ['Custom'] },
           }),
         );
       ws.onmessage = (e) => {
-        const m = readCombatMessage(e.data);
+        const m = MODE === 'booster' ? readBoosterMessage(e.data) : readCombatMessage(e.data);
         if (m) void play(m);
       };
       ws.onclose = () => setTimeout(connect, 3000);
@@ -156,7 +202,7 @@ async function main(): Promise<void> {
   }
 
   if (TEST) {
-    const cards = snapshot.map((c): EngineCard & { rarete: string } => {
+    const cards = snapshot.map((c): EngineCard & { rarete: string; couleur: string | null } => {
       const v = c.variantes_carte.find((x) => x.nom === 'Standard') ?? c.variantes_carte[0];
       return {
         id: c.id,
@@ -170,6 +216,7 @@ async function main(): Promise<void> {
         image: v?.image_path ?? null,
         rar: c.raretes ?? null,
         rarete: c.raretes?.nom ?? '—',
+        couleur: c.raretes?.couleur ?? null,
       };
     });
     const pick = (type: string) => {
@@ -183,7 +230,7 @@ async function main(): Promise<void> {
         Array.from({ length: n }, () => pick(t)),
       ),
     });
-    const run = (relay: boolean) => {
+    const fight = (relay: boolean) => {
       const r = relay
         ? simulerRelais(player('Joueur A', 3), player('Joueur B', 3))
         : simuler(player('Joueur A'), player('Joueur B'));
@@ -193,9 +240,27 @@ async function main(): Promise<void> {
         void play(m);
       } else say('Combat illisible');
     };
-    document.getElementById('fight')?.addEventListener('click', () => run(false));
-    document.getElementById('relay')?.addEventListener('click', () => run(true));
-    run(false);
+    // an opening of n random cards of the snapshot (?cartes=n, 5 by default), with their rarities
+    const open = () => {
+      const n = Math.max(1, Math.min(10, Number(params.get('cartes')) || 5));
+      const m = readBoosterMessage({
+        pseudo: 'Test',
+        booster: params.get('booster') ?? 'Booster de test',
+        cartes: Array.from({ length: n }, () => {
+          const c = cards[Math.floor(Math.random() * cards.length)]!;
+          return { carte: c.nom, rarete: c.rarete, couleur: c.couleur, image: c.image };
+        }),
+      });
+      if (m) {
+        say(queue.length || playing ? 'Ouverture ajoutée à la file' : '');
+        void play(m);
+      } else say('Ouverture illisible');
+    };
+    document.getElementById('fight')?.addEventListener('click', () => fight(false));
+    document.getElementById('relay')?.addEventListener('click', () => fight(true));
+    document.getElementById('open')?.addEventListener('click', open);
+    if (MODE === 'booster') open();
+    else fight(false);
   }
 }
 
