@@ -1,0 +1,20 @@
+{
+  "name": "@forestcard/overlay-3d",
+  "version": "0.0.0",
+  "private": true,
+  "description": "OBS overlays rendered with WebGL: cards built at display time, effects and reveals driven by configuration.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vp test"
+  },
+  "dependencies": {
+    "@forestcard/describe": "workspace:*",
+    "@forestcard/engine": "workspace:*",
+    "@forestcard/layout": "workspace:*",
+    "pixi-filters": "catalog:",
+    "pixi.js": "catalog:"
+  }
+}

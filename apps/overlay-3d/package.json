@@ -1,0 +1,18 @@
+{
+  "name": "@forestcard/overlay-3d-page",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The WebGL combat overlay for OBS (combat-3d.html): the combats Streamer.bot relays, played by @forestcard/overlay-3d.",
+  "type": "module",
+  "scripts": {
+    "build": "vp build"
+  },
+  "dependencies": {
+    "@forestcard/describe": "workspace:*",
+    "@forestcard/engine": "workspace:*",
+    "@forestcard/journal": "workspace:*",
+    "@forestcard/layout": "workspace:*",
+    "@forestcard/overlay-3d": "workspace:*",
+    "pixi.js": "catalog:"
+  }
+}

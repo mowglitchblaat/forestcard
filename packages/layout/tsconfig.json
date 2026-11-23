@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // Pure data and arithmetic: no DOM lib, no Node types (the caller measures the text).
+    "lib": ["es2023"],
+    "types": []
+  },
+  "include": ["src", "test"]
+}
