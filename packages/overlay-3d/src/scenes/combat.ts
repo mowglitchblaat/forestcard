@@ -464,12 +464,70 @@ export async function playCombat(ctx: CombatContext, m: CombatMessage): Promise<
 
   // A relay: side c's fighter fell; its player sends the next one, with a new magic and trap (face
   // down). The other side keeps everything.
+  // Legacy's relay (combat.html, relais): the fallen fighter breaks, unless it already lies cut; its
+  // magic and trap drop away; the next three come from the middle of the screen, small and turned,
+  // one after the other, and the fighter turns face up.
+  async function dropOut(card: Card, n: number): Promise<void> {
+    const root = card.root,
+      y0 = root.y,
+      k = root.scale.x,
+      a0 = root.angle;
+    await wait((n % 3) * 90);
+    await tween(
+      650,
+      (u) => {
+        root.y = y0 + (30 + (n % 3) * 8) * u;
+        root.angle = a0 + (n % 2 ? 6 : -6) * u;
+        root.scale.set(k * (1 - 0.2 * u));
+        root.alpha = 1 - u;
+      },
+      'in-2',
+      root,
+    );
+  }
+  async function fromCentre(card: Card, side: number, n: number): Promise<void> {
+    const root = card.root,
+      tx = root.x,
+      ty = root.y,
+      k = root.scale.x;
+    const cx = stage.width / 2,
+      cy = stage.height * 0.45;
+    root.position.set(cx, cy);
+    root.scale.set(k * 0.25);
+    root.angle = side ? 18 : -18;
+    root.alpha = 0;
+    await wait(n * 320);
+    await tween(
+      700,
+      (u) => {
+        root.x = cx + (tx - cx) * u;
+        root.y = cy + (ty - cy) * u;
+        root.scale.set(k * (0.25 + 0.75 * u));
+        root.angle = (side ? 18 : -18) * (1 - u);
+        root.alpha = Math.min(1, u / 0.25);
+      },
+      'out-cubic',
+      root,
+    );
+  }
+
   async function relay(l: CombatLine, c: 0 | 1, p: CombatPlayer): Promise<void> {
     const s = sides[c];
     if (!s) return;
-    const gone = [s.fighter.card, s.magic, s.trap].filter((x) => !!x);
-    await Promise.all(gone.map((x) => flyOut(x, c)));
-    for (const x of gone) x.destroy();
+    const fallen = s.fighter.card;
+    // a fighter taken by the threads (a control) leaves whole; a fallen one breaks
+    const broken = l.t === 'relais' && fallen.root.visible && !legacy.isCut(fallen);
+    if (broken) {
+      await legacy.shatter(fallen);
+      await wait(2080);
+    } else if (l.t === 'relais') await wait(600);
+    const hands = [s.magic, s.trap].filter((x) => !!x);
+    await Promise.all([
+      ...hands.map((x, n) => dropOut(x, n)),
+      ...(broken ? [] : [dropOut(fallen, 2)]),
+    ]);
+    await wait(150);
+    for (const x of [fallen, ...hands]) x.destroy();
     const h = hand(c);
     s.fighter = fighterOf(
       build(sourceOf(p, 'fighter')!, p.back, P.fighter, P.fighterX[c]!, P.y),
@@ -478,8 +536,13 @@ export async function playCombat(ctx: CombatContext, m: CombatMessage): Promise<
     s.magic = hand0(p, 'magic', h.x, h.magic);
     s.trap = hand0(p, 'trap', h.x, h.trap);
     shown[c] = p.fighter.name;
-    await inOrder([s], (x) => flyIn(x, c));
+    const coming = [s.fighter.card, s.magic, s.trap].filter((x) => !!x);
+    await Promise.all(coming.map((x, n) => fromCentre(x, c, n)));
+    await wait(400);
     await Promise.all([s.fighter.card.flip(app), enterBar(l, c, p)]);
+    const of = num(l.raw['of']);
+    if (l.t === 'relais' && of && l.n !== null)
+      legacy.say(s.fighter.card, `Combattant ${l.n}/${of}`, '#fcd34d', true);
   }
 
   // Both fighters' numbers, as the line leaves them (the ATQ shown counts a double and a rage).
@@ -748,8 +811,9 @@ export async function playCombat(ctx: CombatContext, m: CombatMessage): Promise<
           const won = i === w;
           // the winner glows gold, the loser breaks (legacy: the defeated card shatters; an executed card
           // already lies in two halves)
-          if (w !== null && (won || !legacy.isCut(side.fighter.card)))
-            detach(side.fighter.moves.play(won ? 'victory' : 'shatter'));
+          if (w !== null && won) detach(side.fighter.moves.play('victory'));
+          else if (w !== null && !legacy.isCut(side.fighter.card) && side.fighter.card.root.visible)
+            detach(legacy.shatter(side.fighter.card));
           if (won)
             detach(tween(600, (u) => void root.scale.set(s0 * (1 + 0.1 * u)), 'smooth', root));
         }
