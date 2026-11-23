@@ -1656,6 +1656,363 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
     return Promise.race([done, wait(2200)]);
   }
 
+  // ════════ BREAK (briser): cracks of light run over the card, which shakes; then it bursts into
+  // triangles that fly apart and fall, in a flash, a ring, grey smoke and debris ════════
+  function briser(c: LegacyCard): Promise<void> {
+    const K0 = K(c),
+      tw = Math.max(1, Math.round(K0.w)),
+      th = Math.max(1, Math.round(K0.h));
+    const cr: [number, number][][] = [];
+    const branch = (px: number, py: number, a: number, len: number, dep: number) => {
+      const pts: [number, number][] = [[px, py]];
+      for (let i = 0; i < 6; i++) {
+        a += R(-0.5, 0.5);
+        px += Math.cos(a) * len * R(0.7, 1.1);
+        py += Math.sin(a) * len * R(0.7, 1.1);
+        pts.push([px, py]);
+        if (dep < 2 && i > 1 && Math.random() < 0.35)
+          branch(px, py, a + R(-1, 1), len * 0.8, dep + 1);
+      }
+      cr.push(pts);
+    };
+    const ox = K0.cx + R(-0.1, 0.1) * K0.w,
+      oy = K0.cy + R(-0.1, 0.1) * K0.h;
+    for (let b = 0; b < 8; b++) branch(ox, oy, b * 0.785 + R(-0.25, 0.25), K0.w * 0.1, 0);
+    // the shake (the legacy's .tremble) while the cracks run
+    const shake = every(c.front, () => {
+      c.front.x = R(-1, 1) * W * 0.006;
+      c.front.y = R(-1, 1) * H * 0.004;
+    });
+    void fx.add(0.6, (x, t) => {
+      x.save();
+      rr(x, K0.x, K0.y, K0.w, K0.h, 12);
+      x.clip();
+      const p = cl(t / 0.5);
+      x.globalCompositeOperation = 'lighter';
+      x.lineCap = 'round';
+      x.lineJoin = 'round';
+      for (const [col, lw] of [
+        ['rgba(255,170,80,.45)', 8],
+        ['rgba(255,255,255,.95)', 2.2],
+      ] as const) {
+        x.strokeStyle = col;
+        x.lineWidth = lw;
+        x.beginPath();
+        for (const pts of cr) {
+          const n = p * (pts.length - 1),
+            w = Math.floor(n);
+          x.moveTo(pts[0]![0], pts[0]![1]);
+          for (let i = 1; i <= w; i++) x.lineTo(pts[i]![0], pts[i]![1]);
+          if (w < pts.length - 1) {
+            const f = n - w;
+            x.lineTo(
+              pts[w]![0] + (pts[w + 1]![0] - pts[w]![0]) * f,
+              pts[w]![1] + (pts[w + 1]![1] - pts[w]![1]) * f,
+            );
+          }
+        }
+        x.stroke();
+      }
+      x.restore();
+    });
+    return wait(520).then(() => {
+      shake.stop();
+      c.front.position.set(0, 0);
+      // the face, at its size on screen, drawn once: the shards are pieces of it
+      const face = faceCanvas(app, c),
+        tex = document.createElement('canvas');
+      tex.width = tw;
+      tex.height = th;
+      tex.getContext('2d')!.drawImage(face, 0, 0, tw, th);
+      const K1 = K(c);
+      const NX = 5,
+        NY = 7,
+        pt: [number, number][][] = [];
+      for (let j = 0; j <= NY; j++) {
+        pt[j] = [];
+        for (let i = 0; i <= NX; i++)
+          pt[j]![i] = [
+            (i / NX) * tw + (i && i < NX ? R(-0.06, 0.06) * tw : 0),
+            (j / NY) * th + (j && j < NY ? R(-0.05, 0.05) * th : 0),
+          ];
+      }
+      type Shard = {
+        tri: [number, number][];
+        gx: number;
+        gy: number;
+        bx: number;
+        by: number;
+        bw: number;
+        bh: number;
+        dx: number;
+        up: number;
+        dn: number;
+        rz: number;
+        de: number;
+        du: number;
+      };
+      const SH: Shard[] = [];
+      for (let j = 0; j < NY; j++)
+        for (let i = 0; i < NX; i++) {
+          const a = pt[j]![i]!,
+            b = pt[j]![i + 1]!,
+            e = pt[j + 1]![i + 1]!,
+            f = pt[j + 1]![i]!;
+          for (const tri of [
+            [a, b, e],
+            [a, e, f],
+          ]) {
+            const gx = (tri[0]![0] + tri[1]![0] + tri[2]![0]) / 3,
+              gy = (tri[0]![1] + tri[1]![1] + tri[2]![1]) / 3,
+              xs = tri.map((q) => q[0]),
+              ys = tri.map((q) => q[1]),
+              bx = Math.max(0, Math.floor(Math.min(...xs)) - 1),
+              by = Math.max(0, Math.floor(Math.min(...ys)) - 1),
+              vx = (gx / tw - 0.5) * 2,
+              vy = (gy / th - 0.5) * 2;
+            SH.push({
+              tri,
+              gx,
+              gy,
+              bx,
+              by,
+              bw: Math.min(tw - bx, Math.ceil(Math.max(...xs)) - bx + 2),
+              bh: Math.min(th - by, Math.ceil(Math.max(...ys)) - by + 2),
+              dx: vx * K1.w * R(0.6, 1.2) + R(-0.1, 0.1) * K1.w,
+              up: -K1.h * R(0.05, 0.3) * (vy < 0 ? 1.4 : 0.6),
+              dn: K1.h * R(0.6, 1.3),
+              rz: R(-4.2, 4.2),
+              de: Math.hypot(vx, vy) * 0.1,
+              du: R(1.2, 1.8),
+            });
+          }
+        }
+      c.root.visible = false;
+      void fx.add(2.3, (x, t) => {
+        for (const sh of SH) {
+          const p = (t - sh.de) / sh.du;
+          if (p >= 1) continue;
+          let dx = 0,
+            dy = 0,
+            rot = 0,
+            al = 1;
+          if (p > 0) {
+            if (p < 0.3) {
+              const q = p / 0.3,
+                e = 1 - Math.pow(1 - q, 3);
+              dx = sh.dx * 0.55 * e;
+              dy = sh.up * e;
+              rot = sh.rz * 0.5 * e;
+            } else {
+              const q = (p - 0.3) / 0.7;
+              dx = sh.dx * (0.55 + 0.45 * q);
+              dy = sh.up + (sh.dn - sh.up) * q * q;
+              rot = sh.rz * (0.5 + 0.5 * q);
+              al = 1 - q;
+            }
+          }
+          x.save();
+          x.translate(K1.x + sh.gx + dx, K1.y + sh.gy + dy);
+          x.rotate(rot);
+          x.translate(-sh.gx, -sh.gy);
+          x.beginPath();
+          x.moveTo(sh.tri[0]![0], sh.tri[0]![1]);
+          x.lineTo(sh.tri[1]![0], sh.tri[1]![1]);
+          x.lineTo(sh.tri[2]![0], sh.tri[2]![1]);
+          x.closePath();
+          x.clip();
+          x.globalAlpha = al;
+          x.drawImage(tex, sh.bx, sh.by, sh.bw, sh.bh, sh.bx, sh.by, sh.bw, sh.bh);
+          x.restore();
+        }
+      });
+      const S = K1.w / 420;
+      const deb = Array.from({ length: 18 }, () => ({
+        a: Math.random() * 6.28,
+        v: R(200, 700) * S,
+        w: R(3, 10) * S,
+        r: Math.random() * 6,
+        g: R(0.45, 0.8),
+      }));
+      const smo = Array.from({ length: 6 }, () => ({
+        vx: R(-0.9, 0.9),
+        vy: R(-0.7, 0.5),
+        d: R(0, 0.25),
+      }));
+      void fx.add(1.6, (x, t) => {
+        x.globalCompositeOperation = 'lighter';
+        const fu = cl(1 - t / 0.3);
+        if (fu > 0)
+          orb(
+            x,
+            K1.cx,
+            K1.cy,
+            K1.w * (0.5 + t),
+            `rgba(255,255,255,${fu * 0.9})`,
+            'rgba(255,255,255,0)',
+          );
+        if (t < 0.5) {
+          const r = K1.w * (0.2 + 1.1 * cl(t / 0.5));
+          x.strokeStyle = `rgba(255,235,200,${1 - t / 0.5})`;
+          x.lineWidth = 6 * (1 - t / 0.5) + 1;
+          x.beginPath();
+          x.ellipse(K1.cx, K1.cy, r, r * 1.2, 0, 0, 7);
+          x.stroke();
+        }
+        x.globalCompositeOperation = 'source-over';
+        for (const m of smo) {
+          const q = cl((t - m.d) / 1.1);
+          if (q <= 0 || q >= 1) continue;
+          orb(
+            x,
+            K1.cx + m.vx * q * K1.w,
+            K1.cy + m.vy * q * K1.h - q * K1.h * 0.1,
+            K1.w * (0.15 + 0.35 * q),
+            `rgba(150,150,150,${0.35 * (1 - q)})`,
+            'rgba(150,150,150,0)',
+          );
+        }
+        for (const d of deb) {
+          const al = cl(1 - t / 1.4);
+          if (al <= 0) continue;
+          x.save();
+          x.translate(
+            K1.cx + Math.cos(d.a) * d.v * t,
+            K1.cy + Math.sin(d.a) * d.v * t + 700 * S * t * t,
+          );
+          x.rotate(d.r + t * 6);
+          const g = Math.round(190 * d.g + 40);
+          x.fillStyle = `rgba(${g},${g},${g + 5},${al})`;
+          x.fillRect(-d.w, -d.w * 0.6, d.w * 2, d.w * 1.2);
+          x.restore();
+        }
+      });
+    });
+  }
+
+  // ════════ PROGRAMMING (progFx, activFx): a gear forms on the card and drops into its slot; at the
+  // activation, circuits light up from the slots over the whole card around two turning gears ════════
+  function engrenage(
+    x: CanvasRenderingContext2D,
+    cx: number,
+    cy: number,
+    r: number,
+    rot: number,
+    col: string,
+    al: number,
+  ): void {
+    const n = 10,
+      ri = r * 0.78;
+    x.save();
+    x.translate(cx, cy);
+    x.rotate(rot);
+    x.beginPath();
+    for (let i = 0; i < n * 2; i++) {
+      const a0 = (i * Math.PI) / n,
+        a1 = ((i + 1) * Math.PI) / n,
+        R2 = i % 2 ? ri : r;
+      x.lineTo(Math.cos(a0 + 0.08) * R2, Math.sin(a0 + 0.08) * R2);
+      x.lineTo(Math.cos(a1 - 0.08) * R2, Math.sin(a1 - 0.08) * R2);
+    }
+    x.closePath();
+    x.globalAlpha = al;
+    x.fillStyle = col;
+    x.shadowColor = col;
+    x.shadowBlur = r * 0.5;
+    x.fill();
+    x.shadowBlur = 0;
+    x.globalCompositeOperation = 'destination-out';
+    x.beginPath();
+    x.arc(0, 0, r * 0.36, 0, 7);
+    x.fill();
+    x.restore();
+  }
+  function progGear(c: LegacyCard, ultimate: boolean): Promise<void> {
+    const col = ultimate ? '#fb923c' : '#38bdf8';
+    return fx.add(1.5, (x, t) => {
+      const k = K(c);
+      const ap = cl((t - 0.25) / 0.35),
+        vol = ez(cl((t - 1) / 0.45)),
+        cy = k.cy + (k.y + k.h * 0.9 - k.cy) * vol,
+        r = k.w * (0.22 * ez(ap)) * (1 - 0.8 * vol);
+      if (ap > 0 && r > 1) engrenage(x, k.cx, cy, r, t * 2.4, col, 1 - cl((t - 1.35) / 0.15));
+    });
+  }
+  function activFx(c: LegacyCard): Promise<void> {
+    const K0 = K(c),
+      traces: { pts: [number, number][]; d: number }[] = [];
+    for (let i = 0; i < 12; i++) {
+      let px = K0.x + K0.w * (0.15 + 0.7 * Math.random()),
+        py = K0.y + K0.h * 0.94;
+      const pts: [number, number][] = [[px, py]];
+      for (let j = 0; j < 5; j++) {
+        if (j % 2 === 0) py -= K0.h * (0.1 + 0.15 * Math.random());
+        else px += (Math.random() < 0.5 ? -1 : 1) * K0.w * (0.08 + 0.15 * Math.random());
+        px = Math.max(K0.x + 4, Math.min(K0.x + K0.w - 4, px));
+        py = Math.max(K0.y + 4, py);
+        pts.push([px, py]);
+      }
+      traces.push({ pts, d: Math.random() * 0.25 });
+    }
+    return fx.add(2, (x, t) => {
+      const fade = 1 - cl((t - 1.6) / 0.4);
+      engrenage(
+        x,
+        K0.cx,
+        K0.cy,
+        K0.w * 0.34 * ez(cl(t / 0.4)),
+        -t * 1.6,
+        'rgba(56,189,248,.35)',
+        0.6 * fade,
+      );
+      engrenage(
+        x,
+        K0.cx + K0.w * 0.2,
+        K0.cy - K0.h * 0.18,
+        K0.w * 0.14 * ez(cl((t - 0.1) / 0.4)),
+        t * 3.2,
+        'rgba(125,211,252,.5)',
+        0.7 * fade,
+      );
+      x.lineCap = 'round';
+      x.lineJoin = 'round';
+      for (const T of traces) {
+        const u = cl((t - T.d) / 0.7);
+        if (u <= 0) continue;
+        const P = T.pts,
+          L = P.length - 1,
+          n = u * L,
+          k0 = Math.floor(n);
+        x.strokeStyle = `rgba(125,211,252,${0.95 * fade})`;
+        x.lineWidth = 2.5;
+        x.shadowColor = '#38bdf8';
+        x.shadowBlur = 12;
+        x.beginPath();
+        x.moveTo(P[0]![0], P[0]![1]);
+        for (let q = 1; q <= k0; q++) x.lineTo(P[q]![0], P[q]![1]);
+        if (k0 < L) {
+          const f = n - k0,
+            a = P[k0]!,
+            b = P[k0 + 1]!;
+          x.lineTo(a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f);
+        }
+        x.stroke();
+        for (let q = 1; q <= k0; q++) {
+          x.fillStyle = `rgba(224,242,254,${fade})`;
+          x.beginPath();
+          x.arc(P[q]![0], P[q]![1], 3, 0, 7);
+          x.fill();
+        }
+        x.shadowBlur = 0;
+      }
+      // the power coming on
+      if (t > 0.55 && t < 0.95) {
+        x.fillStyle = `rgba(186,230,253,${0.35 * (1 - cl((t - 0.55) / 0.4))})`;
+        x.fillRect(K0.x, K0.y, K0.w, K0.h);
+      }
+    });
+  }
+
   return {
     isCut,
     /** The two fighters, for the link and the mist (the scene sets them after each deal or relay). */
@@ -1663,6 +2020,11 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
       NFX.cards = [a, b];
     },
     fracture: (c: LegacyCard) => os(c),
+    // a programmed effect: its gear forms and drops to the slots; the activation's circuits
+    programGear: (c: LegacyCard, ultimate: boolean) => progGear(c, ultimate),
+    programActivate: (c: LegacyCard) => activFx(c),
+    // the card breaks (the legacy's briser); resolves once it has burst, its pieces still falling
+    shatter: (c: LegacyCard) => briser(c),
     ultimate: (c: LegacyCard) => aura(c),
     // the breath of side `from` on side `to`, of an element (the engine's: brulure, gel, foudre…)
     breath(from: 0 | 1, to: 0 | 1, el: string) {

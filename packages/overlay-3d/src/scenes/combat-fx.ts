@@ -10,7 +10,7 @@
 import type { Application } from 'pixi.js';
 import type { Card } from '../card/card.ts';
 import type { Particles } from '../engine/particles.ts';
-import { detach } from '../engine/time.ts';
+import { detach, wait } from '../engine/time.ts';
 import type { CombatLine } from '../input/combat-message.ts';
 import type { CardMarks } from '../marks/host.ts';
 import { CardMoves } from '../moves/host.ts';
@@ -218,6 +218,35 @@ export function mechanicsOf(ctx: MechanicsContext) {
       return;
     }
     switch (k) {
+      // programming (the mechanical collection): a gear forms and drops into a new slot at the bottom of
+      // the card; at the activation, circuits light up and the slots come on (legacy: progFx, activFx)
+      case 'prog': {
+        const q = raw['quoi'];
+        if (q !== 'p' && q !== 'u') {
+          ctx.legacy.say(f.card, 'Rien à programmer', '#94a3b8');
+          return;
+        }
+        const kind = q === 'u' ? 'programmedUltimate' : 'programmed';
+        detach(ctx.legacy.programGear(f.card, q === 'u'));
+        ctx.legacy.say(
+          f.card,
+          q === 'u' ? 'Ultime programmé' : 'Passif programmé',
+          q === 'u' ? '#fdba74' : '#7dd3fc',
+        );
+        await wait(1100);
+        detach(f.marks.set(kind, f.marks.level(kind) + 1));
+        return;
+      }
+      case 'prog_act':
+        detach(ctx.legacy.programActivate(f.card));
+        ctx.legacy.say(f.card, 'ACTIVATION !', '#38bdf8', true);
+        await wait(550);
+        detach(f.marks.tick('programmed'));
+        detach(f.marks.tick('programmedUltimate'));
+        await wait(1350);
+        return;
+      case 'prog_ult_pret':
+        return detach(f.marks.tick('programmedUltimate'));
       // the terrains acting on a card
       case 'essaim':
       case 'foret':
