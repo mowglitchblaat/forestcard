@@ -11,6 +11,7 @@ import type { Flow } from '../combat/flow.ts';
 import type { Side } from '../combat/state.ts';
 import { scan } from '../combat/traps.ts';
 import { inhibited } from './rooting.ts';
+import { counterUltimate, stateReady, ultimateEffect } from './ultimate-modes.ts';
 
 // 2. The ultimates that can fire do, in the order the card holds them.
 export function ultimate(c: Combat, s: Side): Flow {
@@ -21,14 +22,7 @@ export function ultimate(c: Combat, s: Side): Flow {
     if (raw(u.utilisations) > 0 && slot.uses >= raw(u.utilisations)) continue;
     if (c.round - slot.lastRound < (u.delai_tours || 0)) continue;
     // State triggers: checked at the start of its turn (mechanics/triggers.ts for the events).
-    const x = opponent(c, s);
-    const ux = parseInt(String(u.udx), 10) || 50;
-    const state =
-      u.udecl === 'pv_sous'
-        ? (s.hp / s.maxHp) * 100 < ux
-        : u.udecl === 'adv_pv_sous'
-          ? x.hp > 0 && (x.hp / x.maxHp) * 100 < ux
-          : false;
+    const state = stateReady(c, s, slot);
     if (
       !(
         (u.apres_tours && c.round >= u.apres_tours) ||
@@ -59,6 +53,11 @@ export function ultimate(c: Combat, s: Side): Flow {
         drawn: pg.drawn,
       });
     else emit(c, { type: 'ultimateTriggered', side: id(c, s) });
+    // the opponent's counter-ultimate answers it: it does nothing (mechanics/ultimate-modes.ts)
+    if (counterUltimate(c, s)) {
+      if (over(c)) break;
+      continue;
+    }
     // a gagged card: a TNT goes off instead of its ultimate (mechanics/gag.ts)
     if (gagTnt(c, s)) {
       if (over(c)) break;
@@ -66,7 +65,7 @@ export function ultimate(c: Combat, s: Side): Flow {
     }
     const previousSource = c.source;
     c.source = 'ultime';
-    applyEffect(c, u, s, opponent(c, s));
+    applyEffect(c, ultimateEffect(c, s, slot), s, opponent(c, s));
     c.source = previousSource;
     scan(c, { kind: 'ultimate', by: id(c, s) });
     if (over(c)) break;

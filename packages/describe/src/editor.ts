@@ -85,6 +85,7 @@ export const EDITOR_FIELDS = {
   coups: ['Nb de coups', 'n'],
   seuildeg: ['Dégâts min en un coup', 'n'],
   ntour: ['Tour du combat (1, 2, 3…)', 'n'],
+  nb: ['Nombre (1 par défaut)', 'n'],
   cible: ['Cible', ['soi', 'adversaire']],
   carte: ['Carte', ['magie', 'piege']],
   seuil: ['Seuil (ignoré si aucune condition)', 'n'],
@@ -1191,6 +1192,9 @@ export const EDITOR_MAGICS: { readonly [K in EffectType]?: EditorEntry } = {
   forge_creation: [
     '🔨 Forge de création : forge une nouvelle magie ou un nouveau piège, avec un effet tiré au hasard ; remplace en priorité la carte épuisée',
   ],
+  miroir_magie: [
+    "🪞 Magie miroir : copie la magie de l'adversaire et la joue comme la sienne (pas une autre magie miroir)",
+  ],
   terrain: [
     '🌍 Invocation de terrain : invoque un terrain (Orage, Essaim, Forêt, Cathédrale, Lune de sang, Sakura, Grimoire, Grand Théâtre) pour le reste du combat',
     'terrain',
@@ -1259,6 +1263,27 @@ export const EDITOR_CONDITIONS: Record<TrapConditionType, EditorEntry> = {
   adv_piege: ['Le piège adverse se déclenche'],
   proprio_ultime: ['Le propriétaire lance son ultime'],
   tour_n: ['Au tour X du combat', 'ntour'],
+  adv_magie: ["La magie de l'adversaire agit"],
+  adv_critique: ["L'adversaire porte un coup critique"],
+  adv_bloque: ["L'adversaire bloque une attaque"],
+  proprio_annule: ["L'attaque du propriétaire est annulée (gel, étourdissement…)"],
+  adv_survit: ["L'adversaire se réanime ou évite la mort"],
+  adv_purifie: ["L'adversaire se purifie"],
+  proprio_statuts: ['Le propriétaire porte X statuts en même temps', 'nb'],
+  adv_statuts: ["L'adversaire porte X statuts en même temps", 'nb'],
+  proprio_statut_max: ['Un statut du propriétaire atteint le niveau III'],
+  adv_atq_hausse: ["L'adversaire gagne de l'ATQ"],
+  proprio_fils: ['Le propriétaire porte X fils', 'nb'],
+  adv_forge: ["L'adversaire se forge"],
+  adv_entree: ['Un nouveau combattant adverse entre en jeu (relais, contrôle)'],
+  proprio_pv_sur: ['Le propriétaire remonte au-dessus de X % de PV (après un soin)', 'seuilpv'],
+  adv_rate: ["L'adversaire rate son attaque (esquive, annulation)"],
+  proprio_affaibli: ["Le propriétaire perd de l'ATQ ou des PV max"],
+  terrain_change: ['Le terrain change'],
+  adv_controle: ["L'adversaire prend le contrôle d'un combattant (fils)"],
+  proprio_detone: ['Une détonation explose sur le propriétaire'],
+  proprio_magie_perdue: ['La magie du propriétaire est volée, détruite ou annulée'],
+  premier_coup: ['Premier coup du combat (donné ou reçu)'],
 };
 
 // Effects the engine runs that the editor does not offer: they only come from the random effect.

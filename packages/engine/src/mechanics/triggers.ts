@@ -19,45 +19,61 @@
 // The hook only runs when a deck uses it (legacy TRIG / TRP): combats that use none of this keep
 // their journal.
 
+import { statusBadges, type BadgeKey } from '../combat/badges.ts';
 import type { Combat } from '../combat/combat.ts';
+import type { Side } from '../combat/state.ts';
 import { scan } from '../combat/traps.ts';
 import type { DomainEvent, EventType, SideIndex } from '../events.ts';
 import type { Card } from '../model/card.ts';
+import { NEW_TRAP_CONDITIONS } from '../model/types.ts';
+import { bothConditions, fillGauge } from './ultimate-modes.ts';
+import { usesTrapModes } from './trap-modes.ts';
+import { usesMagicModes } from './magic-modes.ts';
 
 export type TriggerFact =
   | {
       kind: 'status' | 'dodge' | 'trap' | 'block' | 'heal' | 'ultimate' | 'attack';
       who: SideIndex;
     }
-  | { kind: 'hit'; who: SideIndex; amount: number }
+  | { kind: 'hit'; who: SideIndex; amount: number; first?: boolean } // first: the combat's first hit
   | { kind: 'turn'; who: SideIndex; turn: number }
-  // Read by ultimate triggers only (never by trap conditions: no trap scan for them).
-  | { kind: UltimateOnlyKind; who: SideIndex };
+  | { kind: 'threads'; who: SideIndex; n: number } // n: the threads it carries now
+  // No legacy line: the ultimate triggers and the trap conditions of November 2026 read them.
+  | { kind: NewKind; who: SideIndex };
 
-type UltimateOnlyKind = 'purify' | 'avoidDeath' | 'revive' | 'atqDown' | 'maxDown';
-const ULTIMATE_ONLY: ReadonlySet<string> = new Set<UltimateOnlyKind>([
-  'purify',
-  'avoidDeath',
-  'revive',
-  'atqDown',
-  'maxDown',
-]);
+// Facts with no legacy line (who: the card it happens to; terrain: the invoker, or -1).
+type NewKind =
+  | 'purify'
+  | 'avoidDeath'
+  | 'revive'
+  | 'atqDown'
+  | 'maxDown'
+  | 'atqUp'
+  | 'magicAct' // its magic acts (mechanics/magic-timing.ts)
+  | 'crit' // it lands a critical hit or a headshot
+  | 'cancel' // its attack is cancelled (stun, frost, a cancelling block)
+  | 'forge' // one of its cards is forged
+  | 'control' // it takes control of the opponent's fighter
+  | 'terrain' // the terrain changes
+  | 'enter' // a fighter enters on its side (relay, control)
+  | 'magicLost' // its magic is stolen, destroyed or cancelled
+  | 'magicEnd' // its magic runs out
+  | 'trapLost' // its trap is stolen or destroyed
+  | 'molt'
+  | 'rage'
+  | 'mutation' // its insect mutation reaches level 3
+  | 'detonate'; // a detonation explodes on it
 
-type Classify<K extends EventType> = (e: Extract<DomainEvent, { type: K }>) => TriggerFact | null;
+type Classify<K extends EventType> = (
+  e: Extract<DomainEvent, { type: K }>,
+) => TriggerFact | TriggerFact[] | null;
 
-type FactKind =
-  | 'status'
-  | 'dodge'
-  | 'trap'
-  | 'block'
-  | 'heal'
-  | 'ultimate'
-  | 'attack'
-  | UltimateOnlyKind;
+type FactKind = 'status' | 'dodge' | 'trap' | 'block' | 'heal' | 'ultimate' | 'attack' | NewKind;
 
 const fact =
   (kind: FactKind) =>
-  (e: { side: SideIndex }): TriggerFact => ({ kind, who: e.side });
+  (e: { side: SideIndex }): TriggerFact =>
+    ({ kind, who: e.side }) as TriggerFact;
 
 // Every event type, so that a new one must be classed. The legacy lines (trig):
 //   statut with a negative status k  → status   (curse, bleed, poison, burn, frost, fracture, stun,
@@ -78,16 +94,16 @@ export const TRIGGER_FACT: { [K in EventType]: Classify<K> | null } = {
   combatStarted: null,
   turnStarted: (e) => ({ kind: 'turn', who: e.side, turn: e.turn }),
   overtimeStarted: null,
-  fighterEntered: null,
+  fighterEntered: fact('enter'),
   fighterExhausted: null,
   combatEnded: null,
   magicRevealed: null,
-  magicCancelled: null,
+  magicCancelled: fact('magicLost'),
   magicBack: null,
-  magicDestroyed: null,
+  magicDestroyed: fact('magicLost'),
   trapFired: fact('trap'),
   trapNullified: null,
-  trapDestroyed: null,
+  trapDestroyed: fact('trapLost'),
   trapRearmed: null,
   ultimateTriggered: fact('ultimate'),
   ultimateCopied: null,
@@ -97,15 +113,21 @@ export const TRIGGER_FACT: { [K in EventType]: Classify<K> | null } = {
   noUltimateToSteal: null,
   ultimateReset: null,
   theftScheduled: null,
-  magicStolen: null,
-  trapStolen: null,
+  magicStolen: (e) => ({ kind: 'magicLost', who: e.from }),
+  trapStolen: (e) => ({ kind: 'trapLost', who: e.from }),
   magicReturned: null,
   trapReturned: null,
   equipped: null,
   unknownEffect: null,
   randomEffectDrawn: null,
-  cannotAttack: null,
-  attackCancelled: (e) => ({ kind: 'block', who: e.defender }),
+  cannotAttack: (e) =>
+    e.reason === 'stunned' || e.reason === 'frozen' || e.reason === 'glaciation'
+      ? { kind: 'cancel', who: e.side }
+      : null,
+  attackCancelled: (e) => [
+    { kind: 'block', who: e.defender },
+    { kind: 'cancel', who: e.side },
+  ],
   attacked: fact('attack'),
   extraStrike: null,
   strike: null,
@@ -134,14 +156,18 @@ export const TRIGGER_FACT: { [K in EventType]: Classify<K> | null } = {
   revived: fact('revive'),
   reviveDenied: null,
   statChanged: (e) =>
-    e.delta < 0 ? { kind: e.stat === 'atq' ? 'atqDown' : 'maxDown', who: e.side } : null,
+    e.delta < 0
+      ? { kind: e.stat === 'atq' ? 'atqDown' : 'maxDown', who: e.side }
+      : e.delta > 0 && e.stat === 'atq'
+        ? { kind: 'atqUp', who: e.side }
+        : null,
   dodgeChanged: null,
   statsSwapped: null,
   attackAndHpSwapped: null,
   statusEnded: null,
   statusDispelled: null,
   purified: (e) => (e.removedSomething ? { kind: 'purify', who: e.side } : null),
-  rageStarted: null,
+  rageStarted: fact('rage'),
   regenStarted: null,
   regenEnded: null,
   curseApplied: fact('status'),
@@ -167,7 +193,7 @@ export const TRIGGER_FACT: { [K in EventType]: Classify<K> | null } = {
   shieldAbsorbed: null,
   chargeGained: null,
   seismicStrike: null,
-  criticalHit: null,
+  criticalHit: fact('crit'),
   updraft: null,
   updraftEnded: null,
   bladesLaid: null,
@@ -185,10 +211,10 @@ export const TRIGGER_FACT: { [K in EventType]: Classify<K> | null } = {
   poisonLeeched: null,
   venomInjected: null,
   overloaded: null,
-  forged: null,
-  // Threads are marks, not statuses; the control and its cost are facts of no trigger.
-  threadsLaid: null,
-  controlTaken: null,
+  forged: fact('forge'),
+  // Threads are marks, not statuses (no 'status' fact); the cost of a control triggers nothing.
+  threadsLaid: (e) => ({ kind: 'threads', who: e.side, n: e.threads }),
+  controlTaken: fact('control'),
   puppeteerPaid: null,
   controlEnded: null,
   forgeIdle: null,
@@ -197,7 +223,7 @@ export const TRIGGER_FACT: { [K in EventType]: Classify<K> | null } = {
   reconstructionFailed: null,
   scaled: null,
   stormStruck: null,
-  terrainChanged: null,
+  terrainChanged: (e) => ({ kind: 'terrain', who: e.by ?? -1 }),
   terrainActs: null,
   forgeCreated: null,
   overloadEnded: null,
@@ -220,7 +246,7 @@ export const TRIGGER_FACT: { [K in EventType]: Classify<K> | null } = {
   missileFired: null,
   missileDodged: fact('dodge'),
   missileBlocked: fact('block'),
-  detonated: null,
+  detonated: fact('detonate'),
   statusExploded: null,
   detonationEmpty: null,
   detonationDampened: null,
@@ -251,7 +277,7 @@ export const TRIGGER_FACT: { [K in EventType]: Classify<K> | null } = {
   programmedUltimateInstalled: null,
   programmedUltimate: fact('ultimate'),
   // New mechanics (no legacy line): a parasitic link is a negative status received.
-  headshot: null,
+  headshot: fact('crit'),
   targeted: null,
   targetMissed: null,
   targetEnded: null,
@@ -263,26 +289,45 @@ export const TRIGGER_FACT: { [K in EventType]: Classify<K> | null } = {
   parasiteLinked: fact('status'),
   parasiteFed: null,
   parasiteEnded: null,
-  mutated: null,
-  moltStarted: null,
+  mutated: (e) => (e.level >= 3 ? { kind: 'mutation', who: e.side } : null),
+  moltStarted: fact('molt'),
   molted: null,
   defenseChanged: null,
   reductionGranted: null,
   reductionEnded: null,
   magicDelayed: null,
   magicActivated: null,
-  magicExpired: null,
+  magicExpired: fact('magicEnd'),
+  trapCounted: null,
+  trapPrimed: null,
+  trapChained: null,
+  gaugeFilled: null,
+  ultimatePhase: null,
+  ultimateDesperate: null,
+  ultimateCountered: fact('ultimate'),
+  magicWaiting: null,
+  magicDormant: (e) => ({ kind: 'magicEnd', who: e.side }),
+  magicSacrifice: null,
+  magicTwist: null,
+  magicPulse: (e) => ({ kind: 'magicAct', who: e.side }),
+  magicScaled: null,
+  magicPhase: (e) => ({ kind: 'magicAct', who: e.side }),
+  magicUnstable: null,
+  magicLocked: null,
+  magicFollows: null,
+  magicMirrored: null,
 };
 
-export function triggerFact(e: DomainEvent): TriggerFact | null {
+export function triggerFacts(e: DomainEvent): TriggerFact[] {
   const classify = TRIGGER_FACT[e.type] as Classify<EventType> | null;
-  return classify ? classify(e as never) : null;
+  const f = classify ? classify(e as never) : null;
+  return !f ? [] : Array.isArray(f) ? f : [f];
 }
 
 // Which part of the hook a combat uses, from both decks (legacy: TRIG, TRP).
 export type Triggers = { any: boolean; traps: boolean };
 
-// Trap conditions read from the facts (legacy: NEWC).
+// Trap conditions read from the facts (legacy: NEWC), and those of November 2026.
 const FACT_CONDITIONS = new Set([
   'proprio_statut',
   'adv_statut',
@@ -294,27 +339,69 @@ const FACT_CONDITIONS = new Set([
   'tour_n',
   'proprio_bloque',
   'proprio_ultime',
+  ...NEW_TRAP_CONDITIONS,
 ]);
 
+// The conditions a trap or a magic waits for (mechanics/trap-modes.ts, mechanics/magic-modes.ts):
+// its own, its second one, a magic's.
+const conditionsOf = (card: Card): string[] => {
+  const e = card.effet;
+  if (!e) return [];
+  return [e.condition?.type, e.condition2?.type, e.mdecl?.type].filter(
+    (t): t is string => typeof t === 'string',
+  );
+};
+
 export function triggersOf(decks: (Card[] | undefined)[]): Triggers {
-  const cards = decks.flatMap((deck) => deck || []);
+  const cards = decks.flatMap((deck) => deck || []).filter(Boolean);
   const traps = cards.some(
     (card) =>
-      card &&
-      card.effet &&
-      card.effet.condition &&
-      FACT_CONDITIONS.has(card.effet.condition.type as string),
+      conditionsOf(card).some((t) => FACT_CONDITIONS.has(t)) ||
+      (card.type === 'piege' && usesTrapModes(card.effet)) ||
+      (card.type === 'magie' && usesMagicModes(card.effet)),
   );
-  const ultimates = cards.some((card) => card && card.ultime && card.ultime.udecl);
+  const ultimates = cards.some((card) => card.ultime && (card.ultime.udecl || card.ultime.jauge));
   return { any: traps || !!ultimates, traps };
 }
 
+// Negative statuses a card carries (one per kind), and the highest level among them.
+const NEGATIVE: ReadonlySet<BadgeKey> = new Set<BadgeKey>([
+  'poison',
+  'brulure',
+  'saignement',
+  'fatigue',
+  'fracture',
+  'glas',
+  'malediction',
+  'gel',
+  'etourdi',
+  'contamination',
+  'faiblesse',
+  'foudre',
+  'enracinement',
+  'gag',
+]);
+const LEVELED: ReadonlySet<BadgeKey> = new Set<BadgeKey>([
+  'poison',
+  'brulure',
+  'saignement',
+  'fatigue',
+  'fracture',
+  'glas',
+  'gel',
+  'foudre',
+]);
+export const negativeStatuses = (s: Side): number =>
+  statusBadges(s).filter((b) => NEGATIVE.has(b.key)).length;
+export const highestStatusLevel = (s: Side): number =>
+  statusBadges(s).reduce((m, b) => (LEVELED.has(b.key) && b.n > m ? b.n : m), 0);
+
 // An ultimate's event trigger, met by a fact for the card at index i (legacy: the table in trig).
-function meets(c: Combat, i: number, udecl: string, x: number, f: TriggerFact): boolean {
+export function meets(c: Combat, i: number, udecl: string, x: number, f: TriggerFact): boolean {
   const me = f.who === i;
   const opponentOf = f.who === 1 - i;
-  const s = c.sides[i] as Combat['sides'][number];
-  const o = c.sides[1 - i] as Combat['sides'][number];
+  const s = c.sides[i] as Side;
+  const o = c.sides[1 - i] as Side;
   // Every entry is evaluated (none has a side effect), then the ultimate's own one is read.
   const triggers: Record<string, boolean> = {
     coups_recus: f.kind === 'attack' && opponentOf && o.attacks % x === 0,
@@ -343,23 +430,73 @@ function meets(c: Combat, i: number, udecl: string, x: number, f: TriggerFact): 
     atq_baisse: f.kind === 'atqDown' && me,
     adv_atq_baisse: f.kind === 'atqDown' && opponentOf,
     pvmax_baisse: f.kind === 'maxDown' && me,
+    // November 2026 (the state ones are also checked at the start of its turn: ultimates.ts)
+    tour_n: f.kind === 'turn' && f.turn === x,
+    statuts: f.kind === 'status' && me && negativeStatuses(s) >= x,
+    critique: f.kind === 'crit' && me,
+    critique_recu: f.kind === 'crit' && opponentOf,
+    adv_magie: f.kind === 'magicAct' && opponentOf,
+    allie_tombe: f.kind === 'enter' && me,
+    fils: f.kind === 'threads' && me && f.n >= x,
+    se_forge: f.kind === 'forge' && me,
+    serie: f.kind === 'attack' && me && s.status.hitStreak >= x,
+    piege_perdu: f.kind === 'trapLost' && me,
+    adv_magie_fin: (f.kind === 'magicEnd' || f.kind === 'magicLost') && opponentOf,
+    mue: f.kind === 'molt' && me,
+    rage: f.kind === 'rage' && me,
+    mutation: f.kind === 'mutation' && me,
   };
   return !!triggers[udecl];
 }
 
+// Its part of a card's state: the strikes it made in a row without being hit, and the turn it was
+// last hit on (its turns played then; -1: never).
+export type TriggerWatchState = { hitStreak: number; lastHitTurn: number };
+export const triggerWatchState = (): TriggerWatchState => ({ hitStreak: 0, lastHitTurn: 0 });
+
+// What the facts leave behind, before anything reads them.
+function keep(c: Combat, f: TriggerFact): void {
+  if (f.kind === 'turn') c.turnNow = f.turn;
+  const s = c.sides[f.who];
+  if (f.kind === 'attack' && s) s.status.hitStreak++;
+  if (f.kind === 'hit') {
+    f.first = c.hitsSeen === 0;
+    c.hitsSeen++;
+    if (s) {
+      s.status.hitStreak = 0;
+      s.status.lastHitTurn = s.status.turnsPlayed;
+    }
+  }
+}
+
 // The hook, called by emit() for every event.
 export function noticeTrigger(c: Combat, e: DomainEvent): void {
-  const f = triggerFact(e);
-  if (!f) return;
+  for (const f of triggerFacts(e)) noticeFact(c, f);
+}
+
+// A fact: the ultimates it meets are flagged, the gauges it feeds fill, the traps and the waiting
+// magics are scanned. Also called directly for the facts no event carries (a magic acting).
+export function noticeFact(c: Combat, f: TriggerFact): void {
+  if (!c.triggers.any) return;
+  keep(c, f);
   c.sides.forEach((s, i) =>
     s.ultimates.forEach((slot) => {
       const u = slot.effect;
-      if (!u || !u.udecl) return;
+      if (!u) return;
+      if (u.jauge) fillGauge(c, s, slot, f);
+      if (!u.udecl) return;
       const x = Math.max(1, parseInt(String(u.udx), 10) || 1);
-      if (meets(c, i, u.udecl, x, f)) slot.triggered = 1;
+      const first = meets(c, i, u.udecl, x, f);
+      if (!u.udecl2) {
+        if (first) slot.triggered = 1;
+        return;
+      }
+      const x2 = Math.max(1, parseInt(String(u.udx2), 10) || 1);
+      const second = meets(c, i, u.udecl2, x2, f);
+      bothConditions(slot, u.ulogique, first, second);
     }),
   );
-  if (!c.triggers.traps || ULTIMATE_ONLY.has(f.kind)) return;
+  if (!c.triggers.traps) return;
   // A trap that fired is answered at once, before its own effect (a counter-trap, adv_piege):
   // traps.ts then drops the effect of a trap destroyed or stolen meanwhile.
   if (f.kind === 'trap') scan(c, { kind: 'fact', fact: f });

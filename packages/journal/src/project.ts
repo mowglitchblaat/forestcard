@@ -457,6 +457,141 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
         txt: `La magie de ${pseudo(e.side)} s'épuise : ses effets prennent fin`,
         o: { c: e.side, k: 'magie_annulee' },
       };
+    // ── Trap modes ──
+    case 'trapCounted':
+      return {
+        t: 'statut',
+        txt: `Le piège de ${pseudo(e.side)} se charge (${e.count}/${e.of})`,
+        o: { c: e.side, k: 'piege_compte', n: e.count, max: e.of },
+      };
+    case 'trapPrimed':
+      return {
+        t: 'statut',
+        txt: `Le piège de ${pseudo(e.side)} s'enclenche… il se déclenchera dans ${turns(e.turns)}`,
+        o: { c: e.side, k: 'piege_amorce', n: e.turns },
+      };
+    case 'trapChained':
+      return {
+        t: 'statut',
+        txt:
+          e.to === 'ultime'
+            ? `Le piège de ${pseudo(e.side)} réveille l'ultime de ${name(e.side)} !`
+            : `Le piège de ${pseudo(e.side)} relance sa magie !`,
+        o: { c: e.side, k: 'piege_chaine', to: e.to },
+      };
+    // ── Ultimate modes ──
+    case 'gaugeFilled':
+      return {
+        t: 'statut',
+        txt: `La jauge d'ultime de ${name(e.side)} est pleine !`,
+        o: { c: e.side, k: 'jauge_pleine' },
+      };
+    case 'ultimatePhase':
+      return {
+        t: 'statut',
+        txt: `${name(e.side)} passe à la seconde phase de son ultime !`,
+        o: { c: e.side, k: 'ultime_phase' },
+      };
+    case 'ultimateDesperate':
+      return {
+        t: 'statut',
+        txt: `Ultime désespéré : ${name(e.side)} frappe ${e.bonus} % plus fort !`,
+        o: { c: e.side, k: 'ultime_desespoir', n: e.bonus },
+      };
+    case 'ultimateCountered':
+      return {
+        t: 'ultime',
+        txt: `CONTRE-ULTIME de ${name(e.side)} ! L'ultime de ${name(e.target)} est annulé !`,
+        o: { c: e.side, k: 'contre_ultime', cible: e.target },
+      };
+    // ── Magic modes ──
+    case 'magicWaiting':
+      return {
+        t: 'statut',
+        txt:
+          e.why === 'condition'
+            ? `La magie de ${pseudo(e.side)} attend son heure…`
+            : e.why === 'aura'
+              ? `La magie de ${pseudo(e.side)} sommeille : elle s'éveillera quand ${name(e.side)} faiblira`
+              : `La magie de ${pseudo(e.side)} sommeille : ce n'est pas son terrain`,
+        o: { c: e.side, k: 'magie_attente', why: e.why },
+      };
+    case 'magicDormant':
+      return {
+        t: 'statut',
+        txt:
+          e.why === 'aura'
+            ? `La magie de ${pseudo(e.side)} s'endort : ${name(e.side)} a repris des forces`
+            : `La magie de ${pseudo(e.side)} s'endort : le terrain a changé`,
+        o: { c: e.side, k: 'magie_annulee', why: e.why },
+      };
+    case 'magicSacrifice':
+      return {
+        t: 'degats',
+        txt: `${name(e.side)} sacrifie ${e.amount} PV pour sa magie`,
+        o: { c: e.side, k: 'sacrifice', n: e.amount },
+      };
+    case 'magicTwist':
+      return {
+        t: 'statut',
+        txt:
+          e.how === 'parasite'
+            ? `La magie de ${pseudo(e.side)} se retourne contre l'adversaire !`
+            : `La magie de ${pseudo(e.side)} agit sur les deux combattants !`,
+        o: { c: e.side, k: e.how === 'parasite' ? 'magie_parasite' : 'magie_partagee' },
+      };
+    case 'magicPulse':
+      return {
+        t: 'magie',
+        txt: `La magie de ${pseudo(e.side)} pulse et agit à nouveau : ${at(e.side).magic.nom}`,
+        o: { c: e.side, carte: at(e.side).magic.nom, img: at(e.side).magic.image || null },
+      };
+    case 'magicScaled':
+      return {
+        t: 'statut',
+        txt: e.grows
+          ? `La magie de ${pseudo(e.side)} grandit (${e.pct} %)`
+          : `La magie de ${pseudo(e.side)} se consume (${e.pct} %)`,
+        o: { c: e.side, k: 'magie_puissance', n: e.pct },
+      };
+    case 'magicPhase':
+      return {
+        t: 'magie',
+        txt: `La magie de ${pseudo(e.side)} se transforme !`,
+        o: { c: e.side, carte: at(e.side).magic.nom, img: at(e.side).magic.image || null },
+      };
+    case 'magicUnstable':
+      return {
+        t: 'statut',
+        txt: `La magie de ${pseudo(e.side)} est instable : elle change de forme !`,
+        o: { c: e.side, k: 'magie_instable' },
+      };
+    case 'magicLocked':
+      return {
+        t: 'statut',
+        txt: `La magie de ${pseudo(e.side)} est verrouillée : ${
+          e.what === 'vol'
+            ? 'impossible de la voler'
+            : e.what === 'annulation'
+              ? "impossible de l'annuler"
+              : 'impossible de la détruire'
+        } !`,
+        o: { c: e.side, k: 'magie_verrou', what: e.what },
+      };
+    case 'magicFollows':
+      return {
+        t: 'statut',
+        txt: `La magie de ${pseudo(e.side)} suit ${name(e.side)} au combat`,
+        o: { c: e.side, k: 'magie_relais' },
+      };
+    case 'magicMirrored':
+      return {
+        t: 'statut',
+        txt: e.copied
+          ? `${name(e.side)} copie la magie de ${pseudo(e.from)} : ${at(e.from).magic.nom}`
+          : `${name(e.side)} n'a aucune magie à copier`,
+        o: { c: e.side, k: 'magie_miroir', from: e.from },
+      };
     case 'magicDestroyed':
       return {
         t: 'vol',

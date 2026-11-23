@@ -128,6 +128,17 @@ export type EffectData = {
   sur_carte?: unknown;
   udecl?: string; // an ULTIMATE_TRIGGER_TYPES key: on an event, or under X % of HP
   udx?: Num; // its X: count, damage or percent
+  // Ultimate modes (mechanics/ultimate-modes.ts): a second trigger, both ('et') or either one
+  // ('ou', by default); a gauge of `jauge` points filled by `jsource` ('degats_recus' by default,
+  // 'degats_infliges', 'coups', 'statuts'); a second effect every other use (`phase2`); up to
+  // `desespoir` % stronger as its card loses HP. udecl 'contre': answers the opponent's ultimate.
+  udecl2?: string;
+  udx2?: Num;
+  ulogique?: string;
+  jauge?: Num;
+  jsource?: string;
+  phase2?: EffectData | null;
+  desespoir?: Num;
 
   // Headshot (`pctcrit`: % of the ATQ added to the strike, 50 when empty) and targeting
   // (`consomme`: 'non' keeps the mark after its first headshot).
@@ -150,6 +161,31 @@ export type EffectData = {
   // A magic's timing (on its effect): acts from the start of its X-th turn, for X turns.
   magdebut?: Num;
   magduree?: Num;
+  // Magic modes (mechanics/magic-modes.ts), on its effect: waits for a condition (`mdecl`); acts
+  // again every X of its turns (`mpulse`); grows by X % a turn (`mcroit`); starts X % stronger and
+  // fades by as much a turn (`mconsume`); turns into `mphase2` after `mphase2tours` turns; costs X %
+  // of its card's HP for an effect `msacbonus` % stronger (`msacpv`); acts only under X % of HP
+  // (`maura`); follows the next fighter in a relay (`mrelais`); acts against the opponent
+  // (`mparasite`) or on both cards (`mpartage`); X % chance a turn to change into a random effect
+  // (`minstable`); acts only on a terrain, `mterrainbonus` % stronger (`mterrain`); cannot be stolen,
+  // cancelled nor destroyed, `mverroumalus` % weaker (`mverrou`).
+  mdecl?: TrapCondition | null;
+  mpulse?: Num;
+  mcroit?: Num;
+  mconsume?: Num;
+  mphase2?: EffectData | null;
+  mphase2tours?: Num;
+  msacpv?: Num;
+  msacbonus?: Num;
+  maura?: Num;
+  mrelais?: unknown;
+  mparasite?: unknown;
+  mpartage?: unknown;
+  minstable?: Num;
+  mterrain?: string;
+  mterrainbonus?: Num;
+  mverrou?: unknown;
+  mverroumalus?: Num;
   // Insect mutation: level I (ATQ and HP, unit `u`), level II (damage reduction %, bleed on the
   // attack), level III (dodge %, a parasitic link of `lientours` turns; and an instant molt).
   matq?: Num;
@@ -176,6 +212,17 @@ export type EffectData = {
   condition?: TrapCondition;
   effet?: EffectData | null;
   declenchements?: Num;
+  // Trap modes (mechanics/trap-modes.ts): a second condition, both ('et') or either one ('ou', by
+  // default); fires at the X-th time (`compte`); X of its owner's turns later (`retard`); re-arms X
+  // turns after its last trigger (`rearme`); sets off its card's 'ultime' or 'magie' (`enchaine`);
+  // its condition hidden on the card (`cache`).
+  condition2?: TrapCondition | null;
+  logique?: string;
+  compte?: Num;
+  retard?: Num;
+  rearme?: Num;
+  enchaine?: string;
+  cache?: unknown;
 };
 
 export type TrapCondition = {
@@ -184,6 +231,7 @@ export type TrapCondition = {
   seuilpv?: Num;
   seuildeg?: Num; // proprio_coup_fort: damage of a single hit
   ntour?: Num; // tour_n: turn of the combat
+  nb?: Num; // proprio_statuts, adv_statuts, proprio_fils: how many (1 when empty)
 };
 
 export type Card = {

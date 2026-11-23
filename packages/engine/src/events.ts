@@ -756,6 +756,29 @@ export type DomainEvent =
   | { type: 'magicDelayed'; side: SideIndex; turn: number }
   | { type: 'magicActivated'; side: SideIndex }
   | { type: 'magicExpired'; side: SideIndex }
+  // Trap modes (mechanics/trap-modes.ts): its condition met count times out of `of`; due in `turns`
+  // turns; its card's ultimate or magic set off.
+  | { type: 'trapCounted'; side: SideIndex; count: number; of: number }
+  | { type: 'trapPrimed'; side: SideIndex; turns: number }
+  | { type: 'trapChained'; side: SideIndex; to: 'ultime' | 'magie' }
+  // Ultimate modes (mechanics/ultimate-modes.ts): its gauge full; its second phase; despair (+bonus
+  // %); a counter-ultimate (side) answering the opponent's (target).
+  | { type: 'gaugeFilled'; side: SideIndex }
+  | { type: 'ultimatePhase'; side: SideIndex }
+  | { type: 'ultimateDesperate'; side: SideIndex; bonus: number }
+  | { type: 'ultimateCountered'; side: SideIndex; target: SideIndex }
+  // Magic modes (mechanics/magic-modes.ts)
+  | { type: 'magicWaiting'; side: SideIndex; why: 'condition' | 'aura' | 'terrain' }
+  | { type: 'magicDormant'; side: SideIndex; why: 'aura' | 'terrain' }
+  | { type: 'magicSacrifice'; side: SideIndex; amount: number }
+  | { type: 'magicTwist'; side: SideIndex; how: 'parasite' | 'partage' }
+  | { type: 'magicPulse'; side: SideIndex }
+  | { type: 'magicScaled'; side: SideIndex; pct: number; grows: boolean }
+  | { type: 'magicPhase'; side: SideIndex }
+  | { type: 'magicUnstable'; side: SideIndex }
+  | { type: 'magicLocked'; side: SideIndex; what: 'vol' | 'annulation' | 'destruction' }
+  | { type: 'magicFollows'; side: SideIndex }
+  | { type: 'magicMirrored'; side: SideIndex; from: SideIndex; copied: boolean }
   // Damage reduction (%) or block chance (%) gained (mutation, reaction passive).
   | { type: 'defenseChanged'; side: SideIndex; kind: 'block' | 'reduce'; delta: number }
   // Programming passive. label / effectType: the programmed effect's own label (`lib`, card data)

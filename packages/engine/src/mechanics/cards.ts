@@ -5,8 +5,10 @@ import { draw, effetOf, emit, id } from '../combat/combat.ts';
 import type { EffectContext, EffectRules } from '../combat/effect-context.ts';
 import { applyEffect } from '../combat/effects.ts';
 import { undoMagic } from './theft.ts';
+import { magicLocked } from './magic-modes.ts';
 
 export function destroyEffect({ c, e, x }: EffectContext): void {
+  if (e.carte === 'magie' && x.magicActive && magicLocked(c, x, 'destruction')) return;
   if (e.carte === 'magie' && (x.magicActive || x.magicCancelTurns)) {
     const wasActive = x.magicActive;
     x.magicActive = 0;

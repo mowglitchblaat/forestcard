@@ -149,6 +149,7 @@ const CATEGORY_OF: Record<string, string> = {
   visee_maintenue: 'headshot',
   forge: 'forge',
   forge_creation: 'forge',
+  miroir_magie: 'cartes',
   arme_vivante: 'forge',
   fauche: 'fauche',
   laser: 'laser',

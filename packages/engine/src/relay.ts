@@ -26,6 +26,7 @@
 import {
   createCombat,
   disableEmptySlots,
+  effetOf,
   emit,
   flush,
   handOver,
@@ -83,10 +84,16 @@ export function simulateRelay(
   const entered = new Set<number>();
   // A puppet given back to its player (mechanics/threads.ts) waits in its reserve with the HP it had.
   const reserve = new Map<Card, number>();
+  const follows = new Set<Side>(); // newcomers keeping the magic of the fighter before them
   // The next fighter of a player (with a new magic and trap), counted among its fighters.
   const next = (i: number, s: Side): Side => {
     const n = newSide(c, players[i] as Player, used[i], [s.fighter, s.magic, s.trap]);
     (used[i] as Card[]).push(n.fighter, n.magic, n.trap);
+    // a magic that follows the relay (mrelais, mechanics/magic-modes.ts) stays with the newcomer
+    if (s.magicActive && !s.magicStolen && effetOf(c, s.magic)?.mrelais) {
+      n.magic = s.magic;
+      follows.add(n);
+    }
     disableEmptySlots(n);
     const hp = reserve.get(n.fighter);
     if (hp !== undefined) {
@@ -99,6 +106,7 @@ export function simulateRelay(
   };
   const announce = (i: number, n: Side) => {
     emit(c, { type: 'fighterEntered', side: i, index: fielded[i]!, of: team });
+    if (follows.delete(n)) emit(c, { type: 'magicFollows', side: i });
     revealMagics(c, [n]);
   };
   // A fallen fighter (after what was pending: a revive, a trap) gives way to its player's next one.

@@ -10,6 +10,8 @@ import type { Flow } from '../combat/flow.ts';
 import type { Side } from '../combat/state.ts';
 import type { EffectData } from '../model/card.ts';
 import { undoMagic } from './theft.ts';
+import { actMagic, magicWaits } from './magic-modes.ts';
+import { noticeFact } from './triggers.ts';
 
 // Its part of a card's state.
 export type MagicTiming = { magicStartTurn: number; magicTurnsLeft: number };
@@ -19,10 +21,36 @@ const startTurn = (e: EffectData | null | undefined): number =>
 const duration = (e: EffectData | null | undefined): number =>
   Math.max(0, parseInt(String(e?.magduree), 10) || 0);
 
+// It acts now, or waits for its condition, its aura or its terrain (mechanics/magic-modes.ts).
 function act(c: Combat, s: Side): void {
-  applyEffect(c, effetOf(c, s.magic), s, opponent(c, s), true);
-  s.magicTurnsLeft = duration(effetOf(c, s.magic));
+  const e = effetOf(c, s.magic);
+  if (!e || !hasModes(e)) {
+    applyEffect(c, e, s, opponent(c, s), true);
+    s.magicTurnsLeft = duration(e);
+    if (e) noticeFact(c, { kind: 'magicAct', who: id(c, s) });
+    return;
+  }
+  s.magicTurnsLeft = duration(e);
+  if (!magicWaits(c, s, e)) actMagic(c, s, e);
 }
+
+// The magic modes (mechanics/magic-modes.ts): a plain magic plays as before.
+const MODE_FIELDS = [
+  'mdecl',
+  'mpulse',
+  'mcroit',
+  'mconsume',
+  'mphase2',
+  'msacpv',
+  'maura',
+  'mparasite',
+  'mpartage',
+  'minstable',
+  'mterrain',
+  'mverrou',
+] as const;
+const hasModes = (e: EffectData) =>
+  MODE_FIELDS.some((k) => e[k] != null && e[k] !== '' && e[k] !== false && e[k] !== 0);
 
 // The start of the combat (and of each overtime): the magic shows, and acts now or waits.
 export function revealMagic(c: Combat, s: Side): void {

@@ -16,7 +16,7 @@ import type { DomainEvent } from '../events.ts';
 import type { EffectData } from '../model/card.ts';
 import { guarded } from './guard.ts';
 import { mutationOnStatus } from './insect.ts';
-import { triggerFact } from './triggers.ts';
+import { triggerFacts } from './triggers.ts';
 
 // Its part of a card's status (combat/state.ts).
 export type ReactionState = {
@@ -84,8 +84,7 @@ export function reactToEvent(c: Combat, e: DomainEvent): void {
     if (e.amount > 0) reactionPassives(c, s, 'degats');
     return;
   }
-  const f = triggerFact(e);
-  if (f && f.kind === 'status' && f.who === e.side) {
+  if (triggerFacts(e).some((f) => f.kind === 'status' && f.who === e.side)) {
     mutationOnStatus(c, s);
     reactionPassives(c, s, 'statut');
   }

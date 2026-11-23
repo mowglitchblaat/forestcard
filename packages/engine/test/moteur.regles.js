@@ -2065,3 +2065,104 @@ test('croissance limitée : pv_tours et atq_tours s\'arrêtent après « fois »
   const libre = combat([C('Colosse', 1, SOLIDE, { passif: { type: 'pv_tours', tours: 1, val: 10 } })], [C('B', 1, SOLIDE)], { regles: { maxTours: 6, maxProlong: 0 } });
   assert.equal(libre.journal.filter(e => e.t === 'stat' && e.c === 0 && e.d > 0).length, 6, 'sans « fois », à chaque tour');
 });
+
+// ================= Déclencheurs et modes (novembre 2026) =================
+const SANS_PROLONG = { regles: { maxTours: 4, maxProlong: 0 } };
+const txts = r => r.journal.map(e => e.txt);
+const indexDe = (r, re) => r.journal.findIndex(e => re.test(e.txt));
+
+test('piège premier_coup : se déclenche au premier coup du combat', () => {
+  const r = combat([C('a', 5, SOLIDE), PIE('P', { type: 'premier_coup' }, { type: 'soin', val: 7 })], [C('b', 5, SOLIDE)], SANS_PROLONG);
+  const piege = indexDe(r, /Piège de A : P/);
+  assert.ok(piege > 0);
+  assert.equal(r.journal.slice(0, piege).filter(e => e.t === 'degats').length, 1);
+});
+
+test('piège adv_magie : se déclenche quand la magie adverse agit', () => {
+  const r = combat([C('a', 5, SOLIDE), PIE('P', { type: 'adv_magie' }, { type: 'soin', val: 9 })], [C('b', 5, SOLIDE), MAG('M', { type: 'atq_mod', cible: 'soi', val: 2, u: 'pts' })], SANS_PROLONG);
+  assert.ok(indexDe(r, /Piège de A : P/) > indexDe(r, /Magie de B : M/));
+});
+
+test('piège à compteur : se déclenche à la 3e fois que sa condition arrive', () => {
+  const r = combat([C('a', 5, SOLIDE), PIE('P', { type: 'adv_attaque', coups: 1 }, { type: 'atq_mod', cible: 'soi', val: 3, u: 'pts' }, 1)], [C('b', 5, SOLIDE)], SANS_PROLONG);
+  assert.equal(indexDe(r, /Piège de A/) > 0, true); // sans compteur : dès la 1re attaque
+  const deck = [C('a', 5, SOLIDE), { type: 'piege', nom: 'P', effet: { condition: { type: 'adv_attaque', coups: 1 }, effet: { type: 'atq_mod', cible: 'soi', val: 3, u: 'pts' }, declenchements: 1, compte: 3 } }];
+  const r3 = combat(deck, [C('b', 5, SOLIDE)], SANS_PROLONG);
+  assert.deepEqual(auxAttaquesDeA(r3, e => /Piège de A/.test(e.txt)).length, 1);
+  assert.deepEqual(lignes(r3, e => /se charge/.test(e.txt)).map(e => e.txt.match(/\((\d)\/3\)/)[1]), ['1', '2', '3']);
+});
+
+test('piège à retardement : se déclenche X tours du combat après sa condition', () => {
+  const deck = [C('a', 5, SOLIDE), { type: 'piege', nom: 'P', effet: { condition: { type: 'adv_attaque', coups: 1 }, effet: { type: 'soin', val: 3 }, declenchements: 1, retard: 2 } }];
+  const r = combat(deck, [C('b', 5, SOLIDE)], SANS_PROLONG);
+  const amorce = indexDe(r, /s'enclenche/);
+  const piege = indexDe(r, /Piège de A : P/);
+  assert.ok(amorce > 0 && piege > amorce);
+  const tours = r.journal.slice(amorce, piege).filter(e => e.t === 'tour').length;
+  assert.equal(tours, 2);
+});
+
+test('piège à double condition « et » : attend les deux, dans n\'importe quel ordre ; réarmement ; chaîne vers la magie', () => {
+  const deck = [C('a', 5, SOLIDE), MAG('M', { type: 'atq_mod', cible: 'soi', val: 1, u: 'pts' }),
+    { type: 'piege', nom: 'P', effet: { condition: { type: 'tour_n', ntour: 2 }, condition2: { type: 'adv_attaque', coups: 2 }, logique: 'et', effet: { type: 'soin', val: 3 }, declenchements: 1, rearme: 2, enchaine: 'magie' } }];
+  const r = combat(deck, [C('b', 5, SOLIDE)], { regles: { maxTours: 6, maxProlong: 0 } });
+  const piege = indexDe(r, /Piège de A : P/);
+  // tour 2 passé, puis la 2e attaque de B (tour 3) : il se déclenche
+  assert.equal(r.journal.slice(0, piege).filter(e => e.t === 'tour').length, 3);
+  assert.ok(indexDe(r, /relance sa magie/) > piege);
+  assert.ok(indexDe(r, /redevient actif/) > piege);
+});
+
+test('ultime tour_n, jauge, contre-ultime, 2e phase, désespoir', () => {
+  const t = combat([C('a', 5, SOLIDE, { ultime: { type: 'soin', val: 20, udecl: 'tour_n', udx: 4, utilisations: 1 } })], [C('b', 5, SOLIDE)], SANS_PROLONG);
+  const ult = indexDe(t, /ULTIME de a/);
+  assert.equal(t.journal.slice(0, ult).filter(e => e.t === 'tour').length, 4);
+
+  const j = combat([C('a', 5, SOLIDE, { ultime: { type: 'atq_mod', cible: 'soi', val: 10, u: 'pts', jauge: 12, utilisations: 0 } })], [C('b', 5, SOLIDE)], SANS_PROLONG);
+  assert.ok(indexDe(j, /jauge d'ultime de a est pleine/) > 0);
+  assert.ok(indexDe(j, /ULTIME de a/) > indexDe(j, /jauge/));
+
+  const k = combat([C('a', 5, SOLIDE, { ultime: { type: 'soin', val: 20, apres_tours: 1, utilisations: 0, phase2: { type: 'atq_mod', cible: 'soi', val: 4, u: 'pts' } } })],
+    [C('b', 5, SOLIDE, { ultime: { type: 'soin', val: 1, udecl: 'contre', utilisations: 1 } })], SANS_PROLONG);
+  assert.equal(lignes(k, e => /CONTRE-ULTIME de b/.test(e.txt)).length, 1);
+  assert.ok(indexDe(k, /seconde phase/) > indexDe(k, /CONTRE-ULTIME/));
+
+  const d = combat([C('a', 5, 100, { ultime: { type: 'atq_mod', cible: 'soi', val: 10, u: 'pts', udecl: 'pv_sous', udx: 80, desespoir: 100, utilisations: 1 } })], [C('b', 15, SOLIDE)], SANS_PROLONG);
+  assert.ok(txts(d).includes('ATQ de a +13')); // 30 PV perdus sur 100 : +30 %
+});
+
+test('ultime serie : après X coups donnés de suite sans être touché', () => {
+  const r = combat([C('a', 5, SOLIDE, { ultime: { type: 'atq_mod', cible: 'soi', val: 1, u: 'pts', udecl: 'serie', udx: 2, utilisations: 1 } })], [C('b', 0, SOLIDE)], SANS_PROLONG);
+  assert.deepEqual(auxAttaquesDeA(r, e => /ULTIME de a/.test(e.txt)), [2]);
+  const touche = combat([C('a', 5, SOLIDE, { ultime: { type: 'atq_mod', cible: 'soi', val: 1, u: 'pts', udecl: 'serie', udx: 2, utilisations: 1 } })], [C('b', 5, SOLIDE)], SANS_PROLONG);
+  assert.equal(indexDe(touche, /ULTIME de a/), -1);
+});
+
+test('magies : attente d\'une condition, aura, parasite et sacrifice, pulsation, verrou', () => {
+  const att = combat([C('a', 5, SOLIDE), MAG('M', { type: 'atq_mod', cible: 'soi', val: 2, u: 'pts', mdecl: { type: 'premier_coup' } })], [C('b', 5, SOLIDE)], SANS_PROLONG);
+  assert.ok(indexDe(att, /La magie de A agit/) > indexDe(att, /a subit 5/));
+
+  const aura = combat([C('a', 5, 100), MAG('M', { type: 'atq_mod', cible: 'soi', val: 10, u: 'pts', maura: 90 })], [C('b', 6, SOLIDE)], SANS_PROLONG);
+  const eveil = indexDe(aura, /La magie de A agit/);
+  assert.ok(eveil > 0 && aura.journal[eveil].pv[0] < 90);
+
+  const para = combat([C('a', 5, 500), MAG('M', { type: 'atq_mod', cible: 'soi', val: -2, u: 'pts', mparasite: true, msacpv: 10 })], [C('b', 5, SOLIDE)], SANS_PROLONG);
+  assert.ok(txts(para).includes('a sacrifie 50 PV pour sa magie'));
+  assert.ok(txts(para).includes('ATQ de b -3')); // −2 × 1,5 (sacrifice), sur l'adversaire
+
+  const v = combat([C('a', 5, SOLIDE), MAG('M', { type: 'atq_mod', cible: 'soi', val: 2, u: 'pts', mpulse: 1, mverrou: true })], [C('b', 5, SOLIDE), MAG('X', { type: 'annule_magies', tours: 0 })], SANS_PROLONG);
+  assert.equal(lignes(v, e => /verrouillée/.test(e.txt)).length, 1);
+  assert.equal(lignes(v, e => /pulse/.test(e.txt)).length, auxAttaquesDeA(v, e => e.t === 'attaque' && e.c === 0).length);
+});
+
+test('magie miroir : joue la magie adverse comme la sienne', () => {
+  const r = combat([C('a', 5, SOLIDE), MAG('M', { type: 'miroir_magie' })], [C('b', 5, SOLIDE), MAG('X', { type: 'atq_mod', cible: 'soi', val: 7, u: 'pts' })], SANS_PROLONG);
+  assert.ok(txts(r).includes('ATQ de a +7'));
+});
+
+test('relais : une magie qui suit le relais reste avec le combattant suivant', () => {
+  const r = relais([C('a1', 30, 30), C('a2', 30, 30), MAG('M', { type: 'atq_mod', cible: 'soi', val: 5, u: 'pts', mrelais: true })],
+    [C('b1', 40, 200), PIE('P', { type: 'adv_entree' }, { type: 'soin', val: 11 })], { seed: 3 });
+  assert.ok(indexDe(r, /suit a1 au combat/) > 0);
+  assert.ok(indexDe(r, /Piège de B : P/) > indexDe(r, /envoie son combattant/));
+});

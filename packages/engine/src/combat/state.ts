@@ -53,7 +53,10 @@ import { type ForgeState, forgeState } from '../mechanics/forge.ts';
 import { type ThreadsState, threadsState } from '../mechanics/threads.ts';
 import { type GagState, gagState } from '../mechanics/gag.ts';
 import { type StatsState, statsState } from '../mechanics/stats.ts';
+import { type TriggerWatchState, triggerWatchState } from '../mechanics/triggers.ts';
 import type { Card, EffectData, Num } from '../model/card.ts';
+import type { MagicModeState } from '../mechanics/magic-modes.ts';
+import type { TrapModeState } from '../mechanics/trap-modes.ts';
 
 // An ultimate held by a card: its own, or one stolen or copied from the opponent.
 export type UltimateSlot = {
@@ -63,6 +66,10 @@ export type UltimateSlot = {
   copiedFrom?: EffectData | null | undefined;
   triggered?: number; // an event met its udecl: fires at its next chance (legacy: trg)
   programmed?: ProgrammedSlot; // a programmed ultimate installed (mechanics/programming.ts)
+  // mechanics/ultimate-modes.ts: its gauge, and which of its two conditions were met ('et')
+  gauge?: number;
+  met1?: number;
+  met2?: number;
 };
 
 // A stat change made by an active magic, or a function undoing one. Replayed when the magic is
@@ -119,7 +126,8 @@ export type Status = { turnsPlayed: number } & RageState &
   ForgeState &
   ThreadsState &
   GagState &
-  StatsState;
+  StatsState &
+  TriggerWatchState;
 
 export type Side = {
   pseudo: string;
@@ -149,6 +157,8 @@ export type Side = {
   trapBlocked: number; // blocked by immunity, may re-arm
   magicStartTurn: number; // a waiting magic acts at the start of this turn of its card (0: none)
   magicTurnsLeft: number; // turns before the magic is spent (0: no duration)
+  magicMode: MagicModeState; // mechanics/magic-modes.ts
+  trapMode: TrapModeState; // mechanics/trap-modes.ts
 };
 
 // Placeholders for a deck without magic or without trap.
@@ -226,4 +236,5 @@ export const newStatus = (passives: EffectData[]): Status => ({
   ...threadsState(),
   ...gagState(),
   ...statsState(),
+  ...triggerWatchState(),
 });

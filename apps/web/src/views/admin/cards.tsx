@@ -75,6 +75,17 @@ import {
   ULTIMATE_TRIGGERS,
 } from './effect-picker';
 import { AdminError, AdminSection, Choice, Field, NoticeView, useAction } from './kit';
+import {
+  MAGIC_MODE_KEYS,
+  MagicModes,
+  type Modes,
+  modesToSave,
+  pickModes,
+  TRAP_MODE_KEYS,
+  TrapModes,
+  ULTIMATE_MODE_KEYS,
+  UltimateModes,
+} from './modes-panel';
 
 const route = getRouteApi('/admin/$sub');
 
@@ -228,6 +239,13 @@ function CardEditor({
     type === 'piege' ? (effect?.effet ?? null) : null,
   );
   const [triggers, setTriggers] = useState(type === 'piege' ? num(effect?.declenchements, 1) : 1);
+  const [ultModes, setUltModes] = useState<Modes>(() => pickModes(ultimate, ULTIMATE_MODE_KEYS));
+  const [magicModes, setMagicModes] = useState<Modes>(() =>
+    type === 'magie' ? pickModes(effect, MAGIC_MODE_KEYS) : {},
+  );
+  const [trapModes, setTrapModes] = useState<Modes>(() =>
+    type === 'piege' ? pickModes(effect, TRAP_MODE_KEYS) : {},
+  );
   const [composer, setComposer] = useState<ComposerState>(emptyComposer);
 
   // The composer: the card's kept drawing and its settings, else its current image as it is.
@@ -275,6 +293,7 @@ function CardEditor({
         }
         ultimeOut.utilisations = uses || 0;
         ultimeOut.delai_tours = cooldown || 0;
+        Object.assign(ultimeOut, modesToSave(ultModes));
       }
       const rest = bricksOf(cleanMulti(lists.passives, passives)).filter(
         (b) => b.type !== 'programmation',
@@ -287,12 +306,19 @@ function CardEditor({
       if (m) {
         if (Number(magicStart) > 1) m.magdebut = Number(magicStart);
         if (Number(magicLength) > 0) m.magduree = Number(magicLength);
+        Object.assign(m, modesToSave(magicModes));
       }
       effetOut = m;
     } else {
       const c = clean(lists.conditions, condition);
       const e = cleanMulti(lists.trapEffects, trapEffect);
-      if (c || e) effetOut = { condition: c, effet: e, declenchements: triggers || 1 };
+      if (c || e)
+        effetOut = {
+          condition: c,
+          effet: e,
+          declenchements: triggers || 1,
+          ...modesToSave(trapModes),
+        };
     }
     const fighter = type === 'combattant';
     return {
@@ -520,6 +546,7 @@ function CardEditor({
                 />
               </Field>
             </div>
+            <UltimateModes modes={ultModes} onChange={setUltModes} ultimates={lists.ultimates} />
           </div>
           <div className="flex flex-col gap-3">
             <b>
@@ -606,6 +633,12 @@ function CardEditor({
               />
             </Field>
           </div>
+          <MagicModes
+            modes={magicModes}
+            onChange={setMagicModes}
+            magics={lists.magics}
+            conditions={lists.conditions}
+          />
         </div>
       )}
 
@@ -624,6 +657,7 @@ function CardEditor({
               className="w-24"
             />
           </Field>
+          <TrapModes modes={trapModes} onChange={setTrapModes} conditions={lists.conditions} />
         </div>
       )}
 

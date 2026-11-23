@@ -157,6 +157,12 @@ Clés de `EFFECT_TYPES`, exécutées par `applyEffect` (`packages/engine/src/com
 
 **Début et durée d'une magie** (champs de son effet, `magdebut`, `magduree`) : la magie agit au début du tour `magdebut` de sa carte (vide, 0 ou 1 : dès le début du combat ; en attendant, elle est montrée « en attente »), et seulement `magduree` tours (vide ou 0 : tout le combat) ; à la fin, tout ce qu'elle a fait est défait, comme une magie annulée (`magic-timing.ts`).
 
+**Comportements d'une magie** (novembre 2026, champs de son effet, `mechanics/magic-modes.ts`) : `mdecl` (une condition de piège) : elle attend que la condition arrive pour agir ; `maura` X : elle n'agit que tant que sa carte est sous X % de PV (au-dessus elle s'endort, ses effets défaits, et se réveille en dessous) ; `mterrain` : elle n'agit que sur ce terrain, `mterrainbonus` % plus forte (30) ; `mpulse` X : elle agit à nouveau tous les X tours de sa carte (ses effets s'additionnent) ; `mcroit` X : à chaque tour de sa carte elle est rejouée X % plus forte ; `mconsume` X : elle commence X % plus forte et perd X % à chaque tour, épuisée à 0 ; `mphase2` (+ `mphase2tours`, 2) : après X tours, elle devient son second effet (le premier défait) ; `msacpv` X : en agissant, sa carte paie X % de ses PV (jamais jusqu'à 0) pour `msacbonus` % de puissance (50) ; `mparasite` : elle agit contre l'adversaire, comme si c'était la sienne ; `mpartage` : elle agit sur les deux cartes ; `minstable` X : à chaque tour, X % de chances de se changer en un effet au hasard ; `mverrou` : ni volée, ni annulée, ni détruite, mais `mverroumalus` % plus faible (25) ; `mrelais` : en relais, elle reste avec le combattant suivant. « Plus forte » : les montants de l'effet (dégâts, %, stats) sont multipliés (`mechanics/power.ts`) ; chances, durées et niveaux ne changent pas. Effet `miroir_magie` : la carte joue la magie de l'adversaire comme la sienne.
+
+**Modes d'un piège** (novembre 2026, à côté de sa condition, `mechanics/trap-modes.ts`) : `condition2` et `logique` : une seconde condition, l'une ou l'autre (`ou`, par défaut) ou les deux, dans n'importe quel ordre (`et` : chacune est retenue une fois arrivée) ; `compte` X : il se déclenche à la X-ième fois ; `retard` X : il se déclenche X tours du combat après sa condition (les tours numérotés du journal) ; `rearme` X : épuisé, il se réarme X tours du combat plus tard ; `enchaine` : `ultime` (son ultime part à sa prochaine occasion) ou `magie` (sa magie agit une fois de plus, aussitôt) ; `cache` : sa condition est cachée sur la carte (« Condition cachée »).
+
+**Modes d'un ultime** (novembre 2026, `mechanics/ultimate-modes.ts`) : `udecl2` (+ `udx2`) et `ulogique` : un second déclencheur, l'un ou l'autre ou les deux ; `jauge` X : une jauge remplie par `jsource` (`degats_recus` par défaut, `degats_infliges`, `coups`, `statuts`) ; pleine, l'ultime part et elle se vide ; `phase2` : un second effet, joué une utilisation sur deux ; `desespoir` X : jusqu'à X % plus fort, en proportion des PV perdus ; `udecl` = `contre` : il attend l'ultime adverse, y répond et l'annule (l'ultime adverse est consommé).
+
 ## Passifs
 
 Clés de `PASSIVE_TYPES`, lues par le moteur au moment indiqué.
@@ -223,7 +229,9 @@ Clés de `TRAP_CONDITION_TYPES`, évaluées par `scan` (`packages/engine/src/com
 | `proprio_bloque` | son propriétaire bloque (attaque annulée ou bloquée, dégâts réduits, souffle ou missile bloqué) |
 | `proprio_ultime` | son propriétaire lance un ultime (programmé compris) |
 
-Les dix dernières conditions lisent des **faits** (`mechanics/triggers.ts`) : le moteur les relève à l'émission de chaque événement, et le scan du piège attend le prochain `flush`, sauf le déclenchement d'un piège (`adv_piege`), scanné aussitôt. Un piège détruit ou volé pendant qu'il agit s'arrête : il n'applique plus ses effets restants.
+Conditions de novembre 2026 (`NEW_TRAP_CONDITIONS`, champ `nb` pour un nombre) : `adv_magie`, `adv_critique`, `adv_bloque`, `proprio_annule` (gel, étourdissement, attaque annulée), `adv_survit` (réanimation ou mort évitée), `adv_purifie`, `proprio_statuts` / `adv_statuts` (X statuts négatifs en même temps), `proprio_statut_max` (un statut au niveau III), `adv_atq_hausse`, `proprio_fils` (X fils), `adv_forge`, `adv_entree` (un combattant adverse entre : relais, contrôle), `proprio_pv_sur` (remonte au-dessus de X % après un soin), `adv_rate` (esquive du propriétaire ou attaque adverse annulée), `proprio_affaibli` (perte d'ATQ ou de PV max), `terrain_change`, `adv_controle`, `proprio_detone`, `proprio_magie_perdue`, `premier_coup` (le premier coup du combat). Toutes lisent des faits.
+
+Les dix conditions d'avant celles de novembre 2026 lisent des **faits** (`mechanics/triggers.ts`) : le moteur les relève à l'émission de chaque événement, et le scan du piège attend le prochain `flush`, sauf le déclenchement d'un piège (`adv_piege`), scanné aussitôt. Un piège détruit ou volé pendant qu'il agit s'arrête : il n'applique plus ses effets restants.
 
 ## Déclencheurs d'ultime
 
@@ -257,8 +265,24 @@ Clés de `ULTIMATE_TRIGGER_TYPES`, dans le champ `udecl` de l'ultime, avec leur 
 | `atq_baisse` | après une baisse de son ATQ (malédiction, fatigue, effet, échange…) | — |
 | `adv_atq_baisse` | après une baisse de l'ATQ de l'adversaire | — |
 | `pvmax_baisse` | après une baisse de ses PV max (calcination, effet…) | — |
+| `tour_n` | au tour X du combat | 1 |
+| `statuts` | quand il porte X statuts négatifs en même temps (aussi vérifié au début de son tour) | 1 |
+| `critique`, `critique_recu` | après un coup critique ou un headshot donné, reçu | — |
+| `adv_magie` | après que la magie adverse a agi (au début, en se réveillant, en pulsant) | — |
+| `entree` | à son premier tour (son entrée en jeu) | — |
+| `allie_tombe` | quand il entre en jeu à la place d'un allié tombé (relais, contrôle) | — |
+| `fils` | quand il porte X fils (aussi vérifié au début de son tour) | 1 |
+| `se_forge` | après une forge d'une de ses cartes | — |
+| `adv_atq_sup` | au début de son tour, si l'adversaire a plus d'ATQ que lui | — |
+| `serie` | après X attaques de suite sans être touché | 1 |
+| `intact` | au début de son tour, après X de ses tours sans subir de dégâts | 1 |
+| `piege_perdu` | après la destruction ou le vol de son piège | — |
+| `adv_magie_fin` | quand la magie adverse s'éteint (fin, vol, destruction, annulation, sommeil) | — |
+| `adv_pv_fixe` | au début de son tour, si l'adversaire est sous X PV | 1 |
+| `mue`, `rage`, `mutation` | quand il entre en mue, en rage, ou atteint le niveau III de mutation | — |
+| `contre` | contre-ultime : en réponse à l'ultime adverse, qu'il annule | — |
 
-Un déclencheur d'événement pose un drapeau sur l'emplacement d'ultime (`triggered`) ; l'ultime part au prochain passage de `ultimate`, au tour de sa carte, et le drapeau retombe. Un ultime volé ou copié arrive sans drapeau. Les faits `purify`, `avoidDeath`, `revive`, `atqDown` et `maxDown` ne servent qu'aux ultimes : aucune condition de piège ne les lit, et ils ne lancent pas de scan de piège.
+Un déclencheur d'événement pose un drapeau sur l'emplacement d'ultime (`triggered`) ; l'ultime part au prochain passage de `ultimate`, au tour de sa carte, et le drapeau retombe. Un ultime volé ou copié arrive sans drapeau. Depuis novembre 2026, les conditions de piège lisent aussi les faits sans ligne legacy (`purify`, `avoidDeath`, `revive`, `atqDown`, `maxDown`, `atqUp`, `magicAct`, `crit`, `cancel`, `forge`, `threads`, `control`, `terrain`, `enter`, `magicLost`, `magicEnd`, `trapLost`, `molt`, `rage`, `mutation`, `detonate`).
 
 ## Niveaux de statut
 

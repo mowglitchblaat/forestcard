@@ -6,6 +6,7 @@
 // Where a moment walks the card's own passives (the "every turn" passives, the statuses an attack
 // lays), the order is the card's, not a list here: the step walks them.
 
+import { magicModesAtStart } from '../mechanics/magic-modes.ts';
 import {
   hit,
   landed,
@@ -91,6 +92,7 @@ const START_OF_TURN: TurnStep[] = [
   terrainAtStart, // the terrain (mechanics/terrain.ts): a bolt, a sting
   moltAtStart, // the molt, before anything else of its turn
   delayedMagicAtStart, // a magic waiting for this turn acts
+  magicModesAtStart, // a magic that pulses, grows, fades, changes (mechanics/magic-modes.ts)
   solidificationAtStart,
   curseFading, // losses come back before the curse ticks again
   curseTicks, // the curse lowers ATQ before the attack

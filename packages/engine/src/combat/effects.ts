@@ -58,6 +58,7 @@ import { effects as forge } from '../mechanics/forge.ts';
 import { effects as scalingStrikes } from '../mechanics/scaling-strikes.ts';
 import { effects as ultimates } from '../mechanics/ultimates.ts';
 import { effects as terrain } from '../mechanics/terrain.ts';
+import { effects as magicModes } from '../mechanics/magic-modes.ts';
 import type { EffectData } from '../model/card.ts';
 import type { EffectType } from '../model/types.ts';
 import { emit, id, type Combat } from './combat.ts';
@@ -124,6 +125,7 @@ export const rules = (): Record<EffectType, EffectRule> =>
     ...trapImmunity,
     ...ultimates,
     ...terrain,
+    ...magicModes,
   });
 
 export function applyEffect(

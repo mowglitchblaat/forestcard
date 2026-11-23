@@ -103,6 +103,7 @@ export const EFFECT_TYPES = [
   'fils',
   'atk_fils',
   'terrain',
+  'miroir_magie',
 ] as const;
 export type EffectType = (typeof EFFECT_TYPES)[number];
 
@@ -168,6 +169,31 @@ export const PASSIVE_TYPES = [
 ] as const;
 export type PassiveType = (typeof PASSIVE_TYPES)[number];
 
+// Trap conditions of November 2026: on facts (mechanics/triggers.ts) or on the state they leave.
+export const NEW_TRAP_CONDITIONS = [
+  'adv_magie',
+  'adv_critique',
+  'adv_bloque',
+  'proprio_annule',
+  'adv_survit',
+  'adv_purifie',
+  'proprio_statuts',
+  'adv_statuts',
+  'proprio_statut_max',
+  'adv_atq_hausse',
+  'proprio_fils',
+  'adv_forge',
+  'adv_entree',
+  'proprio_pv_sur',
+  'adv_rate',
+  'proprio_affaibli',
+  'terrain_change',
+  'adv_controle',
+  'proprio_detone',
+  'proprio_magie_perdue',
+  'premier_coup',
+] as const;
+
 // Trap conditions (combat/traps.ts).
 export const TRAP_CONDITION_TYPES = [
   'adv_attaque',
@@ -187,6 +213,7 @@ export const TRAP_CONDITION_TYPES = [
   'tour_n',
   'proprio_bloque',
   'proprio_ultime',
+  ...NEW_TRAP_CONDITIONS,
 ] as const;
 export type TrapConditionType = (typeof TRAP_CONDITION_TYPES)[number];
 
@@ -219,5 +246,25 @@ export const ULTIMATE_TRIGGER_TYPES = [
   'atq_baisse',
   'adv_atq_baisse',
   'pvmax_baisse',
+  // November 2026
+  'tour_n',
+  'statuts',
+  'critique',
+  'critique_recu',
+  'adv_magie',
+  'entree',
+  'allie_tombe',
+  'fils',
+  'se_forge',
+  'adv_atq_sup',
+  'serie',
+  'intact',
+  'piege_perdu',
+  'adv_magie_fin',
+  'adv_pv_fixe',
+  'mue',
+  'rage',
+  'mutation',
+  'contre',
 ] as const;
 export type UltimateTriggerType = (typeof ULTIMATE_TRIGGER_TYPES)[number];

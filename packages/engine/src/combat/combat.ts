@@ -16,6 +16,8 @@ import { furyBonus } from '../mechanics/fury.ts';
 import { overloadMalus } from '../mechanics/overload.ts';
 import { flushRevives, type TrapRevive } from '../mechanics/revive.ts';
 import { noticeTrigger, type Triggers } from '../mechanics/triggers.ts';
+import { newMagicMode } from '../mechanics/magic-modes.ts';
+import { newTrapMode } from '../mechanics/trap-modes.ts';
 import { reactToEvent } from '../mechanics/reaction.ts';
 import type { Terrain } from '../mechanics/terrain.ts';
 import { puppetFell, type Control, type ControlHost } from '../mechanics/threads.ts';
@@ -57,6 +59,8 @@ export type Combat = {
   pendingControl: Side | null;
   controlHost?: ControlHost;
   terrain: Terrain | null; // the terrain in play (mechanics/terrain.ts)
+  hitsSeen: number; // hits taken so far, by both cards (mechanics/triggers.ts: the first hit)
+  turnNow: number; // the combat's turn under way (mechanics/triggers.ts), for the trap modes
 };
 
 // A magic or trap forged during the combat: its improved effect, its forge level, the triggers the
@@ -144,6 +148,8 @@ export function newSide(c: Combat, player: Player, exclude?: Card[], current?: C
     trapBlocked: 0,
     magicStartTurn: 0,
     magicTurnsLeft: 0,
+    magicMode: newMagicMode(),
+    trapMode: newTrapMode(),
   };
 }
 
@@ -242,6 +248,8 @@ export function createCombat(rules: Rules, seed: number, onEvent: OnEvent): Comb
     control: null,
     pendingControl: null,
     terrain: null,
+    hitsSeen: 0,
+    turnNow: 0,
   };
   return combat;
 }

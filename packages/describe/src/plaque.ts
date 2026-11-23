@@ -129,6 +129,7 @@ const EFFECT_LABELS: Record<EffectType, (e: Fx) => string> = {
   terrain: terrainLabel,
   forge: () => 'Forge',
   forge_creation: () => 'Forge de création',
+  miroir_magie: () => 'Magie miroir',
   fils: () => 'Fils',
   atk_fils: () => 'Coup marionnettiste',
   gag: () => 'Gag',

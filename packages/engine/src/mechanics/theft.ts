@@ -11,6 +11,7 @@ import { applyEffect } from '../combat/effects.ts';
 import type { Flow } from '../combat/flow.ts';
 import type { MagicDelta, Side } from '../combat/state.ts';
 import type { Card, EffectData, Num } from '../model/card.ts';
+import { magicLocked } from './magic-modes.ts';
 
 export type DeferredTheft = { effect: EffectData; atTurn: number; source: string };
 export type PreviousTrap = { trap: Card; active: number; triggers: number; blocked: number };
@@ -56,7 +57,9 @@ export function steal(
   duree: Num,
 ): void {
   const turns = Math.max(0, parseInt(String(duree), 10) || 0);
-  if (carte === 'magie' && (x.magicActive || x.magicCancelTurns)) {
+  if (carte === 'magie' && (x.magicActive || x.magicCancelTurns) && magicLocked(c, x, 'vol')) {
+    // a locked magic stays (mechanics/magic-modes.ts)
+  } else if (carte === 'magie' && (x.magicActive || x.magicCancelTurns)) {
     const wasActive = x.magicActive;
     x.magicActive = 0;
     x.magicCancelTurns = 0;

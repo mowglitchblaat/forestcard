@@ -13,6 +13,7 @@ import type { Flow } from '../combat/flow.ts';
 import type { Side } from '../combat/state.ts';
 import type { EffectData } from '../model/card.ts';
 import { undoMagic } from './theft.ts';
+import { magicLocked } from './magic-modes.ts';
 
 const cancelsMagic = (e: EffectData | null | undefined) =>
   !!e &&
@@ -30,6 +31,7 @@ export function settleMagicCancellations(c: Combat, order: Side[]): void {
   order.forEach((s) => {
     const x = opponent(c, s);
     if (s.magicActive && cancelsMagic(effetOf(c, s.magic)) && x.magicActive) {
+      if (effetOf(c, x.magic)?.mverrou) return; // locked (mechanics/magic-modes.ts): told when cancelled
       x.magicActive = 0;
       x.magicCancelStage = 1;
       x.magicCancelTurns = cancelTurns(effetOf(c, s.magic) as EffectData);
@@ -39,6 +41,7 @@ export function settleMagicCancellations(c: Combat, order: Side[]): void {
 }
 
 export function magicCancelEffect({ c, e, x }: EffectContext): void {
+  if (x.magicCancelStage !== 1 && x.magicActive && magicLocked(c, x, 'annulation')) return;
   if (x.magicCancelStage === 1) {
     // Cancelled before acting (combat start): shown, then crossed out.
     x.magicCancelStage = 2;

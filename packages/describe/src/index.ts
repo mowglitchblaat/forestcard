@@ -243,7 +243,7 @@ const ELEMENTS = ['brulure', 'gel', 'malediction', 'poison', 'saignement', 'fati
 // A leveled status takes the effect's level (`niveau`), else the level of its old value (`sval`).
 const elementText = (el: string, v: number, e: Fx): string | undefined =>
   (
-    {
+    ({
       brulure: burnTxt({ niveau: e.niveau, pctpv: v }),
       gel: `gel ${v} % d'attaque annulée`,
       malediction: `malédiction ${curseTxt}`,
@@ -251,7 +251,7 @@ const elementText = (el: string, v: number, e: Fx): string | undefined =>
       saignement: bleedTxt({ niveau: e.niveau, pctpv: v }),
       fatigue: fatigueTxt({ niveau: e.niveau, fatval: v }),
       foudre: 'poser un niveau de marque de foudre',
-    } as Record<string, string>
+    }) as Record<string, string>
   )[el];
 
 // The riposte of a block (bloque_attaque), once, on the first strike it blocks.
@@ -677,6 +677,7 @@ const EFFECT_TEXT: Record<EffectType, (e: Fx, x: EffectContext) => string[]> = {
   terrain: (e) => [`Invoque ${terrainTxt(e)}, jusqu'à la fin du combat`],
   forge: () => [forgeTxt],
   forge_creation: () => [forgeCreationTxt],
+  miroir_magie: () => ["Copie la magie de l'adversaire et la joue comme la sienne"],
   fils: (e) => [`Pose ${threadsTxt(e)} sur l'adversaire ; ${controlTxt(e)}`],
   atk_fils: attackEffect,
   gag: (e) => [`Pose un gag sur l'adversaire (${gagTxt(e)})`],
@@ -742,6 +743,28 @@ const CONDITION_TEXT: { [K in TrapConditionType]?: (c: TrapCondition) => string 
   proprio_coup_fort: (c) =>
     `Quand le propriétaire subit au moins ${nz(c.seuildeg) || 1} dégâts en un coup`,
   tour_n: (c) => `Au tour ${nz(c.ntour) || 1} du combat`,
+  adv_magie: () => "Quand la magie de l'adversaire agit",
+  adv_critique: () => "Quand l'adversaire porte un coup critique",
+  adv_bloque: () => "Quand l'adversaire bloque une attaque",
+  proprio_annule: () => "Quand l'attaque du propriétaire est annulée (gel, étourdissement…)",
+  adv_survit: () => "Quand l'adversaire se réanime ou évite la mort",
+  adv_purifie: () => "Quand l'adversaire se purifie",
+  proprio_statuts: (c) => `Quand le propriétaire porte ${nz(c.nb) || 1} statuts en même temps`,
+  adv_statuts: (c) => `Quand l'adversaire porte ${nz(c.nb) || 1} statuts en même temps`,
+  proprio_statut_max: () => 'Quand un statut du propriétaire atteint le niveau III',
+  adv_atq_hausse: () => "Quand l'adversaire gagne de l'ATQ",
+  proprio_fils: (c) => `Quand le propriétaire porte ${nz(c.nb) || 1} fils`,
+  adv_forge: () => "Quand l'adversaire se forge",
+  adv_entree: () => 'Quand un nouveau combattant adverse entre en jeu',
+  proprio_pv_sur: (c) =>
+    `Quand le propriétaire remonte au-dessus de ${nz(c.seuilpv) || 50} % de PV (après un soin)`,
+  adv_rate: () => "Quand l'adversaire rate son attaque (esquive, annulation)",
+  proprio_affaibli: () => "Quand le propriétaire perd de l'ATQ ou des PV max",
+  terrain_change: () => 'Quand le terrain change',
+  adv_controle: () => "Quand l'adversaire prend le contrôle d'un combattant",
+  proprio_detone: () => 'Quand une détonation explose sur le propriétaire',
+  proprio_magie_perdue: () => 'Quand la magie du propriétaire est volée, détruite ou annulée',
+  premier_coup: () => 'Au premier coup du combat',
 };
 
 // Ultimate triggers on an event or under X % of HP (udecl), X in udx. An unknown key shows as is;
@@ -773,6 +796,25 @@ const ULTIMATE_TRIGGER_TEXT: Record<UltimateTriggerType, string> = {
   atq_baisse: "quand son ATQ baisse (malédiction, fatigue, vol d'ATQ…)",
   adv_atq_baisse: "quand l'ATQ de l'adversaire baisse",
   pvmax_baisse: 'quand ses PV max baissent (calcination…)',
+  tour_n: 'au tour X du combat',
+  statuts: 'quand il porte X statuts en même temps',
+  critique: 'quand il porte un coup critique',
+  critique_recu: 'quand il reçoit un coup critique',
+  adv_magie: "quand la magie de l'adversaire agit",
+  entree: 'dès son entrée en jeu (son premier tour)',
+  allie_tombe: 'quand il entre en jeu après la chute d’un allié',
+  fils: 'quand il porte X fils',
+  se_forge: 'quand une de ses cartes est forgée',
+  adv_atq_sup: "quand l'adversaire a plus d'ATQ que lui",
+  serie: 'après X coups donnés de suite sans être touché',
+  intact: 'après X tours sans subir de dégâts',
+  piege_perdu: 'quand son piège est détruit ou volé',
+  adv_magie_fin: "quand la magie de l'adversaire s'éteint",
+  adv_pv_fixe: "quand l'adversaire passe sous X PV",
+  mue: 'quand il entre en mue',
+  rage: 'quand il entre en rage',
+  mutation: 'quand sa mutation atteint le niveau III',
+  contre: "en réponse à l'ultime de l'adversaire, qu'il annule",
 };
 
 export function fxCond(c: TrapCondition | null | undefined): string {
@@ -783,18 +825,38 @@ export function fxCond(c: TrapCondition | null | undefined): string {
   return L ? (L[0] as string) : String(c.type);
 }
 
+const triggerText = (udecl: string, udx: unknown): string => {
+  const X = udx ?? (/pv_sous/.test(udecl) ? 50 : 1);
+  return String(label(ULTIMATE_TRIGGER_TEXT, udecl) || udecl).replace(/\bX\b/, String(X));
+};
+
+const GAUGE_SOURCES: Record<string, string> = {
+  degats_recus: 'les dégâts qu’il subit',
+  degats_infliges: 'les dégâts qu’il inflige',
+  coups: 'ses attaques',
+  statuts: 'les statuts qu’il reçoit',
+};
+
 export function fxTrigUlt(u: Fx): string {
   const p: string[] = [];
   if (nz(u.apres_tours)) p.push(`dès son tour ${u.apres_tours}`);
   if (u.sur_carte) p.push('quand un piège se déclenche');
   if (u.udecl) {
-    const X = u.udx ?? (/pv_sous/.test(u.udecl) ? 50 : 1);
-    p.push(String(label(ULTIMATE_TRIGGER_TEXT, u.udecl) || u.udecl).replace(/\bX\b/, String(X)));
+    const first = triggerText(u.udecl as string, u.udx);
+    if (u.udecl2) {
+      const second = triggerText(u.udecl2 as string, u.udx2);
+      p.push(u.ulogique === 'et' ? `${first}, puis ${second} (les deux)` : `${first} ou ${second}`);
+    } else p.push(first);
   }
+  if (nz(u.jauge) > 0)
+    p.push(
+      `quand sa jauge de ${nz(u.jauge)} est pleine (remplie par ${GAUGE_SOURCES[String(u.jsource || 'degats_recus')] || 'les dégâts qu’il subit'})`,
+    );
   let s = p.length ? 'Se déclenche ' + p.join(' ou ') : 'Ultime';
   if (nz(u.delai_tours) > 0) s += `, au plus une fois tous les ${u.delai_tours} tours`;
   if (nz(u.utilisations) > 0)
     s += `, ${u.utilisations} utilisation${(u.utilisations as number) > 1 ? 's' : ''} maximum`;
+  if (nz(u.desespoir) > 0) s += `, jusqu'à ${nz(u.desespoir)} % plus fort selon les PV perdus`;
   return s;
 }
 
@@ -807,16 +869,78 @@ export type Section = {
 };
 
 // A magic's timing (`magdebut`, `magduree`): from which of its turns it acts, for how long.
+const TERRAIN_NAMES: Record<string, string> = {
+  orage: "l'Orage",
+  essaim: "l'Essaim",
+  foret: 'la Forêt Enchantée',
+  cathedrale: 'la Cathédrale',
+  lune: 'la Lune de sang',
+  sakura: 'le Jardin de sakura',
+  grimoire: 'le Grimoire ouvert',
+  theatre: 'le Grand Théâtre',
+};
+
 export function magicTiming(e: Fx | null | undefined): string {
   if (!e) return '';
   const from = nz(e.magdebut);
   const lasts = nz(e.magduree);
+  const pick = (v: unknown, fallback: number) => (v == null || v === '' ? fallback : nz(v));
+  const cond = e.mdecl as TrapCondition | null | undefined;
   return [
     from > 1 ? `Agit au début de son ${from}e tour` : '',
+    cond && cond.type ? `Attend : ${lowerFirst(fxCond(cond))}` : '',
+    nz(e.maura) > 0 ? `Agit seulement sous ${nz(e.maura)} % de PV` : '',
+    e.mterrain
+      ? `Agit seulement sur ${TERRAIN_NAMES[String(e.mterrain)] || e.mterrain} (+${pick(e.mterrainbonus, 30)} %)`
+      : '',
+    nz(e.msacpv) > 0
+      ? `Coûte ${nz(e.msacpv)} % de ses PV, +${pick(e.msacbonus, 50)} % de puissance`
+      : '',
+    e.mparasite ? "Agit contre l'adversaire" : '',
+    e.mpartage ? 'Agit sur les deux combattants' : '',
+    nz(e.mpulse) > 0 ? `Agit à nouveau tous les ${nz(e.mpulse)} tours` : '',
+    nz(e.mcroit) > 0 ? `Grandit de ${nz(e.mcroit)} % à chaque tour` : '',
+    nz(e.mconsume) > 0
+      ? `Commence ${nz(e.mconsume)} % plus forte et faiblit d'autant à chaque tour`
+      : '',
+    e.mphase2 ? `Se transforme après ${trs(nz(e.mphase2tours) || 2)}` : '',
+    nz(e.minstable) > 0
+      ? `Instable : ${nz(e.minstable)} % de chances par tour de changer d'effet`
+      : '',
+    e.mverrou
+      ? `Verrouillée : ni volée, ni annulée, ni détruite (−${pick(e.mverroumalus, 25)} %)`
+      : '',
+    e.mrelais ? 'Suit le combattant suivant en relais' : '',
     lasts > 0 ? `dure ${trs(lasts)}, puis ses effets prennent fin` : '',
   ]
     .filter(Boolean)
     .join(' · ');
+}
+
+const lowerFirst = (t: string) => t.charAt(0).toLowerCase() + t.slice(1);
+
+// A trap's condition and modes, in one line.
+export function trapMeta(e: Fx): string {
+  const cond = e.condition as TrapCondition | null | undefined;
+  const cond2 = e.condition2 as TrapCondition | null | undefined;
+  let when = e.cache ? 'Condition cachée' : fxCond(cond) || 'Piège caché';
+  if (!e.cache && cond2 && cond2.type)
+    when +=
+      e.logique === 'et'
+        ? `, et ${lowerFirst(fxCond(cond2))} (les deux)`
+        : `, ou ${lowerFirst(fxCond(cond2))}`;
+  const parts = [when];
+  if (nz(e.compte) > 1) parts.push(`à la ${nz(e.compte)}e fois`);
+  if (nz(e.retard) > 0) parts.push(`se déclenche ${trs(nz(e.retard))} plus tard`);
+  parts.push(
+    nz(e.declenchements) > 1
+      ? `jusqu'à ${e.declenchements} déclenchements`
+      : '1 seul déclenchement',
+  );
+  if (nz(e.rearme) > 0) parts.push(`se réarme après ${trs(nz(e.rearme))}`);
+  if (e.enchaine === 'ultime') parts.push('réveille son ultime');
+  if (e.enchaine === 'magie') parts.push('relance sa magie');
+  return parts.join(' · ');
 }
 
 export function describeCard(c: DescribedCard): Section[] {
@@ -841,6 +965,9 @@ export function describeCard(c: DescribedCard): Section[] {
     const u = c.ultime;
     if (u && (u.type || u.briques)) {
       const items = effectItems(u);
+      const phase2 = u.phase2 as Fx | null | undefined;
+      if (phase2 && (phase2.type || phase2.briques))
+        effectItems(phase2).forEach((i) => items.push({ ...i, text: `2e phase : ${i.text}` }));
       if (items.length)
         sections.push({ kind: 'ultimate', title: 'Ultime', meta: fxTrigUlt(u), items });
     }
@@ -861,9 +988,7 @@ export function describeCard(c: DescribedCard): Section[] {
       sections.push({
         kind: 'trap',
         title: 'Piège',
-        meta:
-          (fxCond(e.condition) || 'Piège caché') +
-          ` · ${nz(e.declenchements) > 1 ? `jusqu'à ${e.declenchements} déclenchements` : '1 seul déclenchement'}`,
+        meta: trapMeta(e),
         items,
       });
   }
