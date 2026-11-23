@@ -8,7 +8,15 @@ import { supabase } from '@/lib/supabase';
 
 const Num = z.union([z.number(), z.string()]).transform(Number);
 
-const Hole = z.object({ id: Num, x: Num, y: Num, angle: Num, moi: z.boolean().nullable() });
+// poids: how many drills the hole counts for (1, or the Perce-Abîme's power).
+const Hole = z.object({
+  id: Num,
+  x: Num,
+  y: Num,
+  angle: Num,
+  moi: z.boolean().nullable(),
+  poids: Num.nullish(),
+});
 export type Hole = z.infer<typeof Hole>;
 
 const Tint = z.enum(['bleu', 'violet', 'or']);
@@ -44,9 +52,12 @@ const Heist = z.object({
   debut: z.string(),
   fin: z.string(),
   prix: Num,
+  prix_giga: Num.nullish(),
+  puissance_giga: Num.nullish(),
   termine: z.boolean(),
   monnaie: Num.nullable(),
   stock: Num,
+  stock_giga: Num.nullish(),
   coffres: z.array(Vault),
   perceurs: z.array(z.object({ pseudo: z.string(), foreuses: Num })),
   mes_foreuses: Num.nullable(),
@@ -64,6 +75,7 @@ const REFUSALS: Record<string, string> = {
   GOLD_INSUFFISANT: 'Pas assez de gold pour ces foreuses.',
   COFFRE_OUVERT: 'Ce coffre est déjà ouvert !',
   PAS_DE_FOREUSE: 'Achète d’abord une foreuse à la boutique.',
+  PAS_DE_GIGA: 'Achète d’abord une Perce-Abîme à la boutique.',
   COFFRE_INCONNU: 'Coffre introuvable.',
 };
 const refusal = (message: string): Error => {
@@ -81,17 +93,19 @@ export async function fetchHeist(): Promise<Heist | null> {
   return Heist.nullable().parse(await rpc('coffres_etat'));
 }
 
-export async function buyDrills(n: number): Promise<{ monnaie: number; stock: number }> {
-  return z.object({ monnaie: Num, stock: Num }).parse(await rpc('coffres_acheter', { p_n: n }));
+// giga: the Perce-Abîme, the legendary drill.
+export async function buyDrills(n: number, giga = false): Promise<void> {
+  await rpc('coffres_acheter', { p_n: n, p_giga: giga });
 }
 
 export async function drill(
   vault: number,
   n: number,
-): Promise<{ trous: Hole[]; ouvert: boolean; stock: number }> {
+  giga = false,
+): Promise<{ trous: Hole[]; ouvert: boolean }> {
   return z
-    .object({ trous: z.array(Hole), ouvert: z.boolean(), stock: Num })
-    .parse(await rpc('coffres_percer', { p_coffre: vault, p_n: n }));
+    .object({ trous: z.array(Hole), ouvert: z.boolean() })
+    .parse(await rpc('coffres_percer', { p_coffre: vault, p_n: n, p_giga: giga }));
 }
 
 // The vaults whose opening this browser has already played (the reveal plays once).

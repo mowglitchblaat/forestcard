@@ -98,14 +98,18 @@ function Heist({ heist, onOpened }: { heist: Heist; onOpened: (v: Vault) => void
   const [count, setCount] = useState('1');
   const [error, setError] = useState<string | null>(null);
   const buy = useMutation({
-    mutationFn: (n: number) => buyDrills(n),
+    mutationFn: ({ n, giga }: { n: number; giga: boolean }) => buyDrills(n, giga),
     onMutate: () => setError(null),
     onError: (e) => setError(e.message),
     onSettled: () => client.invalidateQueries({ queryKey: vaultKeys.state }),
   });
   const gold = heist.monnaie ?? 0;
   const open = !heist.termine;
-  const buyable = (n: number) => open && signedIn && gold >= n * heist.prix && !buy.isPending;
+  const gigaPrice = heist.prix_giga ?? 5000;
+  const gigaPower = heist.puissance_giga ?? 7;
+  const gigaStock = heist.stock_giga ?? 0;
+  const buyable = (n: number, giga = false) =>
+    open && signedIn && gold >= n * (giga ? gigaPrice : heist.prix) && !buy.isPending;
   return (
     <Card className="overflow-hidden">
       <CardHeader>
@@ -150,7 +154,7 @@ function Heist({ heist, onOpened }: { heist: Heist; onOpened: (v: Vault) => void
                   size="sm"
                   variant="outline"
                   disabled={!buyable(n)}
-                  onClick={() => buy.mutate(n)}
+                  onClick={() => buy.mutate({ n, giga: false })}
                 >
                   <ICONS.add />
                   {n}
@@ -167,10 +171,36 @@ function Heist({ heist, onOpened }: { heist: Heist; onOpened: (v: Vault) => void
               <Button
                 size="sm"
                 disabled={!buyable(Math.max(1, Number(count) || 1))}
-                onClick={() => buy.mutate(Math.min(100, Math.max(1, Number(count) || 1)))}
+                onClick={() =>
+                  buy.mutate({ n: Math.min(100, Math.max(1, Number(count) || 1)), giga: false })
+                }
               >
                 <ICONS.drill />
                 Acheter
+              </Button>
+            </div>
+            <div className="vault-giga-shop flex w-full flex-wrap items-center gap-3 rounded-md border p-2">
+              <img
+                src="cadres/foreuse.webp"
+                alt=""
+                draggable={false}
+                className="vault-giga-tint w-16 select-none"
+              />
+              <span className="flex flex-col">
+                <b>Perce-Abîme · foreuse légendaire</b>
+                <small className="text-muted-foreground">
+                  {fr(gigaPrice)} gold · compte pour {gigaPower} foreuses · laisse une brèche énorme
+                </small>
+              </span>
+              <span className="text-sm font-medium">{gigaStock} en main</span>
+              <Button
+                size="sm"
+                className="ml-auto"
+                disabled={!buyable(1, true)}
+                onClick={() => buy.mutate({ n: 1, giga: true })}
+              >
+                <ICONS.add />
+                Acheter une Perce-Abîme
               </Button>
             </div>
           </div>
@@ -190,6 +220,7 @@ function Heist({ heist, onOpened }: { heist: Heist; onOpened: (v: Vault) => void
                 vault={v}
                 slot={i}
                 stock={heist.stock}
+                gigaStock={gigaStock}
                 canDrill={open && signedIn}
                 onOpened={onOpened}
               />
@@ -251,12 +282,12 @@ function Door({
             <span
               aria-hidden
               style={{ '--x': h.x, '--y': h.y, '--a': `${h.angle}deg` }}
-              className="vault-crack absolute"
+              className={`absolute ${(h.poids ?? 1) > 1 ? 'vault-crack-giga' : 'vault-crack'}`}
             />
             <span
               aria-hidden
               style={{ '--x': h.x, '--y': h.y, '--a': `${h.angle}deg` }}
-              className={`vault-hole absolute ${h.moi ? 'vault-mine' : ''} ${fresh?.has(h.id) ? 'vault-hole-new' : ''}`}
+              className={`absolute ${(h.poids ?? 1) > 1 ? 'vault-hole vault-hole-giga' : 'vault-hole'} ${h.moi ? 'vault-mine' : ''} ${fresh?.has(h.id) ? 'vault-hole-new' : ''}`}
             />
           </span>
         ))}
@@ -264,14 +295,19 @@ function Door({
   );
 }
 
+// The drills (assets/cadres): their bit points right, their tip at 41 % of their height. The
+// Perce-Abîme is the drill in gold until its own picture comes.
+const GIGA_DRILL = 'cadres/foreuse.webp';
+const GIGA_TINTED = true;
+
 // The drill (assets/cadres/foreuse.webp): its bit points right, its tip at 41 % of its height.
-function DrillShape() {
+function DrillShape({ giga }: { giga: boolean }) {
   return (
     <img
-      src="cadres/foreuse.webp"
+      src={giga ? GIGA_DRILL : 'cadres/foreuse.webp'}
       alt=""
       draggable={false}
-      className="vault-drill-bit block w-full select-none"
+      className={`vault-drill-bit block w-full select-none ${giga && GIGA_TINTED ? 'vault-giga-tint' : ''}`}
     />
   );
 }
@@ -279,6 +315,7 @@ function DrillShape() {
 // The drill coming in to make one hole, with its sparks.
 // It comes from outside the door, pointing to its centre; turned upright when it comes from the right.
 function DrillFx({ hole }: { hole: Hole }) {
+  const giga = (hole.poids ?? 1) > 1;
   const pointing = (hole.angle + 180) % 360;
   const upsideDown = pointing > 90 && pointing < 270;
   const sparks = [
@@ -288,16 +325,26 @@ function DrillFx({ hole }: { hole: Hole }) {
     [-18, 10],
     [4, 22],
     [-6, -30],
+    ...(giga
+      ? [
+          [-30, -10],
+          [28, -18],
+          [24, 24],
+          [-26, 26],
+          [0, -40],
+          [10, 36],
+        ]
+      : []),
   ];
   return (
     <>
       <span
         aria-hidden
         style={{ '--x': hole.x, '--y': hole.y, '--a': `${pointing}deg` }}
-        className={`vault-drill pointer-events-none absolute ${upsideDown ? 'vault-drill-flip' : ''}`}
+        className={`vault-drill pointer-events-none absolute ${giga ? 'vault-drill-giga' : ''} ${upsideDown ? 'vault-drill-flip' : ''}`}
       >
         <span className="vault-drill-shake block">
-          <DrillShape />
+          <DrillShape giga={giga} />
         </span>
       </span>
       {sparks.map(([dx, dy], i) => (
@@ -311,7 +358,7 @@ function DrillFx({ hole }: { hole: Hole }) {
             '--dy': `${dy}px`,
             '--delay': `${i * 60}ms`,
           }}
-          className="vault-spark pointer-events-none absolute"
+          className={`vault-spark pointer-events-none absolute ${giga ? 'vault-spark-giga' : ''}`}
         />
       ))}
     </>
@@ -319,6 +366,7 @@ function DrillFx({ hole }: { hole: Hole }) {
 }
 
 const DRILL_MS = 1500;
+const GIGA_MS = 2300;
 const QUICK_MS = 700; // the next drills of a salvo come faster
 
 // Where each door sits on the vault room's picture (its three rings): the centre, as a share of the
@@ -329,12 +377,14 @@ function VaultTile({
   vault: v,
   slot,
   stock,
+  gigaStock,
   canDrill,
   onOpened,
 }: {
   vault: Vault;
   slot: number;
   stock: number;
+  gigaStock: number;
   canDrill: boolean;
   onOpened: (v: Vault) => void;
 }) {
@@ -344,7 +394,7 @@ function VaultTile({
   const [opened, setOpened] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const run = useMutation({
-    mutationFn: (n: number) => drill(v.id, n),
+    mutationFn: ({ n, giga }: { n: number; giga: boolean }) => drill(v.id, n, giga),
     onMutate: () => setError(null),
     onSuccess: (r) => {
       setQueue(r.trous);
@@ -362,7 +412,7 @@ function VaultTile({
         setFresh((f) => new Set([...f, current.id]));
         setQueue((q) => q.slice(1));
       },
-      fresh.size === 0 ? DRILL_MS : QUICK_MS,
+      (current.poids ?? 1) > 1 ? GIGA_MS : fresh.size === 0 ? DRILL_MS : QUICK_MS,
     );
     return () => clearTimeout(t);
   }, [current, fresh.size]);
@@ -382,7 +432,7 @@ function VaultTile({
   const known = new Set(v.trous.map((h) => h.id));
   const holes = [...v.trous, ...queue.filter((h) => !known.has(h.id))];
   const hidden = new Set(queue.map((h) => h.id));
-  const done = holes.length;
+  const done = holes.reduce((n, h) => n + (h.poids ?? 1), 0);
   const isOpen = !!v.ouvert_le;
   const busy = run.isPending || queue.length > 0;
   return (
@@ -435,18 +485,38 @@ function VaultTile({
       </small>
       {!isOpen && canDrill && (
         <div className="flex flex-wrap justify-center gap-2">
-          <Button size="sm" disabled={busy || stock < 1} onClick={() => run.mutate(1)}>
+          <Button
+            size="sm"
+            disabled={busy || stock < 1}
+            onClick={() => run.mutate({ n: 1, giga: false })}
+          >
             <ICONS.drill />
             Poser une foreuse
           </Button>
           {stock >= 5 && (
-            <Button size="sm" variant="outline" disabled={busy} onClick={() => run.mutate(5)}>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={busy}
+              onClick={() => run.mutate({ n: 5, giga: false })}
+            >
               × 5
             </Button>
           )}
           {stock > 1 && (
-            <Button size="sm" variant="outline" disabled={busy} onClick={() => run.mutate(stock)}>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={busy}
+              onClick={() => run.mutate({ n: stock, giga: false })}
+            >
               Tout ({stock})
+            </Button>
+          )}
+          {gigaStock > 0 && (
+            <Button size="sm" disabled={busy} onClick={() => run.mutate({ n: 1, giga: true })}>
+              <ICONS.drill />
+              Perce-Abîme ({gigaStock})
             </Button>
           )}
         </div>
