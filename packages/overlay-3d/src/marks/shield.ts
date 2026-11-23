@@ -22,7 +22,9 @@ type Shell = { g: Graphics; grow: number; ripple: number; leaving: boolean };
 
 function shellGraphic(x: number, y: number, w: number, h: number, r: number, k: number): Graphics {
   const g = new Graphics();
-  g.roundRect(x, y, w, h, r).fill({ color: CYAN, alpha: 0.04 }).stroke({ color: CYAN, width: k * 1.6, alpha: 0.85 });
+  g.roundRect(x, y, w, h, r)
+    .fill({ color: CYAN, alpha: 0.04 })
+    .stroke({ color: CYAN, width: k * 1.6, alpha: 0.85 });
   g.roundRect(x, y, w, h, r).stroke({ color: 0xffffff, width: k * 0.5, alpha: 0.7 });
   // the weave: a few hexagons along the shell's edge, faint
   const hx = k * 9;
@@ -57,7 +59,8 @@ function create({ card, layer }: MarkContext): MarkView {
       s.ripple = Math.max(0, s.ripple - dt * 2.2);
       const breathe = 1 + 0.006 * Math.sin(t * 2 + i);
       s.g.scale.set((1 + (1 - s.grow) * 0.25 + s.ripple * 0.03) * breathe);
-      if (!s.leaving) s.g.alpha = s.grow * (0.55 + 0.25 * Math.sin(t * 1.5 + i * 0.7)) + s.ripple * 0.6;
+      if (!s.leaving)
+        s.g.alpha = s.grow * (0.55 + 0.25 * Math.sin(t * 1.5 + i * 0.7)) + s.ripple * 0.6;
     }
     // the sheen goes round the outer shell
     if (outer >= 0) {
@@ -73,14 +76,29 @@ function create({ card, layer }: MarkContext): MarkView {
 
   async function land(i: number): Promise<void> {
     const pad = k * (4 + i * 3.5);
-    const g = shellGraphic(-box.w / 2 - pad, -H / 2 - pad, box.w + 2 * pad, H + 2 * pad, k * 9 + pad, k);
+    const g = shellGraphic(
+      -box.w / 2 - pad,
+      -H / 2 - pad,
+      box.w + 2 * pad,
+      H + 2 * pad,
+      k * 9 + pad,
+      k,
+    );
     g.position.set(box.x + box.w / 2, H / 2);
     g.blendMode = 'add';
     holder.addChild(g);
     const s: Shell = { g, grow: 0, ripple: 0, leaving: false };
     shells[i] = s;
     await tween(380, (u) => void (s.grow = u), 'out-cubic', g);
-    void flare(layer, { x: box.x + box.w / 2, y: H / 2, w: box.w * 1.4, h: H * 1.4, tint: DEEP, ms: 420, alpha: 0.6 });
+    void flare(layer, {
+      x: box.x + box.w / 2,
+      y: H / 2,
+      w: box.w * 1.4,
+      h: H * 1.4,
+      tint: DEEP,
+      ms: 420,
+      alpha: 0.6,
+    });
   }
 
   async function leave(i: number, how: 'fade' | 'drop'): Promise<void> {
@@ -126,7 +144,14 @@ function create({ card, layer }: MarkContext): MarkView {
     async tick() {
       const outer = [...shells].reverse().find((s) => !!s);
       if (outer) outer.ripple = 1;
-      void flare(layer, { x: box.x + box.w / 2, y: H * 0.45, w: box.w * 0.9, tint: CYAN, ms: 380, alpha: 0.8 });
+      void flare(layer, {
+        x: box.x + box.w / 2,
+        y: H * 0.45,
+        w: box.w * 0.9,
+        tint: CYAN,
+        ms: 380,
+        alpha: 0.8,
+      });
       await wait(380);
     },
     destroy() {

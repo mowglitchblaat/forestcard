@@ -54,7 +54,12 @@ void main(void){
 async function ultimate({ card, behind }: MoveContext): Promise<void> {
   const box = card.box;
   const size = Math.max(box.w, H) * 1.7;
-  const m = makeMesh('move-ultimate-flames', FLAMES, { uTime: Math.random() * 10, uPower: 0, uAlpha: 0, uBox: [box.w / size / 2, H / size / 2] }, { blend: 'normal' });
+  const m = makeMesh(
+    'move-ultimate-flames',
+    FLAMES,
+    { uTime: Math.random() * 10, uPower: 0, uAlpha: 0, uBox: [box.w / size / 2, H / size / 2] },
+    { blend: 'normal' },
+  );
   m.mesh.scale.set(size);
   m.mesh.position.set(W / 2, H / 2);
   behind.addChild(m.mesh);
@@ -90,7 +95,14 @@ function pieces(ctx: MoveContext, rt: Texture) {
       ctx.behind.addChild(s);
       const ax = (fx + fw / 2 - W / 2) / box.w,
         ay = (fy + fh / 2 - H / 2) / H;
-      out.push({ s, x: s.x, y: s.y, vx: ax * box.w * (1.2 + Math.random()), vy: ay * H * 0.8 - H * (0.3 + 0.4 * Math.random()), spin: (Math.random() - 0.5) * 6 });
+      out.push({
+        s,
+        x: s.x,
+        y: s.y,
+        vx: ax * box.w * (1.2 + Math.random()),
+        vy: ay * H * 0.8 - H * (0.3 + 0.4 * Math.random()),
+        spin: (Math.random() - 0.5) * 6,
+      });
     }
   return out;
 }
@@ -101,12 +113,28 @@ async function shatter(ctx: MoveContext): Promise<void> {
   const res = Math.min(2, Math.max(0.2, root.worldTransform.a * app.renderer.resolution));
   const rt = snapshot(app, card.front, res);
   card.shake(10, 260);
-  void flare(ctx.over, { x: W / 2, y: H / 2, w: card.box.w * 1.3, tint: 0xffffff, ms: 260, alpha: 0.7 });
+  void flare(ctx.over, {
+    x: W / 2,
+    y: H / 2,
+    w: card.box.w * 1.3,
+    tint: 0xffffff,
+    ms: 260,
+    alpha: 0.7,
+  });
   await wait(240);
   const list = pieces(ctx, rt);
   root.alpha = 0;
   const dust = new Particles(behind);
-  burst(dust, { x: W / 2, y: H / 2, count: 30, speed: card.box.w * 1.5, size: card.box.w * 0.03, tint: [0xffffff, 0xdddddd], life: 0.8, jitter: card.box.w * 0.6 });
+  burst(dust, {
+    x: W / 2,
+    y: H / 2,
+    count: 30,
+    speed: card.box.w * 1.5,
+    size: card.box.w * 0.03,
+    tint: [0xffffff, 0xdddddd],
+    life: 0.8,
+    jitter: card.box.w * 0.6,
+  });
   await tween(
     1000,
     (u) => {
@@ -195,7 +223,16 @@ async function deathAvoid({ card, over }: MoveContext): Promise<void> {
   void flare(over, { x, y, w: box.w * 1.2, tint: 0xffd65a, ms: 500 });
   card.shake(10, 240);
   const sparks = new Particles(over);
-  burst(sparks, { x, y, count: 30, speed: box.w * 2, size: box.w * 0.035, tint: [0xffd65a, 0xffffff, 0xf1ede4], life: 0.7, gravity: H * 1.2 });
+  burst(sparks, {
+    x,
+    y,
+    count: 30,
+    speed: box.w * 2,
+    size: box.w * 0.035,
+    tint: [0xffd65a, 0xffffff, 0xf1ede4],
+    life: 0.7,
+    gravity: H * 1.2,
+  });
   await tween(
     600,
     (u) => {

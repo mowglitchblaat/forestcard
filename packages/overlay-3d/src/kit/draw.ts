@@ -249,7 +249,8 @@ export function jagged(
     ny = dx / len;
   for (let i = 0; i <= segments; i++) {
     const u = i / segments;
-    const off = i === 0 || i === segments ? 0 : (Math.random() - 0.5) * 2 * jag * Math.sin(Math.PI * u);
+    const off =
+      i === 0 || i === segments ? 0 : (Math.random() - 0.5) * 2 * jag * Math.sin(Math.PI * u);
     out.push(ax + dx * u + nx * off, ay + dy * u + ny * off);
   }
   return out;

@@ -127,7 +127,8 @@ export function mechanicsOf(ctx: MechanicsContext) {
         }
         return;
       case 'stat':
-        if (k === 'echange') return move(c ?? sideOf((raw['cs'] as unknown[] | undefined)?.[0]), 'swap');
+        if (k === 'echange')
+          return move(c ?? sideOf((raw['cs'] as unknown[] | undefined)?.[0]), 'swap');
         if (STAT_UP.has(k)) return move(c, 'buff');
         if (STAT_DOWN.has(k)) return move(c, 'debuff');
         return;
@@ -355,7 +356,12 @@ export function mechanicsOf(ctx: MechanicsContext) {
       }
       case 'av_transfert': {
         const from = fighter(sideOf(raw['from']));
-        if (from) await ctx.legacy.passStatuses(f.card, from.card, Array.isArray(raw['ks']) ? (raw['ks'] as string[]) : []);
+        if (from)
+          await ctx.legacy.passStatuses(
+            f.card,
+            from.card,
+            Array.isArray(raw['ks']) ? (raw['ks'] as string[]) : [],
+          );
         return;
       }
       case 'recrache': {

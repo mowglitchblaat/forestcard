@@ -33,9 +33,22 @@ async function block({ card, over, away }: MoveContext): Promise<void> {
     }
     return pts;
   };
-  pane.poly(hex(ph / 2)).fill({ color: CYAN, alpha: 0.12 }).stroke({ color: CYAN, width: box.w * 0.012 });
-  for (const [cx, cy] of [[0, 0], [0, -ph * 0.25], [0, ph * 0.25], [-pw * 0.22, -ph * 0.12], [pw * 0.22, -ph * 0.12], [-pw * 0.22, ph * 0.12], [pw * 0.22, ph * 0.12]] as const)
-    pane.poly(hex(ph * 0.12, cx, cy)).stroke({ color: 0xffffff, width: box.w * 0.004, alpha: 0.45 });
+  pane
+    .poly(hex(ph / 2))
+    .fill({ color: CYAN, alpha: 0.12 })
+    .stroke({ color: CYAN, width: box.w * 0.012 });
+  for (const [cx, cy] of [
+    [0, 0],
+    [0, -ph * 0.25],
+    [0, ph * 0.25],
+    [-pw * 0.22, -ph * 0.12],
+    [pw * 0.22, -ph * 0.12],
+    [-pw * 0.22, ph * 0.12],
+    [pw * 0.22, ph * 0.12],
+  ] as const)
+    pane
+      .poly(hex(ph * 0.12, cx, cy))
+      .stroke({ color: 0xffffff, width: box.w * 0.004, alpha: 0.45 });
   pane.position.set(x, y);
   pane.blendMode = 'add';
   over.addChild(pane);
@@ -55,7 +68,14 @@ async function block({ card, over, away }: MoveContext): Promise<void> {
         // the hit: a ripple, a crack from the point of impact
         void flare(over, { x, y, w: box.w * 0.9, tint: CYAN, ms: 400 });
         card.shake(6, 180);
-        const pts = jagged(x + toward * pw * 0.1, y - ph * 0.05, x - toward * pw * 0.05, y + ph * 0.28, 7, box.w * 0.04);
+        const pts = jagged(
+          x + toward * pw * 0.1,
+          y - ph * 0.05,
+          x - toward * pw * 0.05,
+          y + ph * 0.28,
+          7,
+          box.w * 0.04,
+        );
         crack.moveTo(pts[0]!, pts[1]!);
         for (let i = 2; i < pts.length; i += 2) crack.lineTo(pts[i]!, pts[i + 1]!);
         crack.stroke({ color: 0xffffff, width: box.w * 0.006 });
@@ -79,7 +99,15 @@ async function thorns({ card, over, away }: MoveContext): Promise<void> {
     half: H * 0.026,
     d: Math.random() * 0.12,
   }));
-  void flare(over, { x: edge, y: H / 2, w: box.w * 0.6, h: H, tint: 0xff3b3b, ms: 500, alpha: 0.6 });
+  void flare(over, {
+    x: edge,
+    y: H / 2,
+    w: box.w * 0.6,
+    h: H,
+    tint: 0xff3b3b,
+    ms: 500,
+    alpha: 0.6,
+  });
   await tween(
     520,
     (u) => {
@@ -89,7 +117,10 @@ async function thorns({ card, over, away }: MoveContext): Promise<void> {
         if (k <= 0) continue;
         const tip = edge + toward * s.len * k;
         g.poly([edge, s.y - s.half, tip, s.y, edge, s.y + s.half]).fill(0x3b0a10);
-        g.poly([edge, s.y - s.half * 0.45, tip, s.y, edge, s.y + s.half * 0.2]).fill({ color: 0xc0283a, alpha: 0.9 });
+        g.poly([edge, s.y - s.half * 0.45, tip, s.y, edge, s.y + s.half * 0.2]).fill({
+          color: 0xc0283a,
+          alpha: 0.9,
+        });
       }
     },
     'linear',
@@ -141,7 +172,18 @@ async function mirror({ card, over, away }: MoveContext): Promise<void> {
     to: 1.3,
     ms: 380,
   });
-  burst(sparks, { x, y, count: 18, speed: box.w * 2, size: box.w * 0.03, tint: [0xffffff, 0xbae6fd], angle: toward > 0 ? 0 : Math.PI, spread: 0.8, life: 0.5, stretch: 5 });
+  burst(sparks, {
+    x,
+    y,
+    count: 18,
+    speed: box.w * 2,
+    size: box.w * 0.03,
+    tint: [0xffffff, 0xbae6fd],
+    angle: toward > 0 ? 0 : Math.PI,
+    spread: 0.8,
+    life: 0.5,
+    stretch: 5,
+  });
   await wait(380);
   glint.destroy();
   glass.destroy();

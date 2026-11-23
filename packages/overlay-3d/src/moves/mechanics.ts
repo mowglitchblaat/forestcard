@@ -20,7 +20,18 @@ import { Particles } from '../engine/particles.ts';
 import { release as releaseRt, snapshot } from '../engine/snapshot.ts';
 import { glowTexture } from '../engine/textures.ts';
 import { tween, wait } from '../engine/time.ts';
-import { burst, bump, flare, icon, lit, puffTexture, ringTexture, shardTexture, span, streakTexture } from '../kit/draw.ts';
+import {
+  burst,
+  bump,
+  flare,
+  icon,
+  lit,
+  puffTexture,
+  ringTexture,
+  shardTexture,
+  span,
+  streakTexture,
+} from '../kit/draw.ts';
 import { defineMoveFx, type MoveContext } from './define.ts';
 
 const VIOLET = 0xc08aff;
@@ -101,7 +112,19 @@ async function gulp({ card, over }: MoveContext): Promise<void> {
 async function spit({ card, over, away }: MoveContext): Promise<void> {
   const box = card.box;
   const sp = new Particles(over);
-  burst(sp, { x: W / 2, y: H * 0.45, count: 40, speed: box.w * 2.4, size: box.w * 0.05, tint: [0x9be15d, 0xd9f99d, 0x4d7c0f], angle: away > 0 ? 0 : Math.PI, spread: 1.6, life: 0.8, gravity: H * 1.5, drag: 1 });
+  burst(sp, {
+    x: W / 2,
+    y: H * 0.45,
+    count: 40,
+    speed: box.w * 2.4,
+    size: box.w * 0.05,
+    tint: [0x9be15d, 0xd9f99d, 0x4d7c0f],
+    angle: away > 0 ? 0 : Math.PI,
+    spread: 1.6,
+    life: 0.8,
+    gravity: H * 1.5,
+    drag: 1,
+  });
   void flare(over, { x: W / 2, y: H * 0.45, w: box.w * 1.1, tint: 0x9be15d, ms: 400 });
   card.shake(8, 220);
   await wait(700);
@@ -128,9 +151,30 @@ async function forgeStrike({ card, over }: MoveContext): Promise<void> {
     hammer,
   );
   const sparks = new Particles(over);
-  burst(sparks, { x, y, count: 36, speed: box.w * 2.6, size: box.w * 0.03, tint: [0xffe08a, 0xff9a2e, 0xffffff], life: 0.7, angle: -Math.PI / 2, spread: Math.PI * 1.3, gravity: H * 2.2, stretch: 4 });
+  burst(sparks, {
+    x,
+    y,
+    count: 36,
+    speed: box.w * 2.6,
+    size: box.w * 0.03,
+    tint: [0xffe08a, 0xff9a2e, 0xffffff],
+    life: 0.7,
+    angle: -Math.PI / 2,
+    spread: Math.PI * 1.3,
+    gravity: H * 2.2,
+    stretch: 4,
+  });
   void flare(over, { x, y, w: box.w * 0.8, tint: 0xffa040, ms: 400 });
-  void flare(over, { x, y, w: box.w * 0.9, tint: 0xffe0a0, texture: ringTexture(), from: 0.1, to: 1.2, ms: 400 });
+  void flare(over, {
+    x,
+    y,
+    w: box.w * 0.9,
+    tint: 0xffe0a0,
+    texture: ringTexture(),
+    from: 0.1,
+    to: 1.2,
+    ms: 400,
+  });
   card.shake(10, 200);
   await tween(380, (u) => void (hammer.alpha = 1 - u), 'linear', hammer);
   hammer.destroy();
@@ -139,7 +183,10 @@ async function forgeStrike({ card, over }: MoveContext): Promise<void> {
 async function forgeCreate({ card, over }: MoveContext): Promise<void> {
   const box = card.box;
   const glow = lit(over, glowTexture(), W / 2, H * 0.55, box.w * 1.3, 0xffcf5a);
-  const ghost = new Graphics().roundRect(-box.w * 0.18, -H * 0.13, box.w * 0.36, H * 0.26, box.w * 0.03).fill({ color: 0xfff3c4, alpha: 0.85 }).stroke({ color: 0xffffff, width: box.w * 0.01 });
+  const ghost = new Graphics()
+    .roundRect(-box.w * 0.18, -H * 0.13, box.w * 0.36, H * 0.26, box.w * 0.03)
+    .fill({ color: 0xfff3c4, alpha: 0.85 })
+    .stroke({ color: 0xffffff, width: box.w * 0.01 });
   ghost.blendMode = 'add';
   over.addChild(ghost);
   await tween(
@@ -161,7 +208,18 @@ async function iceBurst({ card, over }: MoveContext): Promise<void> {
   const box = card.box;
   const shards = new Particles(over, shardTexture());
   shards.box.blendMode = 'normal';
-  burst(shards, { x: W / 2, y: H / 2, count: 40, speed: box.w * 2.2, size: box.w * 0.09, tint: [0xe0f2fe, 0xbae6fd, 0xffffff], life: 1, gravity: H * 1.4, drag: 1, jitter: box.w * 0.7 });
+  burst(shards, {
+    x: W / 2,
+    y: H / 2,
+    count: 40,
+    speed: box.w * 2.2,
+    size: box.w * 0.09,
+    tint: [0xe0f2fe, 0xbae6fd, 0xffffff],
+    life: 1,
+    gravity: H * 1.4,
+    drag: 1,
+    jitter: box.w * 0.7,
+  });
   void flare(over, { x: W / 2, y: H / 2, w: box.w * 1.6, tint: 0xbae6fd, ms: 450 });
   card.shake(12, 260);
   await wait(800);
@@ -170,7 +228,16 @@ async function iceBurst({ card, over }: MoveContext): Promise<void> {
 async function steam({ card, over }: MoveContext): Promise<void> {
   const box = card.box;
   const puffs = Array.from({ length: 8 }, (_, i) => {
-    const s = lit(over, puffTexture(), box.x + box.w * (0.15 + 0.7 * Math.random()), H * (0.4 + 0.5 * Math.random()), box.w * 0.4, 0xf1f5f9, box.w * 0.4, 'screen');
+    const s = lit(
+      over,
+      puffTexture(),
+      box.x + box.w * (0.15 + 0.7 * Math.random()),
+      H * (0.4 + 0.5 * Math.random()),
+      box.w * 0.4,
+      0xf1f5f9,
+      box.w * 0.4,
+      'screen',
+    );
     s.alpha = 0;
     return { s, d: i * 0.06, y0: s.y };
   });
@@ -209,7 +276,10 @@ async function steal({ card, app, over, behind, away }: MoveContext): Promise<vo
       const v = span(u, 0.25, 1);
       ghost.alpha = 0.55 * bump(v, 0, 1);
       ghost.scale.set(1 - 0.6 * v);
-      ghost.position.set(W * 0.3 * v + toward * box.w * 1.6 * v * v, H * 0.3 * v - H * 0.2 * Math.sin(Math.PI * v));
+      ghost.position.set(
+        W * 0.3 * v + toward * box.w * 1.6 * v * v,
+        H * 0.3 * v - H * 0.2 * Math.sin(Math.PI * v),
+      );
     },
     'in-out-quad',
     vortex,
@@ -221,11 +291,21 @@ async function steal({ card, app, over, behind, away }: MoveContext): Promise<vo
 
 async function cancelled({ card, over }: MoveContext): Promise<void> {
   const box = card.box;
-  const shade = new Graphics().roundRect(box.x, 0, box.w, H, box.w * 0.06).fill({ color: 0x000000 });
+  const shade = new Graphics()
+    .roundRect(box.x, 0, box.w, H, box.w * 0.06)
+    .fill({ color: 0x000000 });
   shade.alpha = 0;
   over.addChild(shade);
   const bars = [-1, 1].map((s) => {
-    const l = lit(over, streakTexture(), W / 2, H / 2, Math.hypot(box.w, H) * 0.9, 0xff1a2e, box.w * 0.12);
+    const l = lit(
+      over,
+      streakTexture(),
+      W / 2,
+      H / 2,
+      Math.hypot(box.w, H) * 0.9,
+      0xff1a2e,
+      box.w * 0.12,
+    );
     l.rotation = s * Math.atan2(H, box.w);
     l.alpha = 0;
     return l;
@@ -234,7 +314,8 @@ async function cancelled({ card, over }: MoveContext): Promise<void> {
     800,
     (u) => {
       shade.alpha = 0.45 * span(u, 0, 0.3) * (1 - span(u, 0.8, 1));
-      for (const [i, l] of bars.entries()) l.alpha = span(u, 0.1 + i * 0.12, 0.25 + i * 0.12) * (1 - span(u, 0.8, 1));
+      for (const [i, l] of bars.entries())
+        l.alpha = span(u, 0.1 + i * 0.12, 0.25 + i * 0.12) * (1 - span(u, 0.8, 1));
     },
     'linear',
     shade,

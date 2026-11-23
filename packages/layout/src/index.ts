@@ -21,7 +21,9 @@ export type PlaqueLine = { t: string; c: string; ult: boolean; d: string; types:
 /** The colours of an effect category: its pill's background and text, and its border. */
 export type CategoryStyle = { background: string; color: string; border?: string };
 /** The colours of each effect category (packages/describe, CATEGORY_STYLES); `autre`: the default. */
-export type CategoryStyles = Readonly<Record<string, CategoryStyle>> & { readonly autre: CategoryStyle };
+export type CategoryStyles = Readonly<Record<string, CategoryStyle>> & {
+  readonly autre: CategoryStyle;
+};
 
 /**
  * The composer's settings, stored with the drawing on the Standard version (variantes_carte.compo):
@@ -361,7 +363,11 @@ function plaque(
       w: lw,
       h: th + dh + gap * 0.7,
     });
-    const text = (fill: string, rest: Partial<Extract<Layer, { kind: 'text' }>>, dy = 0): Layer => ({
+    const text = (
+      fill: string,
+      rest: Partial<Extract<Layer, { kind: 'text' }>>,
+      dy = 0,
+    ): Layer => ({
       kind: 'text',
       group,
       role: 'line',
@@ -444,7 +450,14 @@ export function standardLayout(a: LayoutArgs): Layout {
     const s = Math.max(W / a.drawing.width, H / a.drawing.height) * o.z,
       w = a.drawing.width * s * (o.sx || 1),
       h = a.drawing.height * s * (o.sy || 1);
-    layers.push({ kind: 'drawing', group: 'drawing', x: (W - w) / 2 + o.x * W, y: (H - h) / 2 + o.y * H, w, h });
+    layers.push({
+      kind: 'drawing',
+      group: 'drawing',
+      x: (W - w) / 2 + o.x * W,
+      y: (H - h) / 2 + o.y * H,
+      w,
+      h,
+    });
   } else layers.push({ kind: 'drawing', group: 'drawing', x: 0, y: 0, w: W, h: H });
   layers.push({ kind: 'slot', group: 'underFrame' });
   const fighter = card.type === 'combattant',
@@ -461,9 +474,15 @@ export function standardLayout(a: LayoutArgs): Layout {
     ],
   });
   // magic, trap: no plaque (the charter), the text goes in the frame's free zone, under the drawing
-  if (!fighter && L.length) plaque(layers, zones, card.type === 'piege' ? 'piege' : 'magie', L, o, a);
+  if (!fighter && L.length)
+    plaque(layers, zones, card.type === 'piege' ? 'piege' : 'magie', L, o, a);
   if (fighter) {
-    const num = (v: number | string | null | undefined, cx: number, fill: string, role: 'atq' | 'pv') => {
+    const num = (
+      v: number | string | null | undefined,
+      cx: number,
+      fill: string,
+      role: 'atq' | 'pv',
+    ) => {
       if (v === null || v === undefined || v === '') return;
       const s = 150;
       layers.push({
@@ -491,7 +510,8 @@ export function standardLayout(a: LayoutArgs): Layout {
 function stripNull(c: Partial<Compo> | null | undefined): Partial<Compo> {
   const out: Partial<Compo> = {};
   if (!c) return out;
-  for (const [key, v] of Object.entries(c)) if (v !== null && v !== undefined) Object.assign(out, { [key]: v });
+  for (const [key, v] of Object.entries(c))
+    if (v !== null && v !== undefined) Object.assign(out, { [key]: v });
   // textes / dtextes may be null on purpose (automatic lines): kept as null
   if ('textes' in c) out.textes = c.textes ?? null;
   if ('dtextes' in c) out.dtextes = c.dtextes ?? null;
@@ -528,7 +548,11 @@ export const isFrameSetName = (v: unknown): v is FrameSetName =>
 
 /** The frame set a card is drawn in: its own when it has frames for the card's tier, else standard. */
 export function frameSetFor(frames: FrameSetName | null | undefined, tier: Tier): FrameSetName {
-  if (frames && isFrameSetName(frames) && (FRAME_SETS[frames].tiers as readonly Tier[]).includes(tier))
+  if (
+    frames &&
+    isFrameSetName(frames) &&
+    (FRAME_SETS[frames].tiers as readonly Tier[]).includes(tier)
+  )
     return frames;
   return 'standard';
 }

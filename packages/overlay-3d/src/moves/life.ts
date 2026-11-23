@@ -28,7 +28,19 @@ async function heal({ card, over }: MoveContext): Promise<void> {
   const glow = lit(over, glowTexture(), cx, H * 0.85, box.w * 1.4, 0x7dffa0, H * 0.7);
   glow.alpha = 0;
   const motes = new Particles(over);
-  burst(motes, { x: cx, y: H * 0.9, count: 34, speed: H * 0.55, size: box.w * 0.035, tint: [0x9dffb0, 0xfff3a0, 0xffffff], angle: -Math.PI / 2, spread: 0.7, life: 1.4, drag: 0.6, jitter: box.w * 0.8 });
+  burst(motes, {
+    x: cx,
+    y: H * 0.9,
+    count: 34,
+    speed: H * 0.55,
+    size: box.w * 0.035,
+    tint: [0x9dffb0, 0xfff3a0, 0xffffff],
+    angle: -Math.PI / 2,
+    spread: 0.7,
+    life: 1.4,
+    drag: 0.6,
+    jitter: box.w * 0.8,
+  });
   const crosses = Array.from({ length: 5 }, (_, i) => {
     const c = icon(CROSS, box.w * (0.08 + 0.04 * Math.random()), 20);
     c.position.set(box.x + box.w * (0.15 + 0.7 * Math.random()), H * 0.85);
@@ -65,7 +77,12 @@ async function drain({ card, over, away }: MoveContext): Promise<void> {
   for (let i = 0; i < 14; i++) {
     const s = lit(over, glowTexture(), from, cy, box.w * 0.1, i % 3 ? 0xff2a4a : 0xff8a9a);
     s.alpha = 0;
-    motes.push({ s, d: i * 0.035, y: cy + (Math.random() - 0.5) * H * 0.3, arc: (Math.random() - 0.5) * H * 0.4 });
+    motes.push({
+      s,
+      d: i * 0.035,
+      y: cy + (Math.random() - 0.5) * H * 0.3,
+      arc: (Math.random() - 0.5) * H * 0.4,
+    });
   }
   await tween(
     900,
@@ -102,7 +119,11 @@ function chevrons(up: boolean) {
     const beam = lit(over, streakTexture(), cx, H / 2, H * 0.9, col, box.w * 0.5);
     beam.rotation = Math.PI / 2;
     beam.alpha = 0;
-    const shade = up ? null : new Graphics().roundRect(box.x, 0, box.w, H, box.w * 0.06).fill({ color: 0x1a0024, alpha: 1 });
+    const shade = up
+      ? null
+      : new Graphics()
+          .roundRect(box.x, 0, box.w, H, box.w * 0.06)
+          .fill({ color: 0x1a0024, alpha: 1 });
     if (shade) {
       shade.alpha = 0;
       over.addChildAt(shade, 0);
@@ -144,8 +165,24 @@ async function swap({ card, over }: MoveContext): Promise<void> {
       red.position.set(cx + Math.cos(a) * rx, cy + Math.sin(a) * ry);
       blue.alpha = red.alpha = bump(u, 0, 1);
       if (Math.random() < 0.6) {
-        trail.add({ x: blue.x, y: blue.y, vx: 0, vy: 0, life: 0.4, size: box.w * 0.08, tint: 0x60a5fa });
-        trail.add({ x: red.x, y: red.y, vx: 0, vy: 0, life: 0.4, size: box.w * 0.08, tint: 0xf87171 });
+        trail.add({
+          x: blue.x,
+          y: blue.y,
+          vx: 0,
+          vy: 0,
+          life: 0.4,
+          size: box.w * 0.08,
+          tint: 0x60a5fa,
+        });
+        trail.add({
+          x: red.x,
+          y: red.y,
+          vx: 0,
+          vy: 0,
+          life: 0.4,
+          size: box.w * 0.08,
+          tint: 0xf87171,
+        });
       }
     },
     'linear',
@@ -171,7 +208,17 @@ async function purify({ card, over }: MoveContext): Promise<void> {
       light.y = core.y = y;
       band.alpha = bump(u, 0, 1) ** 0.5;
       if (Math.random() < 0.7)
-        burst(motes, { x: cx, y, count: 2, speed: box.w * 0.25, size: box.w * 0.03, tint: [0xfff3a0, 0xffffff], life: 0.8, gravity: -H * 0.2, jitter: box.w });
+        burst(motes, {
+          x: cx,
+          y,
+          count: 2,
+          speed: box.w * 0.25,
+          size: box.w * 0.03,
+          tint: [0xfff3a0, 0xffffff],
+          life: 0.8,
+          gravity: -H * 0.2,
+          jitter: box.w,
+        });
     },
     'linear',
     band,

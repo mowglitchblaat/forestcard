@@ -54,6 +54,7 @@ derrière les cartes, et leur effet quand ils agissent sur une carte.
 `combat-fx.ts` lit chaque ligne du journal (champs de packages/journal/src/project.ts) et joue le bon
 statut, la bonne marque, le bon coup, sur la bonne carte (combattant, magie ou piège).
 Changements dans `combat.ts`, limités :
+
 - contamination, faiblesse, gag ajoutés aux tables de statuts ;
 - un calque de terrain sous la scène ;
 - `controle` / `controle_fin` : les fils jouent, puis les côtés montrent qui combat pour qui (relais) ;
@@ -74,6 +75,7 @@ Changements dans `combat.ts`, limités :
 ## Ce qui reste à faire pour que ça tourne
 
 Le dossier n'est qu'un paquet. Il lui faut, dans le dépôt :
+
 1. `pixi.js` (v8) et `pixi-filters` dans les dépendances ;
 2. le paquet `@forestcard/layout` (dimensions W/H, styles, cadres), absent du dossier et du dépôt ;
 3. la page qui l'utilise (`apps/overlay-3d`), qui lit `?qualite=eco` avec `qualityFromUrl`.

@@ -38,8 +38,22 @@ function tendril(len: number, curl: number): Graphics {
   const path = () =>
     g
       .moveTo(-len * 0.08, 0)
-      .bezierCurveTo(len * 0.35, -curl * len * 0.15, len * 0.75, curl * len * 0.25, len * 0.62, curl * len * 0.45)
-      .bezierCurveTo(len * 0.5, curl * len * 0.6, len * 0.3, curl * len * 0.35, len * 0.48, curl * len * 0.28);
+      .bezierCurveTo(
+        len * 0.35,
+        -curl * len * 0.15,
+        len * 0.75,
+        curl * len * 0.25,
+        len * 0.62,
+        curl * len * 0.45,
+      )
+      .bezierCurveTo(
+        len * 0.5,
+        curl * len * 0.6,
+        len * 0.3,
+        curl * len * 0.35,
+        len * 0.48,
+        curl * len * 0.28,
+      );
   path();
   g.stroke({ color: 0x2a0610, width: w * 1.5, cap: 'round' });
   path();
@@ -106,7 +120,7 @@ function create({ card, layer }: MarkContext): MarkView {
           700,
           (u) => {
             r.position.set(x0 + Math.cos(a0) * len * 0.3 * u, y0 + H * 0.5 * u * u);
-            r.rotation = a0 + 2.2 * u * (SPOTS[i]!.curl);
+            r.rotation = a0 + 2.2 * u * SPOTS[i]!.curl;
             r.alpha = 1 - span(u, 0.5, 1);
           },
           'linear',
@@ -141,7 +155,15 @@ function create({ card, layer }: MarkContext): MarkView {
     async tick() {
       share = 1;
       for (const l of links)
-        if (l) void flare(layer, { x: l.root.x, y: l.root.y, w: box.w * 0.3, tint: SHARE, ms: 600, alpha: 0.7 });
+        if (l)
+          void flare(layer, {
+            x: l.root.x,
+            y: l.root.y,
+            w: box.w * 0.3,
+            tint: SHARE,
+            ms: 600,
+            alpha: 0.7,
+          });
       await wait(600);
     },
     destroy() {

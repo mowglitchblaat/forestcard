@@ -4,7 +4,14 @@
 import type { MoveFxDef } from './define.ts';
 import { blockMove, mirrorMove, thornsMove } from './defense.ts';
 import { dodge } from './dodge.ts';
-import { deathAvoidMove, reformMove, shatterMove, ultimateMove, victoryMove, wardBreakMove } from './fate.ts';
+import {
+  deathAvoidMove,
+  reformMove,
+  shatterMove,
+  ultimateMove,
+  victoryMove,
+  wardBreakMove,
+} from './fate.ts';
 import { buffMove, debuffMove, drainMove, healMove, purifyMove, swapMove } from './life.ts';
 import {
   cancelledMove,

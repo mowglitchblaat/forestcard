@@ -32,13 +32,27 @@ const CATCH: readonly (readonly [number, number])[] = [
 ];
 const TOP = -1.4; // where the strings come from, in card heights above the card's top
 
-type Thread = { i: number; drop: number; snap: number; how: 'stay' | 'fade' | 'drop'; alpha: number };
+type Thread = {
+  i: number;
+  drop: number;
+  snap: number;
+  how: 'stay' | 'fade' | 'drop';
+  alpha: number;
+};
 
 function create({ card, layer }: MarkContext): MarkView {
   const box = card.box;
   const g = new Graphics();
   const bar = new Graphics();
-  const barGlow: Sprite = lit(layer, glowTexture(), box.x + box.w / 2, TOP * H * 0.55, box.w * 1.1, VIOLET, H * 0.18);
+  const barGlow: Sprite = lit(
+    layer,
+    glowTexture(),
+    box.x + box.w / 2,
+    TOP * H * 0.55,
+    box.w * 1.1,
+    VIOLET,
+    H * 0.18,
+  );
   barGlow.alpha = 0;
   layer.addChild(g, bar);
   const threads: (Thread | null)[] = Array.from({ length: MAX }, () => null);

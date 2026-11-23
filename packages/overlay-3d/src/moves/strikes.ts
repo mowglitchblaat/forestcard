@@ -20,7 +20,19 @@ import { H } from '@forestcard/layout';
 import { Particles } from '../engine/particles.ts';
 import { glowTexture } from '../engine/textures.ts';
 import { tween, wait } from '../engine/time.ts';
-import { burst, bump, flare, glowLine, icon, jagged, lit, puffTexture, ringTexture, span, streakTexture } from '../kit/draw.ts';
+import {
+  burst,
+  bump,
+  flare,
+  glowLine,
+  icon,
+  jagged,
+  lit,
+  puffTexture,
+  ringTexture,
+  span,
+  streakTexture,
+} from '../kit/draw.ts';
 import { defineMoveFx, type MoveContext } from './define.ts';
 
 const STAR = `<svg viewBox="0 0 100 100"><path d="M50 0 C55 38 62 45 100 50 C62 55 55 62 50 100 C45 62 38 55 0 50 C38 45 45 38 50 0Z" fill="#ffffff"/></svg>`;
@@ -43,7 +55,16 @@ async function critical(ctx: MoveContext): Promise<void> {
     return l;
   });
   const sparks = new Particles(over);
-  burst(sparks, { x, y, count: 40, speed: box.w * 2.4, size: box.w * 0.035, tint: [0xffe58a, 0xffffff, 0xffb02e], life: 0.7, stretch: 4 });
+  burst(sparks, {
+    x,
+    y,
+    count: 40,
+    speed: box.w * 2.4,
+    size: box.w * 0.035,
+    tint: [0xffe58a, 0xffffff, 0xffb02e],
+    life: 0.7,
+    stretch: 4,
+  });
   void flare(over, { x, y, w: box.w * 1.8, tint: 0xffd65a, ms: 500 });
   card.shake(12, 240);
   await tween(
@@ -84,8 +105,26 @@ async function headshot({ card, over }: MoveContext): Promise<void> {
     cross,
   );
   const sparks = new Particles(over);
-  burst(sparks, { x, y, count: 30, speed: box.w * 2.2, size: box.w * 0.035, tint: [0xff2d3a, 0xffffff, 0xff8a8a], life: 0.6, stretch: 5 });
-  void flare(over, { x, y, w: box.w * 1.4, tint: 0xff2d3a, texture: ringTexture(), from: 0.2, to: 1.4, ms: 500 });
+  burst(sparks, {
+    x,
+    y,
+    count: 30,
+    speed: box.w * 2.2,
+    size: box.w * 0.035,
+    tint: [0xff2d3a, 0xffffff, 0xff8a8a],
+    life: 0.6,
+    stretch: 5,
+  });
+  void flare(over, {
+    x,
+    y,
+    w: box.w * 1.4,
+    tint: 0xff2d3a,
+    texture: ringTexture(),
+    from: 0.2,
+    to: 1.4,
+    ms: 500,
+  });
   void flare(over, { x, y, w: box.w * 0.9, tint: 0xffffff, ms: 260 });
   card.shake(14, 260);
   await tween(380, (u) => void (cross.alpha = 1 - u), 'linear', cross);
@@ -108,12 +147,23 @@ async function laser({ card, over, away }: MoveContext): Promise<void> {
         out = span(u, 0.75, 1);
       const w = len * grow;
       beam.width = core.width = w;
-      beam.x = core.x = x0 - toward * w / 2;
+      beam.x = core.x = x0 - (toward * w) / 2;
       beam.height = box.w * 0.34 * (1 - out) * (1 + 0.08 * Math.sin(u * 90));
       core.height = box.w * 0.1 * (1 - out);
       beam.alpha = core.alpha = 1 - out;
       if (grow >= 1 && u < 0.75 && Math.random() < 0.8)
-        burst(sparks, { x: box.x + box.w / 2 - toward * box.w * 0.45, y, count: 3, speed: box.w * 1.6, size: box.w * 0.03, tint: [0xd8b4fe, 0xffffff], angle: toward > 0 ? 0 : Math.PI, spread: 1.2, life: 0.4, stretch: 4 });
+        burst(sparks, {
+          x: box.x + box.w / 2 - toward * box.w * 0.45,
+          y,
+          count: 3,
+          speed: box.w * 1.6,
+          size: box.w * 0.03,
+          tint: [0xd8b4fe, 0xffffff],
+          angle: toward > 0 ? 0 : Math.PI,
+          spread: 1.2,
+          life: 0.4,
+          stretch: 4,
+        });
     },
     'linear',
     beam,
@@ -172,8 +222,27 @@ async function detonate({ card, over }: MoveContext): Promise<void> {
   const debris = new Particles(over);
   void flare(over, { x, y, w: box.w * 2.2, tint: 0xffffff, ms: 220, from: 0.6, to: 1 });
   void flare(over, { x, y, w: box.w * 1.8, tint: 0xff7a1a, ms: 700, from: 0.3, to: 1.3 });
-  void flare(over, { x, y, w: box.w * 2.4, tint: 0xffc070, texture: ringTexture(), ms: 600, from: 0.1, to: 1.5 });
-  burst(debris, { x, y, count: 50, speed: box.w * 3, size: box.w * 0.04, tint: [0xffd27a, 0xff6a1a, 0xffffff, 0x5a2a10], life: 0.9, gravity: H * 1.2, stretch: 3 });
+  void flare(over, {
+    x,
+    y,
+    w: box.w * 2.4,
+    tint: 0xffc070,
+    texture: ringTexture(),
+    ms: 600,
+    from: 0.1,
+    to: 1.5,
+  });
+  burst(debris, {
+    x,
+    y,
+    count: 50,
+    speed: box.w * 3,
+    size: box.w * 0.04,
+    tint: [0xffd27a, 0xff6a1a, 0xffffff, 0x5a2a10],
+    life: 0.9,
+    gravity: H * 1.2,
+    stretch: 3,
+  });
   const smoke = Array.from({ length: 6 }, () => {
     const s = lit(over, puffTexture(), x, y, box.w * 0.5, 0x3a3030, box.w * 0.5, 'normal');
     return { s, a: Math.random() * Math.PI * 2, v: 0.3 + 0.4 * Math.random() };
@@ -183,7 +252,10 @@ async function detonate({ card, over }: MoveContext): Promise<void> {
     1000,
     (u) => {
       for (const p of smoke) {
-        p.s.position.set(x + Math.cos(p.a) * box.w * p.v * u, y + Math.sin(p.a) * box.w * p.v * u - H * 0.15 * u);
+        p.s.position.set(
+          x + Math.cos(p.a) * box.w * p.v * u,
+          y + Math.sin(p.a) * box.w * p.v * u - H * 0.15 * u,
+        );
         p.s.width = p.s.height = box.w * (0.5 + 0.8 * u);
         p.s.alpha = 0.6 * (1 - u);
       }
@@ -208,7 +280,14 @@ async function lightning({ card, over }: MoveContext): Promise<void> {
     glowLine(g, pts, 0x8fd0ff, box.w * 0.025);
     // a branch
     const k = 2 * (4 + Math.floor(Math.random() * 6));
-    const br = jagged(pts[k]!, pts[k + 1]!, pts[k]! + (Math.random() - 0.5) * box.w, pts[k + 1]! + H * 0.35, 6, box.w * 0.08);
+    const br = jagged(
+      pts[k]!,
+      pts[k + 1]!,
+      pts[k]! + (Math.random() - 0.5) * box.w,
+      pts[k + 1]! + H * 0.35,
+      6,
+      box.w * 0.08,
+    );
     glowLine(g, br, 0x8fd0ff, box.w * 0.012, 0.7);
   };
   for (let i = 0; i < 3; i++) {
@@ -217,7 +296,16 @@ async function lightning({ card, over }: MoveContext): Promise<void> {
     if (i === 0) {
       card.shake(14, 320);
       void flare(over, { x, y, w: box.w * 2, tint: 0xbfe6ff, ms: 450 });
-      burst(sparks, { x, y, count: 36, speed: box.w * 2.6, size: box.w * 0.03, tint: [0xffffff, 0x8fd0ff], life: 0.5, stretch: 6 });
+      burst(sparks, {
+        x,
+        y,
+        count: 36,
+        speed: box.w * 2.6,
+        size: box.w * 0.03,
+        tint: [0xffffff, 0x8fd0ff],
+        life: 0.5,
+        stretch: 6,
+      });
     }
     await tween(90, (u) => void (g.alpha = 1 - 0.7 * u), 'linear', g);
   }
@@ -239,7 +327,16 @@ async function missile({ card, over, away }: MoveContext): Promise<void> {
     420,
     (u) => {
       head.position.set(x0 + (x - x0) * u, y0 + (y - y0) * u - H * 0.12 * Math.sin(Math.PI * u));
-      trail.add({ x: head.x, y: head.y, vx: 0, vy: -H * 0.05, life: 0.6, size: box.w * 0.16, tint: 0x8a8a8a, drag: 1 });
+      trail.add({
+        x: head.x,
+        y: head.y,
+        vx: 0,
+        vy: -H * 0.05,
+        life: 0.6,
+        size: box.w * 0.16,
+        tint: 0x8a8a8a,
+        drag: 1,
+      });
     },
     'in-2',
     head,
@@ -247,7 +344,16 @@ async function missile({ card, over, away }: MoveContext): Promise<void> {
   head.destroy();
   const sparks = new Particles(over);
   void flare(over, { x, y, w: box.w * 1.4, tint: 0xff9a3a, ms: 450 });
-  burst(sparks, { x, y, count: 28, speed: box.w * 2.2, size: box.w * 0.035, tint: [0xffd27a, 0xff6a1a, 0xffffff], life: 0.6, stretch: 3 });
+  burst(sparks, {
+    x,
+    y,
+    count: 28,
+    speed: box.w * 2.2,
+    size: box.w * 0.035,
+    tint: [0xffd27a, 0xff6a1a, 0xffffff],
+    life: 0.6,
+    stretch: 3,
+  });
   card.shake(12, 260);
   await wait(500);
 }
@@ -259,7 +365,17 @@ async function breath({ card, over, away }: MoveContext): Promise<void> {
   const toward = -away;
   const fire = new Particles(over);
   const from = x + toward * box.w * 1.3;
-  void flare(over, { x, y, w: box.w * 1.6, h: H * 1.1, tint: 0xff6a1a, ms: 1100, from: 0.6, to: 1, alpha: 0.55 });
+  void flare(over, {
+    x,
+    y,
+    w: box.w * 1.6,
+    h: H * 1.1,
+    tint: 0xff6a1a,
+    ms: 1100,
+    from: 0.6,
+    to: 1,
+    alpha: 0.55,
+  });
   await tween(
     1000,
     (u) => {

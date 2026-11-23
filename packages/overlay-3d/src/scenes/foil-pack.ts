@@ -189,7 +189,14 @@ export function foilPack(
   const seed = Math.random() * 50;
   const make = (side: 0 | 1) => {
     const shader = Shader.from({
-      gl: { vertex: VERTEX, fragment: FRAGMENT.replace('precision highp float;\n', `precision highp float;\n${shaderDefines()}`), name: 'foil-pack' },
+      gl: {
+        vertex: VERTEX,
+        fragment: FRAGMENT.replace(
+          'precision highp float;\n',
+          `precision highp float;\n${shaderDefines()}`,
+        ),
+        name: 'foil-pack',
+      },
       resources: {
         uTexture: texture.source,
         params: {

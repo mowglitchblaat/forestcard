@@ -27,13 +27,28 @@ export type TerrainName =
   | 'grimoire'
   | 'theatre';
 
-const NAMES: readonly TerrainName[] = ['orage', 'essaim', 'foret', 'cathedrale', 'lune', 'sakura', 'grimoire', 'theatre'];
-export const isTerrain = (v: unknown): v is TerrainName => typeof v === 'string' && (NAMES as readonly string[]).includes(v);
+const NAMES: readonly TerrainName[] = [
+  'orage',
+  'essaim',
+  'foret',
+  'cathedrale',
+  'lune',
+  'sakura',
+  'grimoire',
+  'theatre',
+];
+export const isTerrain = (v: unknown): v is TerrainName =>
+  typeof v === 'string' && (NAMES as readonly string[]).includes(v);
 
 // ---- small textures, drawn once --------------------------------------------------------------------
 
 const made = new Map<string, Texture>();
-function drawn(key: string, w: number, h: number, draw: (g: CanvasRenderingContext2D) => void): Texture {
+function drawn(
+  key: string,
+  w: number,
+  h: number,
+  draw: (g: CanvasRenderingContext2D) => void,
+): Texture {
   const hit = made.get(key);
   if (hit) return hit;
   const c = document.createElement('canvas');
@@ -100,12 +115,29 @@ const threadTexture = () =>
 // ---- the looks -------------------------------------------------------------------------------------
 
 type Motion = 'rise' | 'fall' | 'drift' | 'swarm' | 'hang';
-type Light = { x: number; y: number; w: number; h: number; tint: number; alpha: number; texture?: () => Texture; rotation?: number };
+type Light = {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  tint: number;
+  alpha: number;
+  texture?: () => Texture;
+  rotation?: number;
+};
 type Look = {
   wash: number;
   washAlpha: number;
   lights: readonly Light[];
-  particles: { texture: () => Texture; tints: readonly number[]; size: number; motion: Motion; count: number; speed: number; add: boolean };
+  particles: {
+    texture: () => Texture;
+    tints: readonly number[];
+    size: number;
+    motion: Motion;
+    count: number;
+    speed: number;
+    add: boolean;
+  };
   flashes?: boolean; // the storm: a white flash now and then
   burst: number; // the colour of its burst on a card
 };
@@ -116,7 +148,15 @@ const LOOKS: Readonly<Record<TerrainName, Look>> = {
     wash: 0x1e2a4a,
     washAlpha: 0.75,
     lights: [{ x: 960, y: -60, w: 1800, h: 420, tint: 0x5a7ab8, alpha: 0.35 }],
-    particles: { texture: streakTexture, tints: [0x9fb8e8, 0xcfe0ff], size: 26, motion: 'fall', count: 36, speed: 900, add: true },
+    particles: {
+      texture: streakTexture,
+      tints: [0x9fb8e8, 0xcfe0ff],
+      size: 26,
+      motion: 'fall',
+      count: 36,
+      speed: 900,
+      add: true,
+    },
     flashes: true,
     burst: 0x8fd0ff,
   },
@@ -124,28 +164,97 @@ const LOOKS: Readonly<Record<TerrainName, Look>> = {
     wash: 0x3a3208,
     washAlpha: 0.55,
     lights: [{ x: 960, y: 1080, w: 1900, h: 360, tint: 0xb89a20, alpha: 0.25 }],
-    particles: { texture: insectTexture, tints: [0x1a1408, 0x3a2e0a, 0xd8b030], size: 14, motion: 'swarm', count: 36, speed: 260, add: false },
+    particles: {
+      texture: insectTexture,
+      tints: [0x1a1408, 0x3a2e0a, 0xd8b030],
+      size: 14,
+      motion: 'swarm',
+      count: 36,
+      speed: 260,
+      add: false,
+    },
     burst: 0xffd030,
   },
   foret: {
     wash: 0x0f3a1c,
     washAlpha: 0.55,
     lights: [
-      { x: 520, y: -40, w: 260, h: 900, tint: 0xd8ffb0, alpha: 0.16, texture: streakTexture, rotation: Math.PI / 2 + 0.25 },
-      { x: 1400, y: -40, w: 220, h: 900, tint: 0xd8ffb0, alpha: 0.13, texture: streakTexture, rotation: Math.PI / 2 - 0.2 },
+      {
+        x: 520,
+        y: -40,
+        w: 260,
+        h: 900,
+        tint: 0xd8ffb0,
+        alpha: 0.16,
+        texture: streakTexture,
+        rotation: Math.PI / 2 + 0.25,
+      },
+      {
+        x: 1400,
+        y: -40,
+        w: 220,
+        h: 900,
+        tint: 0xd8ffb0,
+        alpha: 0.13,
+        texture: streakTexture,
+        rotation: Math.PI / 2 - 0.2,
+      },
     ],
-    particles: { texture: sparkTexture, tints: [0x9dff8a, 0xe8ffb0, 0x6fd06a], size: 12, motion: 'rise', count: 30, speed: 40, add: true },
+    particles: {
+      texture: sparkTexture,
+      tints: [0x9dff8a, 0xe8ffb0, 0x6fd06a],
+      size: 12,
+      motion: 'rise',
+      count: 30,
+      speed: 40,
+      add: true,
+    },
     burst: 0x9dff8a,
   },
   cathedrale: {
     wash: 0x2a2416,
     washAlpha: 0.55,
     lights: [
-      { x: 960, y: 140, w: 140, h: 1300, tint: 0xffe2a0, alpha: 0.22, texture: streakTexture, rotation: Math.PI / 2 },
-      { x: 700, y: 140, w: 90, h: 1200, tint: 0x9cd0ff, alpha: 0.14, texture: streakTexture, rotation: Math.PI / 2 + 0.18 },
-      { x: 1220, y: 140, w: 90, h: 1200, tint: 0xffb0d0, alpha: 0.14, texture: streakTexture, rotation: Math.PI / 2 - 0.18 },
+      {
+        x: 960,
+        y: 140,
+        w: 140,
+        h: 1300,
+        tint: 0xffe2a0,
+        alpha: 0.22,
+        texture: streakTexture,
+        rotation: Math.PI / 2,
+      },
+      {
+        x: 700,
+        y: 140,
+        w: 90,
+        h: 1200,
+        tint: 0x9cd0ff,
+        alpha: 0.14,
+        texture: streakTexture,
+        rotation: Math.PI / 2 + 0.18,
+      },
+      {
+        x: 1220,
+        y: 140,
+        w: 90,
+        h: 1200,
+        tint: 0xffb0d0,
+        alpha: 0.14,
+        texture: streakTexture,
+        rotation: Math.PI / 2 - 0.18,
+      },
     ],
-    particles: { texture: sparkTexture, tints: [0xffe8b0, 0xffffff], size: 8, motion: 'drift', count: 26, speed: 18, add: true },
+    particles: {
+      texture: sparkTexture,
+      tints: [0xffe8b0, 0xffffff],
+      size: 8,
+      motion: 'drift',
+      count: 26,
+      speed: 18,
+      add: true,
+    },
     burst: 0x38bdf8,
   },
   lune: {
@@ -155,21 +264,45 @@ const LOOKS: Readonly<Record<TerrainName, Look>> = {
       { x: 960, y: 70, w: 230, h: 230, tint: 0xff3030, alpha: 0.95 },
       { x: 960, y: 70, w: 700, h: 700, tint: 0xb01010, alpha: 0.45 },
     ],
-    particles: { texture: puffTexture, tints: [0x400608, 0x6a0a10], size: 160, motion: 'drift', count: 12, speed: 16, add: false },
+    particles: {
+      texture: puffTexture,
+      tints: [0x400608, 0x6a0a10],
+      size: 160,
+      motion: 'drift',
+      count: 12,
+      speed: 16,
+      add: false,
+    },
     burst: 0xff2030,
   },
   sakura: {
     wash: 0x3a1a2a,
     washAlpha: 0.4,
     lights: [{ x: 960, y: -80, w: 1900, h: 500, tint: 0xffc0d8, alpha: 0.25 }],
-    particles: { texture: petalTexture, tints: [0xffd0e0, 0xffa8c8, 0xffffff], size: 18, motion: 'fall', count: 32, speed: 70, add: false },
+    particles: {
+      texture: petalTexture,
+      tints: [0xffd0e0, 0xffa8c8, 0xffffff],
+      size: 18,
+      motion: 'fall',
+      count: 32,
+      speed: 70,
+      add: false,
+    },
     burst: 0xffa8c8,
   },
   grimoire: {
     wash: 0x2a1c3a,
     washAlpha: 0.55,
     lights: [{ x: 960, y: 1100, w: 1300, h: 500, tint: 0xc8a0ff, alpha: 0.3 }],
-    particles: { texture: pageTexture, tints: [0xfff8e6, 0xf0e0c0], size: 26, motion: 'rise', count: 14, speed: 45, add: false },
+    particles: {
+      texture: pageTexture,
+      tints: [0xfff8e6, 0xf0e0c0],
+      size: 26,
+      motion: 'rise',
+      count: 14,
+      speed: 45,
+      add: false,
+    },
     burst: 0xc8a0ff,
   },
   theatre: {
@@ -180,7 +313,15 @@ const LOOKS: Readonly<Record<TerrainName, Look>> = {
       { x: -40, y: 540, w: 420, h: 1300, tint: 0x8a0a1a, alpha: 0.75 },
       { x: 1960, y: 540, w: 420, h: 1300, tint: 0x8a0a1a, alpha: 0.75 },
     ],
-    particles: { texture: threadTexture, tints: [0xd8b0ff, 0xffffff], size: 4, motion: 'hang', count: 10, speed: 30, add: true },
+    particles: {
+      texture: threadTexture,
+      tints: [0xd8b0ff, 0xffffff],
+      size: 4,
+      motion: 'hang',
+      count: 10,
+      speed: 30,
+      add: true,
+    },
     burst: 0xc08aff,
   },
 };
@@ -189,7 +330,16 @@ const LOOKS: Readonly<Record<TerrainName, Look>> = {
 // (the legacy combat kept a transparent background for that reason). Its alpha is the look's, times this.
 const WASH = 0.35;
 
-type Mote = { q: Particle; x: number; y: number; vx: number; vy: number; spin: number; phase: number; base: number };
+type Mote = {
+  q: Particle;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  spin: number;
+  phase: number;
+  base: number;
+};
 
 class Ambience {
   readonly root = new Container({ label: 'terrain' });
@@ -202,12 +352,21 @@ class Ambience {
   constructor(name: TerrainName, w: number, h: number) {
     this.name = name;
     const look = LOOKS[name];
-    const wash = new Sprite({ texture: washTexture(), tint: look.wash, alpha: look.washAlpha * WASH });
+    const wash = new Sprite({
+      texture: washTexture(),
+      tint: look.wash,
+      alpha: look.washAlpha * WASH,
+    });
     wash.width = w;
     wash.height = h;
     this.root.addChild(wash);
     for (const l of look.lights) {
-      const s = new Sprite({ texture: (l.texture ?? glowTexture)(), anchor: 0.5, tint: l.tint, alpha: l.alpha });
+      const s = new Sprite({
+        texture: (l.texture ?? glowTexture)(),
+        anchor: 0.5,
+        tint: l.tint,
+        alpha: l.alpha,
+      });
       s.position.set(l.x, l.y);
       s.width = l.w;
       s.height = l.h;
@@ -216,14 +375,22 @@ class Ambience {
       this.root.addChild(s);
     }
     const P = look.particles;
-    const box = new ParticleContainer({ texture: P.texture(), dynamicProperties: { position: true, rotation: true, color: true } });
+    const box = new ParticleContainer({
+      texture: P.texture(),
+      dynamicProperties: { position: true, rotation: true, color: true },
+    });
     box.blendMode = P.add ? 'add' : 'normal';
     this.root.addChild(box);
     const tex = P.texture();
     const motes: Mote[] = [];
     const n = particleCount(P.count);
     for (let i = 0; i < n; i++) {
-      const q = new Particle({ texture: tex, anchorX: 0.5, anchorY: 0.5, tint: P.tints[i % P.tints.length]! });
+      const q = new Particle({
+        texture: tex,
+        anchorX: 0.5,
+        anchorY: 0.5,
+        tint: P.tints[i % P.tints.length]!,
+      });
       const k = P.size / tex.width;
       q.scaleX = q.scaleY = k * (0.6 + 0.8 * Math.random());
       if (P.motion === 'fall' && P.texture === streakTexture) {
@@ -234,7 +401,16 @@ class Ambience {
       }
       if (P.motion === 'hang') q.scaleY = (220 + Math.random() * 380) / tex.height;
       box.addParticle(q);
-      const m: Mote = { q, x: Math.random() * w, y: Math.random() * h, vx: 0, vy: 0, spin: (Math.random() - 0.5) * 2, phase: Math.random() * 10, base: q.alpha };
+      const m: Mote = {
+        q,
+        x: Math.random() * w,
+        y: Math.random() * h,
+        vx: 0,
+        vy: 0,
+        spin: (Math.random() - 0.5) * 2,
+        phase: Math.random() * 10,
+        base: q.alpha,
+      };
       if (P.motion === 'hang') m.y = 0;
       motes.push(m);
     }
@@ -258,7 +434,10 @@ class Ambience {
         switch (P.motion) {
           case 'fall':
             m.vy = P.speed;
-            m.vx = P.texture === streakTexture ? -P.speed * 0.25 : Math.sin(t * 0.8 + m.phase) * P.speed * 0.6;
+            m.vx =
+              P.texture === streakTexture
+                ? -P.speed * 0.25
+                : Math.sin(t * 0.8 + m.phase) * P.speed * 0.6;
             if (P.texture !== streakTexture) m.q.rotation += m.spin * dt;
             break;
           case 'rise':
@@ -301,7 +480,14 @@ class Ambience {
         if (this.nextFlash <= 0) {
           this.nextFlash = 3 + Math.random() * 6;
           const f = this.flash;
-          detach(tween(450, (u) => void (f.alpha = 0.22 * (1 - u) * (u < 0.1 ? 1 : 0.6 + 0.4 * Math.sin(u * 40))), 'linear', f));
+          detach(
+            tween(
+              450,
+              (u) => void (f.alpha = 0.22 * (1 - u) * (u < 0.1 ? 1 : 0.6 + 0.4 * Math.sin(u * 40))),
+              'linear',
+              f,
+            ),
+          );
         }
       }
     });
@@ -343,7 +529,10 @@ export class CombatTerrain {
     const next = new Ambience(name, this.w, this.h);
     this.layer.addChildAt(next.root, 0);
     this.current = next;
-    await Promise.all([next.fade(1, 1200), old ? old.fade(0, 1200).then(() => old.destroy()) : Promise.resolve()]);
+    await Promise.all([
+      next.fade(1, 1200),
+      old ? old.fade(0, 1200).then(() => old.destroy()) : Promise.resolve(),
+    ]);
   }
 
   /** It acts on a card at (x, y), `size` its height: a burst in its colour. */
@@ -351,7 +540,16 @@ export class CombatTerrain {
     const n = this.current?.name;
     if (!n) return;
     const look = LOOKS[n];
-    burst(particles, { x, y, count: 24, speed: size * 1.4, size: size * 0.03, tint: [look.burst, 0xffffff], life: 0.7, stretch: 2 });
+    burst(particles, {
+      x,
+      y,
+      count: 24,
+      speed: size * 1.4,
+      size: size * 0.03,
+      tint: [look.burst, 0xffffff],
+      life: 0.7,
+      stretch: 2,
+    });
     const ring = new Sprite({ texture: ringTexture(), anchor: 0.5, tint: look.burst });
     ring.position.set(x, y);
     ring.blendMode = 'add';

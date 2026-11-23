@@ -46,7 +46,8 @@ async function loadMirror(): Promise<void> {
     ]);
     if (r && r.ok) {
       const list: unknown = await r.json();
-      if (Array.isArray(list)) mirrored = new Set(list.filter((x): x is string => typeof x === 'string'));
+      if (Array.isArray(list))
+        mirrored = new Set(list.filter((x): x is string => typeof x === 'string'));
     }
   } catch {
     // no mirror list: Supabase serves every image
@@ -63,13 +64,17 @@ function frameUrls(): Record<string, string> {
   for (const type of ['combattant', 'magie', 'piege'])
     for (const tier of TIERS)
       // no GGEZ magic or trap (config/rarities.ts, allowsType): no frame for them
-      if (type === 'combattant' || tier !== 'ggez') out[`cadres/${type}-${tier}.png`] = `cadres/${type}-${tier}.png`;
-  for (const tier of TIERS) if (tier !== 'commun') out[`cadres/ecriteau-${tier}.png`] = `cadres/ecriteau-${tier}.png`;
+      if (type === 'combattant' || tier !== 'ggez')
+        out[`cadres/${type}-${tier}.png`] = `cadres/${type}-${tier}.png`;
+  for (const tier of TIERS)
+    if (tier !== 'commun') out[`cadres/ecriteau-${tier}.png`] = `cadres/ecriteau-${tier}.png`;
   return out;
 }
 
 async function loadFonts(): Promise<void> {
-  const wanted = FONTS.filter((f) => f !== 'Arial Black').map((f) => document.fonts.load(`80px "${f}"`));
+  const wanted = FONTS.filter((f) => f !== 'Arial Black').map((f) =>
+    document.fonts.load(`80px "${f}"`),
+  );
   await Promise.race([Promise.allSettled(wanted), new Promise((ok) => setTimeout(ok, 4000))]);
 }
 
@@ -115,7 +120,10 @@ async function main(): Promise<void> {
         await loadMirror();
         const release = await store.hold(combatTextures(next, keys));
         try {
-          await playCombat({ app, stage, layer, deps: { textures: store.textures, styles }, keys }, next);
+          await playCombat(
+            { app, stage, layer, deps: { textures: store.textures, styles }, keys },
+            next,
+          );
         } finally {
           release();
         }
@@ -130,7 +138,13 @@ async function main(): Promise<void> {
     const connect = () => {
       const ws = new WebSocket('ws://127.0.0.1:8080/');
       ws.onopen = () =>
-        ws.send(JSON.stringify({ request: 'Subscribe', id: 'sub-combat-3d', events: { General: ['Custom'] } }));
+        ws.send(
+          JSON.stringify({
+            request: 'Subscribe',
+            id: 'sub-combat-3d',
+            events: { General: ['Custom'] },
+          }),
+        );
       ws.onmessage = (e) => {
         const m = readCombatMessage(e.data);
         if (m) void play(m);
@@ -165,7 +179,9 @@ async function main(): Promise<void> {
     // a deck: n fighters, n magics, n traps (a relay draws a new trio for each fighter)
     const player = (pseudo: string, n = 1) => ({
       pseudo,
-      deck: (['combattant', 'magie', 'piege'] as const).flatMap((t) => Array.from({ length: n }, () => pick(t))),
+      deck: (['combattant', 'magie', 'piege'] as const).flatMap((t) =>
+        Array.from({ length: n }, () => pick(t)),
+      ),
     });
     const run = (relay: boolean) => {
       const r = relay

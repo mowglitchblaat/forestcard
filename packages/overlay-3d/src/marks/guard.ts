@@ -57,14 +57,26 @@ function create({ card, layer }: MarkContext): MarkView {
           root,
         );
         card.shake(5, 160);
-        void flare(layer, { x, y, w: w * 2.6, tint: GOLD, texture: ringTexture(), from: 0.3, to: 1.2, ms: 500 });
+        void flare(layer, {
+          x,
+          y,
+          w: w * 2.6,
+          tint: GOLD,
+          texture: ringTexture(),
+          from: 0.3,
+          to: 1.2,
+          ms: 500,
+        });
       } else if (!level && on) {
         on = false;
         if (how === 'drop')
           await tween(
             700,
             (u) => {
-              root.position.set(x + box.w * 0.35 * u, y - H * 0.08 * Math.sin(Math.PI * u) + H * 0.5 * u * u);
+              root.position.set(
+                x + box.w * 0.35 * u,
+                y - H * 0.08 * Math.sin(Math.PI * u) + H * 0.5 * u * u,
+              );
               root.rotation = 3 * u;
               root.alpha = 1 - u;
             },

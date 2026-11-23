@@ -93,7 +93,8 @@ export const STATUS_FX: Readonly<Record<StatusFxKind, StatusFxDef>> = {
     shader: STONE,
     acts: 'statut solide_bloque: the stone blocks an attack or a stun',
     layer: 'cover',
-  }),  contamination: defineStatusFx({
+  }),
+  contamination: defineStatusFx({
     shader: CONTAMINATION,
     acts: 'statut contamination: laid again, it prolongs the statuses',
     layer: 'cover',

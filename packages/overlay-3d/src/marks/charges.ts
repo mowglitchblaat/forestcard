@@ -59,10 +59,12 @@ function create({ card, layer }: MarkContext): MarkView {
         if (!m) continue;
         motes[i] = null;
         m.leaving = true;
-        void tween(300, (u) => void (m.s.alpha = m.core.alpha = 1 - u), 'linear', m.s).finally(() => {
-          m.s.destroy();
-          m.core.destroy();
-        });
+        void tween(300, (u) => void (m.s.alpha = m.core.alpha = 1 - u), 'linear', m.s).finally(
+          () => {
+            m.s.destroy();
+            m.core.destroy();
+          },
+        );
       }
       for (let i = 0; i < level; i++)
         if (!motes[i]) {
