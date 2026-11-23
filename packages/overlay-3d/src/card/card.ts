@@ -250,10 +250,12 @@ export class Card implements FxCard {
     for (const c of this.back.removeChildren()) c.destroy({ children: true });
     const back = backOf(o);
     if (back) {
-      const s = new Sprite(back);
-      s.position.set(this.box.x, 0);
-      s.width = this.box.w;
-      s.height = H;
+      // covering the box, centred, cut by the mask (the legacy's background-size: cover): a back image
+      // of another proportion (a square one) keeps its shape instead of being squeezed into the card
+      const s = new Sprite({ texture: back, anchor: 0.5 });
+      const k = Math.max(this.box.w / back.width, H / back.height);
+      s.scale.set(k);
+      s.position.set(this.box.x + this.box.w / 2, H / 2);
       this.back.addChild(s);
     }
     const mask = roundedMask(this.box);
