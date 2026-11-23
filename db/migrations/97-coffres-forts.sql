@@ -85,7 +85,7 @@ begin
     'monnaie', (select monnaie from public.joueurs where id = moi),
     'stock', coalesce((select foreuses from public.coffres_stock where evenement_id = ev.id and joueur_id = moi), 0),
     'coffres', coalesce((select jsonb_agg(jsonb_build_object(
-        'id', c.id, 'rang', c.rang, 'nom', c.nom, 'teinte', c.teinte, 'requis', c.requis, 'ouvert_le', c.ouvert_le,
+        'id', c.id, 'rang', c.rang, 'nom', c.nom, 'teinte', c.teinte, 'ouvert_le', c.ouvert_le, -- requis : secret
         'trous', coalesce((select jsonb_agg(jsonb_build_object('id', t.id, 'x', t.x, 'y', t.y, 'angle', t.angle,
             'moi', t.joueur_id = moi) order by t.id) from public.coffres_trous t where t.coffre_id = c.id), '[]'::jsonb),
         -- le butin n'est montré qu'une fois le coffre ouvert

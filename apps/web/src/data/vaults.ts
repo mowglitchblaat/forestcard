@@ -24,12 +24,12 @@ const LootCard = z.object({
 });
 export type LootCard = z.infer<typeof LootCard>;
 
+// The drills a vault needs stay secret: players only see the holes.
 const Vault = z.object({
   id: Num,
   rang: Num,
   nom: z.string(),
   teinte: Tint,
-  requis: Num,
   ouvert_le: z.string().nullable(),
   trous: z.array(Hole),
   cartes: z.array(LootCard),
@@ -63,7 +63,7 @@ const REFUSALS: Record<string, string> = {
   COFFRE_OUVERT: 'Ce coffre est déjà ouvert !',
   PAS_DE_FOREUSE: 'Achète d’abord une foreuse à la boutique.',
   COFFRE_INCONNU: 'Coffre introuvable.',
-  COFFRE_EN_ATTENTE: 'Le coffre est à une foreuse de céder… Son trésor arrive très bientôt !',
+  COFFRE_EN_ATTENTE: 'Le coffre résiste encore… Réessaie un peu plus tard !',
 };
 const refusal = (message: string): Error => {
   const code = Object.keys(REFUSALS).find((k) => message.includes(k));

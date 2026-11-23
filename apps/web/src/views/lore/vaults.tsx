@@ -11,7 +11,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Progress } from '@/components/ui/progress';
 import { fetchMirror, imageKeys, imageUrl } from '@/data/images';
 import {
   buyDrills,
@@ -391,7 +390,6 @@ function VaultTile({
   const holes = [...v.trous, ...queue.filter((h) => !known.has(h.id))];
   const hidden = new Set(queue.map((h) => h.id));
   const done = holes.length;
-  const left = Math.max(0, v.requis - done);
   const isOpen = !!v.ouvert_le;
   const busy = run.isPending || queue.length > 0;
   return (
@@ -429,14 +427,12 @@ function VaultTile({
           </Badge>
         )}
       </b>
-      <div className="flex w-full flex-col gap-1">
-        <Progress value={(Math.min(done, v.requis) * 100) / v.requis} />
-        <small className="text-center text-muted-foreground tabular-nums">
-          {isOpen
-            ? `${v.requis} foreuses : le coffre a cédé`
-            : `${done} / ${v.requis} foreuses · encore ${left}`}
-        </small>
-      </div>
+      <small className="flex items-center gap-1 text-center text-muted-foreground tabular-nums">
+        <ICONS.drill />
+        {isOpen
+          ? `${done} foreuses : le coffre a cédé`
+          : `${done} foreuse${done > 1 ? 's' : ''} plantée${done > 1 ? 's' : ''}… combien encore ?`}
+      </small>
       <small className="text-center text-muted-foreground">
         {isOpen
           ? `${v.cartes.length} carte${v.cartes.length > 1 ? 's' : ''} libérée${v.cartes.length > 1 ? 's' : ''}`
@@ -448,19 +444,14 @@ function VaultTile({
             <ICONS.drill />
             Poser une foreuse
           </Button>
-          {stock >= 5 && left >= 5 && (
+          {stock >= 5 && (
             <Button size="sm" variant="outline" disabled={busy} onClick={() => run.mutate(5)}>
               × 5
             </Button>
           )}
           {stock > 1 && (
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={busy}
-              onClick={() => run.mutate(Math.min(stock, left))}
-            >
-              Tout ({Math.min(stock, left)})
+            <Button size="sm" variant="outline" disabled={busy} onClick={() => run.mutate(stock)}>
+              Tout ({stock})
             </Button>
           )}
         </div>
