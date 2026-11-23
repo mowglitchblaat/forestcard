@@ -1,7 +1,7 @@
 // The vaults (db/migrations/97-coffres-forts.sql): three vaults shared by the whole community (blue,
 // violet, legendary), drilled with drills bought in gold. Each drill placed makes a lasting hole in
-// the door, at a place the database draws. At its last drill a vault opens: the cards the admin put
-// in it, kept secret and unpublished until then, are published and shown.
+// the door, at a place the database draws. The drills a vault needs stay secret. At its last drill a
+// vault opens and announces its treasure: new cards of its rarity, which the admin creates afterwards.
 
 import { z } from 'zod';
 import { supabase } from '@/lib/supabase';
@@ -33,6 +33,8 @@ const Vault = z.object({
   ouvert_le: z.string().nullable(),
   trous: z.array(Hole),
   cartes: z.array(LootCard),
+  // once open: the new cards it announces (the admin creates them afterwards)
+  tresor: z.object({ nb: Num, rarete: z.string() }).nullish(),
 });
 export type Vault = z.infer<typeof Vault>;
 
@@ -63,7 +65,6 @@ const REFUSALS: Record<string, string> = {
   COFFRE_OUVERT: 'Ce coffre est déjà ouvert !',
   PAS_DE_FOREUSE: 'Achète d’abord une foreuse à la boutique.',
   COFFRE_INCONNU: 'Coffre introuvable.',
-  COFFRE_EN_ATTENTE: 'Le coffre résiste encore… Réessaie un peu plus tard !',
 };
 const refusal = (message: string): Error => {
   const code = Object.keys(REFUSALS).find((k) => message.includes(k));
@@ -120,7 +121,8 @@ const AdminVault = z.object({
   requis: Num,
   ouvert_le: z.string().nullable(),
   poses: Num,
-  cartes: z.array(Num),
+  nb_cartes: Num.nullish(),
+  rarete: z.string().nullish(),
 });
 const AdminHeist = z.object({
   id: Num,
@@ -154,10 +156,6 @@ export async function createHeist(d: {
     p_violet: d.violet,
     p_or: d.or,
   });
-}
-
-export async function setVaultCards(vault: number, cards: number[]): Promise<void> {
-  await rpc('admin_coffres_cartes', { p_coffre: vault, p_cartes: cards });
 }
 
 export async function setHeistEnd(id: number, end: string): Promise<void> {

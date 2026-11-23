@@ -1,27 +1,23 @@
 // Admin · Lore: the vaults (data/vaults.ts, 97-coffres-forts.sql). Create an event (title, end, price
-// of a drill, drills needed by each vault), choose the secret loot of each vault (cards not
-// published yet: they are published when the vault opens), move its end, delete it.
+// of a drill, drills needed by each vault), follow the drilling, move its end, delete it. An open
+// vault announces its treasure (new cards of its rarity, which the admin creates afterwards).
 
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { HoldButton } from '@/components/hold-button';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
-import { adminKeys } from '@/data/admin';
-import { type CardListRow, fetchCardList } from '@/data/admin-cards';
 import {
   type AdminHeist,
   createHeist,
   deleteHeist,
   fetchAdminHeists,
   setHeistEnd,
-  setVaultCards,
   vaultKeys,
 } from '@/data/vaults';
 import { ICONS } from '@/lib/icons';
-import { AdminError, AdminSection, Choice, Field, NoticeView, useAction } from './kit';
+import { AdminError, AdminSection, Field, NoticeView, useAction } from './kit';
 
 const local = (d: Date) => {
   const p = (n: number) => String(n).padStart(2, '0');
@@ -38,7 +34,6 @@ type Run = ReturnType<typeof useAction>['run'];
 
 export function VaultsAdmin() {
   const heists = useQuery({ queryKey: vaultKeys.admin, queryFn: fetchAdminHeists });
-  const cards = useQuery({ queryKey: adminKeys.cards, queryFn: fetchCardList });
   const action = useAction();
   const [title, setTitle] = useState('Les coffres-forts');
   const [end, setEnd] = useState(inAWeek);
@@ -55,7 +50,7 @@ export function VaultsAdmin() {
           Coffres-forts
         </span>
       }
-      description="Trois coffres communs (bleu, violet, légendaire), percés par la communauté avec des foreuses achetées en gold. Range dans chaque coffre des cartes pas encore publiées : elles restent secrètes et sont publiées à l'ouverture du coffre."
+      description="Trois coffres communs (bleu, violet, légendaire), percés par la communauté avec des foreuses achetées en gold. À son ouverture, un coffre annonce son trésor (40 rares, 12 épiques, 5 légendaires) : les nouvelles cartes que tu créeras ensuite. Le nombre de foreuses reste secret pour les joueurs."
     >
       <div className="flex flex-col gap-3 rounded-lg border p-3">
         <b>Nouvel événement</b>
@@ -128,21 +123,13 @@ export function VaultsAdmin() {
       </div>
       <NoticeView notice={action.notice} />
       {(heists.data ?? []).map((h) => (
-        <HeistAdmin key={h.id} heist={h} cards={cards.data ?? []} run={action.run} />
+        <HeistAdmin key={h.id} heist={h} run={action.run} />
       ))}
     </AdminSection>
   );
 }
 
-function HeistAdmin({
-  heist: h,
-  cards,
-  run,
-}: {
-  heist: AdminHeist;
-  cards: CardListRow[];
-  run: Run;
-}) {
+function HeistAdmin({ heist: h, run }: { heist: AdminHeist; run: Run }) {
   const [end, setEnd] = useState(() => local(new Date(h.fin)));
   const over = new Date(h.fin).getTime() <= Date.now();
   return (
@@ -187,94 +174,19 @@ function HeistAdmin({
       </div>
       <div className="grid gap-3 md:grid-cols-3">
         {(h.coffres ?? []).map((v) => (
-          <LootPicker key={`${v.id}-${v.cartes.join(',')}`} vault={v} cards={cards} run={run} />
+          <div key={v.id} className="flex flex-col gap-1 rounded-md border p-2 text-sm">
+            <b className="flex items-center gap-2">
+              {v.nom}
+              <Badge variant={v.ouvert_le ? 'success' : 'outline'}>
+                {v.ouvert_le ? 'Ouvert' : `${v.poses} / ${v.requis}`}
+              </Badge>
+            </b>
+            <span className="text-muted-foreground">
+              Trésor annoncé à l'ouverture : {v.nb_cartes ?? '?'} nouvelles cartes {v.rarete ?? ''}
+            </span>
+          </div>
         ))}
       </div>
-    </div>
-  );
-}
-
-type AdminVault = NonNullable<AdminHeist['coffres']>[number];
-
-const RARITY: Record<AdminVault['teinte'], RegExp> = {
-  bleu: /^rare/i,
-  violet: /^[ée]pique/i,
-  or: /^l[ée]gendaire/i,
-};
-
-function LootPicker({
-  vault: v,
-  cards,
-  run,
-}: {
-  vault: AdminVault;
-  cards: CardListRow[];
-  run: Run;
-}) {
-  const [chosen, setChosen] = useState<Set<number>>(() => new Set(v.cartes));
-  const [all, setAll] = useState(false);
-  const open = !!v.ouvert_le;
-  // The cards that can go in: not published yet, of the vault's rarity (or any, on demand); plus
-  // those already chosen.
-  const list = cards.filter(
-    (c) => chosen.has(c.id) || (!c.actif && (all || RARITY[v.teinte].test(c.raretes?.nom ?? ''))),
-  );
-  return (
-    <div className="flex flex-col gap-2 rounded-md border p-2">
-      <b className="flex items-center gap-2">
-        {v.nom}
-        <Badge variant={open ? 'success' : 'outline'}>
-          {open ? 'Ouvert' : `${v.poses} / ${v.requis}`}
-        </Badge>
-      </b>
-      <small className="text-muted-foreground">
-        {chosen.size} carte{chosen.size > 1 ? 's' : ''} dans le coffre
-      </small>
-      {!open && (
-        <Choice>
-          <Checkbox checked={all} onChange={(e) => setAll(e.target.checked)} /> Toutes les raretés
-        </Choice>
-      )}
-      <div className="flex max-h-dialog flex-col gap-1 overflow-y-auto text-sm">
-        {list.length === 0 && (
-          <small className="text-muted-foreground">
-            Aucune carte non publiée de cette rareté pour l'instant.
-          </small>
-        )}
-        {list.map((c) => (
-          <Choice key={c.id}>
-            <Checkbox
-              disabled={open}
-              checked={chosen.has(c.id)}
-              onChange={(e) => {
-                const next = new Set(chosen);
-                if (e.target.checked) next.add(c.id);
-                else next.delete(c.id);
-                setChosen(next);
-              }}
-            />{' '}
-            {c.nom}
-            <small className="text-muted-foreground">
-              {c.raretes?.nom ?? ''}
-              {c.actif ? ' · publiée' : ''}
-            </small>
-          </Choice>
-        ))}
-      </div>
-      {!open && (
-        <Button
-          size="sm"
-          onClick={() =>
-            run(async () => {
-              await setVaultCards(v.id, [...chosen]);
-              return `${v.nom} : butin enregistré (${chosen.size} cartes).`;
-            })
-          }
-        >
-          <ICONS.save />
-          Enregistrer le butin
-        </Button>
-      )}
     </div>
   );
 }

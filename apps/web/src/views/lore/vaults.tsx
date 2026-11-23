@@ -11,7 +11,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { fetchMirror, imageKeys, imageUrl } from '@/data/images';
 import {
   buyDrills,
   drill,
@@ -42,9 +41,9 @@ const GLOW: Record<Tint, string> = {
   or: 'vault-glow-or',
 };
 const LOOT: Record<Tint, string> = {
-  bleu: 'Des cartes rares inédites',
-  violet: 'Des cartes épiques inédites',
-  or: 'Des cartes légendaires inédites',
+  bleu: 'Un trésor de cartes rares',
+  violet: 'Un trésor de cartes épiques',
+  or: 'Un trésor de cartes légendaires',
 };
 
 const fr = (n: number) => n.toLocaleString('fr-FR');
@@ -128,10 +127,10 @@ function Heist({ heist, onOpened }: { heist: Heist; onOpened: (v: Vault) => void
           )}
         </CardTitle>
         <CardDescription>
-          Trois coffres-forts scellés renferment des cartes jamais vues. Achète des foreuses,
-          pose-les sur le coffre de ton choix : chaque foreuse perce la porte pour de bon. Quand
-          assez de trous sont faits, le coffre cède… et son trésor entre dans le jeu, pour tout le
-          monde.
+          Trois coffres-forts scellés renferment un trésor : de nouvelles cartes à venir. Achète des
+          foreuses, pose-les sur le coffre de ton choix : chaque foreuse perce la porte pour de bon.
+          Quand assez de trous sont faits, le coffre cède… et révèle les cartes qui seront créées
+          pour tout le monde.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-5">
@@ -435,8 +434,10 @@ function VaultTile({
       </small>
       <small className="text-center text-muted-foreground">
         {isOpen
-          ? `${v.cartes.length} carte${v.cartes.length > 1 ? 's' : ''} libérée${v.cartes.length > 1 ? 's' : ''}`
-          : `${LOOT[v.teinte]}… mais lesquelles ?`}
+          ? v.tresor
+            ? `Trésor : ${v.tresor.nb} nouvelles cartes ${v.tresor.rarete} à venir !`
+            : 'Trésor révélé !'
+          : `${LOOT[v.teinte]}… mais combien ?`}
       </small>
       {!isOpen && canDrill && (
         <div className="flex flex-wrap justify-center gap-2">
@@ -478,12 +479,6 @@ const BOLTS = [
 
 function Opening({ vault: v, onClose }: { vault: Vault; onClose: () => void }) {
   const [phase, setPhase] = useState<Phase>('shake');
-  const mirror = useQuery({
-    queryKey: imageKeys.mirror,
-    queryFn: fetchMirror,
-    staleTime: Infinity,
-  });
-  const images = mirror.data ?? new Set<string>();
   useEffect(() => {
     const timers = PHASES.slice(1).map(([p, at]) => setTimeout(() => setPhase(p), at));
     return () => timers.forEach(clearTimeout);
@@ -491,6 +486,7 @@ function Opening({ vault: v, onClose }: { vault: Vault; onClose: () => void }) {
   const at = PHASES.findIndex(([p]) => p === phase);
   const past = (p: Phase) => at >= PHASES.findIndex(([q]) => q === p);
   const legendary = v.teinte === 'or';
+  const treasure = v.tresor;
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-h-dialog overflow-y-auto sm:max-w-4xl">
@@ -502,9 +498,7 @@ function Opening({ vault: v, onClose }: { vault: Vault; onClose: () => void }) {
         </DialogTitle>
         <DialogDescription>
           {past('cards')
-            ? v.cartes.length
-              ? 'Les nouvelles cartes entrent dans le jeu : elles sortent maintenant dans les boosters.'
-              : 'Le trésor se dévoilera très bientôt…'
+            ? 'Le trésor du coffre est révélé : de nouvelles cartes sont en préparation !'
             : 'Les verrous sautent un à un…'}
         </DialogDescription>
         <div className={`relative overflow-hidden rounded-xl bg-background ${GLOW[v.teinte]}`}>
@@ -547,36 +541,20 @@ function Opening({ vault: v, onClose }: { vault: Vault; onClose: () => void }) {
                 ))}
             </div>
           </div>
-          {past('cards') && v.cartes.length > 0 && (
-            <div className="relative flex flex-wrap justify-center gap-3 p-4">
-              {v.cartes.map((card, i) => {
-                const src = imageUrl(card.image ?? null, images);
-                return (
-                  <div
-                    key={card.id}
-                    style={{ '--i': i, '--from-y': '-12rem' }}
-                    className="vault-card w-28"
-                  >
-                    <div className="vault-card-flip relative aspect-vault-card">
-                      <div className="vault-card-face absolute inset-0">
-                        {src ? (
-                          <img
-                            src={src}
-                            alt={card.nom}
-                            className="size-full rounded-md object-cover"
-                          />
-                        ) : (
-                          <span className="flex size-full items-center justify-center rounded-md border bg-muted p-1 text-center text-xs">
-                            {card.nom}
-                          </span>
-                        )}
-                      </div>
-                      <div className="vault-card-back back-game absolute inset-0 rounded-md border" />
-                    </div>
-                    <small className="mt-1 block truncate text-center">{card.nom}</small>
-                  </div>
-                );
-              })}
+          {past('cards') && treasure && (
+            <div className="relative flex flex-col items-center gap-4 p-4">
+              <div className="flex flex-wrap justify-center gap-1.5">
+                {Array.from({ length: treasure.nb }, (_, i) => (
+                  <span
+                    key={i}
+                    style={{ '--i': i % 20, '--from-y': '-14rem' }}
+                    className="vault-card back-game aspect-vault-card w-9 rounded-sm border shadow-md"
+                  />
+                ))}
+              </div>
+              <p className="vault-banner text-center text-2xl font-black">
+                {treasure.nb} nouvelles cartes {treasure.rarete} vont rejoindre le jeu !
+              </p>
             </div>
           )}
         </div>

@@ -2,8 +2,8 @@
 -- Mini-jeu « Les coffres-forts » (Lore > Événements) : trois coffres communs à toute la communauté (bleu,
 -- violet, légendaire), à percer avec des foreuses achetées en gold (1000 par défaut, sans limite). Chaque foreuse
 -- posée fait un trou définitif dans la porte (position tirée par la base). À sa dernière foreuse (20, 55, 100 par
--- défaut), le coffre s'ouvre : les cartes que l'admin y a rangées (cartes non publiées, gardées secrètes) sont
--- publiées et entrent dans le jeu. Un événement dure une semaine par défaut ; il reste visible 3 jours après la fin.
+-- défaut, gardé secret pour les joueurs), le coffre s'ouvre et annonce son trésor : de nouvelles cartes de sa
+-- rareté (40 rares, 12 épiques, 5 légendaires), que l'admin crée ensuite. Un événement dure une semaine par défaut ; il reste visible 3 jours après la fin.
 -- À lancer une fois dans Supabase (SQL Editor), après 96-lueur-ciel.sql ; peut être relancé.
 
 create table if not exists public.coffres_evenements (
@@ -23,10 +23,14 @@ create table if not exists public.coffres (
   teinte text not null check (teinte in ('bleu', 'violet', 'or')),
   requis integer not null check (requis > 0),
   ouvert_le timestamptz,
+  nb_cartes integer,   -- le trésor annoncé à l'ouverture : nb_cartes nouvelles cartes de la rareté `rarete`
+  rarete text,
   unique (evenement_id, rang)
 );
+alter table public.coffres add column if not exists nb_cartes integer;
+alter table public.coffres add column if not exists rarete text;
 
--- Le butin d'un coffre : secret jusqu'à l'ouverture (admin seulement).
+-- Cartes rangées dans un coffre (inutilisé : le trésor est une annonce, nb_cartes et rarete).
 create table if not exists public.coffres_cartes (
   coffre_id bigint not null references public.coffres(id) on delete cascade,
   carte_id integer not null references public.cartes(id) on delete cascade,
@@ -88,13 +92,10 @@ begin
         'id', c.id, 'rang', c.rang, 'nom', c.nom, 'teinte', c.teinte, 'ouvert_le', c.ouvert_le, -- requis : secret
         'trous', coalesce((select jsonb_agg(jsonb_build_object('id', t.id, 'x', t.x, 'y', t.y, 'angle', t.angle,
             'moi', t.joueur_id = moi) order by t.id) from public.coffres_trous t where t.coffre_id = c.id), '[]'::jsonb),
-        -- le butin n'est montré qu'une fois le coffre ouvert
-        'cartes', case when c.ouvert_le is null then '[]'::jsonb else coalesce((select jsonb_agg(jsonb_build_object(
-            'id', ca.id, 'nom', btrim(ca.nom), 'type', ca.type, 'rarete', r.nom, 'couleur', r.couleur,
-            'image', (select v.image_path from public.variantes_carte v where v.carte_id = ca.id and v.image_path is not null
-                      order by (upper(btrim(v.nom)) = 'STANDARD') desc, v.id limit 1))
-            order by ca.nom) from public.coffres_cartes cc join public.cartes ca on ca.id = cc.carte_id
-            left join public.raretes r on r.id = ca.rarete_id where cc.coffre_id = c.id), '[]'::jsonb) end
+        -- le trésor n'est annoncé qu'une fois le coffre ouvert
+        'tresor', case when c.ouvert_le is null then null
+                  else jsonb_build_object('nb', c.nb_cartes, 'rarete', c.rarete) end,
+        'cartes', '[]'::jsonb
       ) order by c.rang) from public.coffres c where c.evenement_id = ev.id), '[]'::jsonb),
     'perceurs', coalesce((select jsonb_agg(x order by (x->>'foreuses')::int desc) from (
         select jsonb_build_object('pseudo', j.pseudo, 'foreuses', count(*)) as x
@@ -130,9 +131,8 @@ end $$;
 grant execute on function public.coffres_acheter(integer) to authenticated;
 
 -- Poser des foreuses sur un coffre (p_n d'un coup, au plus ce qu'il reste à percer). Chaque foreuse fait un trou
--- à une place tirée au hasard sur la porte, hors de la roue centrale. À la dernière, le coffre s'ouvre et ses cartes
--- sont publiées. Un coffre sans butin s'arrête à une foreuse de céder (COFFRE_EN_ATTENTE) jusqu'à ce que l'admin
--- range ses cartes. Refus : NON_CONNECTE, COFFRE_INCONNU, EVENEMENT_TERMINE, COFFRE_OUVERT, PAS_DE_FOREUSE.
+-- à une place tirée au hasard sur la porte, hors de la roue centrale. À la dernière, le coffre s'ouvre et
+-- annonce son trésor. Refus : NON_CONNECTE, COFFRE_INCONNU, EVENEMENT_TERMINE, COFFRE_OUVERT, PAS_DE_FOREUSE.
 create or replace function public.coffres_percer(p_coffre bigint, p_n integer default 1)
 returns jsonb language plpgsql security definer set search_path = public as $$
 declare c public.coffres; ev public.coffres_evenements; stock integer; poses integer; n integer; i integer;
@@ -148,11 +148,6 @@ begin
   if coalesce(stock, 0) < 1 then raise exception 'PAS_DE_FOREUSE'; end if;
   select count(*) into poses from public.coffres_trous where coffre_id = c.id;
   n := least(greatest(coalesce(p_n, 1), 1), stock, c.requis - poses);
-  -- sans butin rangé par l'admin, le coffre s'arrête à une foreuse de céder
-  if not exists (select 1 from public.coffres_cartes where coffre_id = c.id) then
-    n := least(n, c.requis - poses - 1);
-    if n < 1 then raise exception 'COFFRE_EN_ATTENTE'; end if;
-  end if;
   for i in 1..n loop
     r := 0.2 + random() * 0.2;            -- entre la roue centrale et le bord de la porte
     a := random() * 2 * pi();
@@ -164,7 +159,6 @@ begin
   update public.coffres_stock set foreuses = foreuses - n where evenement_id = ev.id and joueur_id = auth.uid();
   if poses + n >= c.requis then
     update public.coffres set ouvert_le = now() where id = c.id;
-    update public.cartes set actif = true where id in (select carte_id from public.coffres_cartes where coffre_id = c.id);
     ouvert := true;
   end if;
   return jsonb_build_object('trous', trous, 'ouvert', ouvert, 'stock', stock - n);
@@ -184,10 +178,10 @@ begin
   values (coalesce(nullif(btrim(p_titre), ''), 'Les coffres-forts'), coalesce(p_fin, now() + interval '7 days'),
           coalesce(p_prix, 1000))
   returning id into ev;
-  insert into public.coffres (evenement_id, rang, nom, teinte, requis) values
-    (ev, 1, 'Coffre bleu', 'bleu', greatest(coalesce(p_bleu, 20), 1)),
-    (ev, 2, 'Coffre violet', 'violet', greatest(coalesce(p_violet, 55), 1)),
-    (ev, 3, 'Coffre légendaire', 'or', greatest(coalesce(p_or, 100), 1));
+  insert into public.coffres (evenement_id, rang, nom, teinte, requis, nb_cartes, rarete) values
+    (ev, 1, 'Coffre bleu', 'bleu', greatest(coalesce(p_bleu, 20), 1), 40, 'rares'),
+    (ev, 2, 'Coffre violet', 'violet', greatest(coalesce(p_violet, 55), 1), 12, 'épiques'),
+    (ev, 3, 'Coffre légendaire', 'or', greatest(coalesce(p_or, 100), 1), 5, 'légendaires');
   return ev;
 end $$;
 grant execute on function public.admin_coffres_creer(text, timestamptz, integer, integer, integer, integer) to authenticated;
@@ -233,7 +227,7 @@ begin
       'id', ev.id, 'titre', ev.titre, 'debut', ev.debut, 'fin', ev.fin, 'prix', ev.prix,
       'coffres', (select jsonb_agg(jsonb_build_object('id', c.id, 'nom', c.nom, 'teinte', c.teinte, 'requis', c.requis,
           'ouvert_le', c.ouvert_le, 'poses', (select count(*) from public.coffres_trous t where t.coffre_id = c.id),
-          'cartes', coalesce((select jsonb_agg(cc.carte_id) from public.coffres_cartes cc where cc.coffre_id = c.id), '[]'::jsonb))
+          'nb_cartes', c.nb_cartes, 'rarete', c.rarete)
         order by c.rang) from public.coffres c where c.evenement_id = ev.id)
     ) order by ev.debut desc) from public.coffres_evenements ev), '[]'::jsonb);
 end $$;

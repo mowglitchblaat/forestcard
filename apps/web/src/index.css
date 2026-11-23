@@ -1513,6 +1513,9 @@
   backface-visibility: hidden;
   transform: rotateY(180deg);
 }
+@utility vault-banner {
+  animation: vault-hole-in 0.8s ease-out 1.6s both;
+}
 @utility vault-coin {
   left: var(--x);
   width: 1.4rem;
