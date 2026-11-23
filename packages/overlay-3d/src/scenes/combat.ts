@@ -39,6 +39,8 @@ export type CombatContext = {
   deps: Deps;
   keys: TextureKeys;
   hidden?: Hidden;
+  // loads a texture the combat did not announce (a magic's or trap's image known at its reveal only)
+  load?: (key: string) => Promise<void>;
 };
 
 type Slot = 'fighter' | 'magic' | 'trap';
@@ -198,8 +200,32 @@ export async function playCombat(ctx: CombatContext, m: CombatMessage): Promise<
     card.root.alpha = 0;
     cardLayer.addChild(card.root);
     owned.push(card);
+    // a flat face whose image is not there: the back with its name, until its reveal brings one
+    if (data.face.kind === 'flat' && !ctx.deps.textures[data.face.image])
+      blank.set(card, { src, back });
     return card;
   };
+  const blank = new WeakMap<Card, { src: BoosterMessageCard; back: string | null }>();
+
+  // A magic or trap revealed (its line carries its image, img): drawn again with it when it was
+  // built without one, before it turns.
+  async function revealed(card: Card, l: CombatLine): Promise<Card> {
+    const b = blank.get(card),
+      img = typeof l.raw['img'] === 'string' && l.raw['img'] ? l.raw['img'] : null;
+    if (!b || !img) return card;
+    const key = ctx.keys.imageKey(img);
+    if (!ctx.deps.textures[key]) await ctx.load?.(key).catch(() => {});
+    if (!ctx.deps.textures[key]) return card;
+    const name = typeof l.raw['carte'] === 'string' ? l.raw['carte'] : b.src.carte;
+    const root = card.root;
+    const next = build({ ...b.src, carte: name, image: img }, b.back, P.side, root.x, root.y);
+    next.root.scale.copyFrom(root.scale);
+    next.root.angle = root.angle;
+    next.root.alpha = root.alpha;
+    owned.splice(owned.indexOf(card), 1);
+    card.destroy();
+    return next;
+  }
 
   // a player's magic or trap, at its place; nothing for an empty slot
   const hand0 = (p: CombatPlayer, slot: 'magic' | 'trap', x: number, y: number) => {
@@ -716,10 +742,16 @@ export async function playCombat(ctx: CombatContext, m: CombatMessage): Promise<
         activate(l.c);
         return;
       case 'magie':
-        if (s?.magic && !s.magic.faceUp) await s.magic.flip(app);
+        if (s?.magic && !s.magic.faceUp) {
+          s.magic = await revealed(s.magic, l);
+          await s.magic.flip(app);
+        }
         return;
       case 'piege':
-        if (s?.trap && !s.trap.faceUp) await s.trap.flip(app);
+        if (s?.trap && !s.trap.faceUp) {
+          s.trap = await revealed(s.trap, l);
+          await s.trap.flip(app);
+        }
         return;
       case 'attaque':
         if (l.c !== null) await lunge(l.c, COMBAT.lunge.reach);
