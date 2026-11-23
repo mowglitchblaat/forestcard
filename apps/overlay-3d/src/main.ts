@@ -220,9 +220,13 @@ async function main(): Promise<void> {
     await loadMirror();
     if ('journal' in m) {
       const release = await store.hold(combatTextures(m, keys));
+      // images known at a reveal only, held until the combat ends
+      const later: (() => void)[] = [];
+      const load = async (key: string) => void later.push(await store.hold([key]));
       try {
-        await playCombat({ app, stage, layer, deps, keys }, m);
+        await playCombat({ app, stage, layer, deps, keys, load }, m);
       } finally {
+        for (const r of later) r();
         release();
         const x = extras.get(m);
         if (x && ANNOUNCE) afterCombat(x);
