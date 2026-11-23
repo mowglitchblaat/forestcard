@@ -71,6 +71,7 @@ test('the players: their cards, an empty slot as null, the fighter with its rari
     id: 1,
     name: 'Alice fighter',
     image: 'Alice.webp',
+    imageCombat: null, // none in the message: the flattened image shows
     type: 'combattant',
     rarity: 'Rare',
   });
