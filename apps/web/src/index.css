@@ -716,6 +716,7 @@
    (63-puzzle-pieces-secretes.sql). */
 @utility puzzle-board {
   grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  grid-template-rows: repeat(var(--rows), minmax(0, 1fr));
   aspect-ratio: var(--ratio);
 }
 /* A tiny copy of the picture behind the board, very blurred (--puzzle-img): a hint of the colours
