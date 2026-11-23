@@ -33,10 +33,10 @@ chauffées, jusqu'à 6), `blades` (lames en orbite), `charges` (charges en orbit
 - mechanics.ts : `seize` / `release` (prise de contrôle, fils rompus), `gulp` / `spit` (avalage),
   `forgeStrike`, `forgeCreate`, `iceBurst`, `steam`, `steal`, `cancelled` (magie annulée)
 
-## Effets d'origine (legacy/)
+## Effets d'origine (original/)
 
 Repris de l'ancien overlay (apps/overlay-combat/src/combat.html) presque ligne à ligne, dans une couche
-Canvas 2D au-dessus de la scène (legacy/fx.ts, active seulement pendant un effet) : la fracture (l'os
+Canvas 2D au-dessus de la scène (original/fx.ts, active seulement pendant un effet) : la fracture (l'os
 qui se brise), l'exécution (lames d'obsidienne, épée, entaille rouge, carte coupée en deux et
 reconstruite à la réanimation, piège tranché), l'avalage (langue, GLOUPS, ventre, dents, CRUNCH,
 PTOUH, transfert des statuts), la brume (brouillard qui tourne, Dissipé, renvoi en tir) et le lien

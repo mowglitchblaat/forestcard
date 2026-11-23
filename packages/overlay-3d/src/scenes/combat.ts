@@ -28,8 +28,8 @@ import type { StatusFxKind } from '../status/registry.ts';
 import { mechanicsOf } from './combat-fx.ts';
 import { cardLayers, dressedCard, textResolutionFor, type Deps } from './common.ts';
 import { CombatTerrain } from './terrain.ts';
-import { LegacyCanvas } from '../legacy/fx.ts';
-import { legacyEffects } from '../legacy/effects.ts';
+import { LegacyCanvas } from '../original/fx.ts';
+import { legacyEffects } from '../original/effects.ts';
 
 /** `keys`: texture names of an image and of a drawing. */
 export type CombatContext = {
@@ -598,7 +598,7 @@ export async function playCombat(ctx: CombatContext, m: CombatMessage): Promise<
   const terrainLayer = new Container({ label: 'terrain' });
   scene.addChildAt(terrainLayer, 0);
   const terrain = new CombatTerrain(terrainLayer, stage.width, stage.height);
-  // the legacy's canvas over the screen, for the author's effects (legacy/)
+  // the legacy's canvas over the screen, for the author's effects (original/)
   const legacyCanvas = new LegacyCanvas(app);
   const legacy = legacyEffects(app, legacyCanvas);
   const mechanics = mechanicsOf({

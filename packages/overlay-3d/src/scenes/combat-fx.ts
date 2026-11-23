@@ -17,7 +17,7 @@ import { CardMoves } from '../moves/host.ts';
 import type { MoveKind } from '../moves/registry.ts';
 import type { CardStatuses } from '../status/host.ts';
 import { isTerrain, type CombatTerrain } from './terrain.ts';
-import type { LegacyEffects } from '../legacy/effects.ts';
+import type { LegacyEffects } from '../original/effects.ts';
 
 export type FxFighter = { card: Card; statuses: CardStatuses; marks: CardMarks; moves: CardMoves };
 export type FxSide = { fighter: FxFighter; magic: Card | null; trap: Card | null };
@@ -29,7 +29,7 @@ export type MechanicsContext = {
   sparks: Particles; // the scene's particles, for the terrain's bursts
   // where a fighter stands on the stage, and its height there
   at: (side: 0 | 1) => { x: number; y: number; h: number };
-  // the author's effects, kept as the legacy drew them (legacy/effects.ts): the fracture's bone, the
+  // the author's effects, kept as the legacy drew them (original/effects.ts): the fracture's bone, the
   // execution's blades and cut, the swallow, the parasitic link's tendril, the mist
   legacy: LegacyEffects;
 };
