@@ -19,7 +19,14 @@ export type Draw = (x: CanvasRenderingContext2D, t: number, u: number) => void;
 export const R = (a: number, b: number): number => a + Math.random() * (b - a);
 export const ez = (u: number): number => 1 - Math.pow(1 - u, 3);
 export const cl = (v: number, a = 0, b = 1): number => Math.min(b, Math.max(a, v));
-export function orb(x: CanvasRenderingContext2D, px: number, py: number, r: number, c0: string, c1: string): void {
+export function orb(
+  x: CanvasRenderingContext2D,
+  px: number,
+  py: number,
+  r: number,
+  c0: string,
+  c1: string,
+): void {
   if (r <= 0) return;
   const g = x.createRadialGradient(px, py, 0, px, py, r);
   g.addColorStop(0, c0);
@@ -29,7 +36,14 @@ export function orb(x: CanvasRenderingContext2D, px: number, py: number, r: numb
   x.arc(px, py, r, 0, 7);
   x.fill();
 }
-export function rr(x: CanvasRenderingContext2D, a: number, b: number, w: number, h: number, r: number): void {
+export function rr(
+  x: CanvasRenderingContext2D,
+  a: number,
+  b: number,
+  w: number,
+  h: number,
+  r: number,
+): void {
   x.beginPath();
   x.moveTo(a + r, b);
   x.arcTo(a + w, b, a + w, b + h, r);
@@ -201,8 +215,14 @@ export function flot(fx: LegacyCanvas, K: Box, txt: string, col: string, big = f
   void fx.add(1.5, (x, t) => {
     const k = t / 1.5;
     // 0: scale .3, 12 %: 1.35, 25 %: 1, then it rises to -12vh while it fades after 70 %
-    const s = k < 0.12 ? 0.3 + (1.35 - 0.3) * (k / 0.12) : k < 0.25 ? 1.35 - 0.35 * ((k - 0.12) / 0.13) : 1;
-    const dy = k < 0.12 ? -vh * (k / 0.12) : k < 0.25 ? -vh - vh * ((k - 0.12) / 0.13) : -2 * vh - 10 * vh * ((k - 0.25) / 0.75);
+    const s =
+      k < 0.12 ? 0.3 + (1.35 - 0.3) * (k / 0.12) : k < 0.25 ? 1.35 - 0.35 * ((k - 0.12) / 0.13) : 1;
+    const dy =
+      k < 0.12
+        ? -vh * (k / 0.12)
+        : k < 0.25
+          ? -vh - vh * ((k - 0.12) / 0.13)
+          : -2 * vh - 10 * vh * ((k - 0.25) / 0.75);
     const a = k < 0.12 ? k / 0.12 : k < 0.7 ? 1 : 1 - (k - 0.7) / 0.3;
     x.save();
     x.globalAlpha = Math.max(0, a);
@@ -243,7 +263,10 @@ export function svgTexture(svg: string, w: number, h: number): Promise<Texture> 
       };
       img.onerror = ko;
       // an SVG without a size gets the one asked
-      const sized = svg.replace('<svg ', `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" `);
+      const sized = svg.replace(
+        '<svg ',
+        `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" `,
+      );
       img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(sized);
     });
     svgCache.set(key, p);

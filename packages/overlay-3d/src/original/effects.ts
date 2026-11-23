@@ -9,7 +9,19 @@ import { Container, Graphics, Sprite, Text, Texture, type Application } from 'pi
 import { H, W } from '@forestcard/layout';
 import { glowTexture } from '../engine/textures.ts';
 import { every, tween, wait, type Stoppable } from '../engine/time.ts';
-import { boxOf, cl, ez, flot, nspr, orb, R, rr, svgTexture, type Box, type LegacyCanvas } from './fx.ts';
+import {
+  boxOf,
+  cl,
+  ez,
+  flot,
+  nspr,
+  orb,
+  R,
+  rr,
+  svgTexture,
+  type Box,
+  type LegacyCanvas,
+} from './fx.ts';
 
 /** What the legacy effects need of a card: its root (the scene moves it), its face, its box. */
 export type LegacyCard = { root: Container; front: Container; box: { x: number; w: number } };
@@ -18,7 +30,16 @@ const K = (c: LegacyCard): Box => boxOf(c.front);
 
 // ---- moving a card's face like the legacy's Element.animate ------------------------------------------
 
-type Pose = { x?: number; y?: number; sx?: number; sy?: number; s?: number; rot?: number; a?: number; o?: number };
+type Pose = {
+  x?: number;
+  y?: number;
+  sx?: number;
+  sy?: number;
+  s?: number;
+  rot?: number;
+  a?: number;
+  o?: number;
+};
 /**
  * Plays keyframes on a card's face (offsets in screen pixels, rotation in degrees, around its centre),
  * then puts it back. `o` of a keyframe: its offset in 0..1 (evenly spread when omitted).
@@ -26,7 +47,16 @@ type Pose = { x?: number; y?: number; sx?: number; sy?: number; s?: number; rot?
 async function animate(card: LegacyCard, frames: Pose[], ms: number, keep = false): Promise<void> {
   const f = card.front;
   const k = card.root.worldTransform.a || 1; // screen pixels per card unit
-  const base = { px: f.pivot.x, py: f.pivot.y, x: f.x, y: f.y, sx: f.scale.x, sy: f.scale.y, r: f.rotation, a: f.alpha };
+  const base = {
+    px: f.pivot.x,
+    py: f.pivot.y,
+    x: f.x,
+    y: f.y,
+    sx: f.scale.x,
+    sy: f.scale.y,
+    r: f.rotation,
+    a: f.alpha,
+  };
   f.pivot.set(W / 2, H / 2);
   const at = frames.map((p, i) => p.o ?? i / (frames.length - 1));
   const val = (p: Pose, key: keyof Pose, d: number) => (p[key] ?? (key === 's' ? 1 : d)) as number;
@@ -38,7 +68,8 @@ async function animate(card: LegacyCard, frames: Pose[], ms: number, keep = fals
       const a = frames[i]!,
         b = frames[i + 1]!,
         v = cl((u - at[i]!) / Math.max(1e-6, at[i + 1]! - at[i]!));
-      const L = (key: keyof Pose, d: number) => val(a, key, d) + (val(b, key, d) - val(a, key, d)) * v;
+      const L = (key: keyof Pose, d: number) =>
+        val(a, key, d) + (val(b, key, d) - val(a, key, d)) * v;
       const s = L('s', 1);
       f.position.set(base.x + W / 2 + L('x', 0) / k, base.y + H / 2 + L('y', 0) / k);
       f.scale.set(base.sx * s * L('sx', 1), base.sy * s * L('sy', 1));
@@ -75,7 +106,14 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
       L = k.w * 0.62,
       r = k.w * 0.075,
       Sh = Array.from({ length: 8 }, () => ({ a: R(0, 6.28), v: R(0.4, 1), s: R(0.012, 0.03) }));
-    function demi(x: CanvasRenderingContext2D, sd: number, off: number, rot: number, dy: number, a: number) {
+    function demi(
+      x: CanvasRenderingContext2D,
+      sd: number,
+      off: number,
+      rot: number,
+      dy: number,
+      a: number,
+    ) {
       x.save();
       x.translate(k.cx + sd * off, k.cy + dy);
       x.rotate(rot * sd);
@@ -132,7 +170,14 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
         const q = cl((t - 0.6) / 0.55),
           e = ez(q);
         x.globalCompositeOperation = 'lighter';
-        orb(x, k.cx, k.cy, k.w * 0.5, `rgba(255,255,255,${0.7 * (1 - cl((t - 0.6) / 0.25))})`, 'rgba(255,255,255,0)');
+        orb(
+          x,
+          k.cx,
+          k.cy,
+          k.w * 0.5,
+          `rgba(255,255,255,${0.7 * (1 - cl((t - 0.6) / 0.25))})`,
+          'rgba(255,255,255,0)',
+        );
         x.globalCompositeOperation = 'source-over';
         demi(x, -1, e * k.w * 0.1, e * 0.55, q * q * k.h * 0.12, al);
         demi(x, 1, e * k.w * 0.1, e * 0.55, q * q * k.h * 0.12, al);
@@ -143,7 +188,10 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
             r0 = k.w * 0.08 + e * k.w * 0.1;
           x.beginPath();
           x.moveTo(k.cx + Math.cos(an) * r0, k.cy + Math.sin(an) * r0);
-          x.lineTo(k.cx + Math.cos(an) * (r0 + k.w * 0.09), k.cy + Math.sin(an) * (r0 + k.w * 0.09));
+          x.lineTo(
+            k.cx + Math.cos(an) * (r0 + k.w * 0.09),
+            k.cy + Math.sin(an) * (r0 + k.w * 0.09),
+          );
           x.stroke();
         }
         for (const z of Sh) {
@@ -191,7 +239,11 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
     return m;
   };
   // .lame.l1 {left 4%; top -16%; width 19%; height 44%} .l2 {right 4%} .l3 {left 34%; top -34%; width 32%; height 90%}
-  const LAME_BOX = { 1: [0.04, -0.16, 0.19, 0.44], 2: [0.77, -0.16, 0.19, 0.44], 3: [0.34, -0.34, 0.32, 0.9] } as const;
+  const LAME_BOX = {
+    1: [0.04, -0.16, 0.19, 0.44],
+    2: [0.77, -0.16, 0.19, 0.44],
+    3: [0.34, -0.34, 0.32, 0.9],
+  } as const;
 
   async function lameIn(c: LegacyCard, n: number): Promise<void> {
     const m = lamesOf(c);
@@ -220,7 +272,10 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
     pool.height = h * 0.14;
     pool.alpha = 0.85;
     pool.blendMode = 'add';
-    const blade = new Sprite({ texture: await svgTexture(svgLame(big), 80, 320), anchor: { x: 0.5, y: 1 } });
+    const blade = new Sprite({
+      texture: await svgTexture(svgLame(big), 80, 320),
+      anchor: { x: 0.5, y: 1 },
+    });
     blade.width = w;
     blade.height = h;
     holder.addChild(glow, blade, pool);
@@ -264,18 +319,35 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
     const k = K(c),
       tx = k.cx + (slot === 1 ? -k.w * 0.28 : slot === 2 ? k.w * 0.28 : 0),
       tyy = k.y + k.h * (big ? 0.56 : 0.28),
-      Sp = Array.from({ length: big ? 26 : 12 }, () => ({ a: R(-3.1, 0), v: R(0.3, 1), s: R(1.5, 3.5) }));
+      Sp = Array.from({ length: big ? 26 : 12 }, () => ({
+        a: R(-3.1, 0),
+        v: R(0.3, 1),
+        s: R(1.5, 3.5),
+      }));
     void nudge(c, [big ? -9 : -4, big ? 6 : 3], [big ? 8 : 3, big ? -4 : -2], big ? 320 : 200);
     void fx.add(big ? 1.1 : 0.7, (x, t, u) => {
       const al = 1 - u;
       x.globalCompositeOperation = 'lighter';
-      orb(x, tx, tyy, k.w * (big ? 0.5 : 0.22) * (0.4 + 0.6 * ez(cl(t / 0.2))), `rgba(255,60,60,${0.55 * al})`, 'rgba(255,0,0,0)');
+      orb(
+        x,
+        tx,
+        tyy,
+        k.w * (big ? 0.5 : 0.22) * (0.4 + 0.6 * ez(cl(t / 0.2))),
+        `rgba(255,60,60,${0.55 * al})`,
+        'rgba(255,0,0,0)',
+      );
       x.globalCompositeOperation = 'source-over';
       for (const p of Sp) {
         const dd = ez(cl(t / 0.5)) * k.w * (big ? 0.45 : 0.25) * p.v;
         x.fillStyle = `rgba(255,${(180 - u * 150) | 0},120,${al})`;
         x.beginPath();
-        x.arc(tx + Math.cos(p.a) * dd, tyy + Math.sin(p.a) * dd + u * u * k.h * 0.1, p.s * (1 - u * 0.6), 0, 7);
+        x.arc(
+          tx + Math.cos(p.a) * dd,
+          tyy + Math.sin(p.a) * dd + u * u * k.h * 0.1,
+          p.s * (1 - u * 0.6),
+          0,
+          7,
+        );
         x.fill();
       }
       if (big) {
@@ -311,7 +383,14 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
   // the cut, in fractions of the card (the same as the execution's slash)
   const COUPE = { a: [-0.15, 0.12], b: [1.15, 0.88] } as const;
   // the two halves at q (0: whole card, 1: halves fallen); edge: the colour of the cut's edge, or null
-  function moities(x: CanvasRenderingContext2D, k: Box, tex: CanvasImageSource, q: number, al: number, edge: string | null) {
+  function moities(
+    x: CanvasRenderingContext2D,
+    k: Box,
+    tex: CanvasImageSource,
+    q: number,
+    al: number,
+    edge: string | null,
+  ) {
     const P0 = [k.x + COUPE.a[0] * k.w, k.y + COUPE.a[1] * k.h],
       P1 = [k.x + COUPE.b[0] * k.w, k.y + COUPE.b[1] * k.h],
       L = Math.hypot(P1[0]! - P0[0]!, P1[1]! - P0[1]!),
@@ -367,7 +446,14 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
     void fx.add(1.9, (x, t) => {
       const q = cl((t - 0.15) / 1.4),
         al = 1 - cl((t - 1.3) / 0.6);
-      moities(x, k, tex, q, al, `rgba(255,${60 + Math.round(140 * (1 - cl(t / 0.9)))},60,${(1 - cl(t / 1.1)) * al})`);
+      moities(
+        x,
+        k,
+        tex,
+        q,
+        al,
+        `rgba(255,${60 + Math.round(140 * (1 - cl(t / 0.9)))},60,${(1 - cl(t / 1.1)) * al})`,
+      );
     });
   }
 
@@ -431,17 +517,38 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
     }, 1550);
     await fx.add(2.1, (x, t) => {
       x.globalCompositeOperation = 'lighter';
-      orb(x, k.cx, k.cy, k.h * 0.7, `rgba(140,255,170,${0.45 * Math.sin(Math.PI * cl(t / 2.1))})`, 'rgba(60,200,120,0)');
+      orb(
+        x,
+        k.cx,
+        k.cy,
+        k.h * 0.7,
+        `rgba(140,255,170,${0.45 * Math.sin(Math.PI * cl(t / 2.1))})`,
+        'rgba(60,200,120,0)',
+      );
       x.globalCompositeOperation = 'source-over';
       if (t < 1.55) {
         const p = cl(t / 1.3),
           q = 1 - ez(p);
-        moities(x, k, tex, q, Math.min(1, p * 2.5), p > 0.75 ? `rgba(190,255,200,${(1 - cl((p - 0.75) / 0.25)) * 0.9 + 0.1})` : null);
+        moities(
+          x,
+          k,
+          tex,
+          q,
+          Math.min(1, p * 2.5),
+          p > 0.75 ? `rgba(190,255,200,${(1 - cl((p - 0.75) / 0.25)) * 0.9 + 0.1})` : null,
+        );
       }
       if (t > 1.4) {
         const u = cl((t - 1.4) / 0.65);
         x.globalCompositeOperation = 'lighter';
-        orb(x, k.cx, k.cy, k.w * (0.35 + 0.8 * u), `rgba(255,255,215,${0.8 * (1 - u)})`, 'rgba(150,255,170,0)');
+        orb(
+          x,
+          k.cx,
+          k.cy,
+          k.w * (0.35 + 0.8 * u),
+          `rgba(255,255,215,${0.8 * (1 - u)})`,
+          'rgba(150,255,170,0)',
+        );
         x.strokeStyle = `rgba(190,255,200,${1 - u})`;
         x.lineWidth = 6;
         x.beginPath();
@@ -490,7 +597,14 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
     await fx.add(1.9, (x, t) => {
       const q = cl((t - 0.1) / 1.4),
         al = 1 - cl((t - 1.3) / 0.6);
-      moities(x, k, tex, q, al, `rgba(255,${60 + Math.round(140 * (1 - cl(t / 0.9)))},60,${(1 - cl(t / 1.1)) * al})`);
+      moities(
+        x,
+        k,
+        tex,
+        q,
+        al,
+        `rgba(255,${60 + Math.round(140 * (1 - cl(t / 0.9)))},60,${(1 - cl(t / 1.1)) * al})`,
+      );
     });
   }
 
@@ -506,7 +620,11 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
       T = { x: Kv.cx, y: Kv.cy },
       Wt = Math.max(10, Ka.w * 0.13),
       DUR = 2.3;
-    void animate(a, [{}, { x: -dir * 10, s: 1.06, rot: -dir * 3, o: 0.6 }, { x: dir * 8, s: 1.02 }], 420);
+    void animate(
+      a,
+      [{}, { x: -dir * 10, s: 1.06, rot: -dir * 3, o: 0.6 }, { x: dir * 8, s: 1.02 }],
+      420,
+    );
     await wait(320);
     const tA = 0.3,
       tB = 0.42,
@@ -552,7 +670,11 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
         const q = i / N,
           ondule = Math.sin(q * Math.PI * 3.2 - t * 34) * amp * Math.sin(Math.PI * q),
           tombe = sag * Math.sin(Math.PI * q);
-        pts.push({ x: O.x + dx * q + nx * ondule, y: O.y + dy * q + ny * ondule + tombe, w: th * (1 - 0.28 * q) });
+        pts.push({
+          x: O.x + dx * q + nx * ondule,
+          y: O.y + dy * q + ny * ondule + tombe,
+          w: th * (1 - 0.28 * q),
+        });
       }
       x.save();
       x.lineCap = 'round';
@@ -597,7 +719,14 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
       if (u >= tA && u < tB + 0.06) {
         x.save();
         x.globalCompositeOperation = 'lighter';
-        orb(x, T.x, T.y, Kv.w * 0.55, `rgba(255,120,170,${0.45 * (1 - (u - tA) / (tB + 0.06 - tA))})`, 'rgba(255,0,80,0)');
+        orb(
+          x,
+          T.x,
+          T.y,
+          Kv.w * 0.55,
+          `rgba(255,120,170,${0.45 * (1 - (u - tA) / (tB + 0.06 - tA))})`,
+          'rgba(255,0,80,0)',
+        );
         x.restore();
       }
       if (u >= tB) {
@@ -615,7 +744,17 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
       }
     });
     await wait(DUR * tC * 1000);
-    void animate(a, [{}, { sx: 1.16, sy: 0.86, o: 0.25 }, { sx: 0.93, sy: 1.08, o: 0.5 }, { sx: 1.05, sy: 0.96, o: 0.75 }, {}], 620);
+    void animate(
+      a,
+      [
+        {},
+        { sx: 1.16, sy: 0.86, o: 0.25 },
+        { sx: 0.93, sy: 1.08, o: 0.5 },
+        { sx: 1.05, sy: 0.96, o: 0.75 },
+        {},
+      ],
+      620,
+    );
     flot(fx, Ka, 'GLOUPS !', '#f472b6', true);
     const Sp = Array.from({ length: 22 }, () => ({ a: R(-Math.PI, 0), v: R(0.4, 1), s: R(2, 5) }));
     void fx.add(0.9, (x, t, u) => {
@@ -624,7 +763,13 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
         const dd = ez(cl(t / 0.5)) * Ka.w * 0.5 * p.v;
         x.fillStyle = `rgba(255,${190 + ((p.s * 10) | 0)},225,${1 - u})`;
         x.beginPath();
-        x.arc(O.x + Math.cos(p.a) * dd, O.y + Math.sin(p.a) * dd + u * u * Ka.h * 0.25, p.s * (1 - u * 0.5), 0, 7);
+        x.arc(
+          O.x + Math.cos(p.a) * dd,
+          O.y + Math.sin(p.a) * dd + u * u * Ka.h * 0.25,
+          p.s * (1 - u * 0.5),
+          0,
+          7,
+        );
         x.fill();
       }
       x.restore();
@@ -696,7 +841,10 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
     b.pts.clear();
     for (let i = 0; i < max; i++) {
       const cx = (i - (max - 1) / 2) * gap;
-      b.pts.circle(cx, 0, r).fill(i < n ? 0xf472b6 : 0x3b0b1c).stroke({ color: 0xf9a8d4, width: r * 0.25 });
+      b.pts
+        .circle(cx, 0, r)
+        .fill(i < n ? 0xf472b6 : 0x3b0b1c)
+        .stroke({ color: 0xf9a8d4, width: r * 0.25 });
     }
   }
 
@@ -707,8 +855,13 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
       bx = a.box.x;
     const rang = (haut: boolean) =>
       `<svg viewBox="0 0 200 60" preserveAspectRatio="none"><path d="M0,0 H200 V26 Q100,38 0,26 Z" fill="#7a1230"/>` +
-      Array.from({ length: 8 }, (_, i) => `<path d="M${i * 25 + 2},27 L${i * 25 + 12.5},58 L${i * 25 + 23},27 Z" fill="#fffbeb" stroke="#d6c7a1" stroke-width="1.5"/>`).join('') +
-      `</svg>` + (haut ? '' : '');
+      Array.from(
+        { length: 8 },
+        (_, i) =>
+          `<path d="M${i * 25 + 2},27 L${i * 25 + 12.5},58 L${i * 25 + 23},27 Z" fill="#fffbeb" stroke="#d6c7a1" stroke-width="1.5"/>`,
+      ).join('') +
+      `</svg>` +
+      (haut ? '' : '');
     const tex = await svgTexture(rang(true), 400, 120);
     const box = new Container({ label: 'dents' });
     const clip = new Graphics().roundRect(bx, 0, bw, H, bw * 0.04).fill(0xffffff);
@@ -726,18 +879,32 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
     // translateY: -110 %, 8 %, -35 %, 8 %, -110 % of their height (the bottom row mirrored)
     const ky = [-1.1, 0.08, -0.35, 0.08, -1.1],
       at = [0, 0.22, 0.42, 0.64, 1];
-    void animate(a, [{}, { sx: 1.05, sy: 0.93, o: 0.22 }, { o: 0.42 }, { sx: 1.05, sy: 0.93, o: 0.64 }, {}], 900);
+    void animate(
+      a,
+      [{}, { sx: 1.05, sy: 0.93, o: 0.22 }, { o: 0.42 }, { sx: 1.05, sy: 0.93, o: 0.64 }, {}],
+      900,
+    );
     const bl = bellies.get(a.root);
     if (bl) {
       const h0 = bl.holder;
-      void tween(700, (u) => void (h0.rotation = (Math.sin(u * Math.PI * 2) * -12 * (1 - u) * Math.PI) / 180), 'linear', h0);
+      void tween(
+        700,
+        (u) => void (h0.rotation = (Math.sin(u * Math.PI * 2) * -12 * (1 - u) * Math.PI) / 180),
+        'linear',
+        h0,
+      );
     }
     setTimeout(() => {
       flot(fx, k, 'CRUNCH !', '#fde68a', true);
       const cx = k.cx,
         cy = k.cy,
         cols = ['#fde68a', '#f59e0b', '#b45309', '#fca5a5'],
-        Pp = Array.from({ length: 26 }, () => ({ a: R(0, Math.PI * 2), v: R(0.3, 1), s: R(2, 5), c: cols[(Math.random() * 4) | 0]! }));
+        Pp = Array.from({ length: 26 }, () => ({
+          a: R(0, Math.PI * 2),
+          v: R(0.3, 1),
+          s: R(2, 5),
+          c: cols[(Math.random() * 4) | 0]!,
+        }));
       void fx.add(1, (x, t, u) => {
         x.save();
         for (const p of Pp) {
@@ -745,7 +912,12 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
           x.fillStyle = p.c;
           x.globalAlpha = 1 - u;
           x.beginPath();
-          x.rect(cx + Math.cos(p.a) * dd, cy + Math.sin(p.a) * dd * 0.7 + u * u * k.h * 0.35, p.s, p.s);
+          x.rect(
+            cx + Math.cos(p.a) * dd,
+            cy + Math.sin(p.a) * dd * 0.7 + u * u * k.h * 0.35,
+            p.s,
+            p.s,
+          );
           x.fill();
         }
         x.restore();
@@ -776,11 +948,21 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
       Kv0 = boxOf(v.front),
       dir = Kv0.cx > Ka.cx ? 1 : -1,
       O = { x: Ka.cx + dir * Ka.w * 0.16, y: Ka.y + Ka.h * 0.4 };
-    void animate(a, [{}, { sx: 0.9, sy: 1.12, o: 0.45 }, { sx: 1.14, sy: 0.88, x: dir * 6, o: 0.7 }, {}], 700);
+    void animate(
+      a,
+      [{}, { sx: 0.9, sy: 1.12, o: 0.45 }, { sx: 1.14, sy: 0.88, x: dir * 6, o: 0.7 }, {}],
+      700,
+    );
     const b = bellies.get(a.root);
     if (b) {
       bellies.delete(a.root);
-      void tween(450, (u) => void b.holder.scale.set(u < 0.5 ? 1 + 0.35 * (u / 0.5) : 1.35 * (1 - (u - 0.5) / 0.5)), 'linear', b.holder).finally(() => {
+      void tween(
+        450,
+        (u) =>
+          void b.holder.scale.set(u < 0.5 ? 1 + 0.35 * (u / 0.5) : 1.35 * (1 - (u - 0.5) / 0.5)),
+        'linear',
+        b.holder,
+      ).finally(() => {
         b.loop.stop();
         b.holder.destroy({ children: true });
       });
@@ -818,11 +1000,24 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
   }
 
   // the statuses pass from the swallowed card to the swallower (bubbles of colour)
-  async function transfertFx(a: LegacyCard, from: LegacyCard, ks: readonly string[]): Promise<void> {
+  async function transfertFx(
+    a: LegacyCard,
+    from: LegacyCard,
+    ks: readonly string[],
+  ): Promise<void> {
     const Ka = K(a),
       Kf = boxOf(from.front);
-    const COL: Record<string, string> = { brulure: '#fb923c', poison: '#4ade80', gel: '#7dd3fc', malediction: '#c084fc', saignement: '#ef4444', fatigue: '#94a3b8' };
-    const B = ks.flatMap((k) => Array.from({ length: 6 }, () => ({ c: COL[k] ?? '#fff', d: R(0, 0.35), o: R(-1, 1) })));
+    const COL: Record<string, string> = {
+      brulure: '#fb923c',
+      poison: '#4ade80',
+      gel: '#7dd3fc',
+      malediction: '#c084fc',
+      saignement: '#ef4444',
+      fatigue: '#94a3b8',
+    };
+    const B = ks.flatMap((k) =>
+      Array.from({ length: 6 }, () => ({ c: COL[k] ?? '#fff', d: R(0, 0.35), o: R(-1, 1) })),
+    );
     void fx.add(1.3, (x, t) => {
       x.save();
       x.globalCompositeOperation = 'lighter';
@@ -843,17 +1038,61 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
   // ════════ NFX: the parasitic link and the mist (persistent drawings) ════════
   // a particle of the legacy's NFX loop (every kind uses some of these fields)
   type P = {
-    k: string; t: number; life: number; x: number; y: number; vx: number; vy: number; s: number; a: number;
-    r: number; w: number; c: number; sp: number; v: number; j: number; rev: boolean; g: number; r0: number;
-    r1: number; col: string;
+    k: string;
+    t: number;
+    life: number;
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    s: number;
+    a: number;
+    r: number;
+    w: number;
+    c: number;
+    sp: number;
+    v: number;
+    j: number;
+    rev: boolean;
+    g: number;
+    r0: number;
+    r1: number;
+    col: string;
   };
-  const P0: Omit<P, 'k' | 'life'> = { t: 0, x: 0, y: 0, vx: 0, vy: 0, s: 0, a: 0, r: 0, w: 0, c: 0, sp: 0, v: 0, j: 0, rev: false, g: 0, r0: 0, r1: 0, col: '#fff' };
+  const P0: Omit<P, 'k' | 'life'> = {
+    t: 0,
+    x: 0,
+    y: 0,
+    vx: 0,
+    vy: 0,
+    s: 0,
+    a: 0,
+    r: 0,
+    w: 0,
+    c: 0,
+    sp: 0,
+    v: 0,
+    j: 0,
+    rev: false,
+    g: 0,
+    r0: 0,
+    r1: 0,
+    col: '#fff',
+  };
   const NFX = {
     t: 0,
     mist: [0, 0] as number[],
     lien: null as null | { c: 0 | 1; to: 0 | 1; n: number },
     P: [] as P[],
-    O: [] as { from: () => { x: number; y: number } | null; to: () => { x: number; y: number } | null; col: string; t: number; dur: number; arc: number; res: (p: { x: number; y: number } | null) => void }[],
+    O: [] as {
+      from: () => { x: number; y: number } | null;
+      to: () => { x: number; y: number } | null;
+      col: string;
+      t: number;
+      dur: number;
+      arc: number;
+      res: (p: { x: number; y: number } | null) => void;
+    }[],
     cards: [null, null] as (LegacyCard | null)[],
     B: [null, null] as (Box | null)[],
     on: false,
@@ -868,10 +1107,21 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
     for (let i = 0; i < n; i++) {
       const a = R(0, 6.283),
         v = R(0.3, 1) * sp;
-      nadd({ k: 'dot', x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, s: R(0.6, 1.4) * sz, col, g, life: life * R(0.7, 1.2) });
+      nadd({
+        k: 'dot',
+        x,
+        y,
+        vx: Math.cos(a) * v,
+        vy: Math.sin(a) * v,
+        s: R(0.6, 1.4) * sz,
+        col,
+        g,
+        life: life * R(0.7, 1.2),
+      });
     }
   }
-  const nring = (x: number, y: number, r0: number, r1: number, col: string, w = 3, life = 30) => nadd({ k: 'ring', x, y, r0, r1, col, w, life });
+  const nring = (x: number, y: number, r0: number, r1: number, col: string, w = 3, life = 30) =>
+    nadd({ k: 'ring', x, y, r0, r1, col, w, life });
   function ntendril(s: number, j = 0) {
     const L = NFX.lien!,
       A = nB(L.c),
@@ -886,7 +1136,11 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
     const sag = [0.18, 0.12, 0.27, 0.07][j] ?? 0.18;
     return {
       x: x0 + (x1 - x0) * s,
-      y: y0 + (y1 - y0) * s + env * A.h * (j % 2 ? -sag : sag) + Math.sin(s * 16 - NFX.t * 0.09 + j * 2.1) * 0.7 * vh() * env,
+      y:
+        y0 +
+        (y1 - y0) * s +
+        env * A.h * (j % 2 ? -sag : sag) +
+        Math.sin(s * 16 - NFX.t * 0.09 + j * 2.1) * 0.7 * vh() * env,
     };
   }
   // the loop runs at 60 steps a second whatever the frame rate (the legacy counted frames)
@@ -950,7 +1204,15 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
       if (!b) continue;
       for (let s = 0; s < steps; s++)
         if ((NFX.t - s) % (lv > 1 ? 2 : 3) === 0)
-          nadd({ k: 'fog', c, a: R(0, 6.283), r: R(0.45, 0.75), w: lv > 1 ? R(0.035, 0.055) : R(0.003, 0.008) * (Math.random() < 0.5 ? 1 : -1), s: R(0.22, 0.36) * b.w, life: R(120, 170) });
+          nadd({
+            k: 'fog',
+            c,
+            a: R(0, 6.283),
+            r: R(0.45, 0.75),
+            w: lv > 1 ? R(0.035, 0.055) : R(0.003, 0.008) * (Math.random() < 0.5 ? 1 : -1),
+            s: R(0.22, 0.36) * b.w,
+            life: R(120, 170),
+          });
       if (lv > 1) {
         x.strokeStyle = 'rgba(230,240,250,.45)';
         x.lineWidth = 2.5;
@@ -1013,7 +1275,10 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
           NFX.P.splice(i, 1);
           continue;
         }
-        const q = ntendril(p.rev ? 1 - p.sp : p.sp, Math.min(p.j || 0, Math.min(4, NFX.lien.n || 1) - 1));
+        const q = ntendril(
+          p.rev ? 1 - p.sp : p.sp,
+          Math.min(p.j || 0, Math.min(4, NFX.lien.n || 1) - 1),
+        );
         if (!q) continue;
         const z = p.s * 4;
         x.globalAlpha = 1;
@@ -1048,7 +1313,17 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
       }
       const px = f.x + (to.x - f.x) * k,
         py = f.y + (to.y - f.y) * k - Math.sin(Math.PI * k) * o.arc;
-      if (NFX.t % 2 === 0) nadd({ k: 'dot', x: px + R(-3, 3), y: py + R(-3, 3), vx: R(-0.4, 0.4), vy: R(-0.4, 0.4), s: R(1.5, 3), col: o.col, life: 22 });
+      if (NFX.t % 2 === 0)
+        nadd({
+          k: 'dot',
+          x: px + R(-3, 3),
+          y: py + R(-3, 3),
+          vx: R(-0.4, 0.4),
+          vy: R(-0.4, 0.4),
+          s: R(1.5, 3),
+          col: o.col,
+          life: 22,
+        });
       x.drawImage(nspr(o.col), px - 20, py - 20, 40, 40);
       if (k >= 1) {
         NFX.O.splice(i, 1);
@@ -1067,11 +1342,35 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
   };
   function ntir(from: number, to: number, col: string): Promise<{ x: number; y: number } | null> {
     nfxStart();
-    return new Promise((res) => NFX.O.push({ from: ncentre(from), to: ncentre(to), col, t: 0, dur: 45, arc: vh() * 6, res }));
+    return new Promise((res) =>
+      NFX.O.push({ from: ncentre(from), to: ncentre(to), col, t: 0, dur: 45, arc: vh() * 6, res }),
+    );
   }
-  const NST_COL: Record<string, string> = { curse: '#c084fc', bleed: '#ef4444', poison: '#22c55e', burn: '#f97316', frost: '#7dd3fc', knell: '#a78bfa', fracture: '#fde68a', stun: '#facc15', fatigue: '#94a3b8', parasite: '#e0607e' };
+  const NST_COL: Record<string, string> = {
+    curse: '#c084fc',
+    bleed: '#ef4444',
+    poison: '#22c55e',
+    burn: '#f97316',
+    frost: '#7dd3fc',
+    knell: '#a78bfa',
+    fracture: '#fde68a',
+    stun: '#facc15',
+    fatigue: '#94a3b8',
+    parasite: '#e0607e',
+  };
   // the journal's status kinds, as the legacy named their colours
-  const ST_KEY: Record<string, string> = { malediction: 'curse', saignement: 'bleed', poison: 'poison', brulure: 'burn', gel: 'frost', glas: 'knell', fracture: 'fracture', etourdi: 'stun', fatigue: 'fatigue', lien: 'parasite' };
+  const ST_KEY: Record<string, string> = {
+    malediction: 'curse',
+    saignement: 'bleed',
+    poison: 'poison',
+    brulure: 'burn',
+    gel: 'frost',
+    glas: 'knell',
+    fracture: 'fracture',
+    etourdi: 'stun',
+    fatigue: 'fatigue',
+    lien: 'parasite',
+  };
   const stCol = (s: unknown) => NST_COL[ST_KEY[String(s)] ?? String(s)] ?? '#c9a0ff';
 
   return {
@@ -1087,13 +1386,20 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
     reformCut: (c: LegacyCard) => reformeCoupe(c),
     sliceTrap: (c: LegacyCard) => trancher(c),
     swallow: (a: LegacyCard, v: LegacyCard) => avalerFx(a, v),
-    chew: async (a: LegacyCard, n: number, max: number, dmg: number | null, victim: LegacyCard | null) => {
+    chew: async (
+      a: LegacyCard,
+      n: number,
+      max: number,
+      dmg: number | null,
+      victim: LegacyCard | null,
+    ) => {
       await macherFx(a, n, max);
       if (dmg !== null && victim) flot(fx, K(a), '-' + dmg, '#ff6a6a');
       await wait(300);
     },
     spit: (a: LegacyCard, v: LegacyCard) => recracherFx(a, v),
-    passStatuses: (a: LegacyCard, from: LegacyCard, ks: readonly string[]) => transfertFx(a, from, ks),
+    passStatuses: (a: LegacyCard, from: LegacyCard, ks: readonly string[]) =>
+      transfertFx(a, from, ks),
     say: (c: LegacyCard, txt: string, col: string, big = false) => flot(fx, K(c), txt, col, big),
     // the mist: level 1 (it turns), 2 (the turned wind)
     mist(c: 0 | 1, lv: number) {
@@ -1112,7 +1418,15 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
       const b = nbox(c);
       if (b) {
         for (let i = 0; i < 10; i++)
-          nadd({ k: 'puff', x: b.cx + R(-1, 1) * b.w * 0.4, y: b.cy + R(-1, 1) * b.h * 0.3, vx: R(-1.5, 1.5), vy: R(-1.5, 1.5), s: R(0.1, 0.18) * b.w, life: 40 });
+          nadd({
+            k: 'puff',
+            x: b.cx + R(-1, 1) * b.w * 0.4,
+            y: b.cy + R(-1, 1) * b.h * 0.3,
+            vx: R(-1.5, 1.5),
+            vy: R(-1.5, 1.5),
+            s: R(0.1, 0.18) * b.w,
+            life: 40,
+          });
         nburst(b.cx, b.cy, 14, stCol(s), 2, 2, 30);
       }
       const card = NFX.cards[c];
@@ -1143,7 +1457,13 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
         if (q) nburst(q.x, q.y, 4, '#c33558', 2, 2, 30);
       }
       const card = NFX.cards[c];
-      if (card) flot(fx, K(card), (nb || 1) > 1 ? 'Lien parasitaire ×' + nb : 'Lien parasitaire', '#fda4af');
+      if (card)
+        flot(
+          fx,
+          K(card),
+          (nb || 1) > 1 ? 'Lien parasitaire ×' + nb : 'Lien parasitaire',
+          '#fda4af',
+        );
     },
     // a heal shared: it runs up the tendril one way or the other, spread over each strand
     async linkHeal(healed: 0 | 1) {
@@ -1153,7 +1473,19 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
       const nb = Math.min(4, NFX.lien.n || 1),
         tot = nb > 1 ? 10 + 6 * nb : 14;
       for (let i = 0; i < tot; i++)
-        setTimeout(() => nadd({ k: 'path', sp: 0, rev, j: i % nb, v: R(0.018, 0.026), s: R(0.25, 0.45) * vh(), life: 999 }), i * (nb > 1 ? 30 : 45));
+        setTimeout(
+          () =>
+            nadd({
+              k: 'path',
+              sp: 0,
+              rev,
+              j: i % nb,
+              v: R(0.018, 0.026),
+              s: R(0.25, 0.45) * vh(),
+              life: 999,
+            }),
+          i * (nb > 1 ? 30 : 45),
+        );
       await wait(1000);
     },
     reset() {
