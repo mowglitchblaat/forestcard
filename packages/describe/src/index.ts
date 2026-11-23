@@ -746,24 +746,24 @@ const CONDITION_TEXT: { [K in TrapConditionType]?: (c: TrapCondition) => string 
   adv_magie: () => "Quand la magie de l'adversaire agit",
   adv_critique: () => "Quand l'adversaire porte un coup critique",
   adv_bloque: () => "Quand l'adversaire bloque une attaque",
-  proprio_annule: () => "Quand l'attaque du propriétaire est annulée (gel, étourdissement…)",
+  proprio_annule: () => "Quand l'attaque du propriétaire est annulée (gel, étourdi)",
   adv_survit: () => "Quand l'adversaire se réanime ou évite la mort",
   adv_purifie: () => "Quand l'adversaire se purifie",
-  proprio_statuts: (c) => `Quand le propriétaire porte ${nz(c.nb) || 1} statuts en même temps`,
-  adv_statuts: (c) => `Quand l'adversaire porte ${nz(c.nb) || 1} statuts en même temps`,
+  proprio_statuts: (c) => `Quand le propriétaire a ${nz(c.nb) || 1} statuts à la fois`,
+  adv_statuts: (c) => `Quand l'adversaire porte ${nz(c.nb) || 1} statuts à la fois`,
   proprio_statut_max: () => 'Quand un statut du propriétaire atteint le niveau III',
   adv_atq_hausse: () => "Quand l'adversaire gagne de l'ATQ",
   proprio_fils: (c) => `Quand le propriétaire porte ${nz(c.nb) || 1} fils`,
   adv_forge: () => "Quand l'adversaire se forge",
   adv_entree: () => 'Quand un nouveau combattant adverse entre en jeu',
   proprio_pv_sur: (c) =>
-    `Quand le propriétaire remonte au-dessus de ${nz(c.seuilpv) || 50} % de PV (après un soin)`,
+    `Quand le propriétaire remonte au-dessus de ${nz(c.seuilpv) || 50} % de PV`,
   adv_rate: () => "Quand l'adversaire rate son attaque (esquive, annulation)",
   proprio_affaibli: () => "Quand le propriétaire perd de l'ATQ ou des PV max",
   terrain_change: () => 'Quand le terrain change',
   adv_controle: () => "Quand l'adversaire prend le contrôle d'un combattant",
   proprio_detone: () => 'Quand une détonation explose sur le propriétaire',
-  proprio_magie_perdue: () => 'Quand la magie du propriétaire est volée, détruite ou annulée',
+  proprio_magie_perdue: () => 'Quand la magie du propriétaire est volée ou détruite',
   premier_coup: () => 'Au premier coup du combat',
 };
 
@@ -836,6 +836,8 @@ const GAUGE_SOURCES: Record<string, string> = {
   coups: 'ses attaques',
   statuts: 'les statuts qu’il reçoit',
 };
+const gaugeSource = (v: unknown): string =>
+  GAUGE_SOURCES[String(v || 'degats_recus')] || 'les dégâts qu’il subit';
 
 export function fxTrigUlt(u: Fx): string {
   const p: string[] = [];
@@ -845,18 +847,20 @@ export function fxTrigUlt(u: Fx): string {
     const first = triggerText(u.udecl as string, u.udx);
     if (u.udecl2) {
       const second = triggerText(u.udecl2 as string, u.udx2);
-      p.push(u.ulogique === 'et' ? `${first}, puis ${second} (les deux)` : `${first} ou ${second}`);
+      const both = `${first}, puis ${second} (les deux)`;
+      p.push(u.ulogique === 'et' ? both : `${first} ou ${second}`);
     } else p.push(first);
   }
-  if (nz(u.jauge) > 0)
-    p.push(
-      `quand sa jauge de ${nz(u.jauge)} est pleine (remplie par ${GAUGE_SOURCES[String(u.jsource || 'degats_recus')] || 'les dégâts qu’il subit'})`,
-    );
+  if (nz(u.jauge) > 0) {
+    const by = gaugeSource(u.jsource);
+    p.push(`quand sa jauge de ${nz(u.jauge)} est pleine (remplie par ${by})`);
+  }
   let s = p.length ? 'Se déclenche ' + p.join(' ou ') : 'Ultime';
   if (nz(u.delai_tours) > 0) s += `, au plus une fois tous les ${u.delai_tours} tours`;
   if (nz(u.utilisations) > 0)
     s += `, ${u.utilisations} utilisation${(u.utilisations as number) > 1 ? 's' : ''} maximum`;
-  if (nz(u.desespoir) > 0) s += `, jusqu'à ${nz(u.desespoir)} % plus fort selon les PV perdus`;
+  const despair = nz(u.desespoir);
+  if (despair > 0) s += `, jusqu'à ${despair} % plus fort selon les PV perdus`;
   return s;
 }
 
@@ -880,18 +884,20 @@ const TERRAIN_NAMES: Record<string, string> = {
   theatre: 'le Grand Théâtre',
 };
 
+const terrainName = (t: unknown): string => TERRAIN_NAMES[String(t)] || String(t);
+
 export function magicTiming(e: Fx | null | undefined): string {
   if (!e) return '';
   const from = nz(e.magdebut);
   const lasts = nz(e.magduree);
-  const pick = (v: unknown, fallback: number) => (v == null || v === '' ? fallback : nz(v));
+  const pick = (v: unknown, d: number) => (v == null || v === '' ? d : nz(v));
   const cond = e.mdecl as TrapCondition | null | undefined;
   return [
     from > 1 ? `Agit au début de son ${from}e tour` : '',
     cond && cond.type ? `Attend : ${lowerFirst(fxCond(cond))}` : '',
     nz(e.maura) > 0 ? `Agit seulement sous ${nz(e.maura)} % de PV` : '',
     e.mterrain
-      ? `Agit seulement sur ${TERRAIN_NAMES[String(e.mterrain)] || e.mterrain} (+${pick(e.mterrainbonus, 30)} %)`
+      ? `Agit seulement sur ${terrainName(e.mterrain)} (+${pick(e.mterrainbonus, 30)} %)`
       : '',
     nz(e.msacpv) > 0
       ? `Coûte ${nz(e.msacpv)} % de ses PV, +${pick(e.msacbonus, 50)} % de puissance`
@@ -907,9 +913,7 @@ export function magicTiming(e: Fx | null | undefined): string {
     nz(e.minstable) > 0
       ? `Instable : ${nz(e.minstable)} % de chances par tour de changer d'effet`
       : '',
-    e.mverrou
-      ? `Verrouillée : ni volée, ni annulée, ni détruite (−${pick(e.mverroumalus, 25)} %)`
-      : '',
+    e.mverrou ? `Verrouillée (-${pick(e.mverroumalus, 25)} %)` : '',
     e.mrelais ? 'Suit le combattant suivant en relais' : '',
     lasts > 0 ? `dure ${trs(lasts)}, puis ses effets prennent fin` : '',
   ]
@@ -967,7 +971,7 @@ export function describeCard(c: DescribedCard): Section[] {
       const items = effectItems(u);
       const phase2 = u.phase2 as Fx | null | undefined;
       if (phase2 && (phase2.type || phase2.briques))
-        effectItems(phase2).forEach((i) => items.push({ ...i, text: `2e phase : ${i.text}` }));
+        for (const i of effectItems(phase2)) items.push({ ...i, text: `2e : ${i.text}` });
       if (items.length)
         sections.push({ kind: 'ultimate', title: 'Ultime', meta: fxTrigUlt(u), items });
     }
