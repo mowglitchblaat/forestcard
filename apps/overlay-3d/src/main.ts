@@ -216,6 +216,34 @@ async function main(): Promise<void> {
       );
   }
 
+  // the numbers' style of each version image (chiffres_cartes, like combat.html), read in 2.5 s at most
+  async function numberStyles(ids: number[]): Promise<ReadonlyMap<string, string>> {
+    const out = new Map<string, string>();
+    const abort = new AbortController();
+    const timer = setTimeout(() => abort.abort(), 2500);
+    try {
+      const r = await fetch(SUPABASE + '/rest/v1/rpc/chiffres_cartes', {
+        method: 'POST',
+        headers: { apikey: PUBLIC_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ p_ids: ids }),
+        signal: abort.signal,
+      });
+      const rows: unknown = r.ok ? await r.json() : [];
+      for (const v of Array.isArray(rows) ? rows : []) {
+        if (typeof v !== 'object' || v === null) continue;
+        const { image_path: a, image_combat: b, style } = v as Record<string, unknown>;
+        if (typeof style !== 'string') continue;
+        if (typeof a === 'string') out.set(a, style);
+        if (typeof b === 'string') out.set(b, style);
+      }
+    } catch {
+      // no styles: the plain numbers over a combat image
+    } finally {
+      clearTimeout(timer);
+    }
+    return out;
+  }
+
   async function show(m: CombatMessage | BoosterMessage): Promise<void> {
     await loadMirror();
     if ('journal' in m) {
@@ -224,7 +252,7 @@ async function main(): Promise<void> {
       const later: (() => void)[] = [];
       const load = async (key: string) => void later.push(await store.hold([key]));
       try {
-        await playCombat({ app, stage, layer, deps, keys, load }, m);
+        await playCombat({ app, stage, layer, deps, keys, load, numberStyles }, m);
       } finally {
         for (const r of later) r();
         release();

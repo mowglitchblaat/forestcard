@@ -14,6 +14,8 @@ export type CardRef = {
   id: number | null;
   name: string;
   image: string | null; // its version's flattened image
+  // the fighter's version image without its numbers (image_combat): the overlay writes them live
+  imageCombat?: string | null;
   type: CardType;
   rarity: string | null; // raretes.nom: the journal gives the fighter's only
 };
@@ -100,6 +102,7 @@ function readPlayer(p: unknown): CombatPlayer | null {
   const rar = isObj(p['rar']) ? p['rar']['nom'] : null;
   const fighter = ref(p['carte'], p['image'], ids[0], 'combattant', rar);
   if (!fighter) return null;
+  fighter.imageCombat = text(p['imageCombat']);
   return {
     pseudo: text(p['pseudo']) ?? '?',
     back: text(p['dos']),
