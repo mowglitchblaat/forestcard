@@ -81,7 +81,10 @@ async function animate(card: LegacyCard, frames: Pose[], ms: number, keep = fals
   }
   run.n++;
   const base = run.base;
+  // around its centre from now on: the position follows in the same frame, or the face would show for
+  // one frame half a card up and to the left (a tween moves it only from the next frame on)
   f.pivot.set(W / 2, H / 2);
+  f.position.set(base.x + W / 2, base.y + H / 2);
   const at = frames.map((p, i) => p.o ?? i / (frames.length - 1));
   const val = (p: Pose, key: keyof Pose, d: number) => (p[key] ?? (key === 's' ? 1 : d)) as number;
   try {
