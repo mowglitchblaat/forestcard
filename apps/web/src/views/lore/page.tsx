@@ -35,6 +35,7 @@ import { LORE_TABS, type LoreTab } from './search';
 import { ChapterReader, paragraphsOf } from './chapter-reader';
 import { EventScene, hasScene, type SceneOutcome } from './event-scene';
 import { lightningPhase, sentOption } from './lightning';
+import { VaultGame } from './vaults';
 import { WorldMap } from './world-map';
 import { SceneFrame } from '@/views/play/page';
 
@@ -226,13 +227,17 @@ function Events() {
   if (!events.data) return <PageSkeleton />;
   if (!events.data.length)
     return (
-      <p className="text-muted-foreground">
-        Aucun événement pour l'instant. Le calme avant la tempête…
-      </p>
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
+        <VaultGame />
+        <p className="text-muted-foreground">
+          Aucun autre événement pour l'instant. Le calme avant la tempête…
+        </p>
+      </div>
     );
   const owned = collection.data ?? [];
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
+      <VaultGame />
       {events.data.map((e) => (
         <EventCard key={e.id} event={e} owned={owned} onReplay={() => setReveal(e)} />
       ))}

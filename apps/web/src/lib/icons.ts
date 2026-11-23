@@ -34,6 +34,7 @@ import {
   Crown,
   Dices,
   Download,
+  Drill,
   Eraser,
   ExternalLink,
   Flag,
@@ -106,6 +107,7 @@ import {
   UserRound,
   Users,
   UserX,
+  Vault,
   Vote,
   WalletCards,
   WandSparkles,
@@ -176,6 +178,8 @@ export const ICONS = {
   lore: Castle, // the lore: story, world map, events
   worldMap: WorldMap, // the lore's world map
   events: Flag, // the lore's events
+  vault: Vault, // the vaults of the lore's events
+  drill: Drill, // a drill, to break a vault open
   lightning: CloudLightning, // an event's lightning, fallen on the world map
   travel: Footprints, // the faction sent, on its way to the lightning
   announcements: Megaphone,

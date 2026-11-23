@@ -46,12 +46,14 @@ import {
 import { ICONS } from '@/lib/icons';
 import { EventCard, MapPins } from '@/views/lore/page';
 import { AdminError, AdminSection, Choice, Field, NoticeView, useAction } from './kit';
+import { VaultsAdmin } from './vaults';
 
 type Run = (action: () => Promise<string | void>) => void;
 
 export function LoreAdmin() {
   return (
     <div className="flex flex-col gap-6">
+      <VaultsAdmin />
       <EventsAdmin />
       <MapAdmin />
       <ChaptersAdmin />

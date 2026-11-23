@@ -1351,3 +1351,310 @@
     color: var(--primary);
   }
 }
+
+/* Lore > Événements, the vaults (views/lore/vaults.tsx, 97-coffres-forts.sql). Each vault has the
+   colour of its light (vault-glow-*); its door is its picture (assets/cadres/coffre-*.webp). A hole (vault-hole, at --x, --y on the door, turned by --a) stays for good; a drill
+   comes in from the side towards it (vault-drill), its bit turns, sparks fly, then the hole appears
+   (vault-hole-new). The opening (vault-open-*): the door shakes, its bolts pull back, it swings open
+   on its hinge (left side) onto a beam of light in the vault's colour (--glow), the cards fly out
+   one after the other (--i) and turn over; coins rain on the legendary one. */
+@utility vault-glow-bleu {
+  --glow: rgb(80 170 255);
+}
+@utility vault-glow-violet {
+  --glow: rgb(190 110 255);
+}
+@utility vault-glow-or {
+  --glow: rgb(255 205 80);
+}
+@utility vault-door-shadow {
+  filter: drop-shadow(0 18px 28px rgb(0 0 0 / 0.55));
+}
+@utility vault-hole {
+  width: 7%;
+  aspect-ratio: 1;
+  left: calc(var(--x) * 100%);
+  top: calc(var(--y) * 100%);
+  transform: translate(-50%, -50%) rotate(var(--a, 0deg));
+  border-radius: 9999px;
+  background:
+    radial-gradient(circle at 50% 50%, rgb(0 0 0) 0 34%, rgb(18 14 12) 42%, transparent 46%),
+    conic-gradient(
+      from 0deg,
+      rgb(70 60 55) 0 8%,
+      rgb(150 140 130) 10% 14%,
+      rgb(60 52 48) 16% 30%,
+      rgb(170 160 150) 32% 34%,
+      rgb(55 48 44) 36% 55%,
+      rgb(140 130 120) 57% 60%,
+      rgb(65 56 50) 62% 80%,
+      rgb(160 150 140) 82% 85%,
+      rgb(60 52 48) 87% 100%
+    );
+  box-shadow:
+    inset 0 2px 4px rgb(0 0 0 / 0.9),
+    0 0 0 1px rgb(0 0 0 / 0.45);
+  -webkit-mask: radial-gradient(circle, black 58%, transparent 61%);
+  mask: radial-gradient(circle, black 58%, transparent 61%);
+}
+@utility vault-crack {
+  width: 16%;
+  aspect-ratio: 1;
+  left: calc(var(--x) * 100%);
+  top: calc(var(--y) * 100%);
+  transform: translate(-50%, -50%) rotate(var(--a, 0deg));
+  background:
+    linear-gradient(32deg, transparent 49%, rgb(0 0 0 / 0.55) 50%, transparent 51%),
+    linear-gradient(118deg, transparent 49.3%, rgb(0 0 0 / 0.5) 50%, transparent 50.7%),
+    linear-gradient(-64deg, transparent 49.4%, rgb(0 0 0 / 0.45) 50%, transparent 50.6%);
+  -webkit-mask: radial-gradient(circle, black 30%, transparent 70%);
+  mask: radial-gradient(circle, black 30%, transparent 70%);
+  pointer-events: none;
+}
+@utility vault-mine {
+  box-shadow:
+    inset 0 2px 4px rgb(0 0 0 / 0.9),
+    0 0 0 2px rgb(255 214 120 / 0.8),
+    0 0 10px rgb(255 190 80 / 0.7);
+}
+@utility vault-hole-new {
+  animation: vault-hole-in 0.5s ease-out both;
+}
+@utility vault-drill {
+  --drill-brass: rgb(201 150 62);
+  --drill-brass-dark: rgb(122 82 30);
+  --drill-steel: rgb(196 204 214);
+  --drill-steel-dark: rgb(92 100 112);
+  --drill-glass: rgb(240 232 200);
+  width: 46%;
+  left: calc(var(--x) * 100%);
+  top: calc(var(--y) * 100%);
+  transform-origin: 100% 50%;
+  translate: -100% -50%;
+  rotate: var(--a, 0deg);
+  animation: vault-drill-in 1.5s ease-in-out both;
+}
+@utility vault-drill-bit {
+  animation: vault-bit 0.12s linear infinite;
+}
+@utility vault-drill-shake {
+  animation: vault-shake 0.07s linear infinite;
+}
+@utility vault-spark {
+  width: 4%;
+  aspect-ratio: 1;
+  left: calc(var(--x) * 100%);
+  top: calc(var(--y) * 100%);
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgb(255 250 220), rgb(255 170 40) 55%, transparent 70%);
+  animation: vault-spark 0.6s ease-out calc(0.55s + var(--delay, 0ms)) 2 both;
+}
+@utility vault-pulse {
+  animation: vault-pulse 2.4s ease-in-out infinite;
+}
+@utility vault-open-shake {
+  animation: vault-shake-big 0.09s linear infinite;
+}
+@utility vault-open-swing {
+  transform-origin: 6% 50%;
+  animation: vault-swing 1.4s cubic-bezier(0.5, 0, 0.2, 1) both;
+}
+@utility vault-open-beam {
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgb(255 255 255) 0 18%,
+    var(--glow) 40%,
+    transparent 70%
+  );
+  animation: vault-beam 1.6s ease-out both;
+}
+@utility vault-open-rays {
+  background: repeating-conic-gradient(
+    from 0deg,
+    rgb(255 255 255 / 0.22) 0deg 6deg,
+    transparent 6deg 22deg
+  );
+  -webkit-mask: radial-gradient(circle, black 20%, transparent 68%);
+  mask: radial-gradient(circle, black 20%, transparent 68%);
+  animation: vault-rays 9s linear infinite;
+}
+@utility vault-bolt {
+  animation: vault-bolt 0.35s ease-in calc(var(--i, 0) * 0.22s) both;
+}
+@utility vault-card {
+  perspective: var(--perspective-card);
+  animation: vault-card-fly 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) calc(var(--i, 0) * 0.12s) both;
+}
+@utility aspect-vault-card {
+  aspect-ratio: 5 / 7;
+}
+@utility vault-card-flip {
+  transform-style: preserve-3d;
+  animation: vault-card-flip 0.7s ease-in-out calc(1s + var(--i, 0) * 0.12s) both;
+}
+@utility vault-card-face {
+  backface-visibility: hidden;
+}
+@utility vault-card-back {
+  backface-visibility: hidden;
+  transform: rotateY(180deg);
+}
+@utility vault-coin {
+  left: var(--x);
+  width: 1.4rem;
+  aspect-ratio: 1;
+  border-radius: 9999px;
+  background: radial-gradient(
+    circle at 35% 35%,
+    rgb(255 245 180),
+    rgb(240 180 40) 55%,
+    rgb(150 95 10)
+  );
+  animation: vault-coin 2.2s ease-in var(--delay, 0ms) infinite;
+}
+@keyframes vault-hole-in {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(var(--a, 0deg)) scale(0.2);
+  }
+  60% {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(var(--a, 0deg)) scale(1.25);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(var(--a, 0deg)) scale(1);
+  }
+}
+@keyframes vault-drill-in {
+  0% {
+    opacity: 0;
+    translate: -160% -50%;
+  }
+  25% {
+    opacity: 1;
+    translate: -100% -50%;
+  }
+  80% {
+    opacity: 1;
+    translate: -92% -50%;
+  }
+  100% {
+    opacity: 0;
+    translate: -150% -50%;
+  }
+}
+@keyframes vault-bit {
+  to {
+    background-position: 0 1rem;
+  }
+}
+@keyframes vault-shake {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(1px, -1px);
+  }
+  75% {
+    transform: translate(-1px, 1px);
+  }
+}
+@keyframes vault-shake-big {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  25% {
+    transform: translate(3px, -2px) rotate(0.6deg);
+  }
+  75% {
+    transform: translate(-3px, 2px) rotate(-0.6deg);
+  }
+}
+@keyframes vault-spark {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.3);
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--dx, 0px)), calc(-50% + var(--dy, -20px))) scale(1);
+  }
+}
+@keyframes vault-pulse {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 0 transparent);
+  }
+  50% {
+    filter: drop-shadow(0 0 18px var(--glow));
+  }
+}
+@keyframes vault-swing {
+  0% {
+    transform: perspective(1400px) rotateY(0deg);
+  }
+  100% {
+    transform: perspective(1400px) rotateY(-105deg);
+  }
+}
+@keyframes vault-beam {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes vault-rays {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes vault-bolt {
+  0% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(var(--dx, 2rem));
+    opacity: 0;
+  }
+}
+@keyframes vault-card-fly {
+  0% {
+    opacity: 0;
+    transform: translate(var(--from-x, 0), var(--from-y, 0)) scale(0.2) rotate(-25deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
+}
+@keyframes vault-card-flip {
+  0% {
+    transform: rotateY(180deg);
+  }
+  100% {
+    transform: rotateY(0deg);
+  }
+}
+@keyframes vault-coin {
+  0% {
+    transform: translateY(-10vh) rotateY(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(110vh) rotateY(900deg);
+    opacity: 1;
+  }
+}
