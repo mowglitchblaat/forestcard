@@ -63,6 +63,7 @@ const REFUSALS: Record<string, string> = {
   COFFRE_OUVERT: 'Ce coffre est déjà ouvert !',
   PAS_DE_FOREUSE: 'Achète d’abord une foreuse à la boutique.',
   COFFRE_INCONNU: 'Coffre introuvable.',
+  COFFRE_EN_ATTENTE: 'Le coffre est à une foreuse de céder… Son trésor arrive très bientôt !',
 };
 const refusal = (message: string): Error => {
   const code = Object.keys(REFUSALS).find((k) => message.includes(k));

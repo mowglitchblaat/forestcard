@@ -131,7 +131,8 @@ grant execute on function public.coffres_acheter(integer) to authenticated;
 
 -- Poser des foreuses sur un coffre (p_n d'un coup, au plus ce qu'il reste à percer). Chaque foreuse fait un trou
 -- à une place tirée au hasard sur la porte, hors de la roue centrale. À la dernière, le coffre s'ouvre et ses cartes
--- sont publiées. Refus : NON_CONNECTE, COFFRE_INCONNU, EVENEMENT_TERMINE, COFFRE_OUVERT, PAS_DE_FOREUSE.
+-- sont publiées. Un coffre sans butin s'arrête à une foreuse de céder (COFFRE_EN_ATTENTE) jusqu'à ce que l'admin
+-- range ses cartes. Refus : NON_CONNECTE, COFFRE_INCONNU, EVENEMENT_TERMINE, COFFRE_OUVERT, PAS_DE_FOREUSE.
 create or replace function public.coffres_percer(p_coffre bigint, p_n integer default 1)
 returns jsonb language plpgsql security definer set search_path = public as $$
 declare c public.coffres; ev public.coffres_evenements; stock integer; poses integer; n integer; i integer;
@@ -147,6 +148,11 @@ begin
   if coalesce(stock, 0) < 1 then raise exception 'PAS_DE_FOREUSE'; end if;
   select count(*) into poses from public.coffres_trous where coffre_id = c.id;
   n := least(greatest(coalesce(p_n, 1), 1), stock, c.requis - poses);
+  -- sans butin rangé par l'admin, le coffre s'arrête à une foreuse de céder
+  if not exists (select 1 from public.coffres_cartes where coffre_id = c.id) then
+    n := least(n, c.requis - poses - 1);
+    if n < 1 then raise exception 'COFFRE_EN_ATTENTE'; end if;
+  end if;
   for i in 1..n loop
     r := 0.2 + random() * 0.2;            -- entre la roue centrale et le bord de la porte
     a := random() * 2 * pi();

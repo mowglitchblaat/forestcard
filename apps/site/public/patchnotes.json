@@ -1,5 +1,26 @@
 [
   {
+    "date": "2026-11-23",
+    "intro": "Vous aussi, devenez des braqueurs ! Trois coffres-forts scellés attendent la communauté dans Lore › Événements.",
+    "groupes": [
+      {
+        "titre": "Site",
+        "points": [
+          "Nouveau mini-jeu dans Lore › Événements : trois coffres-forts communs (bleu, violet, légendaire), à percer ensemble pendant une semaine.",
+          "Achetez des foreuses à la boutique de l'événement (1 000 gold pièce, sans limite) et posez-les sur le coffre de votre choix : chaque foreuse perce la porte pour de bon.",
+          "Il faut 20 foreuses pour le coffre bleu, 55 pour le violet et 100 pour le légendaire. Ce qu'ils renferment ? Surprise… mais ça vaut le détour.",
+          "Le puzzle des annonces affiche maintenant toutes ses cases à la même taille."
+        ]
+      },
+      {
+        "titre": "Combats",
+        "points": [
+          "Beaucoup de nouveaux déclencheurs pour les pièges et les ultimes, et de nouvelles façons d'agir pour les magies : de quoi préparer des cartes bien plus surprenantes."
+        ]
+      }
+    ]
+  },
+  {
     "date": "2026-11-22",
     "intro": "Quelque chose se prépare dans le ciel de la carte du monde du Lore…",
     "groupes": [
