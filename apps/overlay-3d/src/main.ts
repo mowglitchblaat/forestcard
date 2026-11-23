@@ -219,7 +219,10 @@ async function main(): Promise<void> {
         couleur: c.raretes?.couleur ?? null,
       };
     });
-    const pick = (type: string) => {
+    // ?carte=<nom>: Joueur A's fighter, to watch one card's effects
+    const forced = cards.find((c) => c.nom === params.get('carte'));
+    const pick = (type: string, forceable = false) => {
+      if (forceable && forced?.type === type) return forced;
       const list = cards.filter((c) => c.type === type);
       return list[Math.floor(Math.random() * list.length)]!;
     };
@@ -227,7 +230,7 @@ async function main(): Promise<void> {
     const player = (pseudo: string, n = 1) => ({
       pseudo,
       deck: (['combattant', 'magie', 'piege'] as const).flatMap((t) =>
-        Array.from({ length: n }, () => pick(t)),
+        Array.from({ length: n }, (_, i) => pick(t, pseudo === 'Joueur A' && i === 0)),
       ),
     });
     const fight = (relay: boolean) => {

@@ -90,8 +90,13 @@ export function mechanicsOf(ctx: MechanicsContext) {
         return awaitMove(c, 'deathAvoid');
       case 'missile':
         return move(c, 'missile');
-      case 'souffle':
-        return move(c, 'breath');
+      case 'souffle': {
+        // the legacy's breath: its element's colours (original/effects.ts)
+        const from = sideOf(raw['from']) ?? (c === null ? null : other(c));
+        if (c !== null && from !== null)
+          ctx.legacy.breath(from, c, typeof raw['el'] === 'string' ? raw['el'] : 'brulure');
+        return;
+      }
       case 'detonation':
         return move(c, 'detonate');
       case 'reanim_mort':
@@ -147,7 +152,8 @@ export function mechanicsOf(ctx: MechanicsContext) {
           case 'detonation':
             return move(c, 'detonate');
           case 'souffle':
-            return move(c, 'breath');
+            // the breath line already hit it
+            return;
           case 'choc':
             return move(c, 'iceBurst');
           case 'lames':

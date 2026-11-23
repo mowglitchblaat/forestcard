@@ -1373,6 +1373,117 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
   };
   const stCol = (s: unknown) => NST_COL[ST_KEY[String(s)] ?? String(s)] ?? '#c9a0ff';
 
+  // ════════ ELEMENTAL BREATH: a dragon's breath from the card that uses it to the other; its colours and
+  // its specks (snowflakes for frost, bubbles for poison) say its element ════════
+  const BREATH: Readonly<Record<string, readonly [string, string, string]>> = {
+    brulure: ['255,244,190', '255,140,30', '190,35,0'],
+    gel: ['240,252,255', '140,210,255', '50,110,210'],
+    malediction: ['245,220,255', '175,85,245', '75,15,135'],
+    poison: ['235,255,205', '125,225,60', '25,115,30'],
+    saignement: ['255,210,210', '225,30,45', '105,0,12'],
+    fatigue: ['230,235,248', '145,160,195', '55,65,98'],
+    foudre: ['240,247,255', '120,175,255', '45,65,215'],
+  };
+  function souffle(from: LegacyCard, to: LegacyCard, el: string): Promise<void> {
+    const C = BREATH[el] ?? BREATH['brulure']!,
+      A = K(from),
+      B = K(to),
+      dir = Math.sign(B.cx - A.cx) || 1;
+    const sx = A.cx + dir * A.w * 0.42,
+      sy = A.y + A.h * 0.36,
+      tx = B.cx,
+      ty = B.cy,
+      ang = Math.atan2(ty - sy, tx - sx),
+      dist = Math.hypot(tx - sx, ty - sy),
+      S = A.w / 280;
+    const P = Array.from({ length: 170 }, () => ({
+      tb: R(0, 0.8),
+      sp: R(-0.16, 0.16),
+      v: R(0.85, 1.15),
+      s: R(10, 22) * S,
+      w: R(0, 6.28),
+      k: Math.random(),
+    }));
+    const X =
+      el === 'gel'
+        ? Array.from({ length: 26 }, () => ({
+            tb: R(0.1, 0.8),
+            sp: R(-0.2, 0.2),
+            v: R(0.9, 1.2),
+            s: R(4, 8) * S,
+            r: R(0, 6),
+          }))
+        : el === 'poison'
+          ? Array.from({ length: 22 }, () => ({
+              tb: R(0.1, 0.8),
+              sp: R(-0.2, 0.2),
+              v: R(0.7, 1),
+              s: R(4, 9) * S,
+              r: 0,
+            }))
+          : [];
+    void wait(450).then(() => nudge(to, [dir * 9, -3], [-dir * 5, 2], 380));
+    return fx.add(1.75, (x, t) => {
+      const LIFE = 0.55;
+      // the glow at the breath's mouth
+      const mo = t < 0.95 ? Math.min(1, t / 0.12) : Math.max(0, 1 - (t - 0.95) / 0.3);
+      x.globalCompositeOperation = 'lighter';
+      orb(x, sx, sy, A.w * 0.3 * mo, `rgba(${C[0]},${0.8 * mo})`, `rgba(${C[1]},0)`);
+      for (const p of P) {
+        const a = (t - p.tb) / LIFE;
+        if (a <= 0 || a >= 1) continue;
+        const d = dist * ez(a) * p.v,
+          an = ang + p.sp * (0.4 + a),
+          wob = Math.sin(t * 14 + p.w) * p.s * 0.6 * a;
+        const px = sx + Math.cos(an) * d - Math.sin(an) * wob,
+          py = sy + Math.sin(an) * d + Math.cos(an) * wob,
+          r = p.s * (0.5 + 2.6 * a),
+          fade = a < 0.15 ? a / 0.15 : 1 - (a - 0.15) / 0.85;
+        x.globalCompositeOperation = p.k < 0.35 ? 'source-over' : 'lighter';
+        const col = p.k < 0.35 ? C[2] : a < 0.35 ? C[0] : C[1];
+        orb(x, px, py, r, `rgba(${col},${0.75 * fade})`, `rgba(${col},0)`);
+      }
+      x.globalCompositeOperation = 'source-over';
+      for (const q of X) {
+        const a = (t - q.tb) / 0.6;
+        if (a <= 0 || a >= 1) continue;
+        const d = dist * ez(a) * q.v,
+          an = ang + q.sp,
+          px = sx + Math.cos(an) * d,
+          py = sy + Math.sin(an) * d,
+          al = 1 - a;
+        if (el === 'gel') {
+          x.save();
+          x.translate(px, py);
+          x.rotate(q.r + t * 6);
+          x.strokeStyle = `rgba(255,255,255,${al})`;
+          x.lineWidth = 1.4;
+          x.beginPath();
+          for (let j = 0; j < 3; j++) {
+            const b = j * 1.047;
+            x.moveTo(-Math.cos(b) * q.s, -Math.sin(b) * q.s);
+            x.lineTo(Math.cos(b) * q.s, Math.sin(b) * q.s);
+          }
+          x.stroke();
+          x.restore();
+        } else {
+          x.strokeStyle = `rgba(${C[0]},${al})`;
+          x.lineWidth = 1.5;
+          x.beginPath();
+          x.arc(px, py - a * 8 * S, q.s, 0, 7);
+          x.stroke();
+        }
+      }
+      // the hit on the target
+      const hi = Math.max(0, Math.min(1, (t - 0.3) / 0.2)) * Math.max(0, 1 - (t - 1.15) / 0.5);
+      if (hi > 0) {
+        x.globalCompositeOperation = 'lighter';
+        orb(x, tx, ty, B.w * 0.75 * hi, `rgba(${C[1]},${0.55 * hi})`, `rgba(${C[2]},0)`);
+        x.globalCompositeOperation = 'source-over';
+      }
+    });
+  }
+
   return {
     isCut,
     /** The two fighters, for the link and the mist (the scene sets them after each deal or relay). */
@@ -1380,6 +1491,12 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
       NFX.cards = [a, b];
     },
     fracture: (c: LegacyCard) => os(c),
+    // the breath of side `from` on side `to`, of an element (the engine's: brulure, gel, foudre…)
+    breath(from: 0 | 1, to: 0 | 1, el: string) {
+      const a = NFX.cards[from],
+        b = NFX.cards[to];
+      if (a && b) void souffle(a, b, el);
+    },
     markBlade: (c: LegacyCard, n: number) => lameIn(c, n),
     marksDown: (c: LegacyCard, n: number) => lamesOff(c, n),
     execute: (c: LegacyCard) => executionFx(c),
