@@ -243,7 +243,7 @@ const ELEMENTS = ['brulure', 'gel', 'malediction', 'poison', 'saignement', 'fati
 // A leveled status takes the effect's level (`niveau`), else the level of its old value (`sval`).
 const elementText = (el: string, v: number, e: Fx): string | undefined =>
   (
-    ({
+    {
       brulure: burnTxt({ niveau: e.niveau, pctpv: v }),
       gel: `gel ${v} % d'attaque annulée`,
       malediction: `malédiction ${curseTxt}`,
@@ -251,7 +251,7 @@ const elementText = (el: string, v: number, e: Fx): string | undefined =>
       saignement: bleedTxt({ niveau: e.niveau, pctpv: v }),
       fatigue: fatigueTxt({ niveau: e.niveau, fatval: v }),
       foudre: 'poser un niveau de marque de foudre',
-    }) as Record<string, string>
+    } as Record<string, string>
   )[el];
 
 // The riposte of a block (bloque_attaque), once, on the first strike it blocks.
@@ -928,19 +928,15 @@ export function trapMeta(e: Fx): string {
   const cond = e.condition as TrapCondition | null | undefined;
   const cond2 = e.condition2 as TrapCondition | null | undefined;
   let when = e.cache ? 'Condition cachée' : fxCond(cond) || 'Piège caché';
-  if (!e.cache && cond2 && cond2.type)
-    when +=
-      e.logique === 'et'
-        ? `, et ${lowerFirst(fxCond(cond2))} (les deux)`
-        : `, ou ${lowerFirst(fxCond(cond2))}`;
+  if (!e.cache && cond2 && cond2.type) {
+    const other = lowerFirst(fxCond(cond2));
+    when += e.logique === 'et' ? `, et ${other} (les deux)` : `, ou ${other}`;
+  }
   const parts = [when];
   if (nz(e.compte) > 1) parts.push(`à la ${nz(e.compte)}e fois`);
   if (nz(e.retard) > 0) parts.push(`se déclenche ${trs(nz(e.retard))} plus tard`);
-  parts.push(
-    nz(e.declenchements) > 1
-      ? `jusqu'à ${e.declenchements} déclenchements`
-      : '1 seul déclenchement',
-  );
+  const times = nz(e.declenchements);
+  parts.push(times > 1 ? `jusqu'à ${times} déclenchements` : '1 seul déclenchement');
   if (nz(e.rearme) > 0) parts.push(`se réarme après ${trs(nz(e.rearme))}`);
   if (e.enchaine === 'ultime') parts.push('réveille son ultime');
   if (e.enchaine === 'magie') parts.push('relance sa magie');

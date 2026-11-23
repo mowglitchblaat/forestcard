@@ -31,17 +31,13 @@ import { usesTrapModes } from './trap-modes.ts';
 import { usesMagicModes } from './magic-modes.ts';
 
 export type TriggerFact =
-  | {
-      kind: 'status' | 'dodge' | 'trap' | 'block' | 'heal' | 'ultimate' | 'attack';
-      who: SideIndex;
-    }
+  | { kind: FactKind; who: SideIndex }
   | { kind: 'hit'; who: SideIndex; amount: number; first?: boolean } // first: the combat's first hit
   | { kind: 'turn'; who: SideIndex; turn: number }
-  | { kind: 'threads'; who: SideIndex; n: number } // n: the threads it carries now
-  // No legacy line: the ultimate triggers and the trap conditions of November 2026 read them.
-  | { kind: NewKind; who: SideIndex };
+  | { kind: 'threads'; who: SideIndex; n: number }; // n: the threads it carries now
 
-// Facts with no legacy line (who: the card it happens to; terrain: the invoker, or -1).
+// Facts with no legacy line (who: the card it happens to; terrain: the invoker, or -1): the ultimate
+// triggers and the trap conditions of November 2026 read them.
 type NewKind =
   | 'purify'
   | 'avoidDeath'
@@ -72,8 +68,7 @@ type FactKind = 'status' | 'dodge' | 'trap' | 'block' | 'heal' | 'ultimate' | 'a
 
 const fact =
   (kind: FactKind) =>
-  (e: { side: SideIndex }): TriggerFact =>
-    ({ kind, who: e.side }) as TriggerFact;
+  (e: { side: SideIndex }): TriggerFact => ({ kind, who: e.side });
 
 // Every event type, so that a new one must be classed. The legacy lines (trig):
 //   statut with a negative status k  → status   (curse, bleed, poison, burn, frost, fracture, stun,
