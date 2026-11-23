@@ -7,7 +7,10 @@
 //                 the snapshot (docs/legacy/cartes-*.json): to try the overlay without a live;
 //   ?qualite=eco  the eco quality (packages/overlay-3d, config/quality.ts): lighter on the GPU.
 //
-// It only shows: it announces nothing to Streamer.bot (combat.html keeps doing that while both run).
+// After a combat, combat-3d.html does what combat.html did: it announces the result (Streamer.bot action
+// « Combat - Résultat », ?action= for another name), marks the combat as shown (combat_affiche) and, in a
+// tournament, starts the next match (« Tournoi - Suivant », ?suite=). ?annonce=non: it does none of
+// that (combat.html still running next to it).
 
 import { Application, Container } from 'pixi.js';
 import { CATEGORY_STYLES } from '@forestcard/describe';
@@ -42,6 +45,53 @@ const TEST = params.has('test');
 const MODE = document.body.dataset['mode'] === 'booster' ? 'booster' : 'combat';
 // before anything is built: the shaders are compiled with it
 setQuality(qualityFromUrl(location.search));
+
+// ---- after a combat: what combat.html did (announce, combat_affiche, tournament) -------------------
+const ANNOUNCE = MODE === 'combat' && !TEST && params.get('annonce') !== 'non';
+const ACTION_END = params.get('action') ?? 'Combat - Résultat';
+const ACTION_NEXT = params.get('suite') ?? 'Tournoi - Suivant';
+type Extras = { annonce: string | null; seed: unknown; tournoi: Record<string, unknown> | null };
+// the combat as sent, unwrapped like combat.html (as text, in a list, in { data })
+function extrasOf(raw: unknown): Extras | null {
+  let d: unknown = raw;
+  for (let i = 0; i < 4; i++) {
+    if (typeof d === 'string')
+      try {
+        d = JSON.parse(d) as unknown;
+      } catch {
+        return null;
+      }
+    if (Array.isArray(d)) d = d[0];
+    if (typeof d !== 'object' || d === null) return null;
+    const o = d as Record<string, unknown>;
+    if (Array.isArray(o['journal'])) {
+      const fin = (o['journal'] as unknown[]).at(-1) as Record<string, unknown> | undefined;
+      const annonce =
+        typeof o['annonce'] === 'string' && o['annonce']
+          ? o['annonce']
+          : fin && fin['t'] === 'fin' && typeof fin['txt'] === 'string'
+            ? fin['txt']
+            : null;
+      const t = o['tournoi'];
+      return {
+        annonce,
+        seed: o['seed'],
+        tournoi: typeof t === 'object' && t !== null ? (t as Record<string, unknown>) : null,
+      };
+    }
+    if (o['data'] === undefined) return null;
+    d = o['data'];
+  }
+  return null;
+}
+// an action's name compared without spaces, dashes, accents or case (combat.html, nomAction)
+const actionName = (n: unknown) =>
+  String(n ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[\s\-\u2010-\u2015_]+/g, ' ')
+    .trim();
 
 // ---- images: the GitHub mirror when the image is there (copied each night), else Supabase ----------
 const SUPABASE = 'https://bjsvqikjnvaomyoifiml.supabase.co';
@@ -132,6 +182,40 @@ async function main(): Promise<void> {
   await store.keep(frameUrls()).catch((err: unknown) => console.warn('frames', err));
   const deps = { textures: store.textures, styles: CATEGORY_STYLES as CategoryStyles };
 
+  // Streamer.bot's socket and its actions (read at connection), for the announce
+  let socket: WebSocket | null = null;
+  let actions: { id: string; name: string }[] = [];
+  const doAction = (name: string, id: string, args: Record<string, string>) => {
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
+      console.warn('[annonce] WebSocket fermé :', name, 'non lancée');
+      return;
+    }
+    const a = actions.find((x) => actionName(x.name) === actionName(name));
+    socket.send(
+      JSON.stringify({
+        request: 'DoAction',
+        id,
+        action: a ? { id: a.id, name: a.name } : { name },
+        args,
+      }),
+    );
+  };
+  function afterCombat(x: Extras): void {
+    if (x.seed !== null && x.seed !== undefined)
+      void fetch(SUPABASE + '/rest/v1/rpc/combat_affiche', {
+        method: 'POST',
+        headers: { apikey: PUBLIC_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ p_seed: String(x.seed) }),
+      }).catch(() => {});
+    if (x.annonce) doAction(ACTION_END, 'fin-combat', { message: x.annonce });
+    const t = x.tournoi;
+    if (t && t['suite'])
+      setTimeout(
+        () => doAction(ACTION_NEXT, 'tournoi-suite', { tournoi: String(t['id']) }),
+        Math.max(0, (Number(t['pause']) || 0) * 1000),
+      );
+  }
+
   async function show(m: CombatMessage | BoosterMessage): Promise<void> {
     await loadMirror();
     if ('journal' in m) {
@@ -140,6 +224,8 @@ async function main(): Promise<void> {
         await playCombat({ app, stage, layer, deps, keys }, m);
       } finally {
         release();
+        const x = extras.get(m);
+        if (x && ANNOUNCE) afterCombat(x);
       }
       return;
     }
@@ -165,6 +251,9 @@ async function main(): Promise<void> {
     }
   }
 
+  // what a combat message carried besides its journal
+  const extras = new WeakMap<CombatMessage, Extras>();
+
   // one after the other
   const queue: (CombatMessage | BoosterMessage)[] = [];
   let playing = false;
@@ -183,7 +272,8 @@ async function main(): Promise<void> {
   if (!params.has('local')) {
     const connect = () => {
       const ws = new WebSocket('ws://127.0.0.1:8080/');
-      ws.onopen = () =>
+      socket = ws;
+      ws.onopen = () => {
         ws.send(
           JSON.stringify({
             request: 'Subscribe',
@@ -191,9 +281,30 @@ async function main(): Promise<void> {
             events: { General: ['Custom'] },
           }),
         );
+        if (ANNOUNCE) ws.send(JSON.stringify({ request: 'GetActions', id: 'actions-combat-3d' }));
+      };
       ws.onmessage = (e) => {
-        const m = MODE === 'booster' ? readBoosterMessage(e.data) : readCombatMessage(e.data);
-        if (m) void play(m);
+        if (ANNOUNCE) {
+          try {
+            const r = JSON.parse(String(e.data)) as { id?: unknown; actions?: unknown };
+            if (r.id === 'actions-combat-3d' && Array.isArray(r.actions)) {
+              actions = r.actions as typeof actions;
+              return;
+            }
+          } catch {
+            // not JSON: read below
+          }
+        }
+        if (MODE === 'booster') {
+          const b = readBoosterMessage(e.data);
+          if (b) void play(b);
+          return;
+        }
+        const m = readCombatMessage(e.data);
+        if (!m) return;
+        const x = extrasOf(e.data);
+        if (x) extras.set(m, x);
+        void play(m);
       };
       ws.onclose = () => setTimeout(connect, 3000);
       ws.onerror = () => ws.close();

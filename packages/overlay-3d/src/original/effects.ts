@@ -1484,6 +1484,148 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
     });
   }
 
+  // ════════ ULTIMATE: the legacy's red aura (auraFx): a red halo around the card, its edges glowing
+  // inside, dark smoke and embers rising from its border; the card swells a little meanwhile ════════
+  const soft = (size: number, c0: string, c1: string): HTMLCanvasElement => {
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = size;
+    const g = cv.getContext('2d')!,
+      m = size / 2,
+      r = g.createRadialGradient(m, m, 0, m, m, m);
+    r.addColorStop(0, c0);
+    r.addColorStop(1, c1);
+    g.fillStyle = r;
+    g.fillRect(0, 0, size, size);
+    return cv;
+  };
+  let smoke: HTMLCanvasElement | null = null,
+    ember: HTMLCanvasElement | null = null;
+  function aura(c: LegacyCard): Promise<void> {
+    smoke ??= soft(96, 'rgba(14,0,6,1)', 'rgba(14,0,6,0)');
+    ember ??= soft(96, 'rgba(200,10,10,1)', 'rgba(120,0,0,0)');
+    const S = smoke,
+      E = ember;
+    const DUR = 2.7,
+      k0 = K(c),
+      W = k0.w,
+      H = k0.h,
+      pad = Math.round(W * 0.55),
+      CW = W + 2 * pad,
+      CH = H + 2 * pad,
+      sc = W / 320,
+      rad = 12 * sc;
+    const hc = '200,10,20',
+      ec = '255,50,40';
+    // the halo and the inner glow, drawn once at the card's size
+    const glow = document.createElement('canvas');
+    glow.width = CW;
+    glow.height = CH;
+    {
+      const g = glow.getContext('2d')!;
+      g.strokeStyle = `rgba(${ec},.55)`;
+      g.lineWidth = 4 * sc;
+      for (const [bl, al] of [
+        [110, 0.9],
+        [45, 1],
+      ] as const) {
+        g.save();
+        g.shadowColor = `rgba(${hc},${al})`;
+        g.shadowBlur = bl * sc;
+        rr(g, pad, pad, W, H, rad);
+        g.stroke();
+        g.restore();
+      }
+    }
+    const inner = document.createElement('canvas');
+    inner.width = Math.max(1, Math.round(W));
+    inner.height = Math.max(1, Math.round(H));
+    {
+      const g = inner.getContext('2d')!;
+      rr(g, 0, 0, W, H, rad);
+      g.clip();
+      const ig = g.createRadialGradient(W / 2, H / 2, H * 0.28, W / 2, H / 2, H * 0.8);
+      ig.addColorStop(0, `rgba(${hc},0)`);
+      ig.addColorStop(1, `rgba(${hc},.4)`);
+      g.fillStyle = ig;
+      g.fillRect(0, 0, W, H);
+    }
+    // a point on the card's border, and its outward normal
+    const per = (): [number, number, number, number] => {
+      const s = Math.random() * (2 * W + 2 * H);
+      if (s < W) return [s, 0, 0, -1];
+      if (s < W + H) return [W, s - W, 1, 0];
+      if (s < 2 * W + H) return [s - W - H, H, 0, 1];
+      return [0, s - 2 * W - H, -1, 0];
+    };
+    type Puff = {
+      x: number;
+      y: number;
+      vx: number;
+      vy: number;
+      s: number;
+      l: number;
+      d: number;
+      ph: number;
+    };
+    let P: Puff[] = [],
+      last = 0,
+      acc = 0;
+    void animate(c, [{}, { s: 1.06, o: 0.2 }, { s: 1.06, o: 0.8 }, { o: 1 }], 2300);
+    const done = fx.add(DUR, (x, t) => {
+      const dt = Math.min(0.05, Math.max(0, t - last));
+      last = t;
+      const k = dt * 60;
+      // the card may have moved: everything follows its box (positions are kept relative to it)
+      const b = K(c),
+        ox = b.cx - W / 2 - pad,
+        oy = b.cy - H / 2 - pad;
+      const env = t < 0.4 ? t / 0.4 : t < DUR - 0.7 ? 1 : Math.max(0, (DUR - t) / 0.7),
+        pul = 1 + 0.18 * Math.sin(t * 5) + 0.08 * Math.sin(t * 13);
+      x.globalCompositeOperation = 'lighter';
+      x.globalAlpha = cl(env * (0.7 + 0.3 * pul));
+      x.drawImage(glow, ox, oy, CW, CH);
+      x.globalAlpha = cl(env * pul);
+      x.drawImage(inner, ox + pad, oy + pad, W, H);
+      if (t < DUR - 0.8) {
+        acc += 130 * dt;
+        while (acc >= 1) {
+          acc--;
+          const [px, py, nx, ny] = per();
+          P.push({
+            x: px + pad + nx * 0.05 * W,
+            y: py + pad + ny * 0.05 * W,
+            vx: nx * R(0.2, 0.9) * sc,
+            vy: ny * R(0.2, 0.9) * sc - R(0.5, 1.4) * sc,
+            s: R(0.14, 0.26) * W,
+            l: 0,
+            d: R(1.8, 2.6),
+            ph: Math.random() * 6,
+          });
+        }
+      }
+      for (const p of P) {
+        p.l += dt / p.d;
+        const u = p.l;
+        if (u >= 1) continue;
+        p.x += (p.vx + Math.sin(t * 1.6 + p.y * 0.015 + p.ph) * 0.9 * sc) * k;
+        p.y += (p.vy + Math.cos(t * 1.2 + p.x * 0.015 + p.ph) * 0.4 * sc) * k;
+        const a = Math.pow(Math.sin(Math.PI * u), 0.8) * env,
+          r = p.s * (0.6 + 0.7 * u);
+        x.globalCompositeOperation = 'source-over';
+        x.globalAlpha = a * 0.55;
+        x.drawImage(S, ox + p.x - r, oy + p.y - r, r * 2, r * 2);
+        x.globalCompositeOperation = 'lighter';
+        x.globalAlpha = a * 0.25 * (1 - u * 0.5);
+        x.drawImage(E, ox + p.x - r * 0.8, oy + p.y - r * 0.8, r * 1.6, r * 1.6);
+      }
+      P = P.filter((p) => p.l < 1);
+      x.globalAlpha = 1;
+      x.globalCompositeOperation = 'source-over';
+    });
+    // the legacy went on after 2.2 s, the aura fading meanwhile
+    return Promise.race([done, wait(2200)]);
+  }
+
   return {
     isCut,
     /** The two fighters, for the link and the mist (the scene sets them after each deal or relay). */
@@ -1491,6 +1633,7 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
       NFX.cards = [a, b];
     },
     fracture: (c: LegacyCard) => os(c),
+    ultimate: (c: LegacyCard) => aura(c),
     // the breath of side `from` on side `to`, of an element (the engine's: brulure, gel, foudre…)
     breath(from: 0 | 1, to: 0 | 1, el: string) {
       const a = NFX.cards[from],
