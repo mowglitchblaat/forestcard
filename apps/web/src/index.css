@@ -1367,6 +1367,21 @@
 @utility vault-glow-or {
   --glow: rgb(255 205 80);
 }
+@utility vault-scene {
+  container-type: inline-size;
+  position: relative;
+}
+@utility vault-scene-bg {
+  aspect-ratio: 16 / 9;
+}
+/* A door on the room's picture, at (--cx, --cy) of it (the picture is 56.25 % as high as wide). */
+@utility vault-slot {
+  position: absolute;
+  width: 20cqw;
+  left: calc(var(--cx) * 100cqw);
+  top: calc(var(--cy) * 56.25cqw);
+  transform: translate(-50%, -50%);
+}
 @utility vault-door-shadow {
   filter: drop-shadow(0 18px 28px rgb(0 0 0 / 0.55));
 }
@@ -1421,21 +1436,19 @@
   animation: vault-hole-in 0.5s ease-out both;
 }
 @utility vault-drill {
-  --drill-brass: rgb(201 150 62);
-  --drill-brass-dark: rgb(122 82 30);
-  --drill-steel: rgb(196 204 214);
-  --drill-steel-dark: rgb(92 100 112);
-  --drill-glass: rgb(240 232 200);
   width: 46%;
   left: calc(var(--x) * 100%);
   top: calc(var(--y) * 100%);
-  transform-origin: 100% 50%;
-  translate: -100% -50%;
+  transform-origin: 100% 41%;
+  translate: -100% -41%;
   rotate: var(--a, 0deg);
   animation: vault-drill-in 1.5s ease-in-out both;
 }
+@utility vault-drill-flip {
+  scale: 1 -1;
+}
 @utility vault-drill-bit {
-  animation: vault-bit 0.12s linear infinite;
+  filter: drop-shadow(0 6px 8px rgb(0 0 0 / 0.5));
 }
 @utility vault-drill-shake {
   animation: vault-shake 0.07s linear infinite;
@@ -1529,24 +1542,19 @@
 @keyframes vault-drill-in {
   0% {
     opacity: 0;
-    translate: -160% -50%;
+    translate: -160% -41%;
   }
   25% {
     opacity: 1;
-    translate: -100% -50%;
+    translate: -100% -41%;
   }
   80% {
     opacity: 1;
-    translate: -92% -50%;
+    translate: -92% -41%;
   }
   100% {
     opacity: 0;
-    translate: -150% -50%;
-  }
-}
-@keyframes vault-bit {
-  to {
-    background-position: 0 1rem;
+    translate: -150% -41%;
   }
 }
 @keyframes vault-shake {

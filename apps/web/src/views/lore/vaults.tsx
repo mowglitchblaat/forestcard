@@ -184,16 +184,25 @@ function Heist({ heist, onOpened }: { heist: Heist; onOpened: (v: Vault) => void
           </div>
         )}
         {error && <small className="text-destructive">{error}</small>}
-        <div className="grid gap-6 md:grid-cols-3">
-          {heist.coffres.map((v) => (
-            <VaultTile
-              key={v.id}
-              vault={v}
-              stock={heist.stock}
-              canDrill={open && signedIn}
-              onOpened={onOpened}
-            />
-          ))}
+        <div className="vault-scene overflow-hidden rounded-xl">
+          <img
+            src="cadres/coffres-salle.webp"
+            alt=""
+            draggable={false}
+            className="vault-scene-bg block w-full select-none"
+          />
+          <div className="grid grid-cols-3 gap-2 bg-muted/40 p-3 sm:gap-6">
+            {heist.coffres.map((v, i) => (
+              <VaultTile
+                key={v.id}
+                vault={v}
+                slot={i}
+                stock={heist.stock}
+                canDrill={open && signedIn}
+                onOpened={onOpened}
+              />
+            ))}
+          </div>
         </div>
         {heist.perceurs.length > 0 && (
           <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -263,40 +272,23 @@ function Door({
   );
 }
 
-// The drill, drawn: a brass body with its gauge, and a steel bit pointing right.
+// The drill (assets/cadres/foreuse.webp): its bit points right, its tip at 41 % of its height.
 function DrillShape() {
   return (
-    <svg viewBox="0 0 200 60" className="w-full" aria-hidden>
-      <defs>
-        <linearGradient id="vault-brass" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="var(--drill-brass)" />
-          <stop offset="1" stopColor="var(--drill-brass-dark)" />
-        </linearGradient>
-        <linearGradient id="vault-steel" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="var(--drill-steel)" />
-          <stop offset="1" stopColor="var(--drill-steel-dark)" />
-        </linearGradient>
-      </defs>
-      <rect x="4" y="14" width="34" height="32" rx="6" fill="url(#vault-brass)" />
-      <rect x="34" y="8" width="70" height="44" rx="10" fill="url(#vault-brass)" />
-      <circle cx="68" cy="30" r="11" fill="var(--drill-glass)" />
-      <circle cx="68" cy="30" r="11" fill="none" stroke="var(--drill-brass-dark)" strokeWidth="3" />
-      <line x1="68" y1="30" x2="74" y2="24" stroke="var(--drill-brass-dark)" strokeWidth="2" />
-      <rect x="104" y="20" width="18" height="20" rx="3" fill="url(#vault-steel)" />
-      <g className="vault-drill-bit">
-        <polygon points="122,20 186,27 198,30 186,33 122,40" fill="url(#vault-steel)" />
-        <path
-          d="M130 21 L136 39 M142 22 L148 38 M154 23 L160 37 M166 25 L171 35 M177 27 L180 33"
-          stroke="var(--drill-steel-dark)"
-          strokeWidth="2.5"
-        />
-      </g>
-    </svg>
+    <img
+      src="cadres/foreuse.webp"
+      alt=""
+      draggable={false}
+      className="vault-drill-bit block w-full select-none"
+    />
   );
 }
 
 // The drill coming in to make one hole, with its sparks.
+// It comes from outside the door, pointing to its centre; turned upright when it comes from the right.
 function DrillFx({ hole }: { hole: Hole }) {
+  const pointing = (hole.angle + 180) % 360;
+  const upsideDown = pointing > 90 && pointing < 270;
   const sparks = [
     [-14, -22],
     [12, -26],
@@ -309,8 +301,8 @@ function DrillFx({ hole }: { hole: Hole }) {
     <>
       <span
         aria-hidden
-        style={{ '--x': hole.x, '--y': hole.y, '--a': `${hole.angle}deg` }}
-        className="vault-drill pointer-events-none absolute"
+        style={{ '--x': hole.x, '--y': hole.y, '--a': `${pointing}deg` }}
+        className={`vault-drill pointer-events-none absolute ${upsideDown ? 'vault-drill-flip' : ''}`}
       >
         <span className="vault-drill-shake block">
           <DrillShape />
@@ -337,13 +329,19 @@ function DrillFx({ hole }: { hole: Hole }) {
 const DRILL_MS = 1500;
 const QUICK_MS = 700; // the next drills of a salvo come faster
 
+// Where each door sits on the vault room's picture (its three rings): the centre, as a share of the
+// picture's width and height.
+const SLOTS = [0.251, 0.5, 0.749];
+
 function VaultTile({
   vault: v,
+  slot,
   stock,
   canDrill,
   onOpened,
 }: {
   vault: Vault;
+  slot: number;
   stock: number;
   canDrill: boolean;
   onOpened: (v: Vault) => void;
@@ -398,30 +396,38 @@ function VaultTile({
   const busy = run.isPending || queue.length > 0;
   return (
     <div className={`flex flex-col items-center gap-3 ${GLOW[v.teinte]}`}>
-      <div className={`relative w-full ${isOpen ? '' : 'vault-pulse'}`}>
-        <Door
-          tint={v.teinte}
-          holes={holes}
-          hidden={hidden}
-          fresh={fresh}
-          className={isOpen ? 'opacity-40 grayscale' : ''}
-        />
-        {current && <DrillFx key={current.id} hole={current} />}
-        {isOpen && (
+      <div
+        style={{ '--cx': SLOTS[slot] ?? 0.5, '--cy': 0.465 }}
+        className={`vault-slot ${isOpen ? '' : 'vault-pulse'}`}
+      >
+        {isOpen ? (
           <button
             type="button"
+            title="Voir le trésor"
             onClick={() => onOpened(v)}
-            className="absolute inset-0 flex cursor-pointer flex-col items-center justify-center gap-1 text-center"
+            className="block w-full cursor-pointer transition hover:scale-105"
           >
-            <ICONS.vault className="size-10" />
-            <b className="text-lg">Ouvert !</b>
-            <small className="text-muted-foreground">Voir le trésor</small>
+            <img
+              src="cadres/coffre-interieur.webp"
+              alt="Coffre ouvert : voir le trésor"
+              draggable={false}
+              className="vault-door-shadow block w-full select-none"
+            />
           </button>
+        ) : (
+          <Door tint={v.teinte} holes={holes} hidden={hidden} fresh={fresh} />
         )}
+        {current && <DrillFx key={current.id} hole={current} />}
       </div>
       <b className="flex items-center gap-2">
         {v.nom}
-        {isOpen && <Badge variant="success">Percé</Badge>}
+        {isOpen && (
+          <Badge variant="success" asChild>
+            <button type="button" onClick={() => onOpened(v)}>
+              Ouvert · voir le trésor
+            </button>
+          </Badge>
+        )}
       </b>
       <div className="flex w-full flex-col gap-1">
         <Progress value={(Math.min(done, v.requis) * 100) / v.requis} />
