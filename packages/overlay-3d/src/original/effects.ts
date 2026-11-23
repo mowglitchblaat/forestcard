@@ -44,41 +44,71 @@ type Pose = {
  * Plays keyframes on a card's face (offsets in screen pixels, rotation in degrees, around its centre),
  * then puts it back. `o` of a keyframe: its offset in 0..1 (evenly spread when omitted).
  */
+// A face's pose before its first running animation: two animations at once (a breath's jolt during
+// another) start from it and the last one to end puts it back. Captured from a face already moved, the
+// second would add half a card to its position, and the face would jump aside while it ran.
+type Base = {
+  px: number;
+  py: number;
+  x: number;
+  y: number;
+  sx: number;
+  sy: number;
+  r: number;
+  a: number;
+};
+const running = new WeakMap<Container, { base: Base; n: number }>();
+
 async function animate(card: LegacyCard, frames: Pose[], ms: number, keep = false): Promise<void> {
   const f = card.front;
   const k = card.root.worldTransform.a || 1; // screen pixels per card unit
-  const base = {
-    px: f.pivot.x,
-    py: f.pivot.y,
-    x: f.x,
-    y: f.y,
-    sx: f.scale.x,
-    sy: f.scale.y,
-    r: f.rotation,
-    a: f.alpha,
-  };
+  let run = running.get(f);
+  if (!run) {
+    run = {
+      base: {
+        px: f.pivot.x,
+        py: f.pivot.y,
+        x: f.x,
+        y: f.y,
+        sx: f.scale.x,
+        sy: f.scale.y,
+        r: f.rotation,
+        a: f.alpha,
+      },
+      n: 0,
+    };
+    running.set(f, run);
+  }
+  run.n++;
+  const base = run.base;
   f.pivot.set(W / 2, H / 2);
   const at = frames.map((p, i) => p.o ?? i / (frames.length - 1));
   const val = (p: Pose, key: keyof Pose, d: number) => (p[key] ?? (key === 's' ? 1 : d)) as number;
-  await tween(
-    ms,
-    (u) => {
-      let i = 0;
-      while (i < frames.length - 2 && u > at[i + 1]!) i++;
-      const a = frames[i]!,
-        b = frames[i + 1]!,
-        v = cl((u - at[i]!) / Math.max(1e-6, at[i + 1]! - at[i]!));
-      const L = (key: keyof Pose, d: number) =>
-        val(a, key, d) + (val(b, key, d) - val(a, key, d)) * v;
-      const s = L('s', 1);
-      f.position.set(base.x + W / 2 + L('x', 0) / k, base.y + H / 2 + L('y', 0) / k);
-      f.scale.set(base.sx * s * L('sx', 1), base.sy * s * L('sy', 1));
-      f.rotation = base.r + (L('rot', 0) * Math.PI) / 180;
-      f.alpha = base.a * L('a', 1);
-    },
-    'linear',
-    f,
-  );
+  try {
+    await tween(
+      ms,
+      (u) => {
+        let i = 0;
+        while (i < frames.length - 2 && u > at[i + 1]!) i++;
+        const a = frames[i]!,
+          b = frames[i + 1]!,
+          v = cl((u - at[i]!) / Math.max(1e-6, at[i + 1]! - at[i]!));
+        const L = (key: keyof Pose, d: number) =>
+          val(a, key, d) + (val(b, key, d) - val(a, key, d)) * v;
+        const s = L('s', 1);
+        f.position.set(base.x + W / 2 + L('x', 0) / k, base.y + H / 2 + L('y', 0) / k);
+        f.scale.set(base.sx * s * L('sx', 1), base.sy * s * L('sy', 1));
+        f.rotation = base.r + (L('rot', 0) * Math.PI) / 180;
+        f.alpha = base.a * L('a', 1);
+      },
+      'linear',
+      f,
+    );
+  } finally {
+    run.n--;
+  }
+  if (run.n > 0) return;
+  running.delete(f);
   if (!keep) {
     f.pivot.set(base.px, base.py);
     f.position.set(base.x, base.y);
