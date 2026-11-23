@@ -28,6 +28,11 @@ import { ICONS } from '@/lib/icons';
 import { useSession } from '@/lib/session';
 import { TONES } from '@/lib/tones';
 
+// The drills (assets/cadres): their bit points right, their tip at 41 % of their height. The
+// Perce-Abîme has its own picture (GIGA_TINTED: the plain drill in gold, without one).
+const GIGA_DRILL = 'cadres/foreuse-legendaire.webp';
+const GIGA_TINTED = false;
+
 // The doors' pictures (assets/cadres).
 const DOOR: Record<Tint, string> = {
   bleu: 'cadres/coffre-bleu.webp',
@@ -180,12 +185,7 @@ function Heist({ heist, onOpened }: { heist: Heist; onOpened: (v: Vault) => void
               </Button>
             </div>
             <div className="vault-giga-shop flex w-full flex-wrap items-center gap-3 rounded-md border p-2">
-              <img
-                src="cadres/foreuse.webp"
-                alt=""
-                draggable={false}
-                className="vault-giga-tint w-16 select-none"
-              />
+              <img src={GIGA_DRILL} alt="" draggable={false} className="w-20 select-none" />
               <span className="flex flex-col">
                 <b>Perce-Abîme · foreuse légendaire</b>
                 <small className="text-muted-foreground">
@@ -294,11 +294,6 @@ function Door({
     </div>
   );
 }
-
-// The drills (assets/cadres): their bit points right, their tip at 41 % of their height. The
-// Perce-Abîme is the drill in gold until its own picture comes.
-const GIGA_DRILL = 'cadres/foreuse.webp';
-const GIGA_TINTED = true;
 
 // The drill (assets/cadres/foreuse.webp): its bit points right, its tip at 41 % of its height.
 function DrillShape({ giga }: { giga: boolean }) {
