@@ -28,6 +28,7 @@ import type { StatusFxKind } from '../status/registry.ts';
 import { mechanicsOf } from './combat-fx.ts';
 import { cardLayers, dressedCard, textResolutionFor, type Deps } from './common.ts';
 import { CombatTerrain } from './terrain.ts';
+import { liveNumbers, type LiveNumbers, type NumbersStyle } from './live-numbers.ts';
 import { LegacyCanvas } from '../original/fx.ts';
 import { legacyEffects } from '../original/effects.ts';
 
@@ -41,6 +42,8 @@ export type CombatContext = {
   hidden?: Hidden;
   // loads a texture the combat did not announce (a magic's or trap's image known at its reveal only)
   load?: (key: string) => Promise<void>;
+  // the numbers' style of each version image (chiffres_cartes), by the fighters' card ids
+  numberStyles?: (ids: number[]) => Promise<ReadonlyMap<string, string>>;
 };
 
 type Slot = 'fighter' | 'magic' | 'trap';
@@ -52,7 +55,8 @@ function sourceOf(p: CombatPlayer, slot: Slot): BoosterMessageCard | null {
   return (
     p.cards?.[slot] ?? {
       carte: ref.name,
-      image: ref.image,
+      // a fighter shows its image without numbers when it has one: they are written live over it
+      image: (slot === 'fighter' ? ref.imageCombat : null) ?? ref.image,
       id: ref.id,
       type: ref.type,
       rarete: ref.rarity,
@@ -455,6 +459,7 @@ export async function playCombat(ctx: CombatContext, m: CombatMessage): Promise<
       const fx = P.fighterX[i]!,
         h = hand(i);
       const card = build(sourceOf(p, 'fighter')!, p.back, P.fighter, fx, P.y);
+      numbersOn(card, p);
       return {
         fighter: fighterOf(card, i),
         magic: hand0(p, 'magic', h.x, h.magic),
@@ -533,6 +538,7 @@ export async function playCombat(ctx: CombatContext, m: CombatMessage): Promise<
       build(sourceOf(p, 'fighter')!, p.back, P.fighter, P.fighterX[c]!, P.y),
       c,
     );
+    numbersOn(s.fighter.card, p);
     s.magic = hand0(p, 'magic', h.x, h.magic);
     s.trap = hand0(p, 'trap', h.x, h.trap);
     shown[c] = p.fighter.name;
@@ -544,11 +550,33 @@ export async function playCombat(ctx: CombatContext, m: CombatMessage): Promise<
       legacy.say(s.fighter.card, `Combattant ${l.n}/${of}`, '#fcd34d', true);
   }
 
+  // A flat fighter (a legacy message: its image) gets its numbers written live over it, like in
+  // combat.html: over its image without numbers, or on medallions over the printed ones (live-numbers.ts).
+  const live = new WeakMap<Card, LiveNumbers>();
+  let numberStyles: ReadonlyMap<string, string> = new Map();
+  function numbersOn(card: Card, p: CombatPlayer): void {
+    if (p.cards?.fighter) return;
+    const combat = p.fighter.imageCombat ?? null,
+      shownImage = combat ?? p.fighter.image;
+    const found = shownImage ? numberStyles.get(shownImage) : undefined;
+    const style: NumbersStyle | null =
+      found === 'or' || found === 'violet' || (found === 'seazer' && combat)
+        ? found
+        : combat
+          ? 'plain'
+          : null;
+    if (style) live.set(card, liveNumbers(card.front, style));
+  }
+
   // Both fighters' numbers, as the line leaves them (the ATQ shown counts a double and a rage).
   function sync(l: CombatLine): void {
     for (const [i, s] of sides.entries()) {
       s.fighter.card.setStat('pv', l.pv[i]!);
       s.fighter.card.setStat('atq', atqShown(l, i));
+      const b = l.boost?.[i];
+      live
+        .get(s.fighter.card)
+        ?.set(atqShown(l, i), l.pv[i]!, b?.[0] ? 'rage' : b?.[1] ? 'x2' : null);
       bars[i]!.set(l.pv[i]!, l.max[i]!);
     }
   }
@@ -828,6 +856,12 @@ export async function playCombat(ctx: CombatContext, m: CombatMessage): Promise<
   }
 
   try {
+    // the fighters' numbers styles, before the first deal
+    const ids = new Set<number>();
+    for (const l of m.journal)
+      for (const p of l.players ?? []) if (p.fighter.id !== null) ids.add(p.fighter.id);
+    if (ctx.numberStyles && ids.size)
+      numberStyles = await ctx.numberStyles([...ids]).catch(() => new Map<string, string>());
     for (const l of m.journal) {
       await play(l);
       await wait(COMBAT.pace[l.t] ?? COMBAT.pace.default);
