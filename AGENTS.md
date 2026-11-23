@@ -35,6 +35,7 @@ Les décisions du projet, avec leur raison, sont dans `docs/adr/` : à lire avan
 - `docs/guides/basculement.md` : la bascule (faite le 19 octobre 2026) : adresses servies, workflows `.github/workflows/`, retour en arrière. `tools/pages/assemble.ts` assemble le site publié (`pnpm run pages`).
 - `apps/edge/README.md` : générer le fichier unique à coller dans Supabase.
 - `apps/overlay-combat/README.md` : générer `combat.html` (page autonome, moteur partagé inliné) et ses preuves (présentation identique, moteur identique).
+- `packages/overlay-3d` et `apps/overlay-3d/README.md` : l'overlay de combat en WebGL (Pixi), servi à part (`combat-3d.html`) ; `packages/layout` : la face d'une carte en calques, le même compositeur que l'admin. La décision : `docs/adr/0009-overlays-en-webgl.md`.
 - `apps/simulator/README.md` : winrates d'équilibrage en ligne de commande (mêmes chiffres que `combat.html`).
 - `packages/describe` : le texte de chaque effet, passif, condition et ultime, une seule formulation pour toutes les pages. `apps/site/README.md`, `apps/catalogue/README.md` : comment chaque page l'affiche, et les preuves.
 - `docs/rapports/` : rapports générés pour relecture par l'auteur (textes avant → après).

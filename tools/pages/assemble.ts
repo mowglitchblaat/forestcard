@@ -23,6 +23,9 @@ const FILES: [url: string, source: string][] = [
   ['index.html', REACT_SITE ? 'apps/web/dist/index.html' : 'apps/site/dist/index.html'],
   ['ancien.html', 'apps/site/dist/index.html'],
   ['combat.html', 'apps/overlay-combat/dist/combat.html'],
+  // The WebGL combat overlay (apps/overlay-3d), next to combat.html while it is tried in OBS.
+  ['combat-3d.html', 'apps/overlay-3d/dist/index.html'],
+  ['overlay-3d', 'apps/overlay-3d/dist/overlay-3d'],
   ['catalogue.html', 'apps/catalogue/dist/catalogue.html'],
   ['overlay.html', 'apps/overlay-boosters/src/overlay.html'],
   // The card workshop: the admin's card composer, for testing a card without the admin.

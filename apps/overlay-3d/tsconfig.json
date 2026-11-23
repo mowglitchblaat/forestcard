@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // A browser page built by Vite: bundler resolution, DOM types.
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "lib": ["es2023", "dom", "dom.iterable"],
+    "types": ["vite-plus/client"]
+  },
+  "include": ["src", "vite.config.ts"]
+}

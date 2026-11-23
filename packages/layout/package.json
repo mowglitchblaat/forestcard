@@ -1,0 +1,10 @@
+{
+  "name": "@forestcard/layout",
+  "version": "0.0.0",
+  "private": true,
+  "description": "A card's face as layers (background, drawing, plaque, frame, numbers): the card composer's layout, as data for the WebGL overlays.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}
