@@ -430,7 +430,7 @@ function BossFight({
           : `${boss} t'a balayé… ${r.left > 0 ? `Encore ${r.left} essai${r.left > 1 ? 's' : ''} aujourd'hui.` : 'Reviens demain.'}`) +
           (r.gold > 0 ? ` Tu ramasses ${r.gold} gold.` : ''),
       );
-      setScene({ page: 'combat.html?site', message: { fc: 'combat', res: r.replay } });
+      setScene({ page: 'combat-3d.html?site', message: { fc: 'combat', res: r.replay } });
     },
     onSettled: () => client.invalidateQueries({ queryKey: loreKeys.events }),
   });

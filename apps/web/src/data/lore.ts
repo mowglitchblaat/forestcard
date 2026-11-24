@@ -597,7 +597,7 @@ export async function createEvent(d: EventDraft): Promise<void> {
 
 // One try against a boss (83-boss-duel.sql), computed by the game server (mode 'boss'): it checks the
 // card and the tries left, plays the combat and pays the hidden gold. The replay goes to
-// combat.html?site (with its stormy background).
+// combat-3d.html?site.
 export async function fightBoss(
   event: number,
   variant: number,

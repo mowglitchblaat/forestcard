@@ -19,32 +19,24 @@ import {
   type Hole,
   markOpeningSeen,
   openingSeen,
-  type Tint,
   type Vault,
   vaultKeys,
   VAULTS_REFRESH,
 } from '@/data/vaults';
 import { ICONS } from '@/lib/icons';
 import { useSession } from '@/lib/session';
+import {
+  BOLTS,
+  DRILL_MS,
+  GIGA_DRILL,
+  GIGA_MS,
+  GLOW,
+  type Phase,
+  PHASES,
+  QUICK_MS,
+} from './vault-art';
+import { Door, DrillFx } from './vault-parts';
 import { TONES } from '@/lib/tones';
-
-// The drills (assets/cadres): their bit points right, their tip at 41 % of their height. The
-// Perce-Abîme has its own picture (GIGA_TINTED: the plain drill in gold, without one).
-const GIGA_DRILL = 'cadres/foreuse-legendaire.webp';
-const GIGA_TINTED = false;
-
-// The doors' pictures (assets/cadres).
-const DOOR: Record<Tint, string> = {
-  bleu: 'cadres/coffre-bleu.webp',
-  violet: 'cadres/coffre-violet.webp',
-  or: 'cadres/coffre-or.webp',
-};
-// The colour of its light (--glow).
-const GLOW: Record<Tint, string> = {
-  bleu: 'vault-glow-bleu',
-  violet: 'vault-glow-violet',
-  or: 'vault-glow-or',
-};
 
 const fr = (n: number) => n.toLocaleString('fr-FR');
 
@@ -253,117 +245,6 @@ function Heist({ heist, onOpened }: { heist: Heist; onOpened: (v: Vault) => void
   );
 }
 
-// A door with its holes; while drills come in, their holes stay hidden until the drill is done.
-function Door({
-  tint,
-  holes,
-  hidden,
-  fresh,
-  className = '',
-}: {
-  tint: Tint;
-  holes: Hole[];
-  hidden?: Set<number>;
-  fresh?: Set<number>;
-  className?: string;
-}) {
-  return (
-    <div className={`vault-door-shadow relative aspect-square w-full ${className}`}>
-      <img
-        src={DOOR[tint]}
-        alt=""
-        draggable={false}
-        className="absolute inset-0 size-full select-none"
-      />
-      {holes
-        .filter((h) => !hidden?.has(h.id))
-        .map((h) => (
-          <span key={h.id}>
-            <span
-              aria-hidden
-              style={{ '--x': h.x, '--y': h.y, '--a': `${h.angle}deg` }}
-              className={`absolute ${(h.poids ?? 1) > 1 ? 'vault-crack-giga' : 'vault-crack'}`}
-            />
-            <span
-              aria-hidden
-              style={{ '--x': h.x, '--y': h.y, '--a': `${h.angle}deg` }}
-              className={`absolute ${(h.poids ?? 1) > 1 ? 'vault-hole vault-hole-giga' : 'vault-hole'} ${h.moi ? 'vault-mine' : ''} ${fresh?.has(h.id) ? 'vault-hole-new' : ''}`}
-            />
-          </span>
-        ))}
-    </div>
-  );
-}
-
-// The drill (assets/cadres/foreuse.webp): its bit points right, its tip at 41 % of its height.
-function DrillShape({ giga }: { giga: boolean }) {
-  return (
-    <img
-      src={giga ? GIGA_DRILL : 'cadres/foreuse.webp'}
-      alt=""
-      draggable={false}
-      className={`vault-drill-bit block w-full select-none ${giga && GIGA_TINTED ? 'vault-giga-tint' : ''}`}
-    />
-  );
-}
-
-// The drill coming in to make one hole, with its sparks.
-// It comes from outside the door, pointing to its centre; turned upright when it comes from the right.
-function DrillFx({ hole }: { hole: Hole }) {
-  const giga = (hole.poids ?? 1) > 1;
-  const pointing = (hole.angle + 180) % 360;
-  const upsideDown = pointing > 90 && pointing < 270;
-  const sparks = [
-    [-14, -22],
-    [12, -26],
-    [20, 6],
-    [-18, 10],
-    [4, 22],
-    [-6, -30],
-    ...(giga
-      ? [
-          [-30, -10],
-          [28, -18],
-          [24, 24],
-          [-26, 26],
-          [0, -40],
-          [10, 36],
-        ]
-      : []),
-  ];
-  return (
-    <>
-      <span
-        aria-hidden
-        style={{ '--x': hole.x, '--y': hole.y, '--a': `${pointing}deg` }}
-        className={`vault-drill pointer-events-none absolute ${giga ? 'vault-drill-giga' : ''} ${upsideDown ? 'vault-drill-flip' : ''}`}
-      >
-        <span className="vault-drill-shake block">
-          <DrillShape giga={giga} />
-        </span>
-      </span>
-      {sparks.map(([dx, dy], i) => (
-        <span
-          key={i}
-          aria-hidden
-          style={{
-            '--x': hole.x,
-            '--y': hole.y,
-            '--dx': `${dx}px`,
-            '--dy': `${dy}px`,
-            '--delay': `${i * 60}ms`,
-          }}
-          className={`vault-spark pointer-events-none absolute ${giga ? 'vault-spark-giga' : ''}`}
-        />
-      ))}
-    </>
-  );
-}
-
-const DRILL_MS = 1500;
-const GIGA_MS = 2300;
-const QUICK_MS = 700; // the next drills of a salvo come faster
-
 // Where each door sits on the vault room's picture (its three rings): the centre, as a share of the
 // picture's width and height.
 const SLOTS = [0.251, 0.5, 0.749];
@@ -522,19 +403,6 @@ function VaultTile({
 }
 
 // ── The opening ──
-
-type Phase = 'shake' | 'bolts' | 'swing' | 'cards';
-const PHASES: [Phase, number][] = [
-  ['shake', 0],
-  ['bolts', 1300],
-  ['swing', 2800],
-  ['cards', 4300],
-];
-const BOLTS = [
-  { top: 'top-1/4', dx: '3rem' },
-  { top: 'top-1/2', dx: '3.5rem' },
-  { top: 'top-3/4', dx: '3rem' },
-];
 
 function Opening({ vault: v, onClose }: { vault: Vault; onClose: () => void }) {
   const [phase, setPhase] = useState<Phase>('shake');

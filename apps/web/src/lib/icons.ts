@@ -12,6 +12,7 @@ import {
   ArrowUp,
   Award,
   Axe,
+  Backpack,
   Bomb,
   BookOpen,
   BowArrow,
@@ -65,9 +66,11 @@ import {
   MonitorPlay,
   Moon,
   Mountain,
+  Package,
   Palette,
   PartyPopper,
   Pencil,
+  PiggyBank,
   PlayingCard,
   PlayingCardsFan,
   Plus,
@@ -180,6 +183,9 @@ export const ICONS = {
   events: Flag, // the lore's events
   vault: Vault, // the vaults of the lore's events
   drill: Drill, // a drill, to break a vault open
+  inventory: Backpack, // the player's inventory, and its objects
+  boosterBox: Package, // the inventory's box of boosters kept
+  purse: PiggyBank, // the inventory's chest of gold and fragments
   lightning: CloudLightning, // an event's lightning, fallen on the world map
   travel: Footprints, // the faction sent, on its way to the lightning
   announcements: Megaphone,
