@@ -39,3 +39,13 @@ export function scaleEffect(
   }
   return out;
 }
+
+/** Whether a factor changes the effect at all: it has an amount (in it or one of its bricks). */
+export function hasAmounts(e: EffectData | null | undefined): boolean {
+  if (!e) return false;
+  if (e.briques?.some((b) => hasAmounts(b))) return true;
+  return AMOUNTS.some((key) => {
+    const v = Number(e[key]);
+    return e[key] !== '' && e[key] != null && Number.isFinite(v) && v !== 0;
+  });
+}
