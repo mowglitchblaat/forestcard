@@ -44,6 +44,12 @@ parasitaire (vrille de chair entre les deux cartes, soin qui remonte en lueurs v
 dans le branchement du combat, la marque d'exécution du dossier et mes versions de la brume et des liens
 (les fichiers restent, inutilisés par le combat).
 
+Repris aussi, après les retours du live du 23 novembre : le souffle élémentaire (couleurs et particules
+de son élément), l'aura rouge de l'ultime, la carte brisée (fin de combat, relais), l'engrenage et les
+circuits de la programmation, et deux statuts, le saignement et la fatigue (original/status-canvas.ts :
+un canevas par carte à sa taille à l'écran, 30 images/s, rien une fois le statut fini ; le shader de ces
+deux statuts n'est plus utilisé par le combat).
+
 ## Terrains (scenes/terrain.ts)
 
 Les 8 terrains (orage, essaim, forêt, cathédrale, lune de sang, sakura, grimoire, théâtre) en ambiance
