@@ -13,7 +13,6 @@ import { H, W } from '@forestcard/layout';
 import { every, type Stoppable } from '../engine/time.ts';
 
 export type CanvasStatus = 'saignement' | 'fatigue';
-export const CANVAS_STATUSES: ReadonlySet<string> = new Set<CanvasStatus>(['saignement', 'fatigue']);
 
 type Face = { root: Container; front: Container };
 type Running = { sprite: Sprite; loop: Stoppable; level: number };
