@@ -320,7 +320,10 @@ export function MiniVaultsAdmin() {
                   size="sm"
                   className="self-start"
                   onClick={() =>
-                    setLots((list) => [...list, { teinte: t, objet: 'gold', poids: 10, min: 100, max: 500 }])
+                    setLots((list) => [
+                      ...list,
+                      { teinte: t, objet: 'gold', poids: 10, min: 100, max: 500 },
+                    ])
                   }
                 >
                   <ICONS.add />

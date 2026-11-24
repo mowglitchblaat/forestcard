@@ -141,7 +141,11 @@ function Panel({
 }
 
 function BoosterBox({ inv, onClose }: { inv: Inventory; onClose: () => void }) {
-  const mirror = useQuery({ queryKey: imageKeys.mirror, queryFn: fetchMirror, staleTime: Infinity });
+  const mirror = useQuery({
+    queryKey: imageKeys.mirror,
+    queryFn: fetchMirror,
+    staleTime: Infinity,
+  });
   return (
     <Panel
       title={
@@ -485,7 +489,11 @@ function MiniOpening({
   loot: Loot[];
   onClose: () => void;
 }) {
-  const mirror = useQuery({ queryKey: imageKeys.mirror, queryFn: fetchMirror, staleTime: Infinity });
+  const mirror = useQuery({
+    queryKey: imageKeys.mirror,
+    queryFn: fetchMirror,
+    staleTime: Infinity,
+  });
   const [phase, setPhase] = useState<Phase>('shake');
   useEffect(() => {
     const timers = PHASES.slice(1).map(([p, at]) => setTimeout(() => setPhase(p), at));
@@ -573,7 +581,9 @@ function MiniOpening({
                 </div>
               );
             })}
-            {loot.length === 0 && <p className="text-sm text-muted-foreground">Rien… cette fois.</p>}
+            {loot.length === 0 && (
+              <p className="text-sm text-muted-foreground">Rien… cette fois.</p>
+            )}
           </div>
         )}
       </div>

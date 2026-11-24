@@ -74,7 +74,10 @@ const Inventory = z.object({
 });
 export type Inventory = z.infer<typeof Inventory>;
 
-export const inventoryKeys = { state: ['inventory'] as const, admin: ['inventory', 'admin'] as const };
+export const inventoryKeys = {
+  state: ['inventory'] as const,
+  admin: ['inventory', 'admin'] as const,
+};
 
 // The names of the colours, as the player reads them.
 export const TINT_NAMES: Record<Tint, string> = {
@@ -95,7 +98,9 @@ const REFUSALS: Record<string, string> = {
 };
 const refusal = (message: string): Error => {
   if (/inventaire_etat|inventaire_percer|admin_inventaire|admin_coffres_butin/.test(message))
-    return new Error("L'inventaire n'est pas encore prêt : l'admin doit lancer 100-inventaire.sql.");
+    return new Error(
+      "L'inventaire n'est pas encore prêt : l'admin doit lancer 100-inventaire.sql.",
+    );
   const code = Object.keys(REFUSALS).find((k) => message.includes(k));
   return new Error(code ? (REFUSALS[code] as string) : message);
 };
