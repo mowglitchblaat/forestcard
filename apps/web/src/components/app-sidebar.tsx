@@ -231,6 +231,7 @@ const SITE_ICONS: Record<SitePage, LucideIcon> = {
   live: ICONS.live,
   votes: ICONS.votes,
   atelier: ICONS.workshop,
+  inventaire: ICONS.inventory,
 };
 
 function SiteLink({ page, isAdmin }: { page: SitePage; isAdmin: boolean }) {

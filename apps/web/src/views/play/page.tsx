@@ -78,7 +78,7 @@ export function PlayPage() {
   const refresh = () => client.invalidateQueries();
   const open = useMutation({
     mutationFn: openBooster,
-    onSuccess: (res) => setScene({ page: 'overlay.html?site', message: { fc: 'booster', res } }),
+    onSuccess: (res) => setScene({ page: 'booster-3d.html?site', message: { fc: 'booster', res } }),
     onSettled: refresh,
   });
   const daily = useMutation({
@@ -90,7 +90,7 @@ export function PlayPage() {
     mutationFn: fight,
     onSuccess: (r) => {
       if ('replay' in r) {
-        setScene({ page: 'combat.html?site', message: { fc: 'combat', res: r.replay } });
+        setScene({ page: 'combat-3d.html?site', message: { fc: 'combat', res: r.replay } });
         setMessage(r.announce ?? '');
       } else setMessage(r.message);
     },

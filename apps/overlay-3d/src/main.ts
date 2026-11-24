@@ -5,7 +5,10 @@
 //                 pages, and plays each combat (or opening) it receives, one after the other;
 //   ?test         a panel to play combats computed here by the engine, or openings, with the cards of
 //                 the snapshot (docs/legacy/cartes-*.json): to try the overlay without a live;
-//   ?qualite=eco  the eco quality (packages/overlay-3d, config/quality.ts): lighter on the GPU.
+//   ?qualite=eco  the eco quality (packages/overlay-3d, config/quality.ts): lighter on the GPU;
+//   ?site         in a frame of the site (« Jouer », the lore's boss): it plays what the site sends
+//                 ({ fc: 'combat' | 'booster', res }), then tells it (« combat-fini », « booster-fini »),
+//                 like combat.html?site and overlay.html?site. Nothing to Streamer.bot.
 //
 // After a combat, combat-3d.html does what combat.html did: it announces the result (Streamer.bot action
 // « Combat - Résultat », ?action= for another name), marks the combat as shown (combat_affiche) and, in a
@@ -42,12 +45,13 @@ import snapshot from '../../../docs/legacy/cartes-2026-10-19.json';
 
 const params = new URLSearchParams(location.search);
 const TEST = params.has('test');
+const SITE = params.has('site');
 const MODE = document.body.dataset['mode'] === 'booster' ? 'booster' : 'combat';
 // before anything is built: the shaders are compiled with it
 setQuality(qualityFromUrl(location.search));
 
 // ---- after a combat: what combat.html did (announce, combat_affiche, tournament) -------------------
-const ANNOUNCE = MODE === 'combat' && !TEST && params.get('annonce') !== 'non';
+const ANNOUNCE = MODE === 'combat' && !TEST && !SITE && params.get('annonce') !== 'non';
 const ACTION_END = params.get('action') ?? 'Combat - Résultat';
 const ACTION_NEXT = params.get('suite') ?? 'Tournoi - Suivant';
 type Extras = { annonce: string | null; seed: unknown; tournoi: Record<string, unknown> | null };
@@ -300,8 +304,30 @@ async function main(): Promise<void> {
     }
   }
 
+  // In a frame of the site: what it sends, then « …-fini » once played.
+  if (SITE)
+    addEventListener('message', (e: MessageEvent<unknown>) => {
+      if (e.origin !== location.origin) return;
+      const d = e.data as { fc?: unknown; res?: unknown } | null;
+      const kind = d?.fc === 'combat' || d?.fc === 'booster' ? d.fc : null;
+      if (!kind) return;
+      const m = kind === 'combat' ? readCombatMessage(d?.res) : readBoosterMessage(d?.res);
+      const done = () => {
+        try {
+          parent.postMessage({ fc: `${kind}-fini` }, location.origin);
+        } catch {
+          // no parent: nothing to tell
+        }
+      };
+      if (!m) return done();
+      void play(m).then(async () => {
+        while (playing) await new Promise((ok) => setTimeout(ok, 200));
+        done();
+      });
+    });
+
   // Streamer.bot, like the legacy pages: General.Custom events carry the combat or the opening
-  if (!params.has('local')) {
+  if (!params.has('local') && !SITE) {
     const connect = () => {
       const ws = new WebSocket('ws://127.0.0.1:8080/');
       socket = ws;

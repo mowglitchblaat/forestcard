@@ -1,5 +1,6 @@
 // Admin · Cadeaux (aCadeaux): give boosters or a card to a player or to every player, with a short
-// note the player sees at their next sign-in (55-cadeaux-messages.sql, 56-cadeaux-cartes.sql).
+// note the player sees at their next sign-in (55-cadeaux-messages.sql, 56-cadeaux-cartes.sql); and
+// the mini-vaults and drills of the inventory (mini-vaults.tsx).
 
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -20,6 +21,7 @@ import {
 import { fetchMirror, imageKeys, imageUrl } from '@/data/images';
 import { ICONS } from '@/lib/icons';
 import { AdminError, AdminSection, Field, NoticeView, useAction } from './kit';
+import { MiniVaultsAdmin } from './mini-vaults';
 
 export function GiftsAdmin() {
   const players = useQuery({ queryKey: adminKeys.players, queryFn: fetchPlayers });
@@ -197,6 +199,8 @@ export function GiftsAdmin() {
         {pickedImage && <img src={pickedImage} alt="" className="w-28 rounded-lg shadow-md" />}
         <NoticeView notice={cardGift.notice} />
       </AdminSection>
+
+      <MiniVaultsAdmin />
     </div>
   );
 }

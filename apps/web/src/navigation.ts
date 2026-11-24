@@ -16,7 +16,10 @@ export const PLAYER_GROUPS: { label: string; items: NavItem[] }[] = [
     label: 'Stream',
     items: [{ site: 'annonces' }, { site: 'lore' }, { site: 'jouer' }, { site: 'live' }],
   },
-  { label: 'Mes cartes', items: views('collection', 'deck', 'dos', 'echanges') },
+  {
+    label: 'Mes cartes',
+    items: [...views('collection', 'deck', 'dos', 'echanges'), { site: 'inventaire' }],
+  },
   { label: 'Gold', items: [...views('jeux', 'boutique'), { site: 'atelier' }] },
   { label: 'Combats', items: views('historique', 'classement', 'ceintures', 'tournois') },
   {

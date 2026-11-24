@@ -1,6 +1,6 @@
 // The game paused for the streamer's let's play (32-mode-site.sql): the players open their boosters,
 // take their daily booster and play their combats on the site, with the stream's animations
-// (overlay.html?site and combat.html?site). As the legacy page's vJouer.
+// (booster-3d.html?site and combat-3d.html?site, the WebGL overlays). As the legacy page's vJouer.
 
 import { z } from 'zod';
 import { supabase } from '@/lib/supabase';

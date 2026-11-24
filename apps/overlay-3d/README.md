@@ -14,6 +14,7 @@ Les tailles sont celles de l'ancien overlay : cartes de combat de 540 px de haut
 
 ## Paramètres
 
+- `?site` : dans une fenêtre du site (« Jouer », le boss du lore) : la page joue ce que le site lui envoie (`{ fc: 'combat' | 'booster', res }`), puis le lui dit (`combat-fini`, `booster-fini`), comme `combat.html?site` et `overlay.html?site` qu'elle remplace sur le site. Ni Streamer.bot ni annonce.
 - `?test` : un panneau pour jouer des combats calculés dans la page par le moteur, avec les cartes du snapshot (`docs/legacy/cartes-2026-10-19.json`), simple ou en relais. Sans live ni Streamer.bot.
 - `?qualite=eco` : la qualité éco (moins de travail pour la carte graphique, voir `packages/overlay-3d/src/config/quality.ts`).
 - `?local` : pas de connexion à Streamer.bot.
