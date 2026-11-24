@@ -7,7 +7,7 @@
 // top: a line with no animation yet stays readable. The scene owns its cards: they are destroyed when it
 // ends, whatever happens (engine/player.ts).
 
-import { Container, Sprite, Text, type Application } from 'pixi.js';
+import { Container, Text, type Application } from 'pixi.js';
 import { Particles } from '../engine/particles.ts';
 import { H, W } from '@forestcard/layout';
 import type { Card, Hidden } from '../card/card.ts';
@@ -28,7 +28,8 @@ import type { StatusFxKind } from '../status/registry.ts';
 import { mechanicsOf } from './combat-fx.ts';
 import { cardLayers, dressedCard, textResolutionFor, type Deps } from './common.ts';
 import { CombatTerrain } from './terrain.ts';
-import { burst, dropTexture, splatTexture } from '../kit/draw.ts';
+import { dropTexture } from '../kit/draw.ts';
+import { bloodSpurt } from './blood.ts';
 import { liveNumbers, type LiveNumbers, type NumbersStyle } from './live-numbers.ts';
 import { LegacyCanvas } from '../original/fx.ts';
 import { legacyEffects } from '../original/effects.ts';
@@ -685,80 +686,11 @@ export async function playCombat(ctx: CombatContext, m: CombatMessage): Promise<
 
   // A number struck on fighter `c` (scenes/combat-number.ts).
   const sparks = new Particles(scene);
-  // blood (a bleeding card): dark drops in normal blending, over the cards
+  // blood (a bleeding card): drops in normal blending, over the cards (scenes/blood.ts)
   const blood = new Particles(scene, dropTexture());
   blood.box.blendMode = 'normal';
-  const BLOOD = [0xc8101e, 0xe0182a, 0xa80c18, 0x86000f];
-  // Blood spurting from fighter c (the bleed deals its damage, or is laid: `cut`): two jets from a
-  // wound on the upper card, drops arcing out and falling, a fine spray, a few heavy drops.
-  function spurt(c: number, cut = false): void {
-    const x = P.fighterX[c]!,
-      h = P.fighter,
-      w = h * 0.72;
-    const wx = x + (Math.random() - 0.5) * w * 0.5,
-      wy = P.y - h * (0.05 + Math.random() * 0.2);
-    const side = wx < x ? -1 : 1;
-    const k = cut ? 0.7 : 1;
-    // the splash on the card, thrown on and drying away
-    const splat = new Sprite({ texture: splatTexture(), anchor: 0.5 });
-    splat.position.set(wx, wy);
-    splat.rotation = Math.random() * Math.PI * 2;
-    const sz = w * (cut ? 0.5 : 0.65);
-    scene.addChildAt(splat, scene.getChildIndex(blood.box)); // under the drops
-    void tween(
-      1100,
-      (u) => {
-        const s0 = sz / splat.texture.width;
-        splat.scale.set(s0 * (u < 0.12 ? 0.4 + 0.6 * (u / 0.12) : 1));
-        splat.alpha = u < 0.55 ? 1 : 1 - (u - 0.55) / 0.45;
-      },
-      'linear',
-      splat,
-    ).then(() => splat.destroy());
-    for (const a of [-Math.PI / 2 + side * 0.55, -Math.PI / 2 + side * 1.15])
-      burst(blood, {
-        x: wx,
-        y: wy,
-        count: Math.round(36 * k),
-        speed: h * 2.6,
-        size: h * 0.03,
-        tint: BLOOD,
-        life: 1.1,
-        angle: a,
-        spread: 0.45,
-        gravity: h * 5.5,
-        drag: 0.7,
-        stretch: 1.1,
-        jitter: w * 0.03,
-      });
-    burst(blood, {
-      x: wx,
-      y: wy,
-      count: Math.round(34 * k),
-      speed: h * 1.5,
-      size: h * 0.014,
-      tint: BLOOD,
-      life: 0.7,
-      gravity: h * 4,
-      drag: 1.6,
-      stretch: 0.8,
-      jitter: w * 0.05,
-    });
-    burst(blood, {
-      x: wx,
-      y: wy,
-      count: Math.round(7 * k),
-      speed: h * 1.5,
-      size: h * 0.05,
-      tint: [0xa80c18, 0xc8101e],
-      life: 1.2,
-      angle: -Math.PI / 2 + side * 0.8,
-      spread: 1.2,
-      gravity: h * 6,
-      drag: 0.4,
-      stretch: 0.5,
-    });
-  }
+  const spurt = (c: number, cut = false) =>
+    bloodSpurt(scene, blood, P.fighterX[c]!, P.y, P.fighter, cut);
   // the terrain behind everything, and the mechanics' statuses, marks and moves (scenes/combat-fx.ts)
   const terrainLayer = new Container({ label: 'terrain' });
   scene.addChildAt(terrainLayer, 0);
