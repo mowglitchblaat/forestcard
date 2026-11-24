@@ -46,9 +46,10 @@ dans le branchement du combat, la marque d'exécution du dossier et mes versions
 
 Repris aussi, après les retours du live du 23 novembre : le souffle élémentaire (couleurs et particules
 de son élément), l'aura rouge de l'ultime, la carte brisée (fin de combat, relais), l'engrenage et les
-circuits de la programmation, et deux statuts, le saignement et la fatigue (original/status-canvas.ts :
-un canevas par carte à sa taille à l'écran, 30 images/s, rien une fois le statut fini ; le shader de ces
-deux statuts n'est plus utilisé par le combat).
+circuits de la programmation. Le saignement et la fatigue restent des shaders,
+redessinés le 24 novembre pour dire ce qu'ils sont (status/shaders.ts, BLEED et TIRED) : gouttes de sang
+qui coulent, lueur rouge qui bat dans les bords, sang au bas de la carte ; paupières lourdes qui
+clignent, gouttes de sueur, « Z » qui montent, voile bleu-gris.
 
 ## Terrains (scenes/terrain.ts)
 

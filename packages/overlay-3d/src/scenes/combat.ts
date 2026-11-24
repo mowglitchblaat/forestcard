@@ -28,7 +28,6 @@ import type { StatusFxKind } from '../status/registry.ts';
 import { mechanicsOf } from './combat-fx.ts';
 import { cardLayers, dressedCard, textResolutionFor, type Deps } from './common.ts';
 import { CombatTerrain } from './terrain.ts';
-import { clearCanvasStatuses, setCanvasStatus } from '../original/status-canvas.ts';
 import { liveNumbers, type LiveNumbers, type NumbersStyle } from './live-numbers.ts';
 import { LegacyCanvas } from '../original/fx.ts';
 import { legacyEffects } from '../original/effects.ts';
@@ -823,19 +822,15 @@ export async function playCombat(ctx: CombatContext, m: CombatMessage): Promise<
           // a purification takes every status but the stun
           for (const kind of Object.values(STATUS_OF))
             if (kind !== 'stun') f.statuses.set(kind, false);
-          clearCanvasStatuses(f.card);
           return;
         }
         const ended = on ? ENDS[l.k] : undefined;
         if (ended) return f.statuses.set(ended, false);
         const acting = on ? ACTS_STATUS[l.k] : undefined;
         if (acting) return detach(f.statuses.tick(acting));
-        const level = num(l.raw['niv']) ?? l.n ?? 1;
-        // bleeding and fatigue: drawn as the legacy drew them (original/status-canvas.ts)
-        if (l.k === 'saignement' || l.k === 'fatigue')
-          return setCanvasStatus(f.card, l.k, on, level);
         const kind = STATUS_OF[l.k];
         if (!kind) return;
+        const level = num(l.raw['niv']) ?? l.n ?? 1;
         f.statuses.set(kind, on, { level });
         return;
       }

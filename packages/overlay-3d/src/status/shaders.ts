@@ -187,37 +187,61 @@ void main(){` +
 export const BLEED =
   COMMON +
   `
+float seg(vec2 p, vec2 a, vec2 b){ vec2 pa = p - a, ba = b - a; float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0); return length(pa - ba * h); }
 void main(){` +
   HEAD +
   `
-  // rewritten from the bench (its cartoon drips read as a gag): the card bleeds from within. Its colour
-  // drains; dark blood seeps into the picture's shadows from the edges, in slow uneven pools, wet and
-  // catching the light; a heartbeat throbs in it. A damage tick: the card contracts, the blood surges in,
-  // then ebbs.
+  // The card bleeds (after the live of 23 November: the seeping alone read badly): its colour drains to
+  // a cold red; a red glow throbs inside its edges with a heartbeat (the legacy's box-shadow sg); drops
+  // of blood run down the card, each with its trail, wet and catching the light; the blood gathers at
+  // the bottom. uLevel 1 to 3: more drops, a stronger glow. A damage tick: the card contracts, the glow
+  // and the blood surge, then ebb.
+  float lv = clamp(uLevel, 1.0, 3.0);
   vec2 zq = 0.5 + (cuv - 0.5) * (1.0 - 0.012 * tk);
   vec3 c = tex(zq);
   float l = lumi(c);
-  c = mix(c, vec3(l) * vec3(1.0, 0.85, 0.85), (0.3 + 0.2 * tk) * a * uShare);
+  c = mix(c, vec3(l) * vec3(1.05, 0.72, 0.72), (0.35 + 0.2 * tk) * a * uShare);
   float beat = pow(max(0.0, sin(t * 2.6)), 10.0) + 0.6 * pow(max(0.0, sin(t * 2.6 - 0.6)), 10.0);
-  vec2 ps = vec2(5.0, 6.0), drift = vec2(0.0, t * 0.04);
-  float pool = fbm(cuv * ps + drift);
-  // from where it shows: the frame covers the picture's edges, so the blood reaches well past a frame's
-  // width from the sides, and gathers toward the bottom (gravity)
-  float reach = 0.32 + 0.05 * beat + 0.14 * tk;
-  float near = 1.0 - smoothstep(0.0, reach, edge - (pool - 0.5) * 0.3);
-  float low = smoothstep(0.35, 1.0, cuv.y + (pool - 0.5) * 0.3) * (0.7 + 0.15 * beat + 0.3 * tk);
-  near = max(near, low);
-  float shade = smoothstep(0.55, 0.12, l);
-  float blood = clamp(near * (0.45 + 0.55 * shade), 0.0, 1.0) * a;
-  // wet: a surface normal from the pools, lit from up left
-  float e = 0.01;
-  vec2 g = vec2(fbm((cuv + vec2(e, 0.0)) * ps + drift) - pool, fbm((cuv + vec2(0.0, e)) * ps + drift) - pool) * 8.0;
-  vec3 nrm = normalize(vec3(-g, 1.0));
-  float spec = pow(max(dot(nrm, normalize(vec3(-0.4, -0.6, 0.7))), 0.0), 24.0);
-  c = mix(c, vec3(0.3, 0.0, 0.02) * (0.7 + 0.5 * pool), blood * 0.85);
-  c += vec3(1.0, 0.72, 0.72) * spec * blood * 0.45;
-  float ga = clamp(halo(d, uPad.x * 0.7) * (0.4 + 0.3 * beat + 0.6 * tk) * a, 0.0, 1.0);
-  finalColor = over(vec4(c * inside, inside), vec4(vec3(0.6, 0.0, 0.05) * ga, ga));
+  // the glow inside the edges, throbbing
+  float rimW = 0.16 + 0.04 * lv + 0.06 * beat + 0.12 * tk;
+  float rim = 1.0 - smoothstep(0.0, rimW, edge + (fbm(cuv * 6.0 + t * 0.1) - 0.5) * 0.06);
+  c = mix(c, vec3(0.55, 0.0, 0.03), rim * (0.55 + 0.2 * beat + 0.25 * tk) * a);
+  // pooled at the bottom, uneven
+  float pool = smoothstep(0.82, 1.0, cuv.y + (fbm(vec2(cuv.x * 7.0, t * 0.15)) - 0.5) * 0.12);
+  c = mix(c, vec3(0.42, 0.0, 0.02), pool * 0.85 * a);
+  // the drops: one per column, each starting from the top on its own beat, its trail behind it
+  vec2 asp = vec2(uCard.x / uCard.y, 1.0);
+  float drip = 0.0, gloss = 0.0;
+  for (int i = 0; i < 9; i++){
+    float fi = float(i);
+    if (fi >= 3.0 + 3.0 * lv) break;
+    float hx = hash(vec2(fi, 3.1));
+    float x = 0.07 + 0.86 * hx;
+    float sp = 0.10 + 0.08 * hash(vec2(fi, 7.7));
+    float ph = fract(t * sp + hash(vec2(fi, 1.3)));
+    float y0 = 0.02 + 0.12 * hash(vec2(fi, 5.9));
+    float yh = y0 + ph * ph * 1.05;
+    float w = 0.007 + 0.006 * hash(vec2(fi, 9.4));
+    float fade = 1.0 - smoothstep(0.8, 1.0, ph);
+    vec2 p = cuv * asp;
+    // the trail: thin, widening toward the head, with a slight sway
+    float sway = sin(cuv.y * 18.0 + fi) * 0.003;
+    float dt = seg(p, vec2(x + sway, y0) * asp, vec2(x, yh) * asp) - w * (0.45 + 0.55 * smoothstep(y0, yh, cuv.y));
+    // the head: a drop, rounder and heavier
+    vec2 q = (p - vec2(x, yh + w * 0.6) * asp) / vec2(1.0, 1.3);
+    float dh = length(q) - w * 1.5;
+    float dd = min(dt, dh);
+    float m = (1.0 - smoothstep(-0.002, 0.002, dd)) * fade;
+    drip = max(drip, m);
+    // its highlight, up left of the head and along the trail
+    gloss = max(gloss, (1.0 - smoothstep(0.0, w * 0.7, length(p - vec2(x - w * 0.45, yh) * asp))) * fade * m);
+    gloss = max(gloss, (1.0 - smoothstep(0.0, w * 0.25, abs(p.x - (x - w * 0.3) * asp.x))) * step(y0, cuv.y) * step(cuv.y, yh) * m * 0.5);
+  }
+  vec3 blood = mix(vec3(0.45, 0.0, 0.03), vec3(0.75, 0.02, 0.06), 0.5 + 0.5 * beat);
+  c = mix(c, blood, drip * 0.88 * a);
+  c += vec3(1.0, 0.75, 0.75) * gloss * 0.6 * a;
+  float ga = clamp(halo(d, uPad.x) * (0.45 + 0.35 * beat + 0.8 * tk) * a, 0.0, 1.0);
+  finalColor = over(vec4(c * inside, inside), vec4(vec3(0.9, 0.04, 0.06) * ga, ga));
 }`;
 
 export const CURSE =
@@ -304,22 +328,68 @@ void main(){` +
 export const TIRED =
   COMMON +
   `
+float seg(vec2 p, vec2 a, vec2 b){ vec2 pa = p - a, ba = b - a; float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0); return length(pa - ba * h); }
 void main(){` +
   HEAD +
   `
-  // the picture sags slowly, blurs a little, loses colour and light; fatigue does not act after landing
-  vec2 q = cuv + vec2(0.0, sin(t * 0.8) * 0.002 * a);
+  // Fatigue (after the live of 23 November: the grade alone did not say it): the picture sags, blurs a
+  // little and goes blue-grey; the eyelids are heavy: dark bands at the top and bottom that close
+  // slowly, and blink; drops of sweat run down; « Z » rise from the top right, swaying and growing, as
+  // in the legacy overlay. Fatigue does not act after landing.
+  float lv = clamp(uLevel, 1.0, 3.0);
+  vec2 q = cuv + vec2(0.0, sin(t * 0.8) * 0.003 * a);
   float r = 0.004 * a;
   vec3 c = (tex(q) * 2.0 + tex(q + vec2(r, 0.0)) + tex(q - vec2(r, 0.0)) + tex(q + vec2(0.0, r)) + tex(q - vec2(0.0, r))) / 6.0;
   float l = lumi(c);
-  c = mix(c, vec3(l) * vec3(0.78, 0.85, 1.05), 0.7 * a * uShare);
-  c *= 1.0 - 0.3 * a * uShare;
-  float lid = (0.07 + 0.06 * (0.5 + 0.5 * sin(t * 1.1))) * a;
-  float lids = max(1.0 - smoothstep(lid, lid + 0.07, cuv.y), 1.0 - smoothstep(lid * 0.5, lid * 0.5 + 0.06, 1.0 - cuv.y));
-  c = mix(c, vec3(0.03, 0.04, 0.08), lids * 0.9 * a);
+  c = mix(c, vec3(l) * vec3(0.72, 0.82, 1.1), 0.75 * a * uShare);
+  c *= 1.0 - 0.28 * a * uShare;
+  // heavy eyelids, and now and then a long blink
+  float bl = pow(max(0.0, sin(t * 0.9)), 30.0);
+  float lid = (0.06 + 0.025 * lv + 0.04 * (0.5 + 0.5 * sin(t * 1.1)) + 0.16 * bl) * a;
+  float lids = max(1.0 - smoothstep(lid, lid + 0.06, cuv.y), 1.0 - smoothstep(lid * 0.45, lid * 0.45 + 0.05, 1.0 - cuv.y));
+  c = mix(c, vec3(0.02, 0.03, 0.07), lids * 0.92 * a);
+  // a blue-grey mist drifting
   float hz = fbm(vec2(cuv.x * 2.5 + t * 0.08, cuv.y * 2.0));
-  c = mix(c, vec3(0.45, 0.52, 0.7), smoothstep(0.45, 0.8, hz) * 0.25 * a);
-  float ga = clamp(halo(d, uPad.x * 0.5) * 0.35 * a, 0.0, 1.0);
+  c = mix(c, vec3(0.42, 0.5, 0.72), smoothstep(0.45, 0.8, hz) * 0.3 * a);
+  vec2 asp = vec2(uCard.x / uCard.y, 1.0), p = cuv * asp;
+  // sweat: drops running down, pale and wet
+  float sweat = 0.0, shine = 0.0;
+  for (int i = 0; i < 7; i++){
+    float fi = float(i);
+    if (fi >= 3.0 + 2.0 * lv) break;
+    float x = 0.08 + 0.84 * hash(vec2(fi, 2.3));
+    float ph = fract(t * (0.13 + 0.07 * hash(vec2(fi, 4.1))) + hash(vec2(fi, 8.8)));
+    float y = -0.03 + ph * 1.06;
+    float w = 0.011 + 0.006 * hash(vec2(fi, 6.6));
+    vec2 o = p - vec2(x, y) * asp;
+    // a teardrop: round below, pointed above
+    o.y *= o.y < 0.0 ? 0.55 : 1.0;
+    float dd = length(o) - w;
+    float al = sin(3.14159 * ph);
+    float m = (1.0 - smoothstep(-0.0015, 0.0015, dd)) * al;
+    sweat = max(sweat, m);
+    shine = max(shine, (1.0 - smoothstep(0.0, w * 0.45, length(p - vec2(x - w * 0.35, y) * asp))) * al);
+  }
+  c = mix(c, vec3(0.62, 0.82, 1.0), sweat * 0.75 * a);
+  c += vec3(1.0) * shine * 0.7 * a;
+  // the « Z »: three at a time, rising, swaying, growing, fading
+  float zf = 0.0, zo = 0.0;
+  for (int i = 0; i < 3; i++){
+    float fi = float(i);
+    float ph = fract(t * 0.32 + fi / 3.0);
+    vec2 ctr = vec2(0.7 + 0.05 * fi + 0.035 * sin(t * 1.7 + fi * 2.1), 0.44 - ph * 0.32);
+    float sz = (0.045 + 0.06 * ph) * (0.85 + 0.15 * lv);
+    vec2 z = (p - ctr * asp) / sz;
+    float an = -0.2;
+    z = mat2(cos(an), -sin(an), sin(an), cos(an)) * z;
+    float dz = min(min(seg(z, vec2(-0.45, -0.5), vec2(0.45, -0.5)), seg(z, vec2(0.45, -0.5), vec2(-0.45, 0.5))), seg(z, vec2(-0.45, 0.5), vec2(0.45, 0.5)));
+    float al = sin(3.14159 * ph);
+    zf = max(zf, (1.0 - smoothstep(0.1, 0.13, dz)) * al);
+    zo = max(zo, (1.0 - smoothstep(0.17, 0.21, dz)) * al);
+  }
+  c = mix(c, vec3(0.05, 0.08, 0.2), zo * 0.85 * a);
+  c = mix(c, vec3(0.82, 0.9, 1.0), zf * a);
+  float ga = clamp(halo(d, uPad.x * 0.5) * 0.4 * a, 0.0, 1.0);
   finalColor = over(vec4(c * inside, inside), vec4(vec3(0.3, 0.38, 0.6) * ga, ga));
 }`;
 
