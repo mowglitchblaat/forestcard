@@ -467,7 +467,9 @@ export function WorldMap() {
     setMenu({ place, x: u * 100, y: v * 100 });
   };
   const pins = places.filter((p) => p.lore_calques.length === 0);
-  const charged = chargedPlaces(events.data ?? [], places);
+  // the lightning absorbed (Admin > Lore): nothing crackles; the glow keeps its place over its holder
+  const holders = chargedPlaces(events.data ?? [], places);
+  const charged = map.data?.eclairAbsorbe ? new Map<number, never>() : holders;
   const hovered = placeOf(hover);
   const opened = menu?.place ?? null;
   // the boosters that give the place's collection from the rare cards up: the commons of every
@@ -557,7 +559,7 @@ export function WorldMap() {
             .map(([place, shape]) => (
               <ElectricArcs key={`arcs-${place}`} shape={shape} />
             ))}
-          <MapGlow level={map.data?.lueur ?? 0} x={glowX(places, charged)} />
+          <MapGlow level={map.data?.lueur ?? 0} x={glowX(places, holders)} />
           <MapStorm level={map.data?.tempete ?? 0} />
           <MapLightnings places={places} />
           {pins.map((p) => (

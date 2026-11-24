@@ -39,6 +39,7 @@ import {
   saveMapImage,
   savePlace,
   setCountEnd,
+  setLightningAbsorbed,
   setMapGlow,
   setMapStorm,
   setPlaceRevealed,
@@ -758,6 +759,21 @@ function MapAdmin() {
           <option value="5">5 : déluge d'éclairs</option>
         </NativeSelect>
       </Field>
+      <Choice>
+        <Checkbox
+          checked={map.data.eclairAbsorbe}
+          onChange={(e) => {
+            const absorbed = e.target.checked;
+            act.run(async () => {
+              await setLightningAbsorbed(absorbed);
+              return absorbed
+                ? 'Éclair absorbé : plus aucun lieu ne crépite sur la carte.'
+                : 'Éclair de retour sur la carte.';
+            });
+          }}
+        />{' '}
+        Éclair absorbé (plus d'électricité autour du lieu qui le détenait)
+      </Choice>
       <Field label="Lueur violette dans le ciel (descend du haut de la carte, au-dessus du lieu qui détient l'éclair)">
         <NativeSelect
           value={String(map.data.lueur)}

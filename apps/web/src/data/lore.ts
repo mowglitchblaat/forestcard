@@ -94,12 +94,15 @@ export type Place = z.infer<typeof Place>;
 // The map and its places: a player gets the revealed places and their public layers only (the
 // database filters), the admin gets everything.
 // tempete: the storm over the map, 0 (none) to 5 (80-tempete-et-intensite-orage.sql).
-// lueur: the violet glow in the sky, 0 (none) to 10 (96-lueur-ciel.sql). The whole row is read, so
+// lueur: the violet glow in the sky, 0 (none) to 10 (96-lueur-ciel.sql).
+// eclair_absorbe: the lightning absorbed, no place crackles any more (99-eclair-absorbe.sql). The whole
+// row is read, so
 // the map still loads before that column exists.
 export async function fetchWorldMap(): Promise<{
   image: string | null;
   tempete: number;
   lueur: number;
+  eclairAbsorbe: boolean;
   places: Place[];
 }> {
   const [map, places] = await Promise.all([
@@ -118,6 +121,7 @@ export async function fetchWorldMap(): Promise<{
       image_path: z.string().nullable(),
       tempete: Num.default(0),
       lueur: Num.default(0),
+      eclair_absorbe: z.boolean().default(false),
     })
     .nullable()
     .parse(map);
@@ -125,6 +129,7 @@ export async function fetchWorldMap(): Promise<{
     image: row?.image_path ?? null,
     tempete: row?.tempete ?? 0,
     lueur: row?.lueur ?? 0,
+    eclairAbsorbe: row?.eclair_absorbe ?? false,
     places: z
       .array(Place)
       .parse(places)
@@ -145,6 +150,11 @@ export async function setMapStorm(level: number): Promise<void> {
 export async function setMapGlow(level: number): Promise<void> {
   const lueur = Math.max(0, Math.min(10, Math.round(level)));
   await call(supabase.from('lore_carte').upsert({ id: 1, lueur }));
+}
+
+// The lightning absorbed (or back): its holder stops crackling on the world map. Admin only.
+export async function setLightningAbsorbed(absorbed: boolean): Promise<void> {
+  await call(supabase.from('lore_carte').upsert({ id: 1, eclair_absorbe: absorbed }));
 }
 
 export async function saveMapImage(file: File): Promise<void> {
