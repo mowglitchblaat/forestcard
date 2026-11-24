@@ -10,6 +10,7 @@ import {
   canonEffect,
   canonPassive,
   DEFAULT_LEVELS,
+  hasAmounts,
   levelOf,
   rageFatigueLevel,
   type EffectData,
@@ -913,7 +914,13 @@ export function magicTiming(e: Fx | null | undefined): string {
     nz(e.minstable) > 0
       ? `Instable : ${nz(e.minstable)} % de chances par tour de changer d'effet`
       : '',
-    e.mverrou ? `Verrouillée (-${pick(e.mverroumalus, 25)} %)` : '',
+    // its weakening only when it has something to weaken (mechanics/power.ts: levels, chances and
+    // durations stay as they are) and is not set to 0
+    e.mverrou
+      ? hasAmounts(e as EffectData) && pick(e.mverroumalus, 25) !== 0
+        ? `Verrouillée (-${pick(e.mverroumalus, 25)} %)`
+        : 'Verrouillée'
+      : '',
     e.mrelais ? 'Suit le combattant suivant en relais' : '',
     lasts > 0 ? `dure ${trs(lasts)}, puis ses effets prennent fin` : '',
   ]
