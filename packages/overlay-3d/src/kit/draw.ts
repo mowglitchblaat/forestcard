@@ -183,6 +183,71 @@ export function flare(
   return new Promise((resolve) => detach(p, () => (s.destroy(), resolve())));
 }
 
+// A drop of liquid, white to be tinted (normal blending): a full round body, a darker rim, a highlight up
+// left. Stretched along its speed by the particles, it reads as a flying drop.
+export const dropTexture = (): Texture =>
+  canvasTexture('kit-drop', 64, 64, (g, w) => {
+    const m = w / 2;
+    const body = g.createRadialGradient(m - 6, m - 6, 2, m, m, m - 2);
+    body.addColorStop(0, 'rgba(255,255,255,1)');
+    body.addColorStop(0.75, 'rgba(205,205,205,1)');
+    body.addColorStop(0.92, 'rgba(150,150,150,.9)');
+    body.addColorStop(1, 'rgba(150,150,150,0)');
+    g.fillStyle = body;
+    g.beginPath();
+    g.arc(m, m, m - 2, 0, Math.PI * 2);
+    g.fill();
+  });
+
+// A splash of blood, red (not tinted): an uneven blot, its arms thrown out, droplets around. Seeded: the
+// same splash each time it is drawn, turned and flipped by its sprite.
+export const splatTexture = (): Texture =>
+  canvasTexture('kit-splat', 256, 256, (g, w) => {
+    const m = w / 2;
+    let seed = 7;
+    const rnd = () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
+    g.fillStyle = '#b3101c';
+    g.beginPath();
+    for (let i = 0; i <= 24; i++) {
+      const a = (i / 24) * Math.PI * 2,
+        r = w * (0.17 + 0.07 * rnd());
+      g.lineTo(m + Math.cos(a) * r, m + Math.sin(a) * r);
+    }
+    g.fill();
+    for (let i = 0; i < 9; i++) {
+      const a = rnd() * Math.PI * 2,
+        len = w * (0.22 + 0.2 * rnd()),
+        wd = w * (0.025 + 0.03 * rnd());
+      g.save();
+      g.translate(m, m);
+      g.rotate(a);
+      g.beginPath();
+      g.moveTo(0, -wd);
+      g.quadraticCurveTo(len * 0.6, -wd * 0.4, len, 0);
+      g.quadraticCurveTo(len * 0.6, wd * 0.4, 0, wd);
+      g.fill();
+      g.beginPath();
+      g.arc(len, 0, wd * 0.9, 0, Math.PI * 2);
+      g.fill();
+      g.restore();
+    }
+    for (let i = 0; i < 26; i++) {
+      const a = rnd() * Math.PI * 2,
+        r = w * (0.2 + 0.27 * rnd());
+      g.beginPath();
+      g.arc(m + Math.cos(a) * r, m + Math.sin(a) * r, w * (0.006 + 0.016 * rnd()), 0, Math.PI * 2);
+      g.fill();
+    }
+    // wet: a darker heart and a light catch
+    const h = g.createRadialGradient(m - w * 0.05, m - w * 0.05, 0, m, m, w * 0.2);
+    h.addColorStop(0, 'rgba(255,120,120,.55)');
+    h.addColorStop(0.3, 'rgba(120,0,10,.0)');
+    h.addColorStop(1, 'rgba(70,0,6,.5)');
+    g.globalCompositeOperation = 'source-atop';
+    g.fillStyle = h;
+    g.fillRect(0, 0, w, w);
+  });
+
 // ---- particles ---------------------------------------------------------------------------------------
 
 export type BurstSpec = {
