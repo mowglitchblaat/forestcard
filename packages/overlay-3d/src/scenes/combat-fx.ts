@@ -7,7 +7,6 @@
 // broken, brought back, an ultimate) are awaited, so that the next line waits for them.
 // The journal's fields are read from the line (packages/journal/src/project.ts says what each carries).
 
-import { clearCanvasStatuses } from '../original/status-canvas.ts';
 import type { Application } from 'pixi.js';
 import type { Card } from '../card/card.ts';
 import type { Particles } from '../engine/particles.ts';
@@ -104,7 +103,6 @@ export function mechanicsOf(ctx: MechanicsContext) {
         return move(c, 'detonate');
       case 'reanim_mort':
         f?.statuses.clear();
-        if (f) clearCanvasStatuses(f.card);
         if (f) detach(f.marks.clear());
         // an executed card already lies in two halves: it does not break a second time
         if (f && ctx.legacy.isCut(f.card)) return;
