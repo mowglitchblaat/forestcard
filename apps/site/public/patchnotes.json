@@ -1,5 +1,35 @@
 [
   {
+    "date": "2026-11-24",
+    "intro": "Un inventaire tout neuf avec ses mini-coffres à percer, et des combats et boosters entièrement réanimés.",
+    "groupes": [
+      {
+        "titre": "Collection et deck",
+        "points": [
+          "Nouvel onglet Inventaire dans Mes cartes : votre boîte à boosters, votre coffre (gold et fragments) et vos objets réunis au même endroit.",
+          "Les foreuses et la Perce-Abîme restent dans votre inventaire après l'événement, et servent aussi à percer des mini-coffres bleus, violets ou légendaires offerts par l'admin, avec un butin selon leur couleur.",
+          "24 nouvelles illustrations pour des versions alternatives, au format pleine carte."
+        ]
+      },
+      {
+        "titre": "Animations",
+        "points": [
+          "Les combats et l'ouverture des boosters passent sur une toute nouvelle animation, avec des cartes plus grandes et plus nettes en live.",
+          "ATQ et PV s'affichent en direct sur les cartes, le saignement fait gicler le sang, et souffle, ultime, relais et statuts ont été refaits.",
+          "Plusieurs petits bugs corrigés : cartes qui clignotaient ou sautaient de côté, dos de carte écrasé."
+        ]
+      },
+      {
+        "titre": "Site",
+        "points": [
+          "Les combats de Jouer et des boss du Lore utilisent aussi la nouvelle animation.",
+          "Lore : la Forêt Enchantée a absorbé l'éclair, plus aucun lieu ne crépite sur la carte du monde.",
+          "Les magies verrouillées n'affichent plus de malus quand il ne change rien."
+        ]
+      }
+    ]
+  },
+  {
     "date": "2026-11-23",
     "intro": "Vous aussi, devenez des braqueurs ! Trois coffres-forts scellés attendent la communauté dans Lore › Événements.",
     "groupes": [
