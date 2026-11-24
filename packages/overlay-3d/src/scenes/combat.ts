@@ -826,6 +826,19 @@ export async function playCombat(ctx: CombatContext, m: CombatMessage): Promise<
         const on = l.t === 'statut';
         // marque (the execution's blades): scenes/combat-fx.ts, as the legacy drew them
         if (l.k === 'marque') return;
+        // the Knell's shadow on the life bar (combat.html, glasBarre)
+        if (l.c !== null) {
+          const bar = bars[l.c]!,
+            threshold = num(l.raw['s']);
+          if (l.k === 'glas') bar.knell(on ? {} : 'off');
+          else if (on && (l.k === 'glas_monte' || l.k === 'glas_recul'))
+            bar.knell({
+              threshold,
+              ...(l.k === 'glas_recul' && l.n !== null ? { skulls: l.n } : {}),
+            });
+          else if (on && l.k === 'glas_mort') bar.knell({ threshold: 100 });
+          if (l.k === 'glas_monte' || l.k === 'glas_recul') return;
+        }
         if (on && l.k === 'purif') {
           // a purification takes every status but the stun
           for (const kind of Object.values(STATUS_OF))

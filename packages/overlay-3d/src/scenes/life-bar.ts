@@ -8,7 +8,10 @@
 //               health);
 //   a heal:     the liquid rises, with a flash;
 //   low:        under a quarter of its max HP, it turns orange and beats;
-//   its motion: calm at rest; stirred by a hit or a heal, then calming down.
+//   its motion: calm at rest; stirred by a hit or a heal, then calming down;
+//   the Knell:  its shadow creeps over the bar from the left, a skull at its edge, the skulls left
+//               (purifications to go) written in it (combat.html, glasBarre): once the HP fall under
+//               it, the card dies.
 
 import { Container, Text } from 'pixi.js';
 import { COMBAT } from '../config/combat.ts';
@@ -66,7 +69,17 @@ void main(void){
   vec3 c = (col * hp + red * lag) * uAlpha + sCol * sAlpha * uAlpha;
   a += sAlpha * uAlpha;
   float sa = shadow * uAlpha * (1.0 - a);
-  finalColor = vec4(c, a + sa);
+  // the Knell's shadow, over the liquid and the empty part alike, from the left to its edge
+  float kx = uKnell * len;
+  float kIn = (1.0 - smoothstep(-aa, aa, dAll + 1.5)) * (1.0 - smoothstep(kx - 1.5, kx + 1.5, p.x)) * step(0.002, uKnell);
+  vec3 kCol = mix(vec3(0.03, 0.01, 0.05), vec3(0.18, 0.06, 0.4), clamp(p.x / max(kx, 1.0), 0.0, 1.0));
+  kCol += vec3(0.43, 0.16, 0.85) * 0.5 * core * (0.6 + 0.4 * noise(vec2(p.x * 0.08 + uTime, q.y * 0.3)));
+  float kEdge = exp(-abs(p.x - kx) / 3.0) * step(0.002, uKnell) * (1.0 - smoothstep(-aa, h * 1.2, dAll));
+  vec3 outC = mix(c, kCol * uAlpha, kIn);
+  float outA = mix(a + sa, 0.96 * uAlpha, kIn);
+  outC += vec3(0.6, 0.45, 1.0) * kEdge * 0.9 * uAlpha;
+  outA = max(outA, kEdge * 0.9 * uAlpha);
+  finalColor = vec4(outC, outA);
 }`;
 
 const label = (size: number, resolution: number) =>
@@ -87,6 +100,13 @@ export class LifeBar {
   private readonly ribbon;
   private readonly nameText: Text;
   private readonly hpText: Text;
+  private readonly skull: Text;
+  private readonly skulls: Text;
+  private readonly width: number;
+  private readonly barY: number;
+  // the Knell's threshold (% of the max HP), null: no Knell
+  private knelled: number | null = null;
+  private knellRun = 0;
   private max = 1;
   private hp = 0;
   private hits = 0;
@@ -109,6 +129,7 @@ export class LifeBar {
         uLag: 0,
         uHeal: 0,
         uLow: 0,
+        uKnell: 0,
         uTime: Math.random() * 10,
         uAlpha: 0,
       },
@@ -122,7 +143,15 @@ export class LifeBar {
     this.hpText = label(L.hpSize, o.resolution);
     this.hpText.position.set(0, barY + L.height + L.hpSize * 0.75);
     this.nameText.alpha = this.hpText.alpha = 0;
-    this.root.addChild(this.ribbon.mesh, this.nameText, this.hpText);
+    this.width = o.width;
+    this.barY = barY;
+    this.skull = label(L.height * 2.2, o.resolution);
+    this.skull.text = '💀';
+    this.skulls = label(L.height * 0.95, o.resolution);
+    this.skulls.anchor.set(0, 0.5);
+    this.skull.alpha = this.skulls.alpha = 0;
+    this.placeKnell(0);
+    this.root.addChild(this.ribbon.mesh, this.nameText, this.hpText, this.skulls, this.skull);
     every(this.root, (dt) => {
       const u = this.ribbon.u,
         S = COMBAT.lifeBar.pace;
@@ -135,6 +164,53 @@ export class LifeBar {
     });
   }
 
+  private placeKnell(f: number): void {
+    const L = COMBAT.lifeBar,
+      y = this.barY + L.height / 2;
+    this.ribbon.u.uKnell = f;
+    this.skull.position.set(-this.width / 2 + f * this.width, y);
+    this.skulls.position.set(-this.width / 2 + L.height * 0.4, y);
+  }
+
+  /**
+   * The Knell on this fighter: `threshold` its shadow (% of the max HP; null: as it was, 0 when it is
+   * laid), `skulls` the purifications left. `off`: it is silenced, its shadow withdraws.
+   */
+  knell(o: { threshold?: number | null; skulls?: number } | 'off'): void {
+    const u = this.ribbon.u,
+      from = u.uKnell;
+    let to: number;
+    if (o === 'off') {
+      this.knelled = null;
+      to = 0;
+    } else {
+      this.knelled = o.threshold ?? this.knelled ?? 0;
+      to = Math.min(100, Math.max(0, this.knelled)) / 100;
+      if (o.skulls !== undefined) this.skulls.text = '💀'.repeat(Math.max(0, o.skulls));
+      else if (this.skulls.text === '') this.skulls.text = '💀💀💀';
+    }
+    const on = this.knelled !== null,
+      a0 = this.skull.alpha,
+      s0 = this.skulls.alpha,
+      run = ++this.knellRun;
+    detach(
+      tween(
+        900,
+        (k) => {
+          if (this.knellRun !== run) return;
+          this.placeKnell(from + (to - from) * k);
+          this.skull.alpha = a0 + ((on ? 1 : 0) - a0) * k;
+          // the skulls left show once the shadow is wide enough to hold them
+          const room = u.uKnell * this.width - this.skulls.width - COMBAT.lifeBar.height;
+          this.skulls.alpha = on ? Math.min(1, Math.max(0, room / 20)) : s0 * (1 - k);
+          this.skull.scale.set(1 + 0.25 * Math.sin(Math.PI * k));
+        },
+        'in-out-quad',
+        this.root,
+      ),
+    );
+  }
+
   private show(hp: number): void {
     this.hpText.text = `${Math.max(0, Math.round(hp))} / ${Math.round(this.max)}`;
   }
@@ -142,6 +218,13 @@ export class LifeBar {
   /** A new fighter: its name shows, the bar fills to its HP. */
   async enter(name: string, hp: number, max: number): Promise<void> {
     this.nameText.text = name;
+    if (this.knelled !== null || this.ribbon.u.uKnell > 0) {
+      this.knelled = null;
+      this.knellRun++;
+      this.placeKnell(0);
+      this.skull.alpha = this.skulls.alpha = 0;
+      this.skulls.text = '';
+    }
     this.max = Math.max(1, max);
     this.hp = hp;
     this.show(hp);
@@ -212,6 +295,8 @@ export class LifeBar {
       (k) => {
         u.uAlpha = 1 - k;
         this.nameText.alpha = this.hpText.alpha = 1 - k;
+        this.skull.alpha = Math.min(this.skull.alpha, 1 - k);
+        this.skulls.alpha = Math.min(this.skulls.alpha, 1 - k);
       },
       'linear',
       this.root,
