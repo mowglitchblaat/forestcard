@@ -181,7 +181,7 @@ const codeTexture = (line: string) =>
 type Trace = { pts: [number, number][]; len: number };
 function circuits(w: number, h: number): Trace[] {
   let seed = 7;
-  const rnd = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296);
+  const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296;
   const out: Trace[] = [];
   for (let i = 0; i < 12; i++) {
     const left = i % 2 === 0,
@@ -289,14 +289,28 @@ const cathedralDecor: Decor = (root, w, h) => {
     return { g, spin };
   });
   const lines = Array.from({ length: particleCount(8) }, (_, i) => {
-    const s = new Sprite({ texture: codeTexture(CODE[i % CODE.length]!), tint: 0x67e8f9, alpha: 0 });
+    const s = new Sprite({
+      texture: codeTexture(CODE[i % CODE.length]!),
+      tint: 0x67e8f9,
+      alpha: 0,
+    });
     s.blendMode = 'add';
     s.scale.set(0.8);
     const left = i % 2 === 0;
-    return { s, x: left ? 40 + (i % 3) * 30 : w - 420 - (i % 3) * 30, y: h * Math.random(), speed: 16 + (i % 4) * 5 };
+    return {
+      s,
+      x: left ? 40 + (i % 3) * 30 : w - 420 - (i % 3) * 30,
+      y: h * Math.random(),
+      speed: 16 + (i % 4) * 5,
+    };
   });
   const bits = Array.from({ length: particleCount(22) }, (_, i) => {
-    const b = new Sprite({ texture: bitTexture(i % 2 ? '1' : '0'), anchor: 0.5, tint: 0x67e8f9, alpha: 0.55 });
+    const b = new Sprite({
+      texture: bitTexture(i % 2 ? '1' : '0'),
+      anchor: 0.5,
+      tint: 0x67e8f9,
+      alpha: 0.55,
+    });
     b.blendMode = 'add';
     b.scale.set(0.5 + Math.random() * 0.35);
     return { b, x: Math.random() * w, y: Math.random() * h, speed: 60 + Math.random() * 70 };
