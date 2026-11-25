@@ -242,8 +242,8 @@ function TreasureAdmin({
     <div className="flex flex-col gap-2">
       <b>Salle du trésor</b>
       <small className="text-muted-foreground">
-        1 point par foreuse posée dans ce coffre. Quantité : ce que donne un lot ; stock : combien de
-        lots pour tous.
+        1 point par foreuse posée dans ce coffre. Quantité : ce que donne un lot ; stock : combien
+        de lots pour tous.
       </small>
       {lots.map((l, i) => (
         <div key={i} className="flex flex-wrap items-end gap-1.5">
@@ -301,7 +301,9 @@ function TreasureAdmin({
         <Button
           variant="outline"
           size="sm"
-          onClick={() => setLots((list) => [...list, { objet: 'gold', n: 1000, prix: 1, stock: 10 }])}
+          onClick={() =>
+            setLots((list) => [...list, { objet: 'gold', n: 1000, prix: 1, stock: 10 }])
+          }
         >
           <ICONS.add />
           Ajouter un lot

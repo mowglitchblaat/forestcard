@@ -73,13 +73,13 @@ function LotArt({ objet }: { objet: TreasureObject }) {
     case 'booster':
       return <ICONS.boosterBox className="size-12" />;
     case 'foreuse':
-      return <img src="cadres/foreuse.webp" alt="" draggable={false} className="h-14 select-none" />;
+      return (
+        <img src="cadres/foreuse.webp" alt="" draggable={false} className="h-14 select-none" />
+      );
     case 'perce_abime':
       return <img src={GIGA_DRILL} alt="" draggable={false} className="h-14 select-none" />;
     case 'carte':
-      return (
-        <span className="treasure-card aspect-vault-card w-10 rounded-md border shadow-md" />
-      );
+      return <span className="treasure-card aspect-vault-card w-10 rounded-md border shadow-md" />;
   }
 }
 
@@ -213,7 +213,9 @@ export function TreasureRoom({
             sur {points} (tes foreuses dans ce coffre)
           </small>
         </div>
-        <div className={`flex flex-col items-center gap-4 rounded-xl bg-background p-4 ${GLOW[v.teinte]}`}>
+        <div
+          className={`flex flex-col items-center gap-4 rounded-xl bg-background p-4 ${GLOW[v.teinte]}`}
+        >
           {last && (
             <div key={last.key} className="flex flex-col items-center gap-1">
               <small className="text-muted-foreground">Tu ramasses :</small>
