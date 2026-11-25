@@ -587,6 +587,9 @@ export const EDITOR_ULTIMATES: { readonly [K in EffectType]?: EditorEntry } = {
     'Réanimation : la carte est détruite puis revient avec X % de ses PV max (une fois)',
     'pctrev',
   ],
+  reconstruction: [
+    "🔧 Reconstruction (jusqu'à la fin du combat) : à chaque mort, 65 % de chances de se réanimer avec 70 % de ses PV max ; à chaque reconstruction, −15 points de chance (5 % min) et −10 points de PV (20 % min)",
+  ],
   rage: [
     "Rage : dégâts en plus par coup pendant X tours, puis obligatoirement une Fatigue (son niveau suit l'intensité de la rage, ou le niveau choisi)",
     'ragev',
@@ -813,13 +816,16 @@ export const EDITOR_MAGICS: { readonly [K in EffectType]?: EditorEntry } = {
     'pctatq',
     'pctmax',
   ],
+  reconstruction: [
+    "🔧 Reconstruction (magie : tant qu'elle est en jeu ; piège : jusqu'à la fin du combat) : à chaque mort, 65 % de chances de se réanimer avec 70 % de ses PV max ; à chaque reconstruction, −15 points de chance (5 % min) et −10 points de PV (20 % min)",
+  ],
   atk_fauche: [
-    "Attaque de base : X % de chances, à chaque coup, de déchirer la cible (jusqu'à +X % selon ses PV manquants)",
+    "🪓 Attaque de base, coup de faux : X % de chances, à chaque coup, de déchirer la cible (jusqu'à +X % selon ses PV manquants)",
     'chance',
     'pctmax',
   ],
   atk_laser: [
-    "Attaque de base : X % de chances, à chaque coup, d'un bonus laser (jusqu'à +X % selon les PV restants de la cible)",
+    "🔫 Attaque de base, tir laser : X % de chances, à chaque coup, d'un bonus laser (jusqu'à +X % selon les PV restants de la cible)",
     'chance',
     'pctmax',
   ],

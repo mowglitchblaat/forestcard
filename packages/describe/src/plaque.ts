@@ -138,6 +138,7 @@ const EFFECT_LABELS: Record<EffectType, (e: Fx) => string> = {
   atk_fauche: () => 'Coup de faux',
   laser: () => 'Tir laser',
   atk_laser: () => 'Coup laser',
+  reconstruction: () => 'Reconstruction',
   brisure_volonte: () => 'Brisure de volonté',
   verrouillage_total: () => 'Verrouillage total',
   etreinte_maudite: () => 'Étreinte maudite',

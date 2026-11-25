@@ -1760,6 +1760,20 @@ test('reconstruction : 65 % puis −15 points (5 % min), PV 70 % puis −10 poin
   assert.ok(vues >= 3, 'plusieurs reconstructions de suite déjà vues');
 });
 
+test('reconstruction en magie : tant que la magie est en jeu ; en ultime : jusqu\'à la fin du combat', () => {
+  const tue = (deckB, seed) => combat([C('A', 1000, SOLIDE)], deckB, { seed, regles: { maxTours: 60, maxProlong: 0 } });
+  let magie = 0, ultime = 0;
+  for (let seed = 1; seed <= 30; seed++) {
+    magie += lignes(tue([C('B', 1, 100), MAG('Atelier', { type: 'reconstruction' })], seed), e => e.t === 'reanim').length;
+    ultime += lignes(tue([C('B', 1, 100, { ultime: { type: 'reconstruction', apres_tours: 1 } })], seed), e => e.t === 'reanim').length;
+    // the magic cancelled at once: no reconstruction
+    const annulee = combat([C('A', 1000, SOLIDE), MAG('Annule', { type: 'annule_magies' })], [C('B', 1, 100), MAG('Atelier', { type: 'reconstruction' })], { seed, regles: { maxTours: 60, maxProlong: 0 } });
+    if (lignes(annulee, e => /annulée/.test(e.txt || '')).length) assert.equal(lignes(annulee, e => e.t === 'reanim' && e.c === 1).length, 0, seed + ' : magie annulée, pas de reconstruction');
+  }
+  assert.ok(magie > 0, 'la magie reconstruit');
+  assert.ok(ultime > 0, "l'ultime reconstruit");
+});
+
 // ================= Fauche et tir laser (novembre 2026) =================
 test('fauche : bonus selon les PV manquants de la cible (rien sur une cible pleine de vie)', () => {
   const r = combat([C('Faucheur', 10, SOLIDE, { passif: { type: 'fauche', chance: 100, pctmax: 100 } })], [C('B', 1, 100)], { regles: { maxTours: 8, maxProlong: 0 } });

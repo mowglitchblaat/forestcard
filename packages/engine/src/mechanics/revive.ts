@@ -11,7 +11,10 @@
 // Reconstruction (passive reconstruction, November 2026): when no other source brings the card back,
 // a chance to reform, on every death: 65 % with 70 % of its max HP the first time, then 15 points
 // of chance and 10 points of HP less at each reconstruction (5 % and 20 % at least). A failed
-// reconstruction changes nothing (the card is down).
+// reconstruction changes nothing (the card is down). Also an effect (November 2026): an active magic
+// holding it gives it to its fighter while it stays in play (cancelled, destroyed or stolen, it is
+// gone); an ultimate or a trap gives it until the end of the combat. The chance and the HP lost at
+// each reconstruction are counted once, whatever its sources.
 
 import { applyEffect } from '../combat/effects.ts';
 import { effetOf, emit, id, opponent, raw, roll, round, type Combat } from '../combat/combat.ts';
@@ -30,11 +33,13 @@ export type ReviveState = {
   usedReviveSources: ReviveSource[];
   grantedRevives: ReviveSource[]; // revives granted by an ultimate or a trap
   reconstructions: number; // reconstructions that brought the card back
+  reconstructionGranted: boolean; // given by an ultimate or a trap (effect reconstruction)
 };
 export const reviveState = (): ReviveState => ({
   usedReviveSources: [],
   grantedRevives: [],
   reconstructions: 0,
+  reconstructionGranted: false,
 });
 
 // Reconstruction: chance and HP (% of max HP) of the first one, lost at each one, floor.
@@ -46,12 +51,21 @@ export const RECONSTRUCTION = {
   hpStep: 10,
   hpMin: 20,
 } as const;
-const hasReconstruction = (d: Side): boolean => d.passives.some((p) => p.type === 'reconstruction');
+// Its sources: the passive, an ultimate or a trap that gave it, the active magic.
+function hasReconstruction(c: Combat, d: Side): boolean {
+  if (d.status.reconstructionGranted || d.passives.some((p) => p.type === 'reconstruction'))
+    return true;
+  const me = d.magicActive ? effetOf(c, d.magic) : null;
+  if (!me) return false;
+  return me.type === 'reconstruction'
+    ? true
+    : (me.briques || []).some((b) => (b as EffectData).type === 'reconstruction');
+}
 
 // A reconstruction tried at d's death: the % of max HP it reforms with, or null (none, or failed).
 // later: the failure is announced when the damage line flushes.
 function reconstruct(c: Combat, d: Side, later: boolean): number | null {
-  if (!hasReconstruction(d)) return null;
+  if (!hasReconstruction(c, d)) return null;
   const R = RECONSTRUCTION;
   const n = d.status.reconstructions;
   const chance = Math.max(R.chanceMin, R.chance - R.chanceStep * n);
@@ -114,7 +128,7 @@ function reviveSource(c: Combat, d: Side): ReviveSource | undefined {
 // flushes), from the revive trap kept for this death first; a revive denied by detonation damage is
 // announced.
 export function reviveOnLethal(c: Combat, dst: Side, trap: TrapRevive | null): void {
-  if (c.noRevive && (reviveSource(c, dst) || hasReconstruction(dst)))
+  if (c.noRevive && (reviveSource(c, dst) || hasReconstruction(c, dst)))
     c.pendingEffects.push(() =>
       emit(c, {
         type: 'reviveDenied',
@@ -204,7 +218,13 @@ export function reviveEffect({ c, e, o, fromMagic }: EffectContext): void {
   emit(c, { type: 'reviveGranted', side: id(c, o), pct: e.pctrev || 0 });
 }
 
+// As a magic it is read directly on death; from an ultimate or a trap it stays until the end.
+export function reconstructionEffect({ o, fromMagic }: EffectContext): void {
+  if (!fromMagic) o.status.reconstructionGranted = true;
+}
+
 // Its effects (the registry of effects.ts).
 export const effects = {
   reanimation: { run: reviveEffect },
+  reconstruction: { run: reconstructionEffect },
 } satisfies EffectRules;

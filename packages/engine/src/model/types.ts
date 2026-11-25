@@ -36,6 +36,7 @@ export const EFFECT_TYPES = [
   'fauche',
   'atk_fauche',
   'laser',
+  'reconstruction',
   'atk_laser',
   'malediction',
   'saignement',

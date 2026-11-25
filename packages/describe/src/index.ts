@@ -691,6 +691,9 @@ const EFFECT_TEXT: Record<EffectType, (e: Fx, x: EffectContext) => string[]> = {
     `Tir laser : un tir à part (${scalingStrikeTxt(e)}, ni esquive ni blocage), ${laserBonus(e)}`,
   ],
   atk_laser: attackEffect,
+  reconstruction: () => [
+    'Reconstruction : à chaque mort, 65 % de chances de se réanimer avec 70 % de ses PV max ; chaque reconstruction retire 15 points de chance (5 % min) et 10 points de PV (20 % min)',
+  ],
   brisure_volonte: () => [willBreakTxt],
   etreinte_maudite: () => [
     `Donne à son combattant l'étreinte maudite : à chaque attaque de l'adversaire, chacune de ses malédictions lui retire ${L.etreinte} ATQ de plus (rendue avec la malédiction)`,
