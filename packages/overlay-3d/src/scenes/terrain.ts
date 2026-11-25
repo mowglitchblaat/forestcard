@@ -335,28 +335,6 @@ const cathedralDecor: Decor = (root, w, h) => {
     }
   };
 };
-  });
-  root.addChild(pool, ...rays, halo, rose, ...bits.map((q) => q.b));
-  return (dt, t) => {
-    rose.rotation += dt * 0.03;
-    halo.alpha = 0.38 + 0.1 * Math.sin(t * 0.9);
-    rays.forEach((r, i) => {
-      r.rotation = (i - 2) * 0.16 + Math.sin(t * 0.25 + i * 1.7) * 0.025;
-      r.alpha = 0.12 + 0.06 * Math.sin(t * 0.6 + i * 2.1);
-    });
-    for (const q of bits) {
-      q.y -= q.speed * dt;
-      if (q.y < cy + 120) {
-        q.y = h - 40;
-        q.x = cx + (Math.random() - 0.5) * 700;
-      }
-      // they show while inside the light, fading at both ends of their climb
-      const k = (q.y - cy - 120) / (h - cy - 160);
-      q.b.alpha = Math.sin(Math.PI * Math.min(1, Math.max(0, k))) * (0.45 + 0.25 * Math.sin(t * 2 + q.phase));
-      q.b.position.set(q.x + Math.sin(t * 0.5 + q.phase) * 10, q.y);
-    }
-  };
-};
 
 type Motion = 'rise' | 'fall' | 'drift' | 'swarm' | 'hang';
 type Light = {
