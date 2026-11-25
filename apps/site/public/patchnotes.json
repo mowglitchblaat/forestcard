@@ -1,5 +1,36 @@
 [
   {
+    "date": "2026-11-25",
+    "intro": "La Reconstruction devient aussi un effet de magie, d’ultime et de piège, et de nouvelles illustrations arrivent.",
+    "groupes": [
+      {
+        "titre": "Magies et pièges",
+        "points": [
+          "Reconstruction en magie : le combattant peut se relever après une mort tant que la magie est en jeu ; en ultime ou en piège, jusqu’à la fin du combat.",
+          "Plusieurs sources de Reconstruction ne s’additionnent pas : la chance diminue toujours au même rythme."
+        ]
+      },
+      {
+        "titre": "Animations",
+        "points": [
+          "L’ombre du Glas avance maintenant aussi sur la barre de vie dans la nouvelle animation de combat."
+        ]
+      },
+      {
+        "titre": "Collection et deck",
+        "points": [
+          "Nihon Densetsu : 12 nouvelles versions Seazer édition et une nouvelle image pour la variante FULLEG de Seazer, au format pleine carte."
+        ]
+      },
+      {
+        "titre": "Admin",
+        "points": [
+          "Dans l’éditeur, la Fauche et le Tir laser portent maintenant leur nom au lieu de « Attaque de base »."
+        ]
+      }
+    ]
+  },
+  {
     "date": "2026-11-24",
     "intro": "Un inventaire tout neuf avec ses mini-coffres à percer, et des combats et boosters entièrement réanimés.",
     "groupes": [
