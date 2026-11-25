@@ -36,6 +36,7 @@ export const EFFECT_TYPES = [
   'fauche',
   'atk_fauche',
   'laser',
+  'reconstruction',
   'atk_laser',
   'malediction',
   'saignement',
@@ -165,7 +166,6 @@ export const PASSIVE_TYPES = [
   'reconstruction',
   'fauche',
   'laser',
-  'reconstruction',
   'terrain',
 ] as const;
 export type PassiveType = (typeof PASSIVE_TYPES)[number];
