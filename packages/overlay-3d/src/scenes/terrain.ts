@@ -1,7 +1,8 @@
 // The terrain of a combat (terrain: drawn at the start, or invoked by a card): an ambiance behind the
 // cards for the rest of the combat. Each terrain has its own look (one per collection, never a flower on
 // the Cathedral): a wash of colour over the stage, a few lights of its own, and a handful of particles
-// drifting in its manner (embers, petals, pages, motes…).
+// drifting in its manner (embers, petals, pages, motes…). The Cathedral of programming has its own
+// scenery besides (cathedralDecor: gears, circuits with running pulses, code, bits), still sprites only.
 // When it acts on a card (statut whose kind is the terrain: the swarm stings, the forest's sap heals…)
 // it plays a small burst there; the move that goes with it, if any, is the combat scene's.
 //
@@ -112,7 +113,242 @@ const threadTexture = () =>
     g.fillRect(1, 0, 2, 128);
   });
 
+// A gear (256 x 256), the programming's own (original/effects.ts, engrenage): ten teeth, glowing, hollow.
+const gearTexture = () =>
+  drawn('terrain-gear', 256, 256, (g) => {
+    const n = 10,
+      r = 104,
+      ri = r * 0.78;
+    g.translate(128, 128);
+    g.beginPath();
+    for (let i = 0; i < n * 2; i++) {
+      const a0 = (i * Math.PI) / n,
+        a1 = ((i + 1) * Math.PI) / n,
+        R = i % 2 ? ri : r;
+      g.lineTo(Math.cos(a0 + 0.08) * R, Math.sin(a0 + 0.08) * R);
+      g.lineTo(Math.cos(a1 - 0.08) * R, Math.sin(a1 - 0.08) * R);
+    }
+    g.closePath();
+    g.fillStyle = '#ffffff';
+    g.shadowColor = '#ffffff';
+    g.shadowBlur = 18;
+    g.fill();
+    g.shadowBlur = 0;
+    g.globalCompositeOperation = 'destination-out';
+    g.beginPath();
+    g.arc(0, 0, r * 0.36, 0, Math.PI * 2);
+    g.fill();
+    g.beginPath();
+    for (let k = 0; k < 6; k++) {
+      const a = (k * Math.PI) / 3;
+      g.moveTo(Math.cos(a) * r * 0.6 + r * 0.1, Math.sin(a) * r * 0.6);
+      g.arc(Math.cos(a) * r * 0.6, Math.sin(a) * r * 0.6, r * 0.1, 0, Math.PI * 2);
+    }
+    g.fill();
+  });
+// a shaft of light: bright at the top, gone by its foot
+const shaftTexture = () =>
+  drawn('terrain-shaft', 16, 256, (g) => {
+    const l = g.createLinearGradient(0, 0, 0, 256);
+    l.addColorStop(0, 'rgba(255,255,255,.9)');
+    l.addColorStop(0.7, 'rgba(255,255,255,0)');
+    g.fillStyle = l;
+    g.fillRect(0, 0, 16, 256);
+  });
+// a bit of code, 0 or 1, glowing
+const bitTexture = (bit: '0' | '1') =>
+  drawn(`terrain-bit-${bit}`, 32, 40, (g) => {
+    g.font = 'bold 30px monospace';
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.shadowColor = '#ffffff';
+    g.shadowBlur = 6;
+    g.fillStyle = '#ffffff';
+    g.fillText(bit, 16, 21);
+  });
+// a line of code, faint and glowing (the Cathedral's walls are written)
+const codeTexture = (line: string) =>
+  drawn(`terrain-code-${line}`, 512, 40, (g) => {
+    g.font = '600 24px monospace';
+    g.textBaseline = 'middle';
+    g.shadowColor = '#ffffff';
+    g.shadowBlur = 6;
+    g.fillStyle = '#ffffff';
+    g.fillText(line, 4, 21);
+  });
+// the circuits of the stage: traces from the edges inward, right angles only (the activation's
+// circuits on a card, original/effects.ts), ending in a pad
+type Trace = { pts: [number, number][]; len: number };
+function circuits(w: number, h: number): Trace[] {
+  let seed = 7;
+  const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296;
+  const out: Trace[] = [];
+  for (let i = 0; i < 12; i++) {
+    const left = i % 2 === 0,
+      pts: [number, number][] = [];
+    let x = left ? 0 : w,
+      y = 60 + rnd() * (h - 120);
+    pts.push([x, y]);
+    for (let k = 0; k < 4; k++) {
+      if (k % 2 === 0) x += (left ? 1 : -1) * (60 + rnd() * 170);
+      else y += (rnd() < 0.5 ? -1 : 1) * (30 + rnd() * 120);
+      y = Math.max(30, Math.min(h - 30, y));
+      pts.push([x, y]);
+    }
+    let len = 0;
+    for (let k = 1; k < pts.length; k++)
+      len += Math.hypot(pts[k]![0] - pts[k - 1]![0], pts[k]![1] - pts[k - 1]![1]);
+    out.push({ pts, len });
+  }
+  return out;
+}
+const circuitTexture = (w: number, h: number, traces: Trace[]) =>
+  drawn(`terrain-circuit-${w}x${h}`, w, h, (g) => {
+    g.strokeStyle = 'rgba(255,255,255,.8)';
+    g.lineWidth = 2.5;
+    g.lineJoin = 'round';
+    for (const tr of traces) {
+      g.beginPath();
+      tr.pts.forEach(([x, y], k) => (k ? g.lineTo(x, y) : g.moveTo(x, y)));
+      g.stroke();
+      const [ex, ey] = tr.pts[tr.pts.length - 1]!;
+      g.fillStyle = '#ffffff';
+      g.beginPath();
+      g.arc(ex, ey, 6, 0, Math.PI * 2);
+      g.fill();
+    }
+  });
+const along = (tr: Trace, u: number): [number, number] => {
+  let rest = u * tr.len;
+  for (let k = 1; k < tr.pts.length; k++) {
+    const [x0, y0] = tr.pts[k - 1]!,
+      [x1, y1] = tr.pts[k]!,
+      l = Math.hypot(x1 - x0, y1 - y0);
+    if (rest <= l) return [x0 + ((x1 - x0) * rest) / l, y0 + ((y1 - y0) * rest) / l];
+    rest -= l;
+  }
+  return tr.pts[tr.pts.length - 1]!;
+};
+const CODE = [
+  'prog.run();',
+  'if (tour % 2 === 0) {',
+  '  atq += 3;',
+  '}',
+  'while (vivant) {',
+  'passif.active();',
+  'for (let i = 0; i < 3; i++)',
+  '0x3F => ATQ',
+  'return esquive;',
+  'await moteur.tour();',
+];
+
 // ---- the looks -------------------------------------------------------------------------------------
+
+// A terrain's own scenery, beyond the wash, the lights and the particles: built once, then moved by the
+// terrain's loop (dt and t in seconds).
+type Decor = (root: Container, w: number, h: number) => (dt: number, t: number) => void;
+
+// The Cathedral of programming, the way the programming looks on a card: great gears turning in the
+// corners, circuits from the edges with pulses of light running along them, shafts of coloured light,
+// lines of code rising faintly on both sides, bits (0 and 1) raining down.
+const cathedralDecor: Decor = (root, w, h) => {
+  const CYAN = 0x38bdf8;
+  const shafts = [0x38bdf8, 0xa78bfa, 0x2dd4bf, 0x6366f1].map((tint, i) => {
+    const s = new Sprite({ texture: shaftTexture(), tint, alpha: 0.12 });
+    s.anchor.set(0.5, 0);
+    s.position.set(w * (0.18 + i * 0.22), -60);
+    s.width = 170;
+    s.height = h * 1.3;
+    s.rotation = 0.2;
+    s.blendMode = 'add';
+    return s;
+  });
+  const traces = circuits(w, h);
+  const board = new Sprite({ texture: circuitTexture(w, h, traces), tint: 0x22d3ee, alpha: 0.16 });
+  board.blendMode = 'add';
+  const pulses = traces.map((tr, i) => {
+    const p = new Sprite({ texture: glowTexture(), anchor: 0.5, tint: 0x9ff3ff, alpha: 0.9 });
+    p.width = p.height = 34;
+    p.blendMode = 'add';
+    return { p, tr, u: i / traces.length, speed: 0.25 + ((i * 37) % 10) / 30 };
+  });
+  // the gears: the great ones in the corners, a small one meshed with each
+  const GEARS: [number, number, number, number][] = [
+    [-0.02, -0.04, 380, 1],
+    [0.165, 0.2, 170, -2.2],
+    [1.0, 0.96, 330, -1],
+    [0.84, 0.75, 150, 2.2],
+    [0.02, 0.98, 240, 1.3],
+    [0.97, 0.02, 220, -1.4],
+  ];
+  const gears = GEARS.map(([x, y, size, spin]) => {
+    const g = new Sprite({ texture: gearTexture(), anchor: 0.5, tint: CYAN, alpha: 0.22 });
+    g.position.set(x * w, y * h);
+    g.width = g.height = size;
+    g.blendMode = 'add';
+    return { g, spin };
+  });
+  const lines = Array.from({ length: particleCount(8) }, (_, i) => {
+    const s = new Sprite({
+      texture: codeTexture(CODE[i % CODE.length]!),
+      tint: 0x67e8f9,
+      alpha: 0,
+    });
+    s.blendMode = 'add';
+    s.scale.set(0.8);
+    const left = i % 2 === 0;
+    return {
+      s,
+      x: left ? 40 + (i % 3) * 30 : w - 420 - (i % 3) * 30,
+      y: h * Math.random(),
+      speed: 16 + (i % 4) * 5,
+    };
+  });
+  const bits = Array.from({ length: particleCount(22) }, (_, i) => {
+    const b = new Sprite({
+      texture: bitTexture(i % 2 ? '1' : '0'),
+      anchor: 0.5,
+      tint: 0x67e8f9,
+      alpha: 0.55,
+    });
+    b.blendMode = 'add';
+    b.scale.set(0.5 + Math.random() * 0.35);
+    return { b, x: Math.random() * w, y: Math.random() * h, speed: 60 + Math.random() * 70 };
+  });
+  root.addChild(
+    ...shafts,
+    board,
+    ...gears.map((q) => q.g),
+    ...lines.map((q) => q.s),
+    ...pulses.map((q) => q.p),
+    ...bits.map((q) => q.b),
+  );
+  return (dt, t) => {
+    shafts.forEach((s, i) => (s.alpha = 0.08 + 0.06 * Math.sin(t * 0.7 + i * 1.9)));
+    for (const q of gears) q.g.rotation += dt * 0.18 * q.spin;
+    for (const q of pulses) {
+      q.u = (q.u + dt * q.speed) % 1.25;
+      const [x, y] = along(q.tr, Math.min(1, q.u));
+      q.p.position.set(x, y);
+      q.p.alpha = q.u > 1 ? 0 : 0.9;
+    }
+    for (const q of lines) {
+      q.y -= q.speed * dt;
+      if (q.y < -40) q.y = h + 40;
+      const k = q.y / h;
+      q.s.alpha = 0.32 * Math.sin(Math.PI * Math.min(1, Math.max(0, k)));
+      q.s.position.set(q.x, q.y);
+    }
+    for (const q of bits) {
+      q.y += q.speed * dt;
+      if (q.y > h + 30) {
+        q.y = -30;
+        q.x = Math.random() * w;
+      }
+      q.b.position.set(q.x, q.y);
+    }
+  };
+};
 
 type Motion = 'rise' | 'fall' | 'drift' | 'swarm' | 'hang';
 type Light = {
@@ -139,6 +375,7 @@ type Look = {
     add: boolean;
   };
   flashes?: boolean; // the storm: a white flash now and then
+  decor?: Decor; // its own scenery (the Cathedral's gears, circuits and code)
   burst: number; // the colour of its burst on a card
 };
 
@@ -212,49 +449,19 @@ const LOOKS: Readonly<Record<TerrainName, Look>> = {
     burst: 0x9dff8a,
   },
   cathedrale: {
-    wash: 0x2a2416,
-    washAlpha: 0.55,
-    lights: [
-      {
-        x: 960,
-        y: 140,
-        w: 140,
-        h: 1300,
-        tint: 0xffe2a0,
-        alpha: 0.22,
-        texture: streakTexture,
-        rotation: Math.PI / 2,
-      },
-      {
-        x: 700,
-        y: 140,
-        w: 90,
-        h: 1200,
-        tint: 0x9cd0ff,
-        alpha: 0.14,
-        texture: streakTexture,
-        rotation: Math.PI / 2 + 0.18,
-      },
-      {
-        x: 1220,
-        y: 140,
-        w: 90,
-        h: 1200,
-        tint: 0xffb0d0,
-        alpha: 0.14,
-        texture: streakTexture,
-        rotation: Math.PI / 2 - 0.18,
-      },
-    ],
+    wash: 0x1e1b4b,
+    washAlpha: 0.6,
+    lights: [],
     particles: {
       texture: sparkTexture,
-      tints: [0xffe8b0, 0xffffff],
-      size: 8,
+      tints: [0xffe8b0, 0xffffff, 0xbfe0ff],
+      size: 7,
       motion: 'drift',
-      count: 26,
-      speed: 18,
+      count: 22,
+      speed: 14,
       add: true,
     },
+    decor: cathedralDecor,
     burst: 0x38bdf8,
   },
   lune: {
@@ -374,6 +581,7 @@ class Ambience {
       s.blendMode = 'add';
       this.root.addChild(s);
     }
+    const decor = look.decor?.(this.root, w, h);
     const P = look.particles;
     const box = new ParticleContainer({
       texture: P.texture(),
@@ -475,6 +683,7 @@ class Ambience {
         m.q.x = m.x;
         m.q.y = m.y;
       }
+      decor?.(dt, t);
       if (this.flash) {
         this.nextFlash -= dt;
         if (this.nextFlash <= 0) {
