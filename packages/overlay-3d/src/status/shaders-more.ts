@@ -141,28 +141,51 @@ export const ROOTS = body(`
   c *= 1.0 - 0.25 * tk * a;
   finalColor = vec4(c * inside, inside);`);
 
-// The insect mutation (levels 1 to 3): chitin grows over the picture in plates (a cellular pattern),
-// dark with a green-amber iridescence, from the edges inward, further with each level. A level gained
-// (tick): the seams between the plates flash.
+// The insect mutation (levels 1 to 3): a beetle's carapace grows from the card's edges inward, a band
+// of small domed scales with a green-gold thin-film sheen, its front glowing, a few claws reaching
+// further in; a little deeper with each level, never over the picture's heart nor its numbers. Just
+// beyond the front, veins of light pulse in the flesh. A level gained (tick): a wave runs inward from
+// the edges and the seams flash. (November 2026: the plates covered the whole card.)
 export const MUTATION = body(`
-  vec2 v = vor(cuv * vec2(9.0, 12.0));
-  float seamDist = v.y - v.x;
-  float cellEdge = smoothstep(0.02, 0.09, seamDist);
-  float n = fbm(cuv * vec2(4.0, 5.0) + 1.3);
-  float cover = (0.06 + 0.16 * clamp(uLevel, 1.0, 3.0)) * a;
-  float plate = 1.0 - smoothstep(cover - 0.08, cover, edge + (n - 0.5) * 0.3);
+  float lv = clamp(uLevel, 1.0, 3.0);
+  float n = fbm(cuv * vec2(5.0, 6.0) + 1.3);
+  // the carapace's front: from the edges inward, with claws reaching further in, deeper each level
+  float ang = atan(cuv.y - 0.5, cuv.x - 0.5);
+  float claws = pow(noise(vec2(ang * 7.0, 2.7)), 4.0) * 0.06 * lv;
+  float front = ((0.015 + 0.03 * lv) + claws + (n - 0.5) * 0.04) * a;
+  float plate = 1.0 - smoothstep(front - 0.012, front, edge);
+  // overlapping scales: cells, each one domed and lit from the top left
+  vec2 v = vor(cuv * vec2(18.0, 24.0) + 0.7);
+  float seam = v.y - v.x;
+  float dome = smoothstep(0.0, 0.4, seam);
+  vec2 g = vec2(dFdx(dome), dFdy(dome)) * 60.0;
+  float lit = clamp(0.55 - g.x * 0.5 - g.y * 0.5, 0.0, 1.0);
   vec3 c = tex(cuv);
-  float ir = fract(v.x * 2.0 + n + t * 0.05);
-  vec3 iri = mix(vec3(0.12, 0.42, 0.16), vec3(0.7, 0.55, 0.12), smoothstep(0.55, 0.95, ir));
-  // each plate domed: lit along its top-left, dark toward its seams
-  float dome = smoothstep(0.0, 0.35, seamDist);
-  vec3 chitin = mix(vec3(0.04, 0.06, 0.03), iri, 0.5 * dome) + vec3(0.9, 1.0, 0.7) * pow(dome, 6.0) * 0.12;
-  chitin *= cellEdge * 0.9 + 0.1;
-  c = mix(c, c * vec3(0.85, 1.0, 0.75), 0.4 * a * uShare);
-  c = mix(c, chitin + c * 0.25, plate * 0.85);
-  c += vec3(0.8, 1.0, 0.5) * plate * (1.0 - cellEdge) * tk;
-  float ga = clamp(halo(d, uPad.x * 0.6) * 0.45 * a * (0.6 + tk), 0.0, 1.0);
-  finalColor = over(vec4(c * inside, inside), vec4(vec3(0.55, 0.85, 0.2) * ga, ga));`);
+  // thin-film iridescence of a beetle's shell: green, teal, gold, a touch of violet
+  float h = fract(dome * 0.9 + n * 0.8 + t * 0.06 + edge * 2.0);
+  vec3 film = 0.5 + 0.5 * cos(6.2832 * (h + vec3(0.0, 0.18, 0.42)));
+  film = mix(vec3(0.25, 0.75, 0.2), film * vec3(0.8, 1.0, 0.6), 0.35);
+  vec3 chitin = vec3(0.03, 0.05, 0.03) + film * (0.25 + 0.55 * lit) * (0.35 + 0.65 * dome);
+  chitin += vec3(0.95, 1.0, 0.8) * pow(lit * dome, 8.0) * 0.6;
+  chitin = mix(vec3(0.0, 0.02, 0.0), chitin, smoothstep(0.0, 0.05, seam));
+  // the picture under the mutation: a little greener, more contrasted
+  c = mix(c, pow(c, vec3(1.15)) * vec3(0.92, 1.06, 0.88), 0.45 * a * uShare);
+  // veins of light in the flesh just beyond the front, pulsing inward
+  float beyond = edge - front;
+  float vn = 1.0 - abs(fbm(cuv * vec2(10.0, 13.0) + 4.0) * 2.0 - 1.0);
+  float vein = pow(vn, 14.0) * (1.0 - smoothstep(0.0, 0.16, beyond)) * step(0.0, beyond);
+  float pulse = 0.5 + 0.5 * sin(beyond * 60.0 - t * 3.0);
+  c += vec3(0.45, 1.0, 0.3) * vein * (0.5 + 0.5 * pulse) * 0.8 * a;
+  c = mix(c, chitin + c * 0.15, plate * 0.9);
+  // the growing front glows
+  float rim = exp(-abs(beyond) / 0.006) * a * (0.55 + 0.25 * sin(t * 2.4 + ang * 3.0));
+  c += vec3(0.5, 1.0, 0.25) * rim * 0.9;
+  // a level gained (tick): a wave runs inward from the edges, the seams flash
+  float wave = exp(-pow((edge - front - (1.0 - tk) * 0.35) / 0.03, 2.0)) * tk;
+  c += vec3(0.6, 1.0, 0.4) * wave * 1.2;
+  c += vec3(0.7, 1.0, 0.5) * plate * (1.0 - smoothstep(0.0, 0.06, seam)) * tk * 1.5;
+  float ga = clamp(halo(d, uPad.x * 0.5) * 0.35 * a * (0.7 + tk), 0.0, 1.0);
+  finalColor = over(vec4(c * inside, inside), vec4(vec3(0.45, 0.9, 0.25) * ga, ga));`);
 
 // The molt (mue): the old skin loosens. A pale shell of the picture lifts off it, a little larger, its
 // seams cracking dark; under it the picture is raw and pinkish. A tick (the molt is done): the shell
