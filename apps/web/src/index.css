@@ -1557,6 +1557,13 @@
 @utility vault-banner {
   animation: vault-hole-in 0.8s ease-out 1.6s both;
 }
+/* A golden card of a vault's treasure (treasure-room.tsx): a card of its rarity, still face down. */
+@utility treasure-card {
+  background-image:
+    radial-gradient(circle at 50% 42%, rgb(255 248 200 / 0.9), transparent 38%),
+    linear-gradient(135deg, rgb(255 236 150), rgb(217 150 20) 50%, rgb(120 70 5));
+  box-shadow: 0 0 1rem rgb(250 200 60 / 0.55);
+}
 @utility vault-coin {
   left: var(--x);
   width: 1.4rem;

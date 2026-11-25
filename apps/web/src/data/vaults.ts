@@ -2,6 +2,10 @@
 // violet, legendary), drilled with drills bought in gold. Each drill placed makes a lasting hole in
 // the door, at a place the database draws. The drills a vault needs stay secret. At its last drill a
 // vault opens and announces its treasure: new cards of its rarity, which the admin creates afterwards.
+// Its treasure room (101-coffres-butin-partage.sql): lots shown to everyone (gold, fragments, boosters,
+// drills, cards of its rarity), each with a price in points and a stock shared by all. Once it is
+// open, those who drilled it pick lots with their points (one per drill they placed in it), first
+// come first served, until the room closes three days after the event's end.
 
 import { z } from 'zod';
 import { supabase } from '@/lib/supabase';
@@ -21,6 +25,42 @@ export type Hole = z.infer<typeof Hole>;
 
 const Tint = z.enum(['bleu', 'violet', 'or']);
 export type Tint = z.infer<typeof Tint>;
+
+export const TREASURE_OBJECTS = [
+  'gold',
+  'fragments',
+  'fragments_epique',
+  'fragments_legendaire',
+  'fragments_ggez',
+  'booster',
+  'foreuse',
+  'perce_abime',
+  'carte',
+] as const;
+export type TreasureObject = (typeof TREASURE_OBJECTS)[number];
+
+// A lot of the treasure: n of the object for prix points; stock left out of total.
+const TreasureLot = z.object({
+  id: Num.nullish(),
+  objet: z.enum(TREASURE_OBJECTS),
+  n: Num,
+  prix: Num,
+  stock: Num,
+  total: Num,
+});
+export type TreasureLot = z.infer<typeof TreasureLot>;
+
+// What a player picked: a card comes with its face, a booster with its name.
+const TreasurePick = z.object({
+  objet: z.enum(TREASURE_OBJECTS),
+  n: Num,
+  nom: z.string().nullish(),
+  version: z.string().nullish(),
+  image: z.string().nullish(),
+  rarete: z.string().nullish(),
+  couleur: z.string().nullish(),
+});
+export type TreasurePick = z.infer<typeof TreasurePick>;
 
 const LootCard = z.object({
   id: Num,
@@ -43,6 +83,10 @@ const Vault = z.object({
   cartes: z.array(LootCard),
   // once open: the new cards it announces (the admin creates them afterwards)
   tresor: z.object({ nb: Num, rarete: z.string() }).nullish(),
+  tresor_lots: z.array(TreasureLot).nullish(),
+  mes_points: Num.nullish(), // the drills this player placed in it
+  mes_depenses: Num.nullish(),
+  mes_prises: z.array(TreasurePick).nullish(),
 });
 export type Vault = z.infer<typeof Vault>;
 
@@ -55,6 +99,7 @@ const Heist = z.object({
   prix_giga: Num.nullish(),
   puissance_giga: Num.nullish(),
   termine: z.boolean(),
+  salle_fin: z.string().nullish(), // the treasure rooms close then
   monnaie: Num.nullable(),
   stock: Num,
   stock_giga: Num.nullish(),
@@ -77,6 +122,13 @@ const REFUSALS: Record<string, string> = {
   PAS_DE_FOREUSE: 'Achète d’abord une foreuse à la boutique.',
   PAS_DE_GIGA: 'Achète d’abord une Perce-Abîme à la boutique.',
   COFFRE_INCONNU: 'Coffre introuvable.',
+  LOT_INCONNU: 'Ce lot n’existe plus.',
+  COFFRE_FERME: 'Le coffre n’est pas encore ouvert.',
+  SALLE_FERMEE: 'La salle du trésor est fermée.',
+  LOT_EPUISE: 'Trop tard : quelqu’un a pris le dernier !',
+  PAS_PERCE: 'Seuls ceux qui ont percé ce coffre peuvent se servir.',
+  POINTS_INSUFFISANTS: 'Pas assez de points pour ce lot.',
+  PAS_DE_CARTE: 'Aucune carte de cette rareté à donner pour le moment.',
 };
 const refusal = (message: string): Error => {
   const code = Object.keys(REFUSALS).find((k) => message.includes(k));
@@ -108,6 +160,15 @@ export async function drill(
     .parse(await rpc('coffres_percer', { p_coffre: vault, p_n: n, p_giga: giga }));
 }
 
+// Pick a lot in the treasure room of an open vault.
+export async function pickLot(
+  lot: number,
+): Promise<{ prise: TreasurePick; reste: number; stock: number }> {
+  return z
+    .object({ prise: TreasurePick, reste: Num, stock: Num })
+    .parse(await rpc('coffres_ramasser', { p_lot: lot }));
+}
+
 // The vaults whose opening this browser has already played (the reveal plays once).
 const SEEN = 'forestcard:coffres-vus';
 export function openingSeen(id: number): boolean {
@@ -137,6 +198,7 @@ const AdminVault = z.object({
   poses: Num,
   nb_cartes: Num.nullish(),
   rarete: z.string().nullish(),
+  lots: z.array(TreasureLot).nullish(),
 });
 const AdminHeist = z.object({
   id: Num,
@@ -180,4 +242,15 @@ export async function setHeistEnd(id: number, end: string): Promise<void> {
 
 export async function deleteHeist(id: number): Promise<void> {
   await rpc('admin_coffres_supprimer', { p_id: id });
+}
+
+// The treasure of a vault, while it is closed: its lots {objet, n, prix, stock}.
+export async function setVaultTreasure(
+  vault: number,
+  lots: Pick<TreasureLot, 'objet' | 'n' | 'prix' | 'stock'>[],
+): Promise<void> {
+  await rpc('admin_coffres_tresor', {
+    p_coffre: vault,
+    p_lots: lots.map(({ objet, n, prix, stock }) => ({ objet, n, prix, stock })),
+  });
 }

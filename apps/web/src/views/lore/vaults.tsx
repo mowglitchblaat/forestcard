@@ -3,6 +3,8 @@
 // (its bit turns, sparks fly), and leaves a hole for good in the door. At its last drill a vault
 // opens: its door shakes, its bolts pull back, it swings open onto a beam of light in its colour,
 // and the new cards it held fly out and turn over. The animations live in index.css (vault-*).
+// Each vault hides a treasure (treasure-room.tsx): a click on « Son trésor » shows it; once the vault
+// is open, those who drilled it pick from it with their points.
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
@@ -35,6 +37,7 @@ import {
   PHASES,
   QUICK_MS,
 } from './vault-art';
+import { TreasureRoom } from './treasure-room';
 import { Door, DrillFx } from './vault-parts';
 import { TONES } from '@/lib/tones';
 
@@ -64,6 +67,7 @@ export function VaultGame() {
     refetchInterval: VAULTS_REFRESH,
   });
   const [opening, setOpening] = useState<Vault | null>(null);
+  const [room, setRoom] = useState<number | null>(null);
   const data = heist.data;
   // A vault opened since this browser last looked: its opening plays once.
   useEffect(() => {
@@ -74,7 +78,7 @@ export function VaultGame() {
   if (!data) return null;
   return (
     <>
-      <Heist heist={data} onOpened={setOpening} />
+      <Heist heist={data} onOpened={setOpening} onTreasure={(v) => setRoom(v.id)} />
       {opening && (
         <Opening
           vault={data.coffres.find((v) => v.id === opening.id) ?? opening}
@@ -82,13 +86,33 @@ export function VaultGame() {
             markOpeningSeen(opening.id);
             setOpening(null);
           }}
+          onTreasure={() => {
+            markOpeningSeen(opening.id);
+            setOpening(null);
+            setRoom(opening.id);
+          }}
+        />
+      )}
+      {room !== null && data.coffres.some((v) => v.id === room) && (
+        <TreasureRoom
+          vault={data.coffres.find((v) => v.id === room) as Vault}
+          closesAt={data.salle_fin ?? null}
+          onClose={() => setRoom(null)}
         />
       )}
     </>
   );
 }
 
-function Heist({ heist, onOpened }: { heist: Heist; onOpened: (v: Vault) => void }) {
+function Heist({
+  heist,
+  onOpened,
+  onTreasure,
+}: {
+  heist: Heist;
+  onOpened: (v: Vault) => void;
+  onTreasure: (v: Vault) => void;
+}) {
   const signedIn = !!useSession();
   const client = useQueryClient();
   const now = useNow();
@@ -215,6 +239,7 @@ function Heist({ heist, onOpened }: { heist: Heist; onOpened: (v: Vault) => void
                 gigaStock={gigaStock}
                 canDrill={open && signedIn}
                 onOpened={onOpened}
+                onTreasure={onTreasure}
               />
             ))}
           </div>
@@ -256,6 +281,7 @@ function VaultTile({
   gigaStock,
   canDrill,
   onOpened,
+  onTreasure,
 }: {
   vault: Vault;
   slot: number;
@@ -263,6 +289,7 @@ function VaultTile({
   gigaStock: number;
   canDrill: boolean;
   onOpened: (v: Vault) => void;
+  onTreasure: (v: Vault) => void;
 }) {
   const client = useQueryClient();
   const [queue, setQueue] = useState<Hole[]>([]);
@@ -311,6 +338,8 @@ function VaultTile({
   const done = holes.reduce((n, h) => n + (h.poids ?? 1), 0);
   const isOpen = !!v.ouvert_le;
   const busy = run.isPending || queue.length > 0;
+  const points = v.mes_points ?? 0;
+  const spent = v.mes_depenses ?? 0;
   return (
     <div className={`flex flex-col items-center gap-3 ${GLOW[v.teinte]}`}>
       <div
@@ -359,6 +388,20 @@ function VaultTile({
             : 'Trésor révélé !'
           : 'Que cache-t-il ?'}
       </small>
+      {(v.tresor_lots ?? []).length > 0 && (
+        <Button
+          size="sm"
+          variant={isOpen && points > spent ? 'default' : 'outline'}
+          onClick={() => onTreasure(v)}
+        >
+          <ICONS.vault />
+          {isOpen
+            ? points > spent
+              ? `Salle du trésor · ${points - spent} point${points - spent > 1 ? 's' : ''}`
+              : 'Salle du trésor'
+            : 'Son trésor'}
+        </Button>
+      )}
       {!isOpen && canDrill && (
         <div className="flex flex-wrap justify-center gap-2">
           <Button
@@ -404,7 +447,15 @@ function VaultTile({
 
 // ── The opening ──
 
-function Opening({ vault: v, onClose }: { vault: Vault; onClose: () => void }) {
+function Opening({
+  vault: v,
+  onClose,
+  onTreasure,
+}: {
+  vault: Vault;
+  onClose: () => void;
+  onTreasure: () => void;
+}) {
   const [phase, setPhase] = useState<Phase>('shake');
   useEffect(() => {
     const timers = PHASES.slice(1).map(([p, at]) => setTimeout(() => setPhase(p), at));
@@ -485,9 +536,16 @@ function Opening({ vault: v, onClose }: { vault: Vault; onClose: () => void }) {
             </div>
           )}
         </div>
-        <Button onClick={onClose} variant={past('cards') ? 'default' : 'outline'}>
-          {past('cards') ? 'Génial !' : 'Passer'}
-        </Button>
+        {(v.mes_points ?? 0) > 0 && (v.tresor_lots ?? []).length > 0 ? (
+          <Button onClick={onTreasure} variant={past('cards') ? 'default' : 'outline'}>
+            <ICONS.vault />
+            Entrer dans la salle du trésor ({v.mes_points} points)
+          </Button>
+        ) : (
+          <Button onClick={onClose} variant={past('cards') ? 'default' : 'outline'}>
+            {past('cards') ? 'Génial !' : 'Passer'}
+          </Button>
+        )}
       </DialogContent>
     </Dialog>
   );
