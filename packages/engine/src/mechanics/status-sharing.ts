@@ -146,8 +146,7 @@ function placeNegatives(c: Combat, s: Side, all: Negatives): void {
     if (!now) z.frosts = [{ ...f }];
     else {
       now.level = Math.min(3, Math.max(now.level, f.level));
-      now.cancelChance = Math.max(now.cancelChance, f.cancelChance);
-      now.shatter = Math.max(now.shatter, f.shatter);
+      now.boost = Math.max(now.boost, f.boost);
       now.turns = Math.max(now.turns, f.turns);
     }
   });

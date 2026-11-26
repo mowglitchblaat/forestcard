@@ -123,16 +123,7 @@ function transferStatuses(c: Combat, a: Side, d: Side): void {
   }
   // stronger in the swallower: one level more (III at most), half as long again
   dots.forEach((x) => damageOverTime(c, a, x.kind, x.level + 1, longer(x.turns)));
-  frosts.forEach((f) =>
-    freeze(
-      c,
-      a,
-      Math.min(100, round(f.cancelChance * 1.5)),
-      round(f.shatter * 1.5),
-      longer(f.turns),
-      f.level,
-    ),
-  );
+  frosts.forEach((f) => freeze(c, a, longer(f.turns), f.level, round(f.boost * 1.5)));
   curses.forEach((x) => curse(c, a, longer(x.turns)));
   bleeds.forEach((b) => bleed(c, a, b.level + 1, longer(b.turns)));
   fatigues.forEach((f) => fatigue(c, a, f.level + 1, longer(f.turns)));

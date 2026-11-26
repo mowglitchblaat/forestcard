@@ -24,7 +24,7 @@ const dodgeChance = (c: Combat, d: Side): number =>
     d.passives.filter((p) => p.type === 'esquive').reduce((q, p) => q + (p.chance || 0), 0) +
       d.status.dodgeBonus +
       terrainDodge(c, d) - // the sakura garden (mechanics/terrain.ts)
-      frostDodgeMalus(d), // a frozen card dodges less
+      frostDodgeMalus(c, d), // a frozen card dodges less
   );
 
 // One draw (if the chance is above 0): does d dodge? A stunned card cannot dodge (no draw).

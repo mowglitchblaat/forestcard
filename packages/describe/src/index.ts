@@ -75,6 +75,7 @@ const fractureTxt = (e: Fx) => {
   const n = levelOf('fracture', e);
   return `fracture ${roman(n)} : ${of(L.fractureChance, n)} % de se blesser en attaquant, ${of(L.fractureAtq, n)} % de son ATQ`;
 };
+const frostTxt = () => `gel : ${L.gel[0]} % d'attaque annulée au premier niveau`;
 const knellTxt = (e: Fx) => {
   const n = levelOf('glas', e);
   return `Glas ${roman(n)} : une ombre avance sur sa vie de ${of(L.glas, n)} % de ses PV max par tour`;
@@ -246,7 +247,7 @@ const elementText = (el: string, v: number, e: Fx): string | undefined =>
   (
     {
       brulure: burnTxt({ niveau: e.niveau, pctpv: v }),
-      gel: `gel ${v} % d'attaque annulée`,
+      gel: frostTxt(),
       malediction: `malédiction ${curseTxt}`,
       poison: poisonTxt({ niveau: e.niveau, degtour: v }),
       saignement: bleedTxt({ niveau: e.niveau, pctpv: v }),
@@ -341,7 +342,7 @@ const PASSIVE_TEXT: Record<PassiveType, (p: Fx, x: PassiveContext) => string> = 
     `${c} % de chances de frapper une fois de plus, puis retente${nz(p.max) > 0 ? ` (${p.max} frappes en plus au maximum)` : ''}`,
   saignement: (p, { c, T }) =>
     `${c} % de chances de faire saigner la cible (${bleedTxt(p)}, ${trs(T)})`,
-  gel: (p, { c, T }) => `${c} % de chances de geler la cible : ${frostLevels(p, T)}`,
+  gel: (p, { c, T }) => `${c} % de chances de geler la cible : ${frostLevels(T)}`,
   execution: (p) => executionText(p),
   avalage: (p) => avTxt(p),
   transcendance: (p) => transcendenceText(p),
@@ -457,12 +458,10 @@ export function fxPassif(passive: Fx): string {
   return has(PASSIVE_TEXT, p.type) ? PASSIVE_TEXT[p.type](p, { c, t, v, T }) : cat(p.type);
 }
 
-// Frost in 3 levels (mechanics/frost.ts): what each level does, with the frost's values.
-const frostLevels = (e: Fx, T: number): string => {
-  const a = nz(e.annul);
-  const s = isEmpty(e.eclat) ? 10 : nz(e.eclat);
-  const a2 = Math.min(100, Math.round(a * 2.5));
-  return `+1 niveau de gel, ${trs(T)} (1 : ${a} % d'attaque annulée et esquive −${a} % · 2 : ${a2} % et esquive −${a2} % · 3 : glaciation, n'attaque pas à son tour suivant puis la glace éclate, ${s} dégâts ; sur une carte qui brûle, la glace éteint le feu au lieu de geler)`;
+// Frost in 3 levels (mechanics/frost.ts): what each level does, with the default level table.
+const frostLevels = (T: number): string => {
+  const [a, a2] = L.gel;
+  return `+1 niveau de gel, ${trs(T)} (1 : ${a} % d'attaque annulée et esquive −${a} % · 2 : ${a2} % et esquive −${a2} % · 3 : glaciation, n'attaque pas à son tour suivant puis la glace éclate, ${L.gelEclat} dégâts ; sur une carte qui brûle, la glace éteint le feu au lieu de geler)`;
 };
 
 // ── Effects (magics, ultimates, trap payloads) ──
@@ -565,7 +564,7 @@ const EFFECT_TEXT: Record<EffectType, (e: Fx, x: EffectContext) => string[]> = {
     `Maudit ${ci} : ${curseTxt} pendant ${trs(T)}, puis l'ATQ revient (chaque malédiction ajoute la sienne)`,
   ],
   saignement: (e, { T, ci }) => [`Fait saigner ${ci} : ${bleedTxt(e)}, ${trs(T)}`],
-  gel: (e, { T, ci }) => [`Gèle ${ci} : ${frostLevels(e, T)}`],
+  gel: (e, { T, ci }) => [`Gèle ${ci} : ${frostLevels(T)}`],
   souffle: (e) => {
     const al = e.statut === 'aleatoire';
     const el = al ? '' : (e.statut as string) || 'brulure';

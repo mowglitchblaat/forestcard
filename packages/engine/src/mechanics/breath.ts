@@ -26,7 +26,7 @@ export const elementStatus = (element: string, e: EffectData): EffectData => {
   const turns = Math.max(1, parseInt(String(e.tours), 10) || 2);
   const statuses: Record<string, EffectData> = {
     brulure: { type: 'brulure_effet', ciblem: 'adversaire', niveau, pctpv: v, tours: turns },
-    gel: { type: 'gel', ciblem: 'adversaire', annul: v, tours: turns },
+    gel: { type: 'gel', ciblem: 'adversaire', tours: turns }, // its values: the level table
     malediction: { type: 'malediction', ciblem: 'adversaire', tours: turns },
     poison: { type: 'poison_effet', ciblem: 'adversaire', niveau, degtour: v, tours: turns },
     saignement: { type: 'saignement', ciblem: 'adversaire', niveau, pctpv: v, tours: turns },
