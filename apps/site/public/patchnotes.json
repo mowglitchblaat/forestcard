@@ -1,5 +1,33 @@
 [
   {
+    "date": "2026-11-26",
+    "intro": "Les coffres-forts de l’événement cachent maintenant un trésor à se partager, et la nouvelle animation de combat gagne en spectacle.",
+    "groupes": [
+      {
+        "titre": "Site",
+        "points": [
+          "Chaque coffre-fort de l’événement cache un trésor (gold, fragments, boosters, foreuses, Perce-Abîme, cartes dorées), visible par tous avec le bouton « Son trésor ».",
+          "À l’ouverture, ceux qui ont percé le coffre entrent dans la salle du trésor avec 1 point par foreuse posée et choisissent leurs lots dans un stock commun : premier arrivé, premier servi.",
+          "La salle ferme 3 jours après la fin de l’événement : les points non dépensés sont perdus."
+        ]
+      },
+      {
+        "titre": "Collection et deck",
+        "points": [
+          "Dans l’Inventaire, les mini-coffres ont maintenant leur propre image de petit coffre portatif."
+        ]
+      },
+      {
+        "titre": "Animations",
+        "points": [
+          "Le Tir laser est entièrement refait : le tireur se charge puis lâche un gros rayon qui frappe la cible avec éclair, ondes de choc et brûlure, plus épais si la cible a beaucoup de PV.",
+          "La mutation insecte devient une carapace qui pousse depuis les bords de la carte, sans la rendre illisible.",
+          "La Cathédrale de programmation a enfin son décor : engrenages, circuits lumineux, lignes de code et pluie de 0 et de 1."
+        ]
+      }
+    ]
+  },
+  {
     "date": "2026-11-25",
     "intro": "La Reconstruction devient aussi un effet de magie, d’ultime et de piège, et de nouvelles illustrations arrivent.",
     "groupes": [
