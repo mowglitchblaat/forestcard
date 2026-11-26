@@ -790,6 +790,15 @@ export async function playCombat(ctx: CombatContext, m: CombatMessage): Promise<
       return;
     }
     sync(l);
+    // a trap destroyed while still face down (Ryuukin's ultimate): it turns over first, so that
+    // everyone sees which one breaks (its line carries its name and image)
+    if (l.t === 'vol' && l.k === 'piege_detruit' && l.c !== null) {
+      const own = sides[l.c];
+      if (own?.trap && !own.trap.faceUp) {
+        own.trap = await revealed(own.trap, l);
+        await own.trap.flip(app);
+      }
+    }
     await mechanics(l);
     const s = l.c === null ? null : sides[l.c];
     const f = s?.fighter;
