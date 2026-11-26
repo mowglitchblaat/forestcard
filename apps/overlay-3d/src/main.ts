@@ -363,6 +363,15 @@ async function main(): Promise<void> {
       });
     });
 
+  // ready to listen: the site sends its booster or combat only then (on a first, uncached load, the
+  // setup took longer than the frame's « load », and the first message was lost)
+  if (SITE)
+    try {
+      parent.postMessage({ fc: 'pret' }, location.origin);
+    } catch {
+      // no parent
+    }
+
   // Streamer.bot, like the legacy pages: General.Custom events carry the combat or the opening
   if (!params.has('local') && !SITE) {
     const connect = () => {
