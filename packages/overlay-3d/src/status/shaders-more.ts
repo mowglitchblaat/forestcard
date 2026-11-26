@@ -158,8 +158,10 @@ export const MUTATION = body(`
   vec2 v = vor(cuv * vec2(18.0, 24.0) + 0.7);
   float seam = v.y - v.x;
   float dome = smoothstep(0.0, 0.4, seam);
-  vec2 g = vec2(dFdx(dome), dFdy(dome)) * 60.0;
-  float lit = clamp(0.55 - g.x * 0.5 - g.y * 0.5, 0.0, 1.0);
+  // lit from the top left: the dome a little further toward the light (no derivatives: they do not
+  // compile everywhere, OBS's browser among them, and the card then went black)
+  vec2 v2 = vor(cuv * vec2(18.0, 24.0) + 0.7 - vec2(0.04, 0.04));
+  float lit = clamp(0.55 + (dome - smoothstep(0.0, 0.4, v2.y - v2.x)) * 1.6, 0.0, 1.0);
   vec3 c = tex(cuv);
   // thin-film iridescence of a beetle's shell: green, teal, gold, a touch of violet
   float h = fract(dome * 0.9 + n * 0.8 + t * 0.06 + edge * 2.0);
