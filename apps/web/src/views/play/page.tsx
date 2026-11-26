@@ -3,7 +3,7 @@
 // duel paid in gold, each played with the stream's animation in a full-screen scene.
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { PageSkeleton } from '@/components/skeletons';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -17,16 +17,24 @@ import { ICONS } from '@/lib/icons';
 
 type Scene = { page: string; message: unknown } | null;
 
-// The animation in a frame over the page: sent its data once loaded, closed when it says it is done
-// (a message ending in "-fini" from this site), or by the button. The page is asked with the overlay's
+// The animation in a frame over the page: sent its data once the scene says it listens (« pret »),
+// closed when it says it is done (a message ending in "-fini" from this site), or by the button. An old
+// cached scene that never says « pret » still gets its data, a while after its frame has loaded. The page is asked with the overlay's
 // version (v=, vite.config.ts), so a browser that kept an old combat.html loads the new one.
 export function SceneFrame({ scene, onDone }: { scene: NonNullable<Scene>; onDone: () => void }) {
   const frame = useRef<HTMLIFrameElement>(null);
+  const sent = useRef(false);
+  const send = useCallback(() => {
+    if (sent.current) return;
+    sent.current = true;
+    frame.current?.contentWindow?.postMessage(scene.message, location.origin);
+  }, [scene.message]);
   useEffect(() => {
     const listen = (e: MessageEvent<unknown>) => {
       const data = e.data as { fc?: unknown } | null;
-      if (e.origin === location.origin && typeof data?.fc === 'string' && /-fini$/.test(data.fc))
-        setTimeout(onDone, 600);
+      if (e.origin !== location.origin || typeof data?.fc !== 'string') return;
+      if (data.fc === 'pret') send();
+      else if (/-fini$/.test(data.fc)) setTimeout(onDone, 600);
     };
     addEventListener('message', listen);
     document.body.style.overflow = 'hidden';
@@ -34,7 +42,7 @@ export function SceneFrame({ scene, onDone }: { scene: NonNullable<Scene>; onDon
       removeEventListener('message', listen);
       document.body.style.overflow = '';
     };
-  }, [onDone]);
+  }, [onDone, send]);
   return (
     <div className="fixed inset-0 z-50 bg-background">
       <iframe
@@ -43,10 +51,12 @@ export function SceneFrame({ scene, onDone }: { scene: NonNullable<Scene>; onDon
         title="Animation"
         className="size-full border-0"
         onLoad={() =>
-          setTimeout(
-            () => frame.current?.contentWindow?.postMessage(scene.message, location.origin),
-            400,
-          )
+          // an old scene, which never says « pret »: sent anyway (not marked sent, so that a slow new
+          // scene still gets it when it says « pret »)
+          setTimeout(() => {
+            if (!sent.current)
+              frame.current?.contentWindow?.postMessage(scene.message, location.origin);
+          }, 4000)
         }
       />
       <Button variant="secondary" className="absolute top-3 right-3" onClick={onDone}>
