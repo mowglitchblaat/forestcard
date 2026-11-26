@@ -414,23 +414,25 @@ async function main(): Promise<void> {
       ? ''
       : 'Cartes de démonstration, sans leurs images : connecte-toi au site dans ce navigateur, puis recharge.';
     say(note);
-    const cards = (live ?? snapshot).map((c): EngineCard & { rarete: string; couleur: string | null } => {
-      const v = c.variantes_carte.find((x) => x.nom === 'Standard') ?? c.variantes_carte[0];
-      return {
-        id: c.id,
-        type: c.type,
-        nom: c.nom,
-        atq: c.atq ?? undefined,
-        pv: c.pv ?? undefined,
-        passif: c.passif as EngineCard['passif'],
-        ultime: c.ultime as EngineCard['ultime'],
-        effet: c.effet as EngineCard['effet'],
-        image: v?.image_path ?? null,
-        rar: c.raretes ?? null,
-        rarete: c.raretes?.nom ?? '—',
-        couleur: c.raretes?.couleur ?? null,
-      };
-    });
+    const cards = (live ?? snapshot).map(
+      (c): EngineCard & { rarete: string; couleur: string | null } => {
+        const v = c.variantes_carte.find((x) => x.nom === 'Standard') ?? c.variantes_carte[0];
+        return {
+          id: c.id,
+          type: c.type,
+          nom: c.nom,
+          atq: c.atq ?? undefined,
+          pv: c.pv ?? undefined,
+          passif: c.passif as EngineCard['passif'],
+          ultime: c.ultime as EngineCard['ultime'],
+          effet: c.effet as EngineCard['effet'],
+          image: v?.image_path ?? null,
+          rar: c.raretes ?? null,
+          rarete: c.raretes?.nom ?? '—',
+          couleur: c.raretes?.couleur ?? null,
+        };
+      },
+    );
     // the cards to choose from, one list per type
     const TYPES = ['combattant', 'magie', 'piege'] as const;
     for (const t of TYPES) {
