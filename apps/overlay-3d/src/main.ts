@@ -147,6 +147,41 @@ async function loadFonts(): Promise<void> {
   await Promise.race([Promise.allSettled(wanted), new Promise((ok) => setTimeout(ok, 4000))]);
 }
 
+// ?test: the live cards, read with the site's session in this browser (like combat.html?test: the
+// cards are only readable once signed in); null when nobody is signed in here.
+const SESSION_KEY = 'sb-bjsvqikjnvaomyoifiml-auth-token';
+async function liveCards(): Promise<typeof snapshot | null> {
+  try {
+    let s = JSON.parse(localStorage.getItem(SESSION_KEY) ?? 'null') as {
+      access_token?: string;
+      refresh_token?: string;
+      expires_at?: number;
+    } | null;
+    if (!s?.access_token) return null;
+    // an expired session is refreshed, and kept for the site as supabase-js would
+    if (s.expires_at && s.expires_at * 1000 < Date.now() + 30_000 && s.refresh_token) {
+      const r = await fetch(SUPABASE + '/auth/v1/token?grant_type=refresh_token', {
+        method: 'POST',
+        headers: { apikey: PUBLIC_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: s.refresh_token }),
+      });
+      if (!r.ok) return null;
+      s = (await r.json()) as typeof s;
+      localStorage.setItem(SESSION_KEY, JSON.stringify(s));
+    }
+    const r = await fetch(
+      SUPABASE +
+        '/rest/v1/cartes?select=id,nom,type,atq,pv,actif,passif,ultime,effet,raretes(nom,couleur),variantes_carte(nom,image_path)&type=in.(combattant,magie,piege)&actif=eq.true&order=nom',
+      { headers: { apikey: PUBLIC_KEY, Authorization: `Bearer ${s?.access_token ?? ''}` } },
+    );
+    if (!r.ok) return null;
+    const list = (await r.json()) as typeof snapshot;
+    return Array.isArray(list) && list.length > 0 ? list : null;
+  } catch {
+    return null;
+  }
+}
+
 // a booster's image: the message's, else read by the booster's name (overlay.html, boosterImg)
 const boosterImages = new Map<string, string | null>();
 async function boosterImage(m: BoosterMessage): Promise<string | null> {
@@ -373,7 +408,13 @@ async function main(): Promise<void> {
   }
 
   if (TEST) {
-    const cards = snapshot.map((c): EngineCard & { rarete: string; couleur: string | null } => {
+    // the live cards when signed in to the site in this browser, else the snapshot (old images)
+    const live = await liveCards();
+    const note = live
+      ? ''
+      : 'Cartes de démonstration, sans leurs images : connecte-toi au site dans ce navigateur, puis recharge.';
+    say(note);
+    const cards = (live ?? snapshot).map((c): EngineCard & { rarete: string; couleur: string | null } => {
       const v = c.variantes_carte.find((x) => x.nom === 'Standard') ?? c.variantes_carte[0];
       return {
         id: c.id,
@@ -434,7 +475,7 @@ async function main(): Promise<void> {
         : simuler(g.a, g.b, { seed: g.seed });
       const m = readCombatMessage({ journal: r.journal, gagnant: r.gagnant });
       if (m) {
-        say(queue.length || playing ? 'Combat ajouté à la file' : '');
+        say(queue.length || playing ? 'Combat ajouté à la file' : note);
         void play(m);
       } else say('Combat illisible');
     };
