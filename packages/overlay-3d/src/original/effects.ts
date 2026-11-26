@@ -2055,7 +2055,12 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
       w0 = (10 + 16 * I) * S;
     const CHARGE = 0.45,
       FIRE = 0.55;
-    const motes = Array.from({ length: 34 }, () => ({ a: R(0, 6.283), r: R(60, 150) * S, d: R(0, 0.25), s: R(3, 7) * S }));
+    const motes = Array.from({ length: 34 }, () => ({
+      a: R(0, 6.283),
+      r: R(60, 150) * S,
+      d: R(0, 0.25),
+      s: R(3, 7) * S,
+    }));
     const sparks = Array.from({ length: Math.round(26 + 34 * I) }, () => ({
       a: ang + Math.PI + R(-1.1, 1.1),
       v: R(260, 720) * S,
@@ -2063,7 +2068,11 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
       s: R(1.5, 3.8) * S,
       hot: Math.random() < 0.3,
     }));
-    const smoke = Array.from({ length: 10 }, () => ({ dx: R(-0.12, 0.12) * B.w, t0: R(0, 0.8), s: R(18, 34) * S }));
+    const smoke = Array.from({ length: 10 }, () => ({
+      dx: R(-0.12, 0.12) * B.w,
+      t0: R(0, 0.8),
+      s: R(18, 34) * S,
+    }));
     let hit: () => void = () => {};
     const impact = new Promise<void>((r) => (hit = r));
     let recoiled = false,
@@ -2077,7 +2086,13 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
           if (k <= 0 || k >= 1) continue;
           const r = m.r * (1 - ez(k));
           x.globalAlpha = 0.9 * Math.sin(Math.PI * k);
-          x.drawImage(nspr('#c084fc'), x0 + Math.cos(m.a) * r - m.s * 2, y0 + Math.sin(m.a) * r - m.s * 2, m.s * 4, m.s * 4);
+          x.drawImage(
+            nspr('#c084fc'),
+            x0 + Math.cos(m.a) * r - m.s * 2,
+            y0 + Math.sin(m.a) * r - m.s * 2,
+            m.s * 4,
+            m.s * 4,
+          );
         }
         const orbR = w0 * (0.4 + 1.2 * u);
         x.globalAlpha = 0.95;
@@ -2101,7 +2116,10 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
         if (fade > 0) {
           const ex = x0 + (x1 - x0) * reach,
             ey = y0 + (y1 - y0) * reach,
-            w = w0 * (1 + 0.15 * Math.sin(t * 60) + 0.08 * (Math.random() - 0.5)) * (k < FIRE ? 1 : 0.3 + 0.7 * fade);
+            w =
+              w0 *
+              (1 + 0.15 * Math.sin(t * 60) + 0.08 * (Math.random() - 0.5)) *
+              (k < FIRE ? 1 : 0.3 + 0.7 * fade);
           x.save();
           x.globalCompositeOperation = 'lighter';
           x.lineCap = 'round';
@@ -2133,7 +2151,8 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
           const z = w * (2.6 + 0.6 * Math.sin(t * 40));
           x.globalAlpha = fade;
           x.drawImage(nspr('#c084fc'), x0 - z, y0 - z, z * 2, z * 2);
-          if (reach >= 1) x.drawImage(nspr('#f5d0fe'), ex - z * 1.6, ey - z * 1.6, z * 3.2, z * 3.2);
+          if (reach >= 1)
+            x.drawImage(nspr('#f5d0fe'), ex - z * 1.6, ey - z * 1.6, z * 3.2, z * 3.2);
           x.restore();
         }
         if (reach >= 1) {
@@ -2190,7 +2209,13 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
               x.globalAlpha = 0.35 * Math.sin(Math.PI * q);
               x.fillStyle = '#3b3047';
               x.beginPath();
-              x.arc(x1 + m.dx + Math.sin(q * 6 + m.t0 * 9) * 8 * S, y1 - q * B.h * 0.45, m.s * (0.6 + q), 0, 7);
+              x.arc(
+                x1 + m.dx + Math.sin(q * 6 + m.t0 * 9) * 8 * S,
+                y1 - q * B.h * 0.45,
+                m.s * (0.6 + q),
+                0,
+                7,
+              );
               x.fill();
             }
           }
