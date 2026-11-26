@@ -8,6 +8,8 @@
 //   fatigue      % of the ATQ taken while it runs
 //   fracture     chance to get hurt when attacking, damage in % of its own ATQ
 //   glas         speed of the shadow, % of max HP per turn
+//   gel          % chance a frozen card's attack is cancelled, and the dodge points it loses (III: while
+//                caught in the ice); and one shatter damage (`gelEclat`), the same for every card
 //   malediction  no level: a fixed ATQ loss for its turns
 //   faiblesse    no level: the weakness a vaporisation leaves (damage taken +X % for X turns)
 //   critique     the critical power, the same for every card (only a boost raises it)
@@ -33,6 +35,8 @@ export type StatusLevels = {
   fractureChance: Levels3; // % chance to get hurt when attacking
   fractureAtq: Levels3; // damage, % of its own ATQ
   glas: Levels3; // % of max HP per turn
+  gel: Levels3; // frost: % chance its attack is cancelled, and dodge points lost (mechanics/frost.ts)
+  gelEclat: number; // frost: damage when the ice shatters
   malediction: number; // ATQ lost by each curse
   faiblesse: number; // weakness: % of damage taken in more
   faiblesseTours: number; // weakness: its turns
@@ -79,6 +83,8 @@ export const DEFAULT_LEVELS: StatusLevels = {
   fractureChance: [15, 30, 50],
   fractureAtq: [10, 20, 30],
   glas: [5, 8, 12],
+  gel: [20, 50, 50],
+  gelEclat: 20,
   malediction: 3,
   faiblesse: 25,
   faiblesseTours: 2,
@@ -126,6 +132,7 @@ export function levelTable(given: Partial<StatusLevels> | null | undefined): Sta
     fractureChance: [...DEFAULT_LEVELS.fractureChance],
     fractureAtq: [...DEFAULT_LEVELS.fractureAtq],
     glas: [...DEFAULT_LEVELS.glas],
+    gel: [...DEFAULT_LEVELS.gel],
     sangsue: [...DEFAULT_LEVELS.sangsue],
   };
   if (!given || typeof given !== 'object') return t;

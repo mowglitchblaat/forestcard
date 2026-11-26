@@ -110,10 +110,12 @@ const LEVEL_ROWS: [string, string][] = [
   ['fractureChance', 'Fracture : % de chances de se blesser'],
   ['fractureAtq', 'Fracture : dégâts, % de sa propre ATQ'],
   ['glas', "Glas : % des PV max par tour (vitesse de l'ombre)"],
+  ['gel', "Gel : % d'attaque annulée et d'esquive en moins (III : pris dans la glace)"],
   ['sangsue', 'Sangsue toxique : % du tic de poison récupéré'],
 ];
 const SINGLE_LEVELS: [string, string][] = [
   ['calcination', 'Brûlure : % des dégâts retirés aux PV max (calcination)'],
+  ['gelEclat', 'Gel : dégâts quand la glace éclate (glaciation)'],
   ['malediction', 'Malédiction : ATQ en moins (sans niveau)'],
   ['faiblesse', 'Faiblesse (vaporisation) : % de dégâts reçus en plus'],
   ['faiblesseTours', 'Faiblesse : nombre de tours'],

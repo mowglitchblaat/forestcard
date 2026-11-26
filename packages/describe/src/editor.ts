@@ -52,7 +52,10 @@ export const EDITOR_FIELDS = {
     'n',
   ],
   remax: ['Souffles en chaîne : souffles en plus au maximum (3 par défaut)', 'n'],
-  sval: ["Gel : % d'attaque annulée (les autres statuts prennent le niveau ci-dessus)", 'n'],
+  sval: [
+    'Ancienne valeur du statut, avant les niveaux (sinon le niveau ci-dessus ; le gel suit le tableau des niveaux)',
+    'n',
+  ],
   nbbloque: [
     "Blocage : nombre de coups bloqués, les premiers de l'attaque (vide ou 0 = toute l'attaque)",
     'n',
@@ -114,11 +117,9 @@ export const EDITOR_FIELDS = {
   nbalea: ["Nombre d'effets aléatoires tirés (1 par défaut)", 'n'],
   every: ['Agit tous les X tours', 'n'],
   fois: ['Nombre de fois (1 = une seule)', 'n'],
-  annul: [
-    "Gel niveau 1 : chance d'annuler l'attaque et esquive en moins (%, ×2,5 au niveau 2)",
-    'n',
-  ],
-  eclat: ['Gel niveau 3 : dégâts quand la glace éclate (10 par défaut)', 'n'],
+  // annul, eclat: the frost's old values, no longer read (the level table, November 2026)
+  annul: ['Gel : ancien réglage, remplacé par le tableau des niveaux', 'n'],
+  eclat: ['Gel : ancien réglage, remplacé par le tableau des niveaux', 'n'],
   glasv: [
     "Glas : vitesse de l'ombre (% des PV max par tour) — ancien réglage, remplacé par le niveau",
     'n',
@@ -302,8 +303,6 @@ export const EDITOR_PASSIVES: Record<PassiveType, EditorEntry> = {
   gel: [
     'À X % de chances, gèle la cible : +1 niveau de gel (3 niveaux : givre, gelée, glaciation)',
     'chance',
-    'annul',
-    'eclat',
     'tours',
   ],
   fracture: [
@@ -564,8 +563,6 @@ export const EDITOR_ULTIMATES: { readonly [K in EffectType]?: EditorEntry } = {
   gel: [
     'Gel : +1 niveau de gel (1 givre, 2 gelée, 3 glaciation), pendant X tours',
     'ciblem',
-    'annul',
-    'eclat',
     'tours',
   ],
   fracture: [
@@ -995,8 +992,6 @@ export const EDITOR_MAGICS: { readonly [K in EffectType]?: EditorEntry } = {
   atk_gel: [
     'Attaque de base : X % de chances de geler (+1 niveau de gel, X tours)',
     'chance',
-    'annul',
-    'eclat',
     'tours',
   ],
   reset_ultime: ["Réinitialise l'ultime (utilisable à nouveau)", 'cible'],
@@ -1009,8 +1004,6 @@ export const EDITOR_MAGICS: { readonly [K in EffectType]?: EditorEntry } = {
   gel: [
     'Gel : +1 niveau de gel (1 givre, 2 gelée, 3 glaciation), pendant X tours',
     'ciblem',
-    'annul',
-    'eclat',
     'tours',
   ],
   fracture: [

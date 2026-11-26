@@ -130,6 +130,8 @@ export function randomEffectPool(
       () => ({
         type: 'gel',
         ciblem: 'adversaire',
+        // annul and eclat are no longer read (the level table, mechanics/frost.ts): still drawn, so
+        // the draws that follow stay the same
         annul: ri(30, 60),
         eclat: ri(10, 30),
         tours: ri(2, 3),
@@ -193,7 +195,7 @@ export function randomEffectPool(
       () => ({
         type: 'atk_gel',
         chance: ri(25, 50),
-        annul: ri(30, 50),
+        annul: ri(30, 50), // not read, still drawn (see frost above)
         eclat: ri(10, 25),
         tours: 2,
       }),
