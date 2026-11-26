@@ -394,7 +394,9 @@ async function main(): Promise<void> {
     const TYPES = ['combattant', 'magie', 'piege'] as const;
     for (const t of TYPES) {
       const list = document.getElementById(`l-${t}`);
-      for (const c of cards.filter((x) => x.type === t).sort((a, b) => a.nom.localeCompare(b.nom))) {
+      for (const c of cards
+        .filter((x) => x.type === t)
+        .sort((a, b) => a.nom.localeCompare(b.nom))) {
         const o = document.createElement('option');
         o.value = c.nom;
         o.label = c.rarete;
@@ -419,8 +421,12 @@ async function main(): Promise<void> {
       pseudo: side === 'a' ? 'Joueur A' : 'Joueur B',
       deck: TYPES.flatMap((t) => Array.from({ length: n }, (_, i) => pick(side, t, i === 0))),
     });
-    let last: { relay: boolean; a: ReturnType<typeof player>; b: ReturnType<typeof player>; seed: number } | null =
-      null;
+    let last: {
+      relay: boolean;
+      a: ReturnType<typeof player>;
+      b: ReturnType<typeof player>;
+      seed: number;
+    } | null = null;
     const run = (g: NonNullable<typeof last>) => {
       last = g;
       const r = g.relay
@@ -457,7 +463,9 @@ async function main(): Promise<void> {
     };
     document.getElementById('fight')?.addEventListener('click', () => fight(false));
     document.getElementById('relay')?.addEventListener('click', () => fight(true));
-    document.getElementById('again')?.addEventListener('click', () => (last ? run(last) : fight(false)));
+    document
+      .getElementById('again')
+      ?.addEventListener('click', () => (last ? run(last) : fight(false)));
     document.getElementById('open')?.addEventListener('click', open);
     if (MODE === 'booster') open();
     else fight(false);
