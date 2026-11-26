@@ -2304,6 +2304,135 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
     });
   }
 
+  // ════════ THE LIGHTNING'S BOUNCE (nRebond, modernised): from the bottom of the fighter, a jagged
+  // yellow bolt leaps to its own magic or trap (face down or not), flickering three times, with a flash
+  // where it lands. Then: nothing to strike (grey sparks), the card charged (a crackle of small arcs
+  // runs around it for a while), or a charged card struck again (a big flash, it is destroyed: the
+  // caller breaks it). Resolves when the bolt has landed. ════════
+  function rebond(from: LegacyCard, to: LegacyCard, result: string, slot: string): Promise<void> {
+    const A = K(from),
+      B = K(to),
+      S = A.w / 280,
+      x0 = A.cx,
+      y0 = A.y + A.h * 0.82,
+      x1 = B.cx,
+      y1 = B.cy;
+    const zig = (seed: number) => {
+      const pts: [number, number][] = [[x0, y0]],
+        n = 9,
+        len = Math.hypot(x1 - x0, y1 - y0),
+        nx = -(y1 - y0) / len,
+        ny = (x1 - x0) / len;
+      let r = seed;
+      const rnd = () => (r = (r * 9301 + 49297) % 233280) / 233280 - 0.5;
+      for (let i = 1; i < n; i++) {
+        const k = i / n,
+          off = rnd() * len * 0.12 * Math.sin(Math.PI * k);
+        pts.push([x0 + (x1 - x0) * k + nx * off, y0 + (y1 - y0) * k + ny * off]);
+      }
+      pts.push([x1, y1]);
+      return pts;
+    };
+    const sparks = Array.from({ length: 18 }, () => ({
+      a: R(0, 6.283),
+      v: R(120, 360) * S,
+      s: R(1.5, 3) * S,
+    }));
+    const grey = result === 'empty',
+      gone = result === 'destroyed',
+      charged = result === 'charged';
+    if (!grey)
+      say(
+        from,
+        slot === 'magie'
+          ? gone
+            ? 'Magie détruite !'
+            : 'Magie chargée'
+          : gone
+            ? 'Piège détruit !'
+            : 'Piège chargé',
+        '#fde047',
+        gone,
+      );
+    let landed: () => void = () => {};
+    const done = new Promise<void>((r) => (landed = r));
+    let hit = false;
+    void fx.add(charged ? 3.2 : 1.1, (x, t) => {
+      x.save();
+      x.globalCompositeOperation = 'lighter';
+      x.lineCap = 'round';
+      x.lineJoin = 'round';
+      // the bolt, three flickers
+      if (t < 0.45) {
+        const pts = zig(Math.floor(t * 30) + 1);
+        const reach = Math.min(1, t / 0.08);
+        const m = Math.max(1, Math.floor(pts.length * reach));
+        for (const [col, w, al] of [
+          ['#a16207', 14, 0.25],
+          ['#fde047', 6, 0.8],
+          ['#ffffff', 2.2, 1],
+        ] as const) {
+          x.globalAlpha = al * (0.6 + 0.4 * Math.sin(t * 70));
+          x.strokeStyle = col;
+          x.lineWidth = w * S;
+          x.beginPath();
+          pts.slice(0, m).forEach(([px, py], i) => (i ? x.lineTo(px, py) : x.moveTo(px, py)));
+          x.stroke();
+        }
+      }
+      if (t >= 0.08 && !hit) {
+        hit = true;
+        landed();
+      }
+      // where it lands
+      const h = t - 0.08;
+      if (h > 0 && h < 0.5) {
+        const fr = B.w * (gone ? 1.1 : 0.6) * ez(Math.min(1, h / 0.2));
+        x.globalAlpha = (gone ? 1 : 0.8) * (1 - h / 0.5);
+        x.drawImage(nspr(grey ? '#a3a3a3' : '#fef08a'), x1 - fr, y1 - fr, fr * 2, fr * 2);
+        for (const p of sparks) {
+          const d = p.v * h;
+          x.globalAlpha = 1 - h / 0.5;
+          x.strokeStyle = grey ? '#a3a3a3' : '#fde047';
+          x.lineWidth = p.s;
+          x.beginPath();
+          x.moveTo(x1 + Math.cos(p.a) * d, y1 + Math.sin(p.a) * d);
+          x.lineTo(x1 + Math.cos(p.a) * (d + 10 * S), y1 + Math.sin(p.a) * (d + 10 * S));
+          x.stroke();
+        }
+      }
+      // the charge: small arcs crackling around the card, fading
+      if (charged && h > 0.15) {
+        const fade = 1 - cl((h - 2.4) / 0.7);
+        for (let i = 0; i < 3; i++) {
+          if (Math.random() < 0.45) continue;
+          const side = Math.floor(Math.random() * 4),
+            u = Math.random();
+          const px = side < 2 ? B.x + u * B.w : side === 2 ? B.x : B.x + B.w,
+            py = side < 2 ? (side === 0 ? B.y : B.y + B.h) : B.y + u * B.h;
+          x.globalAlpha = 0.9 * fade;
+          x.strokeStyle = Math.random() < 0.5 ? '#fde047' : '#ffffff';
+          x.lineWidth = 1.8 * S;
+          x.beginPath();
+          x.moveTo(px, py);
+          let qx = px,
+            qy = py;
+          for (let k = 0; k < 4; k++) {
+            qx += R(-12, 12) * S;
+            qy += R(-12, 12) * S;
+            x.lineTo(qx, qy);
+          }
+          x.stroke();
+        }
+        x.globalAlpha = 0.18 * fade * (0.6 + 0.4 * Math.sin(t * 12));
+        x.drawImage(nspr('#fde047'), B.x - B.w * 0.2, B.y - B.h * 0.1, B.w * 1.4, B.h * 1.2);
+      }
+      x.restore();
+      x.globalAlpha = 1;
+    });
+    return done;
+  }
+
   return {
     isCut,
     /** The two fighters, for the link and the mist (the scene sets them after each deal or relay). */
@@ -2334,6 +2463,11 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
     execute: (c: LegacyCard) => executionFx(c),
     reformCut: (c: LegacyCard) => reformeCoupe(c),
     sliceTrap: (c: LegacyCard) => trancher(c),
+    // the lightning's bounce from side `from`'s fighter to its card `to` (magic or trap)
+    bounce(from: 0 | 1, to: LegacyCard, result: string, slot: string): Promise<void> {
+      const a = NFX.cards[from];
+      return a ? rebond(a, to, result, slot) : Promise.resolve();
+    },
     swallow: (a: LegacyCard, v: LegacyCard) => avalerFx(a, v),
     chew: async (
       a: LegacyCard,

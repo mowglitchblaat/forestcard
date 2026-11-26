@@ -278,8 +278,18 @@ export function mechanicsOf(ctx: MechanicsContext) {
       case 'orage':
       case 'foudre_coup':
         return move(sideOf(raw['cible']) ?? c, 'lightning');
-      case 'foudre_rebond':
-        return handMove(c, raw['s'] === 'piege' ? 'trap' : 'magic', 'lightning');
+      // the bolt bounces from the fighter to its magic or trap (even face down): charged, or, struck
+      // again, destroyed (it breaks)
+      case 'foudre_rebond': {
+        if (c === null) return;
+        const card = ctx.sides()[c]?.[raw['s'] === 'piege' ? 'trap' : 'magic'];
+        if (!card) return;
+        const r = typeof raw['r'] === 'string' ? raw['r'] : '';
+        await ctx.legacy.bounce(c, card, r, typeof raw['s'] === 'string' ? raw['s'] : 'magie');
+        if (r === 'destroyed') detach(movesOn(card, c).play('shatter'));
+        else if (r === 'charged') card.shake(8, 300);
+        return;
+      }
       case 'foudre':
         f.statuses.set('volt', true, { level: num(raw['n']) ?? 1 });
         return;
