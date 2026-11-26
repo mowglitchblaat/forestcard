@@ -144,7 +144,8 @@ export function mechanicsOf(ctx: MechanicsContext) {
       case 'degats':
         switch (k) {
           case 'laser':
-            return move(c, 'laser');
+            // the beam already hit it (statut laser)
+            return;
           case 'fauche':
             return move(c, 'reap');
           case 'orage':
@@ -218,6 +219,13 @@ export function mechanicsOf(ctx: MechanicsContext) {
       return;
     }
     switch (k) {
+      // the laser (laser, atk_laser): the shooter's beam (original/effects.ts); the damage line comes
+      // at the impact
+      case 'laser': {
+        const to = sideOf(raw['cible']);
+        if (c !== null && to !== null) await ctx.legacy.laser(c, to, num(raw['p']) ?? 100);
+        return;
+      }
       // programming (the mechanical collection): a gear forms and drops into a new slot at the bottom of
       // the card; at the activation, circuits light up and the slots come on (legacy: progFx, activFx)
       case 'prog': {
