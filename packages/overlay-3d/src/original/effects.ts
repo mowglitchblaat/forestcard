@@ -2230,7 +2230,8 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
   // a pillar of golden light falls on the card from above, the card rises into it; a halo forms over
   // it, rays turn behind it, motes of light climb; a flash and a ring of light at the peak, then the
   // card settles, its level written (Transcendance I, II, III). Resolves when it has settled. ════════
-  const say = (c: LegacyCard, txt: string, col: string, big = false) => flot(fx, K(c), txt, col, big);
+  const say = (c: LegacyCard, txt: string, col: string, big = false) =>
+    flot(fx, K(c), txt, col, big);
   function transcend(c: LegacyCard, level: number): Promise<void> {
     const B = K(c),
       S = B.w / 280,
