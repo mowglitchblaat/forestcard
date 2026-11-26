@@ -90,7 +90,12 @@ export class CombatBelts {
       if (d === pop) {
         const s0 = b.scale.x;
         detach(
-          tween(900, (u) => b.scale.set(s0 * (0.2 + 0.8 * u + 0.25 * Math.sin(Math.PI * u))), 'out-cubic', b),
+          tween(
+            900,
+            (u) => b.scale.set(s0 * (0.2 + 0.8 * u + 0.25 * Math.sin(Math.PI * u))),
+            'out-cubic',
+            b,
+          ),
         );
       }
     });
@@ -123,7 +128,12 @@ export class CombatBelts {
       stroke: { color: 0x000000, width: 5, join: 'round' as const },
       align: 'center' as const,
     });
-    const small = new Text({ text: '🏆 COMBAT POUR LE TITRE 🏆', anchor: 0.5, resolution: this.resolution, style: style(26, 0xfde68a) });
+    const small = new Text({
+      text: '🏆 COMBAT POUR LE TITRE 🏆',
+      anchor: 0.5,
+      resolution: this.resolution,
+      style: style(26, 0xfde68a),
+    });
     const big = new Text({
       text: `CEINTURE ${(NAMES[t.division] ?? t.division).toUpperCase()}`,
       anchor: 0.5,
@@ -131,7 +141,9 @@ export class CombatBelts {
       style: style(50, 0xffffff),
     });
     const line = new Text({
-      text: champion ? `${champion} défend sa ceinture` : 'Ceinture vacante : le vainqueur la prend',
+      text: champion
+        ? `${champion} défend sa ceinture`
+        : 'Ceinture vacante : le vainqueur la prend',
       anchor: 0.5,
       resolution: this.resolution,
       style: style(28, 0xe5e7eb, true),
@@ -162,7 +174,9 @@ export class CombatBelts {
     if (winner === null) {
       if (line)
         line.text =
-          t.side !== null ? `Match nul : ${name(t.side)} garde sa ceinture` : 'Match nul : la ceinture reste vacante';
+          t.side !== null
+            ? `Match nul : ${name(t.side)} garde sa ceinture`
+            : 'Match nul : la ceinture reste vacante';
       return;
     }
     if (t.side === winner) {
@@ -174,7 +188,10 @@ export class CombatBelts {
       line.text = `👑 NOUVEAU CHAMPION : ${name(winner)} !`;
       line.style.fill = 0xfde68a;
     }
-    this.held = this.held.map((list) => list.filter((d) => d !== t.division)) as [string[], string[]];
+    this.held = this.held.map((list) => list.filter((d) => d !== t.division)) as [
+      string[],
+      string[],
+    ];
     this.held[winner].unshift(t.division);
     t.side = winner;
     if (this.middle) {
