@@ -278,7 +278,7 @@ function Objects({ inv, onClose }: { inv: Inventory; onClose: () => void }) {
               className={`flex cursor-pointer flex-col items-center gap-1 rounded-lg p-2 text-center transition hover:scale-105 hover:bg-accent ${GLOW[c.teinte]}`}
             >
               <span className="vault-pulse block w-full">
-                <Door tint={c.teinte} holes={c.trous} />
+                <Door tint={c.teinte} holes={c.trous} mini />
               </span>
               <small>{TINT_NAMES[c.teinte]}</small>
               {c.origine && <small className="text-muted-foreground">{c.origine}</small>}
@@ -424,10 +424,9 @@ function MiniVaultDialog({
       onClose={onClose}
     >
       <div className={`mx-auto w-full max-w-xs ${GLOW[v.teinte]}`}>
-        <div className="relative">
-          <Door tint={v.teinte} holes={holes} hidden={hidden} fresh={fresh} />
+        <Door tint={v.teinte} holes={holes} hidden={hidden} fresh={fresh} mini>
           {current && <DrillFx key={current.id} hole={current} />}
-        </div>
+        </Door>
       </div>
       <small className="flex items-center justify-center gap-1 text-muted-foreground tabular-nums">
         <ICONS.drill />
@@ -541,7 +540,7 @@ function MiniOpening({
           <div
             className={`absolute inset-0 ${phase === 'shake' ? 'vault-open-shake' : ''} ${past('swing') ? 'vault-open-swing' : ''}`}
           >
-            <Door tint={v.teinte} holes={holes} />
+            <Door tint={v.teinte} holes={holes} mini />
             {phase === 'bolts' &&
               BOLTS.map((b, i) => (
                 <span

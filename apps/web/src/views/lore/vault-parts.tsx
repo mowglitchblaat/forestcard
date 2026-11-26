@@ -2,31 +2,42 @@
 // (views/inventory): a door with its holes, and a drill coming in to make one. The animations live
 // in index.css (vault-*).
 
+import type { ReactNode } from 'react';
 import type { Hole, Tint } from '@/data/vaults';
-import { DOOR, GIGA_DRILL, GIGA_TINTED } from './vault-art';
+import { DOOR, GIGA_DRILL, GIGA_TINTED, MINI_DOOR } from './vault-art';
 
 // A door with its holes; while drills come in, their holes stay hidden until the drill is done.
+// mini: a mini-vault of the inventory, its holes (and the drills, children) on its small round door.
 export function Door({
   tint,
   holes,
   hidden,
   fresh,
+  mini,
   className = '',
+  children,
 }: {
   tint: Tint;
   holes: Hole[];
   hidden?: Set<number>;
   fresh?: Set<number>;
+  mini?: boolean;
   className?: string;
+  children?: ReactNode;
 }) {
+  const [left, top, side] = mini ? MINI_DOOR[tint].frame : [0, 0, 1];
   return (
     <div className={`vault-door-shadow relative aspect-square w-full ${className}`}>
       <img
-        src={DOOR[tint]}
+        src={mini ? MINI_DOOR[tint].src : DOOR[tint]}
         alt=""
         draggable={false}
         className="absolute inset-0 size-full select-none"
       />
+      <div
+        style={{ '--fl': left, '--ft': top, '--fs': side }}
+        className="vault-door-frame absolute"
+      >
       {holes
         .filter((h) => !hidden?.has(h.id))
         .map((h) => (
@@ -43,6 +54,8 @@ export function Door({
             />
           </span>
         ))}
+      {children}
+      </div>
     </div>
   );
 }

@@ -15,6 +15,14 @@ export const DOOR: Record<Tint, string> = {
   violet: 'cadres/coffre-violet.webp',
   or: 'cadres/coffre-or.webp',
 };
+// The mini-vaults' pictures (assets/cadres, inventory): a small portable safe, its round door lower
+// than the picture's centre (a handle on top). frame: the square around that door, in fractions of
+// the picture (left, top, side), where the holes and the drills go as on a big door.
+export const MINI_DOOR: Record<Tint, { src: string; frame: [number, number, number] }> = {
+  bleu: { src: 'cadres/mini-coffre-bleu.webp', frame: [0.24, 0.336, 0.5] },
+  violet: { src: 'cadres/mini-coffre-violet.webp', frame: [0.255, 0.329, 0.49] },
+  or: { src: 'cadres/mini-coffre-or.webp', frame: [0.255, 0.331, 0.49] },
+};
 // The colour of its light (--glow).
 export const GLOW: Record<Tint, string> = {
   bleu: 'vault-glow-bleu',

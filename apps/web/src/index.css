@@ -1425,6 +1425,14 @@
 @utility vault-door-shadow {
   filter: drop-shadow(0 18px 28px rgb(0 0 0 / 0.55));
 }
+/* Where a door's holes and drills go (vault-parts.tsx): the whole picture for a big door; for a
+   mini-vault, the square around its small round door (--fl, --ft, --fs: left, top, side). */
+@utility vault-door-frame {
+  left: calc(var(--fl, 0) * 100%);
+  top: calc(var(--ft, 0) * 100%);
+  width: calc(var(--fs, 1) * 100%);
+  aspect-ratio: 1;
+}
 @utility vault-hole {
   width: var(--hole-w, 7%);
   aspect-ratio: 1;
