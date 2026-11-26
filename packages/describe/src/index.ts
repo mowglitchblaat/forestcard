@@ -342,7 +342,7 @@ const PASSIVE_TEXT: Record<PassiveType, (p: Fx, x: PassiveContext) => string> = 
     `${c} % de chances de frapper une fois de plus, puis retente${nz(p.max) > 0 ? ` (${p.max} frappes en plus au maximum)` : ''}`,
   saignement: (p, { c, T }) =>
     `${c} % de chances de faire saigner la cible (${bleedTxt(p)}, ${trs(T)})`,
-  gel: (p, { c, T }) => `${c} % de chances de geler la cible : ${frostLevels(T)}`,
+  gel: (_p, { c, T }) => `${c} % de chances de geler la cible : ${frostLevels(T)}`,
   execution: (p) => executionText(p),
   avalage: (p) => avTxt(p),
   transcendance: (p) => transcendenceText(p),
@@ -564,7 +564,7 @@ const EFFECT_TEXT: Record<EffectType, (e: Fx, x: EffectContext) => string[]> = {
     `Maudit ${ci} : ${curseTxt} pendant ${trs(T)}, puis l'ATQ revient (chaque malédiction ajoute la sienne)`,
   ],
   saignement: (e, { T, ci }) => [`Fait saigner ${ci} : ${bleedTxt(e)}, ${trs(T)}`],
-  gel: (e, { T, ci }) => [`Gèle ${ci} : ${frostLevels(T)}`],
+  gel: (_e, { T, ci }) => [`Gèle ${ci} : ${frostLevels(T)}`],
   souffle: (e) => {
     const al = e.statut === 'aleatoire';
     const el = al ? '' : (e.statut as string) || 'brulure';
