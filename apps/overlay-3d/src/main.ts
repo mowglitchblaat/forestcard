@@ -469,13 +469,21 @@ async function main(): Promise<void> {
       a: ReturnType<typeof player>;
       b: ReturnType<typeof player>;
       seed: number;
+      // a title fight (combat.html: « Match de ceinture »): the belt, its champion's side, the belts held
+      titre?: { division: string; cote: 0 | 1 | null };
+      ceintures?: [string[], string[]];
     } | null = null;
     const run = (g: NonNullable<typeof last>) => {
       last = g;
       const r = g.relay
         ? simulerRelais(g.a, g.b, { seed: g.seed })
         : simuler(g.a, g.b, { seed: g.seed });
-      const m = readCombatMessage({ journal: r.journal, gagnant: r.gagnant });
+      const m = readCombatMessage({
+        journal: r.journal,
+        gagnant: r.gagnant,
+        titre: g.titre,
+        ceintures: g.ceintures,
+      });
       if (m) {
         say(queue.length || playing ? 'Combat ajouté à la file' : note);
         void play(m);
@@ -506,6 +514,19 @@ async function main(): Promise<void> {
     };
     document.getElementById('fight')?.addEventListener('click', () => fight(false));
     document.getElementById('relay')?.addEventListener('click', () => fight(true));
+    // a title fight: a relay for a belt at random, defended by the Bot or vacant
+    document.getElementById('belt')?.addEventListener('click', () => {
+      const division = ['rare', 'epique', 'libre'][Math.floor(Math.random() * 3)]!;
+      const defended = Math.random() < 0.7;
+      run({
+        relay: true,
+        a: player('a', 3),
+        b: player('b', 3),
+        seed: Math.floor(Math.random() * 1e9),
+        titre: { division, cote: defended ? 1 : null },
+        ceintures: [[], defended ? [division, ...(Math.random() < 0.5 ? ['rare'] : [])] : []],
+      });
+    });
     document
       .getElementById('again')
       ?.addEventListener('click', () => (last ? run(last) : fight(false)));

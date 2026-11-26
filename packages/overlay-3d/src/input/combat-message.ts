@@ -54,10 +54,31 @@ export type CombatLine = {
   raw: Readonly<Record<string, unknown>>;
 };
 
+// A title fight (the championship's belts, combat.html: R.titre): the belt at stake, and the side
+// of its champion (null: a vacant belt, the winner takes it).
+export type TitleFight = { division: string; side: 0 | 1 | null };
+
 export type CombatMessage = {
   journal: readonly CombatLine[];
   winner: 0 | 1 | null;
+  title?: TitleFight | null;
+  // the belts each side holds (R.ceintures): 'rare', 'epique', 'libre'
+  belts?: readonly [readonly string[], readonly string[]];
 };
+
+const DIVISIONS = ['rare', 'epique', 'libre'];
+const division = (v: unknown): string | null =>
+  typeof v === 'string' && DIVISIONS.includes(v) ? v : null;
+function readTitle(v: unknown): TitleFight | null {
+  if (!isObj(v)) return null;
+  const d = division(v['division']);
+  return d ? { division: d, side: side(v['cote']) } : null;
+}
+function readBelts(v: unknown): [string[], string[]] {
+  const of = (x: unknown) =>
+    Array.isArray(x) ? x.map(division).filter((d): d is string => d !== null) : [];
+  return Array.isArray(v) ? [of(v[0]), of(v[1])] : [[], []];
+}
 
 const isObj = (v: unknown): v is Record<string, unknown> =>
   typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -176,5 +197,10 @@ export function readCombatMessage(raw: unknown): CombatMessage | null {
   const lines = journal as CombatLine[];
   // a combat starts with its players
   if (!lines[0]!.players) return null;
-  return { journal: lines, winner: side(d['gagnant']) };
+  return {
+    journal: lines,
+    winner: side(d['gagnant']),
+    title: readTitle(d['titre']),
+    belts: readBelts(d['ceintures']),
+  };
 }

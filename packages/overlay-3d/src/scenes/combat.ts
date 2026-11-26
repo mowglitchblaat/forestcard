@@ -30,6 +30,7 @@ import { cardLayers, dressedCard, textResolutionFor, type Deps } from './common.
 import { CombatTerrain } from './terrain.ts';
 import { dropTexture } from '../kit/draw.ts';
 import { bloodSpurt } from './blood.ts';
+import { beltKey, CombatBelts } from './belts.ts';
 import { liveNumbers, type LiveNumbers, type NumbersStyle } from './live-numbers.ts';
 import { LegacyCanvas } from '../original/fx.ts';
 import { legacyEffects } from '../original/effects.ts';
@@ -81,6 +82,9 @@ export function combatTextures(m: CombatMessage, keys: TextureKeys): string[] {
         if (key) out.add(key);
       }
     }
+  // the championship's belts (scenes/belts.ts)
+  for (const d of [...(m.belts?.[0] ?? []), ...(m.belts?.[1] ?? []), m.title?.division ?? null])
+    if (d) out.add(beltKey(d));
   return [...out];
 }
 
@@ -737,11 +741,28 @@ export async function playCombat(ctx: CombatContext, m: CombatMessage): Promise<
   banner.position.set((P.fighterX[0] + P.fighterX[1]) / 2, B.y);
   scene.addChild(banner);
 
+  // the championship's belts: on each side's fighter, the title's banner (scenes/belts.ts)
+  const belts =
+    m.title || m.belts?.some((b) => b.length > 0)
+      ? new CombatBelts({
+          parent: scene,
+          textures: ctx.deps.textures,
+          title: m.title ?? null,
+          belts: m.belts ?? [[], []],
+          resolution,
+        })
+      : null;
+  let pseudos: string[] = [];
+
   async function play(l: CombatLine): Promise<void> {
     banner.text = l.txt;
     if (l.players && (l.t === 'debut' || l.t === 'prolongation')) {
       await deal(l, l.players);
       sync(l);
+      if (l.t === 'debut') {
+        pseudos = l.players.map((p) => p.pseudo);
+        belts?.show(pseudos);
+      }
       return;
     }
     if (l.t === 'relais' && l.players && l.c !== null) {
@@ -861,6 +882,7 @@ export async function playCombat(ctx: CombatContext, m: CombatMessage): Promise<
       case 'fin': {
         activate(null);
         const w = num(l.raw['gagnant']);
+        belts?.end(w === 0 || w === 1 ? w : null, pseudos);
         for (const [i, side] of sides.entries()) {
           const root = side.fighter.card.root,
             s0 = root.scale.x;
@@ -892,9 +914,10 @@ export async function playCombat(ctx: CombatContext, m: CombatMessage): Promise<
     // the cards go back to their players, the rest fades
     detach(tween(300, (u) => void (banner.alpha = 1 - u)));
     detach(tween(300, (u) => names.forEach((t) => (t.alpha = 1 - u))));
-    await Promise.all([leave(sides), ...bars.map((b) => b.leave())]);
+    await Promise.all([leave(sides), ...bars.map((b) => b.leave()), belts?.leave()]);
     sides = [];
   } finally {
+    belts?.destroy();
     terrain.destroy();
     legacy.reset();
     legacyCanvas.destroy();
