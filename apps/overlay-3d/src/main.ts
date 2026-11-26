@@ -4,7 +4,9 @@
 //   in OBS        it listens to Streamer.bot (ws://127.0.0.1:8080, General.Custom), like the legacy
 //                 pages, and plays each combat (or opening) it receives, one after the other;
 //   ?test         a panel to play combats computed here by the engine, or openings, with the cards of
-//                 the snapshot (docs/legacy/cartes-*.json): to try the overlay without a live;
+//                 the snapshot (docs/legacy/cartes-*.json): to try the overlay without a live. Like
+//                 combat.html?test, each side's fighter, magic and trap can be chosen (empty: at
+//                 random), and the last combat replayed;
 //   ?qualite=eco  the eco quality (packages/overlay-3d, config/quality.ts): lighter on the GPU;
 //   ?site         in a frame of the site (« Jouer », the lore's boss): it plays what the site sends
 //                 ({ fc: 'combat' | 'booster', res }), then tells it (« combat-fini », « booster-fini »),
@@ -388,30 +390,55 @@ async function main(): Promise<void> {
         couleur: c.raretes?.couleur ?? null,
       };
     });
-    // ?carte=<nom>: Joueur A's fighter, to watch one card's effects
-    const forced = cards.find((c) => c.nom === params.get('carte'));
-    const pick = (type: string, forceable = false) => {
-      if (forceable && forced?.type === type) return forced;
-      const list = cards.filter((c) => c.type === type);
+    // the cards to choose from, one list per type
+    const TYPES = ['combattant', 'magie', 'piege'] as const;
+    for (const t of TYPES) {
+      const list = document.getElementById(`l-${t}`);
+      for (const c of cards.filter((x) => x.type === t).sort((a, b) => a.nom.localeCompare(b.nom))) {
+        const o = document.createElement('option');
+        o.value = c.nom;
+        o.label = c.rarete;
+        list?.append(o);
+      }
+    }
+    // the chosen card of a side and type (?carte=<nom>: Joueur A's fighter), or null: at random
+    const chosen = (side: 'a' | 'b', type: string) => {
+      const typed = (document.getElementById(`p${side}-${type}`) as HTMLInputElement | null)?.value;
+      const name = typed || (side === 'a' && type === 'combattant' ? params.get('carte') : null);
+      return cards.find((c) => c.type === type && c.nom === name) ?? null;
+    };
+    const pick = (side: 'a' | 'b', type: string, first: boolean) => {
+      const c = first ? chosen(side, type) : null;
+      if (c) return c;
+      const list = cards.filter((x) => x.type === type);
       return list[Math.floor(Math.random() * list.length)]!;
     };
-    // a deck: n fighters, n magics, n traps (a relay draws a new trio for each fighter)
-    const player = (pseudo: string, n = 1) => ({
-      pseudo,
-      deck: (['combattant', 'magie', 'piege'] as const).flatMap((t) =>
-        Array.from({ length: n }, (_, i) => pick(t, pseudo === 'Joueur A' && i === 0)),
-      ),
+    // a deck: n fighters, n magics, n traps (a relay draws a new trio for each fighter); the chosen
+    // cards first
+    const player = (side: 'a' | 'b', n = 1) => ({
+      pseudo: side === 'a' ? 'Joueur A' : 'Joueur B',
+      deck: TYPES.flatMap((t) => Array.from({ length: n }, (_, i) => pick(side, t, i === 0))),
     });
-    const fight = (relay: boolean) => {
-      const r = relay
-        ? simulerRelais(player('Joueur A', 3), player('Joueur B', 3))
-        : simuler(player('Joueur A'), player('Joueur B'));
+    let last: { relay: boolean; a: ReturnType<typeof player>; b: ReturnType<typeof player>; seed: number } | null =
+      null;
+    const run = (g: NonNullable<typeof last>) => {
+      last = g;
+      const r = g.relay
+        ? simulerRelais(g.a, g.b, { seed: g.seed })
+        : simuler(g.a, g.b, { seed: g.seed });
       const m = readCombatMessage({ journal: r.journal, gagnant: r.gagnant });
       if (m) {
         say(queue.length || playing ? 'Combat ajouté à la file' : '');
         void play(m);
       } else say('Combat illisible');
     };
+    const fight = (relay: boolean) =>
+      run({
+        relay,
+        a: player('a', relay ? 3 : 1),
+        b: player('b', relay ? 3 : 1),
+        seed: Math.floor(Math.random() * 1e9),
+      });
     // an opening of n random cards of the snapshot (?cartes=n, 5 by default), with their rarities
     const open = () => {
       const n = Math.max(1, Math.min(10, Number(params.get('cartes')) || 5));
@@ -430,6 +457,7 @@ async function main(): Promise<void> {
     };
     document.getElementById('fight')?.addEventListener('click', () => fight(false));
     document.getElementById('relay')?.addEventListener('click', () => fight(true));
+    document.getElementById('again')?.addEventListener('click', () => (last ? run(last) : fight(false)));
     document.getElementById('open')?.addEventListener('click', open);
     if (MODE === 'booster') open();
     else fight(false);

@@ -29,6 +29,8 @@
         left: 12px;
         top: 12px;
         display: none;
+        flex-wrap: wrap;
+        max-width: calc(100vw - 24px);
         gap: 8px;
         align-items: center;
         z-index: 10;
@@ -45,6 +47,23 @@
         font: inherit;
         cursor: pointer;
       }
+      #panel input {
+        background: #1a1a24;
+        color: #fff;
+        border: 1px solid #44445a;
+        border-radius: 8px;
+        padding: 7px 10px;
+        font: inherit;
+        width: 190px;
+      }
+      #picks {
+        display: grid;
+        grid-template-columns: auto repeat(3, 190px);
+        gap: 6px;
+        align-items: center;
+        font-size: 13px;
+        color: #a1a1b5;
+      }
       #status {
         font-size: 13px;
         color: #a1a1b5;
@@ -54,9 +73,24 @@
   <body data-mode="combat">
     <div id="panel">
       <button id="fight">⚔️ Combat de test</button>
+      <button id="again">↺ Rejouer le même</button>
       <button id="relay">🏆 Combat en relais</button>
       <button id="open">🎁 Ouvrir un booster</button>
       <span id="status"></span>
+      <div id="picks">
+        <span></span><span>Combattant</span><span>Magie</span><span>Piège</span>
+        <span>Toi</span>
+        <input id="pa-combattant" list="l-combattant" placeholder="au hasard" />
+        <input id="pa-magie" list="l-magie" placeholder="au hasard" />
+        <input id="pa-piege" list="l-piege" placeholder="au hasard" />
+        <span>Bot</span>
+        <input id="pb-combattant" list="l-combattant" placeholder="au hasard" />
+        <input id="pb-magie" list="l-magie" placeholder="au hasard" />
+        <input id="pb-piege" list="l-piege" placeholder="au hasard" />
+      </div>
+      <datalist id="l-combattant"></datalist>
+      <datalist id="l-magie"></datalist>
+      <datalist id="l-piege"></datalist>
     </div>
     <script type="module" src="./src/main.ts"></script>
   </body>
