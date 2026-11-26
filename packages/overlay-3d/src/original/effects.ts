@@ -2324,7 +2324,7 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
         nx = -(y1 - y0) / len,
         ny = (x1 - x0) / len;
       let r = seed;
-      const rnd = () => ((r = (r * 9301 + 49297) % 233280) / 233280) - 0.5;
+      const rnd = () => (r = (r * 9301 + 49297) % 233280) / 233280 - 0.5;
       for (let i = 1; i < n; i++) {
         const k = i / n,
           off = rnd() * len * 0.12 * Math.sin(Math.PI * k);
@@ -2333,11 +2333,27 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
       pts.push([x1, y1]);
       return pts;
     };
-    const sparks = Array.from({ length: 18 }, () => ({ a: R(0, 6.283), v: R(120, 360) * S, s: R(1.5, 3) * S }));
+    const sparks = Array.from({ length: 18 }, () => ({
+      a: R(0, 6.283),
+      v: R(120, 360) * S,
+      s: R(1.5, 3) * S,
+    }));
     const grey = result === 'empty',
       gone = result === 'destroyed',
       charged = result === 'charged';
-    if (!grey) say(from, slot === 'magie' ? (gone ? 'Magie détruite !' : 'Magie chargée') : gone ? 'Piège détruit !' : 'Piège chargé', '#fde047', gone);
+    if (!grey)
+      say(
+        from,
+        slot === 'magie'
+          ? gone
+            ? 'Magie détruite !'
+            : 'Magie chargée'
+          : gone
+            ? 'Piège détruit !'
+            : 'Piège chargé',
+        '#fde047',
+        gone,
+      );
     let landed: () => void = () => {};
     const done = new Promise<void>((r) => (landed = r));
     let hit = false;
