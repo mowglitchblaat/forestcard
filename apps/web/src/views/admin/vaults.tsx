@@ -58,7 +58,7 @@ export function VaultsAdmin() {
           Coffres-forts
         </span>
       }
-      description="Trois coffres communs (bleu, violet, légendaire), percés par la communauté avec des foreuses achetées en gold. À son ouverture, un coffre annonce son trésor (40 rares, 12 épiques, 5 légendaires) : les nouvelles cartes que tu créeras ensuite. Chaque coffre cache aussi une salle du trésor, où ceux qui l'ont percé se servent avec leurs points (1 par foreuse). Le nombre de foreuses reste secret pour les joueurs."
+      description="Trois coffres communs (bleu, violet, légendaire), percés par la communauté avec des foreuses achetées en gold. À son ouverture, un coffre annonce de nouvelles cartes de sa rareté, que tu créeras ensuite (sans nombre). Chaque coffre cache aussi une salle du trésor, où ceux qui l'ont percé se servent avec leurs points (1 par foreuse). Le nombre de foreuses reste secret pour les joueurs."
     >
       <div className="flex flex-col gap-3 rounded-lg border p-3">
         <b>Nouvel événement</b>
@@ -190,7 +190,10 @@ function HeistAdmin({ heist: h, run }: { heist: AdminHeist; run: Run }) {
               </Badge>
             </b>
             <span className="text-muted-foreground">
-              Trésor annoncé à l'ouverture : {v.nb_cartes ?? '?'} nouvelles cartes {v.rarete ?? ''}
+              Trésor annoncé à l'ouverture :{' '}
+              {v.rarete
+                ? `${v.nb_cartes ? `${v.nb_cartes} nouvelles cartes` : 'de nouvelles cartes'} ${v.rarete}`
+                : 'aucune nouvelle carte'}
             </span>
             <TreasureAdmin
               key={JSON.stringify(v.lots ?? [])}

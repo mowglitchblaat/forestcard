@@ -226,6 +226,11 @@ export function mechanicsOf(ctx: MechanicsContext) {
         if (c !== null && to !== null) await ctx.legacy.laser(c, to, num(raw['p']) ?? 100);
         return;
       }
+      // the transcendence: announced, then its moment (a pillar of light, the card rises, a halo)
+      case 'transc_prep':
+        return ctx.legacy.say(f.card, '✦ Transcendance', '#fde68a');
+      case 'transc':
+        return ctx.legacy.transcend(f.card, num(raw['niv']) ?? l.n ?? 1);
       // programming (the mechanical collection): a gear forms and drops into a new slot at the bottom of
       // the card; at the activation, circuits light up and the slots come on (legacy: progFx, activFx)
       case 'prog': {

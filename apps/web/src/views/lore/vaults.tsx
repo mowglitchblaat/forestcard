@@ -383,8 +383,8 @@ function VaultTile({
       </small>
       <small className="text-center text-muted-foreground">
         {isOpen
-          ? v.tresor
-            ? `Trésor : ${v.tresor.nb} nouvelles cartes ${v.tresor.rarete} à venir !`
+          ? v.tresor?.rarete
+            ? `Trésor : ${v.tresor.nb ? `${v.tresor.nb} nouvelles cartes` : 'de nouvelles cartes'} ${v.tresor.rarete} à venir !`
             : 'Trésor révélé !'
           : 'Que cache-t-il ?'}
       </small>
@@ -519,10 +519,10 @@ function Opening({
                 ))}
             </div>
           </div>
-          {past('cards') && treasure && (
+          {past('cards') && treasure?.rarete && (
             <div className="relative flex flex-col items-center gap-4 p-4">
               <div className="flex flex-wrap justify-center gap-1.5">
-                {Array.from({ length: treasure.nb }, (_, i) => (
+                {Array.from({ length: treasure.nb || 9 }, (_, i) => (
                   <span
                     key={i}
                     style={{ '--i': i % 20, '--from-y': '-14rem' }}
@@ -531,7 +531,8 @@ function Opening({
                 ))}
               </div>
               <p className="vault-banner text-center text-2xl font-black">
-                {treasure.nb} nouvelles cartes {treasure.rarete} vont rejoindre le jeu !
+                {treasure.nb ? `${treasure.nb} nouvelles cartes` : 'De nouvelles cartes'}{' '}
+                {treasure.rarete} vont rejoindre le jeu !
               </p>
             </div>
           )}
