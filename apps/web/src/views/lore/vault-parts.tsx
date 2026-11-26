@@ -38,23 +38,23 @@ export function Door({
         style={{ '--fl': left, '--ft': top, '--fs': side }}
         className="vault-door-frame absolute"
       >
-      {holes
-        .filter((h) => !hidden?.has(h.id))
-        .map((h) => (
-          <span key={h.id}>
-            <span
-              aria-hidden
-              style={{ '--x': h.x, '--y': h.y, '--a': `${h.angle}deg` }}
-              className={`absolute ${(h.poids ?? 1) > 1 ? 'vault-crack-giga' : 'vault-crack'}`}
-            />
-            <span
-              aria-hidden
-              style={{ '--x': h.x, '--y': h.y, '--a': `${h.angle}deg` }}
-              className={`absolute ${(h.poids ?? 1) > 1 ? 'vault-hole vault-hole-giga' : 'vault-hole'} ${h.moi ? 'vault-mine' : ''} ${fresh?.has(h.id) ? 'vault-hole-new' : ''}`}
-            />
-          </span>
-        ))}
-      {children}
+        {holes
+          .filter((h) => !hidden?.has(h.id))
+          .map((h) => (
+            <span key={h.id}>
+              <span
+                aria-hidden
+                style={{ '--x': h.x, '--y': h.y, '--a': `${h.angle}deg` }}
+                className={`absolute ${(h.poids ?? 1) > 1 ? 'vault-crack-giga' : 'vault-crack'}`}
+              />
+              <span
+                aria-hidden
+                style={{ '--x': h.x, '--y': h.y, '--a': `${h.angle}deg` }}
+                className={`absolute ${(h.poids ?? 1) > 1 ? 'vault-hole vault-hole-giga' : 'vault-hole'} ${h.moi ? 'vault-mine' : ''} ${fresh?.has(h.id) ? 'vault-hole-new' : ''}`}
+              />
+            </span>
+          ))}
+        {children}
       </div>
     </div>
   );
