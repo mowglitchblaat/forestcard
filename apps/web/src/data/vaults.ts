@@ -82,7 +82,8 @@ const Vault = z.object({
   trous: z.array(Hole),
   cartes: z.array(LootCard),
   // once open: the new cards it announces (the admin creates them afterwards)
-  tresor: z.object({ nb: Num, rarete: z.string() }).nullish(),
+  // the new cards announced at its opening: their rarity, their number only if the admin gave one
+  tresor: z.object({ nb: Num.nullish(), rarete: z.string().nullish() }).nullish(),
   tresor_lots: z.array(TreasureLot).nullish(),
   mes_points: Num.nullish(), // the drills this player placed in it
   mes_depenses: Num.nullish(),

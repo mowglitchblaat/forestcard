@@ -2226,6 +2226,84 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
     return impact;
   }
 
+  // ════════ THE TRANSCENDENCE (combat.html: a golden aura, a halo without its cross; modernised):
+  // a pillar of golden light falls on the card from above, the card rises into it; a halo forms over
+  // it, rays turn behind it, motes of light climb; a flash and a ring of light at the peak, then the
+  // card settles, its level written (Transcendance I, II, III). Resolves when it has settled. ════════
+  const say = (c: LegacyCard, txt: string, col: string, big = false) =>
+    flot(fx, K(c), txt, col, big);
+  function transcend(c: LegacyCard, level: number): Promise<void> {
+    const B = K(c),
+      S = B.w / 280,
+      lv = Math.max(1, Math.min(3, level)),
+      T = 2.4;
+    const motes = Array.from({ length: 22 + 10 * lv }, () => ({
+      x: R(-0.6, 0.6),
+      d: R(0, 1.4),
+      v: R(0.35, 0.8),
+      s: R(2, 5) * S,
+    }));
+    void nudge(c, [0, -0.06 * B.h], [0, 0], 1600);
+    say(c, `Transcendance ${['I', 'II', 'III'][lv - 1]} !`, '#fef3c7', true);
+    return fx.add(T, (x, t) => {
+      const on = Math.min(1, t / 0.35) * (1 - cl((t - 1.9) / 0.5)),
+        hx = B.cx,
+        hy = B.y - B.h * 0.06;
+      x.save();
+      x.globalCompositeOperation = 'lighter';
+      // the pillar from above, soft-edged
+      const pw = B.w * (0.7 + 0.12 * lv) * (0.92 + 0.08 * Math.sin(t * 9));
+      x.globalAlpha = 0.55 * on;
+      x.drawImage(nspr('#ffe08a'), B.cx - pw / 2, -B.h * 0.4, pw, B.y + B.h * 1.25);
+      x.globalAlpha = 0.5 * on;
+      x.drawImage(nspr('#fffbe8'), B.cx - pw * 0.18, -B.h * 0.4, pw * 0.36, B.y + B.h * 1.05);
+      // rays turning behind the card
+      for (let i = 0; i < 12; i++) {
+        const a = (i / 12) * Math.PI * 2 + t * 0.5;
+        x.globalAlpha = 0.08 * on;
+        x.fillStyle = '#ffe9a8';
+        x.beginPath();
+        x.moveTo(B.cx, B.cy);
+        x.arc(B.cx, B.cy, B.h * (0.5 + 0.1 * lv), a, a + 0.1);
+        x.closePath();
+        x.fill();
+      }
+      // the motes climbing
+      for (const m of motes) {
+        const k = (t * m.v + m.d) % 1.4;
+        x.globalAlpha = on * Math.sin((Math.PI * k) / 1.4);
+        const px = B.cx + m.x * B.w,
+          py = B.y + B.h * (1 - k);
+        x.drawImage(nspr('#fde68a'), px - m.s * 2, py - m.s * 2, m.s * 4, m.s * 4);
+      }
+      // the halo over the card
+      const hr = B.w * 0.32 * ez(Math.min(1, t / 0.6));
+      x.globalAlpha = on;
+      x.strokeStyle = '#fff3c4';
+      x.lineWidth = (6 + 2 * lv) * S;
+      x.shadowColor = '#fcd34d';
+      x.shadowBlur = 24 * S;
+      x.beginPath();
+      x.ellipse(hx, hy, hr, hr * 0.26, 0, 0, Math.PI * 2);
+      x.stroke();
+      x.shadowBlur = 0;
+      // the flash and the ring at the peak
+      const p = cl((t - 0.55) / 0.6);
+      if (p > 0 && p < 1) {
+        x.globalAlpha = 0.9 * (1 - p);
+        const fr = B.w * (0.4 + 0.5 * p);
+        x.drawImage(nspr('#fffbe6'), B.cx - fr, B.cy - fr, fr * 2, fr * 2);
+        x.strokeStyle = `rgba(255,236,170,${1 - p})`;
+        x.lineWidth = 5 * S * (1 - p) + 1;
+        x.beginPath();
+        x.arc(B.cx, B.cy, B.w * 0.2 + B.w * (0.7 + 0.2 * lv) * ez(p), 0, Math.PI * 2);
+        x.stroke();
+      }
+      x.restore();
+      x.globalAlpha = 1;
+    });
+  }
+
   return {
     isCut,
     /** The two fighters, for the link and the mist (the scene sets them after each deal or relay). */
@@ -2272,6 +2350,7 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
     passStatuses: (a: LegacyCard, from: LegacyCard, ks: readonly string[]) =>
       transfertFx(a, from, ks),
     say: (c: LegacyCard, txt: string, col: string, big = false) => flot(fx, K(c), txt, col, big),
+    transcend: (c: LegacyCard, level: number) => transcend(c, level),
     // the mist: level 1 (it turns), 2 (the turned wind)
     mist(c: 0 | 1, lv: number) {
       nfxStart();
