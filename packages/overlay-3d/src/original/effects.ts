@@ -2035,6 +2035,172 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
     });
   }
 
+  // ════════ THE LASER (nLaser, modernised): the shooter charges (violet energy converging on its
+  // muzzle, a ring closing in), kicks back as it fires; a thick beam, violet halo, lilac body, white
+  // core, energy running along it, hits the target: a blinding flare, two shock rings, sparks thrown
+  // back toward the shooter, the target jolted; then a burn smoulders on it. The fuller the target's
+  // life (pct), the thicker the beam and the bigger the impact. Resolves at the impact. ════════
+  function tirLaser(from: LegacyCard, to: LegacyCard, pct: number): Promise<void> {
+    const A = K(from),
+      B = K(to),
+      I = Math.max(0.35, Math.min(1, pct / 100)),
+      dir = Math.sign(B.cx - A.cx) || 1,
+      x0 = A.cx + dir * A.w * 0.4,
+      y0 = A.cy - A.h * 0.04,
+      x1 = B.cx,
+      y1 = B.cy,
+      ang = Math.atan2(y1 - y0, x1 - x0),
+      len = Math.hypot(x1 - x0, y1 - y0),
+      S = A.w / 280,
+      w0 = (10 + 16 * I) * S;
+    const CHARGE = 0.45,
+      FIRE = 0.55;
+    const motes = Array.from({ length: 34 }, () => ({ a: R(0, 6.283), r: R(60, 150) * S, d: R(0, 0.25), s: R(3, 7) * S }));
+    const sparks = Array.from({ length: Math.round(26 + 34 * I) }, () => ({
+      a: ang + Math.PI + R(-1.1, 1.1),
+      v: R(260, 720) * S,
+      t0: R(0, 0.25),
+      s: R(1.5, 3.8) * S,
+      hot: Math.random() < 0.3,
+    }));
+    const smoke = Array.from({ length: 10 }, () => ({ dx: R(-0.12, 0.12) * B.w, t0: R(0, 0.8), s: R(18, 34) * S }));
+    let hit: () => void = () => {};
+    const impact = new Promise<void>((r) => (hit = r));
+    let recoiled = false,
+      jolted = false;
+    void fx.add(2.4, (x, t) => {
+      // the charge
+      if (t < CHARGE + 0.05) {
+        const u = cl(t / CHARGE);
+        for (const m of motes) {
+          const k = cl((u - m.d) / (1 - m.d));
+          if (k <= 0 || k >= 1) continue;
+          const r = m.r * (1 - ez(k));
+          x.globalAlpha = 0.9 * Math.sin(Math.PI * k);
+          x.drawImage(nspr('#c084fc'), x0 + Math.cos(m.a) * r - m.s * 2, y0 + Math.sin(m.a) * r - m.s * 2, m.s * 4, m.s * 4);
+        }
+        const orbR = w0 * (0.4 + 1.2 * u);
+        x.globalAlpha = 0.95;
+        x.drawImage(nspr('#e9d5ff'), x0 - orbR * 2, y0 - orbR * 2, orbR * 4, orbR * 4);
+        x.globalAlpha = 0.7 * u;
+        x.strokeStyle = '#d8b4fe';
+        x.lineWidth = 3 * S;
+        x.beginPath();
+        x.arc(x0, y0, w0 * 4 * (1 - u) + w0, 0, 7);
+        x.stroke();
+      }
+      // the shot
+      if (t >= CHARGE) {
+        if (!recoiled) {
+          recoiled = true;
+          void nudge(from, [-dir * 16 * S, 0], [-dir * 6 * S, 0], 300);
+        }
+        const k = t - CHARGE,
+          reach = cl(k / 0.08),
+          fade = 1 - cl((k - FIRE) / 0.35);
+        if (fade > 0) {
+          const ex = x0 + (x1 - x0) * reach,
+            ey = y0 + (y1 - y0) * reach,
+            w = w0 * (1 + 0.15 * Math.sin(t * 60) + 0.08 * (Math.random() - 0.5)) * (k < FIRE ? 1 : 0.3 + 0.7 * fade);
+          x.save();
+          x.globalCompositeOperation = 'lighter';
+          x.lineCap = 'round';
+          x.beginPath();
+          x.moveTo(x0, y0);
+          x.lineTo(ex, ey);
+          const layers: [string, number, number][] = [
+            ['#7e22ce', 5, 0.22],
+            ['#9333ea', 2.6, 0.6],
+            ['#c084fc', 1.5, 0.85],
+            ['#f0abfc', 0.7, 0.8],
+            ['#ffffff', 0.25, 0.95],
+          ];
+          for (const [col, m, al] of layers) {
+            x.globalAlpha = al * fade;
+            x.strokeStyle = col;
+            x.lineWidth = w * m;
+            x.stroke();
+          }
+          // energy running along the beam
+          x.setLineDash([w * 0.9, w * 2.6]);
+          x.lineDashOffset = -t * len * 2.2;
+          x.globalAlpha = 0.9 * fade;
+          x.strokeStyle = '#ecfeff';
+          x.lineWidth = w * 0.22;
+          x.stroke();
+          x.setLineDash([]);
+          // the muzzle flare and the point of impact
+          const z = w * (2.6 + 0.6 * Math.sin(t * 40));
+          x.globalAlpha = fade;
+          x.drawImage(nspr('#c084fc'), x0 - z, y0 - z, z * 2, z * 2);
+          if (reach >= 1) x.drawImage(nspr('#f5d0fe'), ex - z * 1.6, ey - z * 1.6, z * 3.2, z * 3.2);
+          x.restore();
+        }
+        if (reach >= 1) {
+          if (!jolted) {
+            jolted = true;
+            hit();
+            void nudge(to, [dir * (10 + 14 * I) * S, -4 * S], [-dir * 5 * S, 2 * S], 340);
+          }
+          const h = k - 0.08;
+          // the flare, then the shock rings
+          if (h < 0.25) {
+            x.globalAlpha = 0.85 * (1 - h / 0.25);
+            const fr = B.w * (0.35 + 0.4 * I) * ez(h / 0.25);
+            x.drawImage(nspr('#ffffff'), x1 - fr, y1 - fr, fr * 2, fr * 2);
+          }
+          for (const [delay, mx, col, lw] of [
+            [0, 0.55 + 0.5 * I, 'rgba(233,213,255,', 6],
+            [0.08, 0.35 + 0.3 * I, 'rgba(168,85,247,', 4],
+          ] as const) {
+            const q = cl((h - delay) / 0.45);
+            if (q <= 0 || q >= 1) continue;
+            x.globalAlpha = 1;
+            x.strokeStyle = `${col}${(1 - q) * 0.95})`;
+            x.lineWidth = lw * S * (1 - q) + 1;
+            x.beginPath();
+            x.arc(x1, y1, B.w * 0.05 + B.w * mx * ez(q), 0, 7);
+            x.stroke();
+          }
+          // sparks thrown back toward the shooter
+          for (const p of sparks) {
+            const q = h - p.t0;
+            if (q <= 0 || q > 0.6) continue;
+            const px = x1 + Math.cos(p.a) * p.v * q,
+              py = y1 + Math.sin(p.a) * p.v * q + 420 * S * q * q;
+            x.globalAlpha = 1 - q / 0.6;
+            x.strokeStyle = p.hot ? '#ffffff' : '#f0abfc';
+            x.lineWidth = p.s;
+            x.beginPath();
+            x.moveTo(px, py);
+            x.lineTo(px - Math.cos(p.a) * p.v * 0.03, py - Math.sin(p.a) * p.v * 0.03);
+            x.stroke();
+          }
+          // the burn smoulders, smoke rising
+          if (h > 0.3) {
+            const b = cl((h - 0.3) / 0.3) * (1 - cl((h - 1.2) / 0.5));
+            x.globalAlpha = 0.85 * b;
+            const br = B.w * (0.12 + 0.08 * I);
+            x.drawImage(nspr('#6b21a8'), x1 - br * 1.6, y1 - br * 1.6, br * 3.2, br * 3.2);
+            x.globalAlpha = 0.6 * b * (0.7 + 0.3 * Math.sin(t * 14));
+            x.drawImage(nspr('#f97316'), x1 - br * 0.6, y1 - br * 0.6, br * 1.2, br * 1.2);
+            for (const m of smoke) {
+              const q = cl((h - 0.35 - m.t0) / 1.1);
+              if (q <= 0 || q >= 1) continue;
+              x.globalAlpha = 0.35 * Math.sin(Math.PI * q);
+              x.fillStyle = '#3b3047';
+              x.beginPath();
+              x.arc(x1 + m.dx + Math.sin(q * 6 + m.t0 * 9) * 8 * S, y1 - q * B.h * 0.45, m.s * (0.6 + q), 0, 7);
+              x.fill();
+            }
+          }
+        }
+      }
+      x.globalAlpha = 1;
+    });
+    return impact;
+  }
+
   return {
     isCut,
     /** The two fighters, for the link and the mist (the scene sets them after each deal or relay). */
@@ -2053,6 +2219,12 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
       const a = NFX.cards[from],
         b = NFX.cards[to];
       if (a && b) void souffle(a, b, el);
+    },
+    // the laser of side `from` on side `to` (pct: the target's life, in %); resolves at the impact
+    laser(from: 0 | 1, to: 0 | 1, pct: number): Promise<void> {
+      const a = NFX.cards[from],
+        b = NFX.cards[to];
+      return a && b ? tirLaser(a, b, pct) : Promise.resolve();
     },
     markBlade: (c: LegacyCard, n: number) => lameIn(c, n),
     marksDown: (c: LegacyCard, n: number) => lamesOff(c, n),
