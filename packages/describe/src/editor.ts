@@ -53,7 +53,7 @@ export const EDITOR_FIELDS = {
   ],
   remax: ['Souffles en chaîne : souffles en plus au maximum (3 par défaut)', 'n'],
   sval: [
-    "Ancienne valeur du statut, avant les niveaux (sinon le niveau ci-dessus ; le gel suit le tableau des niveaux)",
+    'Ancienne valeur du statut, avant les niveaux (sinon le niveau ci-dessus ; le gel suit le tableau des niveaux)',
     'n',
   ],
   nbbloque: [
@@ -118,7 +118,7 @@ export const EDITOR_FIELDS = {
   every: ['Agit tous les X tours', 'n'],
   fois: ['Nombre de fois (1 = une seule)', 'n'],
   // annul, eclat: the frost's old values, no longer read (the level table, November 2026)
-  annul: ["Gel : ancien réglage, remplacé par le tableau des niveaux", 'n'],
+  annul: ['Gel : ancien réglage, remplacé par le tableau des niveaux', 'n'],
   eclat: ['Gel : ancien réglage, remplacé par le tableau des niveaux', 'n'],
   glasv: [
     "Glas : vitesse de l'ombre (% des PV max par tour) — ancien réglage, remplacé par le niveau",
