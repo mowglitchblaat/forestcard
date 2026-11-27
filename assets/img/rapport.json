@@ -1,9 +1,9 @@
 {
  "tables": {
-  "chemins_images": 380
+  "chemins_images": 395
  },
- "retirees": 0,
- "copiees": 0,
- "deja": 380,
+ "retirees": 1,
+ "copiees": 16,
+ "deja": 379,
  "ratees": 0
 }
