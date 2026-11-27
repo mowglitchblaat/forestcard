@@ -1,7 +1,8 @@
 // Rage: extra damage on the card's strikes for its turns, then a fatigue whose level follows the rage's
 // intensity (or the level the card sets, `fatniv`). Several rages add up.
 //
-// Laid by: an effect (rage).
+// Laid by: an effect (rage). A rage breaks a charm (mechanics/charm.ts): the enraged card strikes at
+// full strength again.
 
 import { amount, emit, id, type Combat } from '../combat/combat.ts';
 import type { EffectContext, EffectRules } from '../combat/effect-context.ts';
@@ -56,6 +57,10 @@ export function rageEffect({ c, e, o, onUndo, statusEnds }: EffectContext): void
     }
   });
   emit(c, { type: 'rageStarted', side: id(c, o), bonus, turns });
+  if (o.status.charm) {
+    o.status.charm = null;
+    emit(c, { type: 'charmBroken', side: id(c, o) });
+  }
 }
 
 // Its effects (the registry of effects.ts).

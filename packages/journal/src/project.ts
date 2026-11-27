@@ -1701,6 +1701,12 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
         txt: `${name(e.side)} résiste au charme de ${name(e.by)} !`,
         o: { c: e.side, k: 'charme_rate', by: e.by },
       };
+    case 'charmBroken':
+      return {
+        t: 'finstatut',
+        txt: `La rage de ${name(e.side)} brise le charme !`,
+        o: { c: e.side, k: 'charme' },
+      };
     case 'charmHeld':
       return {
         t: 'statut',
