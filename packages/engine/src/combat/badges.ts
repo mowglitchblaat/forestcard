@@ -6,6 +6,7 @@
 // Read by the view (events.ts, SideView.statuses); keys follow the legacy journal keys.
 
 import type { Side } from './state.ts';
+import { hasSkin } from '../mechanics/skin.ts';
 
 export type BadgeKey =
   | 'poison'
@@ -32,7 +33,9 @@ export type BadgeKey =
   | 'charge'
   | 'cible'
   | 'fils'
-  | 'gag';
+  | 'gag'
+  | 'charme'
+  | 'peau';
 
 export type StatusBadge = { readonly key: BadgeKey; readonly n: number };
 
@@ -72,5 +75,7 @@ export function statusBadges(s: Side): StatusBadge[] {
   add('cible', st.targeted ? st.targeted.uses : 0, !!st.targeted);
   add('fils', st.threads);
   add('gag', 0, !!st.gag && st.gag.turns > 0);
+  add('charme', 0, !!st.charm && st.charm.turns > 0);
+  add('peau', 0, hasSkin(s));
   return out;
 }

@@ -105,6 +105,9 @@ export const EFFECT_TYPES = [
   'atk_fils',
   'terrain',
   'miroir_magie',
+  'charme',
+  'atk_charme',
+  'peau',
 ] as const;
 export type EffectType = (typeof EFFECT_TYPES)[number];
 
@@ -167,6 +170,8 @@ export const PASSIVE_TYPES = [
   'fauche',
   'laser',
   'terrain',
+  'charme',
+  'peau',
 ] as const;
 export type PassiveType = (typeof PASSIVE_TYPES)[number];
 

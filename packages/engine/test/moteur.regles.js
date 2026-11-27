@@ -2190,3 +2190,69 @@ test('relais : une magie qui suit le relais reste avec le combattant suivant', (
   assert.ok(indexDe(r, /suit a1 au combat/) > 0);
   assert.ok(indexDe(r, /Piège de B : P/) > indexDe(r, /envoie son combattant/));
 });
+
+// ================= Charme et peau / contact (novembre 2026) =================
+test('charme (magie) : la carte charmée ne frappe plus qu\'à 0-65 % de son coup, puis le charme tombe', () => {
+  const r = combat([C('A', 1, SOLIDE), MAG('Envoûtement', { type: 'charme', chance: 100, tours: 3 })], [C('B', 100, SOLIDE)], { regles: { maxTours: 12, maxProlong: 0 } });
+  assert.equal(lignes(r, e => e.t === 'statut' && e.k === 'charme' && e.c === 1).length, 1, 'B est charmé');
+  const coups = lignes(r, e => e.k === 'charme_coup');
+  assert.equal(coups.length, 3, 'un coup retenu par tour charmé');
+  for (const e of coups) {
+    assert.equal(e.c, 1);
+    assert.ok(e.p >= 0 && e.p <= 65, 'entre 0 et 65 %');
+    assert.equal(e.n, Math.round(100 * e.p / 100));
+  }
+  assert.equal(lignes(r, e => e.t === 'finstatut' && e.k === 'charme' && e.c === 1).length, 1, 'le charme tombe');
+  const apres = lignes(r, e => e.t === 'degats' && e.c === 0 && e.n === 100);
+  assert.ok(apres.length > 0, 'ensuite il frappe de nouveau à pleine force');
+});
+
+test('charme (effet) : à X % de chances, sinon la cible résiste', () => {
+  let resiste = 0, charme = 0;
+  for (let seed = 1; seed <= 30; seed++) {
+    const r = combat([C('A', 1, SOLIDE), MAG('Œillade', { type: 'charme', chance: 50, tours: 1 })], [C('B', 10, SOLIDE)], { seed, regles: { maxTours: 2, maxProlong: 0 } });
+    resiste += lignes(r, e => e.k === 'charme_rate').length;
+    charme += lignes(r, e => e.t === 'statut' && e.k === 'charme').length;
+  }
+  assert.ok(resiste > 0 && charme > 0);
+  assert.equal(resiste + charme, 30);
+});
+
+test('charme : passif à l\'attaque, retiré par la purification', () => {
+  const r = combat([C('A', 1, SOLIDE, { passif: { type: 'charme', chance: 100, tours: 5 } })], [C('B', 50, SOLIDE, { passif: { type: 'purification', every: 2 } })], { regles: { maxTours: 10, maxProlong: 0 } });
+  assert.ok(lignes(r, e => e.t === 'statut' && e.k === 'charme' && e.c === 1).length > 0);
+  assert.ok(lignes(r, e => e.t === 'finstatut' && e.k === 'charme' && e.c === 1 && /dissipé/.test(e.txt)).length > 0, 'la purification le dissipe');
+});
+
+test('peau de lave (passif) : qui la frappe en attaque de base prend une brûlure', () => {
+  const r = combat([C('A', 10, SOLIDE)], [C('Golem', 1, SOLIDE, { passif: { type: 'peau', pstatut: 'brulure', niveau: 2, stours: 3 } })], { regles: { maxTours: 2, maxProlong: 0 } });
+  const contact = lignes(r, e => e.k === 'peau_contact');
+  assert.equal(contact.length, lignes(r, e => e.t === 'attaque' && e.c === 0).length, 'chaque attaque de base de A touche la peau');
+  assert.equal(contact[0].c, 1);
+  assert.equal(contact[0].to, 0);
+  assert.equal(contact[0].s, 'brulure');
+  const i = r.journal.indexOf(contact[0]);
+  const brulure = r.journal[i + 1];
+  assert.equal(brulure.c, 0, 'la brûlure est sur l\'attaquant');
+  assert.equal(brulure.k, 'brulure');
+});
+
+test('peau : un ultime, un souffle ou une ATQ à 0 ne la touchent pas', () => {
+  const r = combat([C('A', 0, SOLIDE, { ultime: { type: 'degats', val: 10, apres_tours: 1, delai_tours: 0, utilisations: 9 } })], [C('Golem', 1, SOLIDE, { passif: { type: 'peau', pstatut: 'saignement' } })], { regles: { maxTours: 8, maxProlong: 0 } });
+  assert.ok(lignes(r, e => e.t === 'degats' && e.c === 1).length > 0, 'l\'ultime fait des dégâts');
+  assert.equal(lignes(r, e => e.k === 'peau_contact').length, 0);
+});
+
+test('peau (magie, 2 tours) : chaque statut a sa peau, puis elle tombe', () => {
+  for (const s of ['saignement', 'gel', 'poison', 'malediction', 'fracture', 'foudre']) {
+    const r = combat([C('A', 10, SOLIDE)], [C('Golem', 1, SOLIDE), MAG('Carapace', { type: 'peau', pstatut: s, tours: 2 })], { regles: { maxTours: 10, maxProlong: 0 } });
+    assert.equal(lignes(r, e => e.t === 'statut' && e.k === 'peau' && e.c === 1 && e.s === s).length, 1, s);
+    const contacts = lignes(r, e => e.k === 'peau_contact');
+    assert.ok(contacts.length >= 1 && contacts.length <= 2, s + ' : deux tours de peau (comptés sur les tours du golem)');
+    const fin = lignes(r, e => e.t === 'finstatut' && e.k === 'peau' && e.c === 1);
+    assert.equal(fin.length, 1, s + ' : la peau tombe');
+    assert.ok(r.journal.indexOf(contacts.at(-1)) < r.journal.indexOf(fin[0]), s + ' : plus de contact ensuite');
+    const i = r.journal.indexOf(contacts[0]);
+    assert.ok(r.journal.slice(i + 1, i + 3).some(e => e.c === 0 && (e.t === 'statut' || e.t === 'stat')), s + ' : un statut posé sur l\'attaquant');
+  }
+});

@@ -16,6 +16,7 @@ import type {
   RandomEffectKey,
   ForgeField,
   RandomPassiveKey,
+  SkinStatus,
   StatusKind,
 } from '@forestcard/engine';
 
@@ -187,6 +188,7 @@ const ATTACK_EFFECT_VERBS: Record<string, string> = {
   cisaillement: "poser des lames d'air",
   critique: 'faire un coup critique',
   foudre: 'poser la marque de foudre',
+  charme: 'charmer',
 };
 
 // The statuses a mist takes, with their article.
@@ -204,6 +206,7 @@ const MISTED_ART: Record<MistedStatus, string> = {
   rooting: "l'enracinement",
   contamination: 'la contamination',
   gag: 'le gag',
+  charm: 'le charme',
 };
 
 // The statuses a living weapon is immune to, with their article.
@@ -301,6 +304,7 @@ const STATUS_ENDED: Record<StatusKind, [string, (name: string) => string]> = {
   contamination: ['contamination', (n) => `La contamination de ${n} se dissipe`],
   weakness: ['faiblesse', (n) => `${n} n'est plus affaibli`],
   gag: ['gag', (n) => `Le gag de ${n} est fini`],
+  charm: ['charme', (n) => `${n} n'est plus charmé`],
 };
 
 // Rooting variants (mechanics/rooting.ts in the engine).
@@ -317,7 +321,22 @@ const DISPELLED_LABELS: Record<string, string> = {
   glas: 'Glas',
   enracinement: 'enracinement',
   foudre: 'marque de foudre',
+  charme: 'charme',
 };
+
+// Skins (mechanics/skin.ts in the engine): what each is made of.
+const SKIN_NAMES: Record<SkinStatus, string> = {
+  brulure: 'peau de lave',
+  saignement: "écorce d'épines",
+  gel: 'peau de givre',
+  poison: 'peau toxique',
+  malediction: 'peau maudite',
+  fracture: 'peau de pierre',
+  foudre: 'peau électrique',
+};
+// With its article: "la peau de lave", "l'écorce d'épines".
+const theSkin = (k: SkinStatus) => (k === 'saignement' ? 'l’' : 'la ') + SKIN_NAMES[k];
+const TheSkin = (k: SkinStatus) => theSkin(k).charAt(0).toUpperCase() + theSkin(k).slice(1);
 
 // A number written the French way (decimal comma).
 const fr = (n: number): string => String(n).replace('.', ',');
@@ -1669,6 +1688,42 @@ function toLine(e: DomainEvent, { name, pseudo, at, players }: Lookups): Line | 
         t: 'statut',
         txt: `${name(e.side)} est piégé par un gag${e.stacked ? ' (encore plus longtemps)' : ''} : marteau ${e.hammer} %, TNT ${e.tnt} %, peau de banane ${e.banana} % (${turns(e.turns)}) !`,
         o: { c: e.side, k: 'gag' },
+      };
+    case 'charmed':
+      return {
+        t: 'statut',
+        txt: `${name(e.side)} est charmé${e.stacked ? ' encore plus longtemps' : ''} (${turns(e.turns)}) : il n'ose plus frapper de toutes ses forces`,
+        o: { c: e.side, k: 'charme', n: e.turns, st: e.stacked ? 1 : 0 },
+      };
+    case 'charmResisted':
+      return {
+        t: 'statut',
+        txt: `${name(e.side)} résiste au charme de ${name(e.by)} !`,
+        o: { c: e.side, k: 'charme_rate', by: e.by },
+      };
+    case 'charmHeld':
+      return {
+        t: 'statut',
+        txt: `CHARMÉ ! ${name(e.side)} n'ose pas frapper ${name(e.target)} : ${e.pct} % de son coup (${e.before} → ${e.after})`,
+        o: { c: e.side, k: 'charme_coup', cible: e.target, p: e.pct, n: e.after },
+      };
+    case 'skinGained':
+      return {
+        t: 'statut',
+        txt: `${name(e.side)} se couvre d'une ${SKIN_NAMES[e.status]} (${e.chance} % par coup reçu${e.turns ? `, ${turns(e.turns)}` : ''}) : qui la touche le paie !`,
+        o: { c: e.side, k: 'peau', s: e.status, n: e.turns },
+      };
+    case 'skinContact':
+      return {
+        t: 'statut',
+        txt: `CONTACT ! ${name(e.attacker)} touche ${theSkin(e.status)} de ${name(e.side)}`,
+        o: { c: e.side, k: 'peau_contact', s: e.status, to: e.attacker },
+      };
+    case 'skinEnded':
+      return {
+        t: 'finstatut',
+        txt: `${TheSkin(e.status)} de ${name(e.side)} tombe`,
+        o: { c: e.side, k: 'peau', s: e.status },
       };
     case 'gagSprung':
       return {

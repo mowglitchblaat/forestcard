@@ -59,6 +59,8 @@ import { effects as scalingStrikes } from '../mechanics/scaling-strikes.ts';
 import { effects as ultimates } from '../mechanics/ultimates.ts';
 import { effects as terrain } from '../mechanics/terrain.ts';
 import { effects as magicModes } from '../mechanics/magic-modes.ts';
+import { effects as charm } from '../mechanics/charm.ts';
+import { effects as skin } from '../mechanics/skin.ts';
 import type { EffectData } from '../model/card.ts';
 import type { EffectType } from '../model/types.ts';
 import { emit, id, type Combat } from './combat.ts';
@@ -126,6 +128,8 @@ export const rules = (): Record<EffectType, EffectRule> =>
     ...ultimates,
     ...terrain,
     ...magicModes,
+    ...charm,
+    ...skin,
   });
 
 export function applyEffect(
@@ -201,6 +205,7 @@ function undoStatusesLater(
     fracture: M.status.fractures[0] && { ...M.status.fractures[0] },
     rootings: M.status.rootings.slice(),
     contamination: M.status.contamination,
+    charm: M.status.charm,
     stunTurns: M.status.stunTurns,
     nextAttackCancelled: M.status.nextAttackCancelled,
     nextAttackBlocked: M.status.nextAttackBlocked,
@@ -243,6 +248,10 @@ function undoStatusesLater(
     if (M.status.contamination && !before.contamination) {
       M.status.contamination = null;
       statusEnds(M, 'contamination');
+    }
+    if (M.status.charm && !before.charm) {
+      M.status.charm = null;
+      statusEnds(M, 'charm');
     }
     M.status.stunTurns = Math.min(M.status.stunTurns, before.stunTurns);
     M.status.nextAttackCancelled = Math.min(

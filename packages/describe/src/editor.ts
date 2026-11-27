@@ -136,6 +136,11 @@ export const EDITOR_FIELDS = {
     'Enracinement : épineux (chaque frappe le blesse), empoisonné (chaque frappe l’empoisonne) ou inhibiteur (pas d’ultime)',
     ['epineux', 'empoisonne', 'inhibiteur'],
   ],
+  pstatut: [
+    'Peau : le statut posé à qui la touche (lave = brûlure, épines = saignement, givre = gel, toxique = poison, maudite = malédiction, pierre = fracture, électrique = foudre)',
+    ['brulure', 'saignement', 'gel', 'poison', 'malediction', 'fracture', 'foudre'],
+  ],
+  stours: ['Peau : tours du statut posé à l’attaquant (2 par défaut)', 'n'],
   ptours: ['Enracinement empoisonné : tours du poison posé à chaque frappe (2 par défaut)', 'n'],
   msaignniv: ['Mutation niveau II : niveau du saignement (vide ou 0 = pas de saignement)', 'n'],
   fchance: ['Chance de se blesser en attaquant (%)', 'n'],
@@ -461,6 +466,18 @@ export const EDITOR_PASSIVES: Record<PassiveType, EditorEntry> = {
   visee_maintenue: [
     '🎯 Visée maintenue (Ciblage) : quand un ciblage de la carte est utilisé, X % de chances de le garder pour le coup suivant, encore et encore (valeur dans Réglages > Niveaux)',
   ],
+  charme: [
+    '💗 Charme : à X % de chances, chaque coup charme la cible pendant X tours (2 par défaut) : ses coups d’attaque de base ne font plus que 0 à 65 % de leurs dégâts',
+    'chance',
+    'tours',
+  ],
+  peau: [
+    '🪨 Peau (contact) : à X % de chances (100 par défaut), chaque coup d’attaque de base reçu pose un statut à l’attaquant (ni ultime, ni souffle, ni effet : seulement le contact physique)',
+    'pstatut',
+    'chance',
+    'niveau',
+    'stours',
+  ],
   fils: [
     '🎭 Fils (Contrôle) : à X % de chances, chaque coup pose X fils ; au seuil (5 fils), X % de chances de prendre le contrôle de la carte, + par fil en plus (seuil, pas et coût dans Réglages > Niveaux)',
     'chance',
@@ -784,6 +801,20 @@ export const EDITOR_ULTIMATES: { readonly [K in EffectType]?: EditorEntry } = {
   ],
   verrouillage_total: [
     "🎯 Verrouillage total (Ciblage) : verrouille l'adversaire : les 3 prochains coups du combattant sur lui sont des headshots (sans limite de tours)",
+  ],
+  charme: [
+    '💗 Charme : X % de chances (100 par défaut) de charmer la cible pendant X tours (2 par défaut) : ses coups d’attaque de base ne font plus que 0 à 65 % de leurs dégâts',
+    'ciblem',
+    'chance',
+    'tours',
+  ],
+  peau: [
+    '🪨 Peau (contact) : son combattant se couvre d’une peau pendant X tours (vide ou 0 = tout le combat) ; à X % de chances (100 par défaut), chaque coup d’attaque de base reçu pose un statut à l’attaquant',
+    'pstatut',
+    'chance',
+    'niveau',
+    'stours',
+    'tours',
   ],
   fils: [
     "🎭 Fils (Contrôle) : pose X fils sur l'adversaire ; au seuil (5 fils), X % de chances de prendre le contrôle de sa carte, + par fil en plus (seuil, pas et coût dans Réglages > Niveaux)",
@@ -1209,6 +1240,25 @@ export const EDITOR_MAGICS: { readonly [K in EffectType]?: EditorEntry } = {
   ],
   etreinte_maudite: [
     "💀 Étreinte maudite (Malédiction) : donne l'étreinte maudite à son combattant (à chaque attaque de l'adversaire, chacune de ses malédictions lui retire X ATQ de plus). Magie : tant qu'elle agit ; piège : jusqu'à la fin du combat",
+  ],
+  charme: [
+    '💗 Charme : X % de chances (100 par défaut) de charmer la cible pendant X tours (2 par défaut) : ses coups d’attaque de base ne font plus que 0 à 65 % de leurs dégâts',
+    'ciblem',
+    'chance',
+    'tours',
+  ],
+  peau: [
+    '🪨 Peau (contact) : son combattant se couvre d’une peau pendant X tours (vide ou 0 = tout le combat) ; à X % de chances (100 par défaut), chaque coup d’attaque de base reçu pose un statut à l’attaquant',
+    'pstatut',
+    'chance',
+    'niveau',
+    'stours',
+    'tours',
+  ],
+  atk_charme: [
+    'Attaque de base : X % de chances, à chaque coup, de charmer la cible (X tours, 2 par défaut)',
+    'chance',
+    'tours',
   ],
   fils: [
     "🎭 Fils (Contrôle) : pose X fils sur l'adversaire ; au seuil (5 fils), X % de chances de prendre le contrôle de sa carte, + par fil en plus (seuil, pas et coût dans Réglages > Niveaux)",

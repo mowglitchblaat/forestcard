@@ -2,6 +2,8 @@
 export { simulate, canonEffect, canonPassive } from './simulate.ts';
 export { simulateRelay, RELAY_ROUND_CAP } from './relay.ts';
 export { hasAmounts } from './mechanics/power.ts';
+export { SKIN_STATUSES } from './mechanics/skin.ts';
+export { CHARM_MAX } from './mechanics/charm.ts';
 export type { SimulateOptions, CombatResult } from './simulate.ts';
 export type * from './events.ts';
 export type { BadgeKey, StatusBadge } from './combat/badges.ts';
