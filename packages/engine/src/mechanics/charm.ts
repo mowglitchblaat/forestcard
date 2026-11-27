@@ -4,7 +4,7 @@
 // basic attack is charmed.
 //
 // It lasts `tours` turns of the charmed card (2 when empty). Laid again, the longer duration stays.
-// A purification removes it, a mist takes it, a contamination makes it last one turn more, a molt
+// A purification removes it, a rage breaks it (mechanics/rage.ts), a mist takes it, a contamination makes it last one turn more, a molt
 // sheds it (through the purification).
 //
 // Laid by:

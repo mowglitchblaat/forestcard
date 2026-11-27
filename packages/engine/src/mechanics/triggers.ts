@@ -261,6 +261,7 @@ export const TRIGGER_FACT: { [K in EventType]: Classify<K> | null } = {
   gagSprung: null,
   charmed: fact('status'),
   charmResisted: null,
+  charmBroken: null,
   charmHeld: null,
   skinGained: null,
   skinContact: null,

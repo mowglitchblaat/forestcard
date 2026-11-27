@@ -714,6 +714,8 @@ export type DomainEvent =
   // the strike's damage).
   | { type: 'charmed'; side: SideIndex; stacked: boolean; turns: number }
   | { type: 'charmResisted'; side: SideIndex; by: SideIndex }
+  // side's rage broke its charm (mechanics/rage.ts)
+  | { type: 'charmBroken'; side: SideIndex }
   | {
       type: 'charmHeld';
       side: SideIndex;

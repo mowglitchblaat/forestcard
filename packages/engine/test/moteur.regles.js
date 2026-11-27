@@ -2256,3 +2256,14 @@ test('peau (magie, 2 tours) : chaque statut a sa peau, puis elle tombe', () => {
     assert.ok(r.journal.slice(i + 1, i + 3).some(e => e.c === 0 && (e.t === 'statut' || e.t === 'stat')), s + ' : un statut posé sur l\'attaquant');
   }
 });
+
+test('charme : une rage brise le charme', () => {
+  const r = combat([C('A', 1, SOLIDE), MAG('Envoûtement', { type: 'charme', chance: 100, tours: 9 })], [C('B', 100, SOLIDE, { ultime: { type: 'rage', ragev: 10, ragetours: 2, apres_tours: 2, delai_tours: 0, utilisations: 1 } })], { regles: { maxTours: 12, maxProlong: 0 } });
+  const rage = lignes(r, e => e.c === 1 && /rage|RAGE|enrag/i.test(e.txt))[0];
+  assert.ok(rage, 'B entre en rage');
+  const brise = lignes(r, e => e.t === 'finstatut' && e.k === 'charme' && e.c === 1);
+  assert.equal(brise.length, 1, 'le charme tombe');
+  assert.ok(r.journal.indexOf(brise[0]) > r.journal.indexOf(lignes(r, e => e.t === 'statut' && e.k === 'charme')[0]));
+  const apres = r.journal.slice(r.journal.indexOf(brise[0]));
+  assert.equal(apres.filter(e => e.k === 'charme_coup').length, 0, 'plus aucun coup retenu ensuite');
+});
