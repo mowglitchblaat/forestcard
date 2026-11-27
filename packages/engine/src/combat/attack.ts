@@ -3,6 +3,7 @@
 // steps' order lives in moments.ts; the steps themselves, in mechanics/.
 
 import { gagOnHit } from '../mechanics/gag.ts';
+import { charmOnHit } from '../mechanics/charm.ts';
 import { bleedOnHit } from '../mechanics/bleed.ts';
 import { countHit, useCounterBonus } from '../mechanics/counter.ts';
 import { curseOnHit } from '../mechanics/curse.ts';
@@ -116,6 +117,7 @@ export const LAID_ON_HIT: Record<string, (c: Combat, q: EffectData, d: Side) => 
   foudre: lightningOnHit,
   fils: threadsOnHit,
   gag: gagOnHit,
+  charme: charmOnHit,
 };
 
 // A strike that landed: the statuses given by passives and by basic attack effects, in the order the

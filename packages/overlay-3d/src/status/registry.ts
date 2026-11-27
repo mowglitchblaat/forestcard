@@ -32,9 +32,11 @@ import {
   VOLT,
   WEAKNESS,
 } from './shaders-more.ts';
+import { CHARM, SKIN } from './shaders-contact.ts';
 
 // The lasting states shown like a status, though the engine does not call them statuses.
-export type LastingKind = 'mist' | 'roots' | 'mutation' | 'molt' | 'volt' | 'puppet';
+// skin: a skin worn (mechanics/skin.ts), its level the skin's kind (1 lava … 7 electric).
+export type LastingKind = 'mist' | 'roots' | 'mutation' | 'molt' | 'volt' | 'puppet' | 'skin';
 export type StatusFxKind = StatusKind | 'transcendence' | LastingKind;
 
 export const STATUS_FX: Readonly<Record<StatusFxKind, StatusFxDef>> = {
@@ -134,6 +136,16 @@ export const STATUS_FX: Readonly<Record<StatusFxKind, StatusFxDef>> = {
     acts: 'statut decharge / surcharge: the charges discharge',
     layer: 'detail',
   }),
+  charm: defineStatusFx({
+    shader: CHARM,
+    acts: 'statut charme_coup: the charmed card holds back a blow',
+    layer: 'cover',
+  }),
+  skin: defineStatusFx({
+    shader: SKIN,
+    acts: 'statut peau_contact: someone touched the skin',
+    layer: 'detail',
+  }),
   puppet: defineStatusFx({
     shader: PUPPET,
     acts: 'statut fils_cout: the puppeteer pays to hold the card',
@@ -164,4 +176,6 @@ export const STATUS_LABELS: Readonly<Record<StatusFxKind, string>> = {
   molt: 'Mue',
   volt: 'Charges électriques',
   puppet: 'Sous contrôle (fils)',
+  charm: 'Charme',
+  skin: 'Peau',
 };

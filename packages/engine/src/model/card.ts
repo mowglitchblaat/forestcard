@@ -158,6 +158,9 @@ export type EffectData = {
   tntdeg?: Num;
   banane?: Num;
   bananepct?: Num;
+  // Skin (mechanics/skin.ts): the status it lays on whoever touches it, and that status's turns.
+  pstatut?: string;
+  stours?: Num;
   // A magic's timing (on its effect): acts from the start of its X-th turn, for X turns.
   magdebut?: Num;
   magduree?: Num;

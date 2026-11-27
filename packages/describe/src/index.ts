@@ -9,7 +9,9 @@
 import {
   canonEffect,
   canonPassive,
+  CHARM_MAX,
   DEFAULT_LEVELS,
+  SKIN_STATUSES,
   hasAmounts,
   levelOf,
   rageFatigueLevel,
@@ -299,6 +301,45 @@ const laserBonus = (e: Fx) =>
 const scalingChance = (p: Fx) => (isEmpty(p.chance) ? 100 : nz(p.chance));
 const scalingStrikeTxt = (e: Fx) => `${nz(e.pctatq) > 0 ? nz(e.pctatq) : 100} % de son ATQ`;
 
+// Charm (mechanics/charm.ts) and skin (mechanics/skin.ts).
+const charmTurns = (e: Fx) => trs(Math.max(1, parseInt(String(e.tours), 10) || 2));
+const charmTxt = (e: Fx) =>
+  `${charmTurns(e)}, ses coups d'attaque de base ne font plus que 0 à ${CHARM_MAX} % de leurs dégâts, tirés à chaque coup`;
+const SKIN_NAMES: Record<string, string> = {
+  brulure: 'Peau de lave',
+  saignement: "Écorce d'épines",
+  gel: 'Peau de givre',
+  poison: 'Peau toxique',
+  malediction: 'Peau maudite',
+  fracture: 'Peau de pierre',
+  foudre: 'Peau électrique',
+};
+const skinOf = (e: Fx) =>
+  (SKIN_STATUSES as readonly string[]).includes(String(e.pstatut)) ? String(e.pstatut) : 'brulure';
+const skinLaid = (e: Fx): string => {
+  const k = skinOf(e);
+  const q = { ...e, niveau: isEmpty(e.niveau) ? 1 : e.niveau } as Fx;
+  const T = trs(Math.max(1, parseInt(String(e.stours), 10) || 2));
+  switch (k) {
+    case 'saignement':
+      return `${bleedTxt(q)} (${T})`;
+    case 'gel':
+      return `+1 niveau de gel (${T})`;
+    case 'poison':
+      return `${poisonTxt(q)} (${T})`;
+    case 'malediction':
+      return `malédiction ${curseTxt} (${T})`;
+    case 'fracture':
+      return `${fractureTxt(q)} (${T})`;
+    case 'foudre':
+      return 'un niveau de marque de foudre';
+    default:
+      return `${burnTxt(q)} (${T})`;
+  }
+};
+const skinTxt = (e: Fx) =>
+  `${SKIN_NAMES[skinOf(e)]} : ${isEmpty(e.chance) ? 100 : nz(e.chance)} % de chances, à chaque coup d'attaque de base reçu (ni ultime, ni souffle, ni effet), de poser à l'attaquant ${skinLaid(e)}`;
+
 // ── Passives ──
 type PassiveContext = { c: number; t: number; v: number; T: number };
 const PASSIVE_TEXT: Record<PassiveType, (p: Fx, x: PassiveContext) => string> = {
@@ -384,6 +425,9 @@ const PASSIVE_TEXT: Record<PassiveType, (p: Fx, x: PassiveContext) => string> = 
     ),
   etreinte_maudite: () =>
     `Étreinte maudite : à chaque attaque de l'adversaire, chacune de ses malédictions lui retire ${L.etreinte} ATQ de plus (rendue avec la malédiction)`,
+  charme: (p, { c }) =>
+    `Charme : ${c} % de chances, à chaque coup, de charmer la cible (${charmTxt(p)})`,
+  peau: (p) => skinTxt(p),
   fauche: (p) =>
     `Fauche : ${scalingChance(p)} % de chances, à chaque coup, de déchirer la cible : ${scytheBonus(p)}`,
   laser: (p) => `Tir laser : ${scalingChance(p)} % de chances, à chaque coup : ${laserBonus(p)}`,
@@ -682,6 +726,13 @@ const EFFECT_TEXT: Record<EffectType, (e: Fx, x: EffectContext) => string[]> = {
   atk_fils: attackEffect,
   gag: (e) => [`Pose un gag sur l'adversaire (${gagTxt(e)})`],
   atk_gag: attackEffect,
+  charme: (e) => [
+    `Charme : ${isEmpty(e.chance) ? 100 : nz(e.chance)} % de chances de charmer ${ciblT(e)} (${charmTxt(e)})`,
+  ],
+  atk_charme: attackEffect,
+  peau: (e) => [
+    `Couvre son combattant d'une ${skinTxt(e).charAt(0).toLowerCase()}${skinTxt(e).slice(1)}${nz(e.tours) > 0 ? `, pendant ${trs(nz(e.tours))}` : " jusqu'à la fin du combat"}`,
+  ],
   fauche: (e) => [
     `Fauche : un coup à part (${scalingStrikeTxt(e)}, ni esquive ni blocage), ${scytheBonus(e)}`,
   ],

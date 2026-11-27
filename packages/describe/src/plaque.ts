@@ -42,6 +42,17 @@ const BREATHS: Record<string, string> = {
   aleatoire: 'Souffle élémentaire',
 };
 
+// The skins (engine mechanics/skin.ts), by the status they lay.
+const SKIN_LABELS: Record<string, string> = {
+  brulure: 'Peau de lave',
+  saignement: "Écorce d'épines",
+  gel: 'Peau de givre',
+  poison: 'Peau toxique',
+  malediction: 'Peau maudite',
+  fracture: 'Peau de pierre',
+  foudre: 'Peau électrique',
+};
+
 const EFFECT_LABELS: Record<EffectType, (e: Fx) => string> = {
   atq_mod: (e) => (foe(e) ? 'Affaiblit l’ATQ' : down(e) ? 'Perd de l’ATQ' : 'Gagne de l’ATQ'),
   pv_mod: (e) => (foe(e) ? 'Affaiblit les PV' : down(e) ? 'Perd des PV' : 'Gagne des PV'),
@@ -138,6 +149,9 @@ const EFFECT_LABELS: Record<EffectType, (e: Fx) => string> = {
   atk_fauche: () => 'Coup de faux',
   laser: () => 'Tir laser',
   atk_laser: () => 'Coup laser',
+  charme: () => 'Charme',
+  atk_charme: () => 'Coup charmeur',
+  peau: (e) => SKIN_LABELS[String(e.pstatut)] ?? 'Peau de lave',
   reconstruction: () => 'Reconstruction',
   brisure_volonte: () => 'Brisure de volonté',
   verrouillage_total: () => 'Verrouillage total',
@@ -199,6 +213,8 @@ const PASSIVE_LABELS: Record<PassiveType, (p: Fx) => string> = {
   etreinte_maudite: () => 'Étreinte maudite',
   fauche: () => 'Fauche',
   laser: () => 'Tir laser',
+  charme: () => 'Charme',
+  peau: (p) => SKIN_LABELS[String(p.pstatut)] ?? 'Peau de lave',
   arme_vivante: () => 'Arme vivante',
   reconstruction: () => 'Reconstruction',
   visee_maintenue: () => 'Visée maintenue',

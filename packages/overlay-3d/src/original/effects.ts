@@ -22,6 +22,7 @@ import {
   type Box,
   type LegacyCanvas,
 } from './fx.ts';
+import { charmCast, charmHeld, skinContact, type Moment, type SkinKind } from './contact.ts';
 
 /** What the legacy effects need of a card: its root (the scene moves it), its face, its box. */
 export type LegacyCard = { root: Container; front: Container; box: { x: number; w: number } };
@@ -2433,8 +2434,62 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
     return done;
   }
 
+  // ════════ THE CHARM AND THE SKINS (original/contact.ts): played on the canvas, the cards jolted ════════
+  // Plays a moment; resolves at its `at` (the impact), or at its end.
+  function play(m: Moment, impact?: () => void): Promise<void> {
+    let hit: () => void = () => {};
+    const at = new Promise<void>((r) => (hit = r));
+    let fired = false;
+    const done = fx.add(m.dur, (x, t, u) => {
+      m.draw(x, t, u);
+      if (!fired && m.at !== undefined && t >= m.at) {
+        fired = true;
+        impact?.();
+        hit();
+      }
+    });
+    return m.at === undefined ? done : at;
+  }
+  const SKIN_KINDS = [
+    'brulure',
+    'saignement',
+    'gel',
+    'poison',
+    'malediction',
+    'fracture',
+    'foudre',
+  ];
+  const skinKind = (k: unknown): SkinKind =>
+    (SKIN_KINDS.includes(String(k)) ? String(k) : 'brulure') as SkinKind;
+
   return {
     isCut,
+    // a charm thrown by side `from` on side `to`: resolves when the heart locks around the target
+    charm(from: 0 | 1, to: 0 | 1): Promise<void> {
+      const a = NFX.cards[from],
+        b = NFX.cards[to];
+      if (!a || !b) return Promise.resolve();
+      return play(charmCast(K(a), K(b)), () => void nudge(b, [0, -6], [0, 2], 420));
+    },
+    // side `from`, charmed, holds back its blow on side `to` (pct: the share it keeps)
+    charmHeld(from: 0 | 1, to: 0 | 1, pct: number): Promise<void> {
+      const a = NFX.cards[from],
+        b = NFX.cards[to];
+      if (!a || !b) return Promise.resolve();
+      const dir = Math.sign(K(b).cx - K(a).cx) || 1;
+      void nudge(a, [-dir * 6, 0], [dir * 3, 0], 380);
+      return play(charmHeld(K(a), K(b), pct));
+    },
+    // side `from`'s skin touched by side `to`: it flares and strikes back; resolves at the impact
+    skinContact(from: 0 | 1, to: 0 | 1, kind: unknown): Promise<void> {
+      const h = NFX.cards[from],
+        a = NFX.cards[to];
+      if (!h || !a) return Promise.resolve();
+      const dir = Math.sign(K(a).cx - K(h).cx) || 1;
+      return play(skinContact(K(h), K(a), skinKind(kind)), () => {
+        void nudge(a, [dir * 12, -3], [-dir * 4, 1], 360);
+      });
+    },
     /** The two fighters, for the link and the mist (the scene sets them after each deal or relay). */
     setFighters(a: LegacyCard | null, b: LegacyCard | null) {
       NFX.cards = [a, b];

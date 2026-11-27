@@ -82,6 +82,8 @@ import { blazeEnd } from '../mechanics/blaze.ts';
 import { leechEnd } from '../mechanics/venom.ts';
 import { discharge, dischargeStrike, overloadEnd } from '../mechanics/overload.ts';
 import { gagEnd, gagHammer } from '../mechanics/gag.ts';
+import { charmedStrike, charmEnd } from '../mechanics/charm.ts';
+import { skinContact, skinsEnd } from '../mechanics/skin.ts';
 
 type TurnStep = Step<Side>;
 
@@ -139,6 +141,7 @@ const STRIKE: StrikeStep[] = [
   lightningStrike, // a lightning mark (level I) amplifies the next strike taken
   scytheStrike, // a scythe: more on a target that lost HP
   laserStrike, // a laser: more on a target with its HP
+  charmedStrike, // a charmed card holds back: 0 to 65 % of its strike (mechanics/charm.ts)
   shieldStrike, // a sedimentation shield takes the strike first, before the block and the reductions
   blockOrReduce,
   gainedDefenses, // block chance and reduction gained (mutation, reaction passive)
@@ -155,6 +158,7 @@ const LANDED: StrikeStep[] = [
   stunOnHit,
   detonationOnHit, // BEFORE the new statuses: it consumes those already laid
   statusesOnHit,
+  skinContact, // the target's skin: whoever touches it takes its status (mechanics/skin.ts)
   earthCounters, // the layers and charges of the card hit; a seismic counter-strike
 ];
 
@@ -201,6 +205,8 @@ const END_OF_TURN: TurnStep[] = [
   mutationQuiet, // 4 turns without one: one level of mutation more
   guardsEnd,
   gagEnd,
+  charmEnd,
+  skinsEnd, // a skin given for a few turns
   magicDurationEnd, // a magic with a duration is spent
 ];
 

@@ -25,7 +25,7 @@ import { CardStatuses } from '../status/host.ts';
 import { MATTERS, strikeNumber, type Matter } from './combat-number.ts';
 import { LifeBar } from './life-bar.ts';
 import type { StatusFxKind } from '../status/registry.ts';
-import { mechanicsOf } from './combat-fx.ts';
+import { mechanicsOf, skinLevel } from './combat-fx.ts';
 import { cardLayers, dressedCard, textResolutionFor, type Deps } from './common.ts';
 import { CombatTerrain } from './terrain.ts';
 import { dropTexture } from '../kit/draw.ts';
@@ -140,6 +140,7 @@ const STATUS_OF: Readonly<Record<string, StatusFxKind>> = {
   contamination: 'contamination',
   faiblesse: 'weakness',
   gag: 'gag',
+  charme: 'charm',
 };
 // statut lines that end a status
 const ENDS: Readonly<Record<string, StatusFxKind>> = {
@@ -249,6 +250,11 @@ export async function playCombat(ctx: CombatContext, m: CombatMessage): Promise<
       dy = (P.side + P.stack) / 2;
     const x = P.fighterX[i]! + out * ((P.fighter * W) / H / 2 + P.gap + (P.side * W) / H / 2);
     return { x, magic: P.y - dy, trap: P.y + dy };
+  };
+  // A fighter whose passive is a skin wears it from the start (mechanics/skin.ts): its kind's level.
+  const wearSkin = (f: Fighter, p: CombatPlayer) => {
+    const level = skinLevel(p.cards?.fighter?.passif);
+    if (level) f.statuses.set('skin', true, { level });
   };
   const fighterOf = (card: Card, i: number): Fighter => ({
     card,
@@ -489,6 +495,7 @@ export async function playCombat(ctx: CombatContext, m: CombatMessage): Promise<
       ...next.map((s) => s.fighter.card.flip(app)),
       ...players.map((p, i) => enterBar(l, i, p)),
     ]);
+    next.forEach((s, i) => players[i] && wearSkin(s.fighter, players[i]));
   }
 
   // Cards going away: back out to their player's edge, then destroyed.
@@ -551,6 +558,7 @@ export async function playCombat(ctx: CombatContext, m: CombatMessage): Promise<
     // they fly in from their player's edge, like at the deal (liked on the live)
     await inOrder([s], (x) => flyIn(x, c));
     await Promise.all([s.fighter.card.flip(app), enterBar(l, c, p)]);
+    wearSkin(s.fighter, p);
     const of = num(l.raw['of']);
     if (l.t === 'relais' && of && l.n !== null)
       legacy.say(s.fighter.card, `Combattant ${l.n}/${of}`, '#fcd34d', true);

@@ -38,6 +38,20 @@ const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFi
 const sideOf = (v: unknown): 0 | 1 | null => (v === 0 || v === 1 ? v : null);
 const other = (c: 0 | 1): 0 | 1 => (c === 0 ? 1 : 0);
 
+// The skins (packages/engine mechanics/skin.ts), in the order of the skin shader's levels
+// (status/shaders-contact.ts): 1 lava … 7 electric.
+const SKINS = ['brulure', 'saignement', 'gel', 'poison', 'malediction', 'fracture', 'foudre'];
+const skinIndex = (k: unknown): number => SKINS.indexOf(String(k)) + 1 || 1;
+/** The level of the skin a fighter's passive gives (0: none); several passives: the first skin. */
+export function skinLevel(passif: Record<string, unknown> | null | undefined): number {
+  if (!passif) return 0;
+  const list = Array.isArray(passif['briques'])
+    ? (passif['briques'] as Record<string, unknown>[])
+    : [passif];
+  const skin = list.find((p) => p && p['type'] === 'peau');
+  return skin ? skinIndex(skin['pstatut']) : 0;
+}
+
 // a stat line's kind that raises, or lowers, what the card is worth
 const STAT_UP = new Set(['defense', 'esq', 'fureur', 'bonus']);
 const STAT_DOWN = new Set(['calcine']);
@@ -196,6 +210,8 @@ export function mechanicsOf(ctx: MechanicsContext) {
     }
     if (!on) {
       switch (k) {
+        case 'peau':
+          return f.statuses.set('skin', false);
         case 'brume':
           return ctx.legacy.mistEnd(c!);
         case 'enracinement':
@@ -219,6 +235,29 @@ export function mechanicsOf(ctx: MechanicsContext) {
       return;
     }
     switch (k) {
+      // the charm (original/contact.ts): a ribbon of hearts from the other side, a heart locks around
+      // the card; then the scene lays its status (the rose glass)
+      case 'charme':
+        if (c !== null && !raw['st']) await ctx.legacy.charm(other(c), c);
+        return;
+      case 'charme_rate':
+        return ctx.legacy.say(f.card, 'Résiste au charme !', '#f9a8d4');
+      case 'charme_coup': {
+        const to = sideOf(raw['cible']) ?? other(c!);
+        detach(f.statuses.tick('charm'));
+        return detach(ctx.legacy.charmHeld(c!, to, num(raw['p']) ?? 0));
+      }
+      // the skins: worn (its look on the card), touched (it flares and strikes back at the attacker;
+      // the status it lays follows as its own line)
+      case 'peau':
+        f.statuses.set('skin', true, { level: skinIndex(raw['s']) });
+        return detach(f.statuses.tick('skin'));
+      case 'peau_contact': {
+        if (!f.statuses.has('skin')) f.statuses.set('skin', true, { level: skinIndex(raw['s']) });
+        detach(f.statuses.tick('skin'));
+        const to = sideOf(raw['to']) ?? other(c!);
+        return ctx.legacy.skinContact(c!, to, raw['s']);
+      }
       // the laser (laser, atk_laser): the shooter's beam (original/effects.ts); the damage line comes
       // at the impact
       case 'laser': {

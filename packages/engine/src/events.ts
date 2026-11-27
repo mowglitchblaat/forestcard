@@ -61,7 +61,8 @@ export type StatusKind =
   | 'solid'
   | 'contamination'
   | 'weakness'
-  | 'gag';
+  | 'gag'
+  | 'charm';
 
 // A negative status a mist takes (mechanics/mist.ts).
 export type MistedStatus =
@@ -77,7 +78,18 @@ export type MistedStatus =
   | 'parasite'
   | 'rooting'
   | 'contamination'
-  | 'gag';
+  | 'gag'
+  | 'charm';
+
+// The status a skin lays on whoever touches it (mechanics/skin.ts, SKIN_STATUSES).
+export type SkinStatus =
+  | 'brulure'
+  | 'saignement'
+  | 'gel'
+  | 'poison'
+  | 'malediction'
+  | 'fracture'
+  | 'foudre';
 
 // A strike whose bonus depends on the target's HP (mechanics/scaling-strikes.ts).
 export type ScalingKind = 'fauche' | 'laser';
@@ -99,6 +111,7 @@ export type DispelledStatus =
   | 'contamination'
   | 'foudre'
   | 'gag'
+  | 'charme'
   | 'annule';
 
 // A positive status copied from the opponent (mechanics/status-sharing.ts).
@@ -695,6 +708,26 @@ export type DomainEvent =
       banana: number;
     }
   | { type: 'gagSprung'; side: SideIndex; gag: 'marteau' | 'tnt' | 'banane' | 'enclume' }
+  // Charm (mechanics/charm.ts): side is charmed (stacked: it already was; turns: its turns now); its
+  // target resisted an effect's charm (by: the card that tried); a charmed card's strike holds back
+  // (side: the charmed attacker; pct: the share of its damage it still deals, 0 to 65; before, after:
+  // the strike's damage).
+  | { type: 'charmed'; side: SideIndex; stacked: boolean; turns: number }
+  | { type: 'charmResisted'; side: SideIndex; by: SideIndex }
+  | {
+      type: 'charmHeld';
+      side: SideIndex;
+      target: SideIndex;
+      pct: number;
+      before: number;
+      after: number;
+    }
+  // Skin (mechanics/skin.ts): side wears a skin laying `status` on whoever touches it (turns: 0 for the
+  // whole combat; chance: its chance per strike); the attacker touched side's skin (the status laid
+  // follows as its own event); side's skin is gone.
+  | { type: 'skinGained'; side: SideIndex; status: SkinStatus; turns: number; chance: number }
+  | { type: 'skinContact'; side: SideIndex; attacker: SideIndex; status: SkinStatus }
+  | { type: 'skinEnded'; side: SideIndex; status: SkinStatus }
   // Distortion (mechanics/status-sharing.ts): `by` turns side's positive statuses against it. loss: the
   // % of strength the weakened ones lose; turned: rages (now fatigues) and double damages (now
   // curses); removed: mist, trap immunity.

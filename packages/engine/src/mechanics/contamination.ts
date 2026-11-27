@@ -55,6 +55,7 @@ function prolong(s: Side): number {
   z.fractures.forEach(more);
   z.frosts.forEach(more);
   z.rootings.forEach(more);
+  if (z.charm) more(z.charm);
   return n;
 }
 

@@ -52,6 +52,8 @@ import { type OverloadState, overloadState } from '../mechanics/overload.ts';
 import { type ForgeState, forgeState } from '../mechanics/forge.ts';
 import { type ThreadsState, threadsState } from '../mechanics/threads.ts';
 import { type GagState, gagState } from '../mechanics/gag.ts';
+import { type CharmState, charmState } from '../mechanics/charm.ts';
+import { type SkinState, skinState } from '../mechanics/skin.ts';
 import { type StatsState, statsState } from '../mechanics/stats.ts';
 import { type TriggerWatchState, triggerWatchState } from '../mechanics/triggers.ts';
 import type { Card, EffectData, Num } from '../model/card.ts';
@@ -126,6 +128,8 @@ export type Status = { turnsPlayed: number } & RageState &
   ForgeState &
   ThreadsState &
   GagState &
+  CharmState &
+  SkinState &
   StatsState &
   TriggerWatchState;
 
@@ -235,6 +239,8 @@ export const newStatus = (passives: EffectData[]): Status => ({
   ...forgeState(),
   ...threadsState(),
   ...gagState(),
+  ...charmState(),
+  ...skinState(),
   ...statsState(),
   ...triggerWatchState(),
 });
