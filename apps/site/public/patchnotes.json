@@ -1,5 +1,33 @@
 [
   {
+    "date": "2026-11-27",
+    "intro": "Le gel devient le même pour toutes les cartes, la nouvelle animation de combat montre enfin la Transcendance et les ceintures, et le site annonce les tournois.",
+    "groupes": [
+      {
+        "titre": "Combat",
+        "points": [
+          "Le gel a maintenant les mêmes valeurs pour toutes les cartes : 20 % d’attaque annulée et d’esquive perdue au givre, 50 % à la gelée, et la glace qui éclate inflige 20 dégâts."
+        ]
+      },
+      {
+        "titre": "Animations",
+        "points": [
+          "La Transcendance se voit enfin : une colonne de lumière dorée tombe sur la carte, avec auréole, rayons et éclair au sommet.",
+          "Le rebond de la foudre part du combattant vers sa magie ou son piège, même face cachée, et brise la carte quand il la détruit ; un piège détruit face cachée se retourne avant de se briser.",
+          "Les ceintures du championnat s’affichent sur les combattants, avec un bandeau pour les combats pour le titre, et la mutation ne rend plus la carte toute noire."
+        ]
+      },
+      {
+        "titre": "Site",
+        "points": [
+          "Quand un tournoi ouvre ses inscriptions, une fenêtre « Le tournoi est prêt ! » prévient à la connexion ceux qui ne sont pas encore inscrits.",
+          "Le tout premier booster ouvert (ou combat lancé) s’affiche maintenant correctement, même au premier chargement.",
+          "Les coffres-forts annoncent désormais « de nouvelles cartes rares à venir », sans nombre précis."
+        ]
+      }
+    ]
+  },
+  {
     "date": "2026-11-26",
     "intro": "Les coffres-forts de l’événement cachent maintenant un trésor à se partager, et la nouvelle animation de combat gagne en spectacle.",
     "groupes": [
