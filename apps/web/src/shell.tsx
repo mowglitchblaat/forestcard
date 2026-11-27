@@ -10,6 +10,7 @@ import { type ReactNode, useState } from 'react';
 import { AppSidebar } from '@/components/app-sidebar';
 import { GiftNotes } from '@/components/gift-notes';
 import { ReferralNote } from '@/components/referral-note';
+import { TournamentNote } from '@/components/tournament-note';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -121,6 +122,7 @@ function SignedIn({ session }: { session: Session }) {
         </div>
         <GiftNotes />
         <ReferralNote userId={userId} />
+        <TournamentNote userId={userId} />
       </SidebarInset>
     </SidebarProvider>
   );
