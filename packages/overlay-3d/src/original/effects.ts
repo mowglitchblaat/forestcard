@@ -2450,7 +2450,15 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
     });
     return m.at === undefined ? done : at;
   }
-  const SKIN_KINDS = ['brulure', 'saignement', 'gel', 'poison', 'malediction', 'fracture', 'foudre'];
+  const SKIN_KINDS = [
+    'brulure',
+    'saignement',
+    'gel',
+    'poison',
+    'malediction',
+    'fracture',
+    'foudre',
+  ];
   const skinKind = (k: unknown): SkinKind =>
     (SKIN_KINDS.includes(String(k)) ? String(k) : 'brulure') as SkinKind;
 

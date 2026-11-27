@@ -425,7 +425,8 @@ const PASSIVE_TEXT: Record<PassiveType, (p: Fx, x: PassiveContext) => string> = 
     ),
   etreinte_maudite: () =>
     `Étreinte maudite : à chaque attaque de l'adversaire, chacune de ses malédictions lui retire ${L.etreinte} ATQ de plus (rendue avec la malédiction)`,
-  charme: (p, { c }) => `Charme : ${c} % de chances, à chaque coup, de charmer la cible (${charmTxt(p)})`,
+  charme: (p, { c }) =>
+    `Charme : ${c} % de chances, à chaque coup, de charmer la cible (${charmTxt(p)})`,
   peau: (p) => skinTxt(p),
   fauche: (p) =>
     `Fauche : ${scalingChance(p)} % de chances, à chaque coup, de déchirer la cible : ${scytheBonus(p)}`,

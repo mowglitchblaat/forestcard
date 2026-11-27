@@ -89,7 +89,8 @@ export function skinContact(c: Combat, { a, d, ia, idd }: Attack, _st: Strike): 
   for (const g of skinGroups(d)) {
     if (a.hp <= 0 || over(c)) break;
     const first = g[0] as EffectData;
-    const q = g.length === 1 ? (roll(c, chanceOf(first)) ? first : undefined) : mergedSource(c, g, 100);
+    const q =
+      g.length === 1 ? (roll(c, chanceOf(first)) ? first : undefined) : mergedSource(c, g, 100);
     if (!q) continue;
     const status = skinStatusOf(q);
     emit(c, { type: 'skinContact', side: idd, attacker: ia, status });

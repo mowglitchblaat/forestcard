@@ -139,7 +139,11 @@ export function charmHeld(A: Box, B: Box, pct: number): Moment {
     s: R(7, 12) * S,
     t0: R(0, 0.25),
   }));
-  const puffs = Array.from({ length: 10 }, () => ({ dx: R(-0.5, 0.5), dy: R(-0.4, 0.4), s: R(0.6, 1.2) }));
+  const puffs = Array.from({ length: 10 }, () => ({
+    dx: R(-0.5, 0.5),
+    dy: R(-0.4, 0.4),
+    s: R(0.6, 1.2),
+  }));
   return {
     dur: 1.4,
     draw(x, t) {
@@ -275,7 +279,8 @@ export function skinContact(H: Box, A: Box, kind: SkinKind): Moment {
       }
       // 2. it strikes back
       const k = cl((t - T0) / FLY);
-      if (k > 0) drawStrike(x, kind, { hx, hy, tx, ty, len, S, k, t, dir, bits, matter, light, flare });
+      if (k > 0)
+        drawStrike(x, kind, { hx, hy, tx, ty, len, S, k, t, dir, bits, matter, light, flare });
       // 3. it lands on the attacker
       const h = t - T0 - FLY;
       if (h > 0) {
@@ -363,8 +368,7 @@ function drawFlare(
         x.lineWidth = 2 * S;
         x.beginPath();
         x.moveTo(hx, yy);
-        for (let s = 1; s <= 4; s++)
-          x.lineTo(hx + dir * (out * s) / 4, yy + R(-10, 10) * S);
+        for (let s = 1; s <= 4; s++) x.lineTo(hx + (dir * (out * s)) / 4, yy + R(-10, 10) * S);
         x.stroke();
         break;
       }
@@ -618,7 +622,13 @@ function drawLanding(
       x.fillStyle = '#b91c1c';
       for (let i = 0; i < 6; i++) {
         x.beginPath();
-        x.arc(tx + Math.cos(i * 1.1) * 20 * S, ty + Math.sin(i * 1.1) * 14 * S + q * 30 * S, 4 * S, 0, 7);
+        x.arc(
+          tx + Math.cos(i * 1.1) * 20 * S,
+          ty + Math.sin(i * 1.1) * 14 * S + q * 30 * S,
+          4 * S,
+          0,
+          7,
+        );
         x.fill();
       }
       break;
