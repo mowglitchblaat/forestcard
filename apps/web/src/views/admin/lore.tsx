@@ -41,6 +41,7 @@ import {
   setCountEnd,
   setLightningAbsorbed,
   setMapGlow,
+  setMapShip,
   setMapStorm,
   setPlaceRevealed,
 } from '@/data/lore';
@@ -798,6 +799,27 @@ function MapAdmin() {
           <option value="8">8</option>
           <option value="9">9</option>
           <option value="10">10 : ciel embrasé</option>
+        </NativeSelect>
+      </Field>
+      <Field label="Vaisseau (au-dessus du lieu qui détenait l'éclair ; son image reste secrète tant qu'il est caché)">
+        <NativeSelect
+          value={String(map.data.vaisseau)}
+          onChange={(e) => {
+            const stage = Number(e.target.value);
+            act.run(async () => {
+              await setMapShip(stage);
+              return (
+                ['Vaisseau caché.', 'Vaisseau au loin.', 'Le vaisseau descend.', 'Vaisseau posé.'][
+                  stage
+                ] ?? ''
+              );
+            });
+          }}
+        >
+          <option value="0">Caché</option>
+          <option value="1">1 : au loin, petit, haut dans la lueur</option>
+          <option value="2">2 : descend vers le lieu</option>
+          <option value="3">3 : posé au-dessus du lieu</option>
         </NativeSelect>
       </Field>
       {picture && (

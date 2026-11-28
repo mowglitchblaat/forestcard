@@ -20,6 +20,7 @@ import { fetchMirror, imageKeys, imageUrl } from '@/data/images';
 import {
   fetchChapters,
   fetchEvents,
+  fetchShipImage,
   fetchWorldMap,
   type LoreEvent,
   lightningHolders,
@@ -560,6 +561,7 @@ export function WorldMap() {
               <ElectricArcs key={`arcs-${place}`} shape={shape} />
             ))}
           <MapGlow level={map.data?.lueur ?? 0} x={glowX(places, holders)} />
+          <MapShip stage={map.data?.vaisseau ?? 0} places={places} holders={holders} />
           <MapStorm level={map.data?.tempete ?? 0} />
           <MapLightnings places={places} />
           {pins.map((p) => (
@@ -768,6 +770,51 @@ function MapGlow({ level, x }: { level: number; x: number }) {
       <div className="lore-sky-glow absolute inset-0" />
       <div className="lore-sky-rays absolute inset-0" />
     </div>
+  );
+}
+
+// The ship drawn by the lightning (Admin > Lore, lore_carte.vaisseau): 1 far away, small, high in the
+// violet glow; 2 coming down (it grows and nears the place that held the lightning, once per visit);
+// 3 landed over that place. It hovers slowly. Its picture is decrypted here (fetchShipImage).
+const SHIP = {
+  y: [0, 7, 0, 0],
+  w: [0, 7, 22, 24],
+  lift: [0, 0, 15, 11], // % above the place
+} as const;
+function MapShip({
+  stage,
+  places,
+  holders,
+}: {
+  stage: number;
+  places: Place[];
+  holders: Map<number, unknown>;
+}) {
+  const S = Math.max(0, Math.min(3, Math.round(stage)));
+  const image = useQuery({
+    queryKey: loreKeys.ship,
+    queryFn: fetchShipImage,
+    enabled: S > 0,
+    staleTime: Infinity,
+  });
+  if (!S || !image.data) return null;
+  const holder = places.find((p) => holders.has(p.id));
+  const x = glowX(places, holders);
+  const y = S === 1 ? SHIP.y[1] : Math.max(10, (holder?.y ?? 55) - (SHIP.lift[S] ?? 0));
+  return (
+    <img
+      src={image.data}
+      alt=""
+      draggable={false}
+      style={{
+        '--ship-x': `${x}%`,
+        '--ship-y': `${y}%`,
+        '--ship-w': `${SHIP.w[S] ?? 0}%`,
+        '--ship-from-y': `${SHIP.y[1]}%`,
+        '--ship-from-w': `${SHIP.w[1]}%`,
+      }}
+      className={S === 2 ? 'lore-ship lore-ship-descend' : 'lore-ship'}
+    />
   );
 }
 
