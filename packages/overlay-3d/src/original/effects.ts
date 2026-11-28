@@ -2227,6 +2227,118 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
     return impact;
   }
 
+  // ════════ REDUCED TO ASHES (combat.html, cendresFx): killed by a detonation, a card that would have
+  // come back burns instead: it turns sepia, then charred; a front of embers climbs from its bottom and
+  // the card goes with it, in flakes of ash and sparks. The card stays hidden (no shatter after). ════════
+  function cendres(c: LegacyCard): Promise<void> {
+    const k = K(c),
+      tw = Math.max(1, Math.round(k.w)),
+      th = Math.max(1, Math.round(k.h));
+    const face = faceCanvas(app, c);
+    // the face three times: as it is, sepia, charred (filtered once, not every frame)
+    const layer = (filter: string) => {
+      const cv = document.createElement('canvas');
+      cv.width = tw;
+      cv.height = th;
+      const g = cv.getContext('2d')!;
+      g.filter = filter;
+      g.drawImage(face, 0, 0, tw, th);
+      return cv;
+    };
+    const plain = layer('none'),
+      sepia = layer('sepia(1) saturate(2.2) brightness(.55) contrast(1.3)'),
+      charred = layer('grayscale(1) brightness(.18) contrast(1.6)');
+    c.root.visible = false;
+    const D = 2.6,
+      B0 = 0.75,
+      B1 = 2.05,
+      X0 = k.x,
+      Y0 = k.y;
+    // the flakes, from the bottom up as the front climbs
+    const F = Array.from({ length: 240 }, () => {
+      const u = Math.random(),
+        v = Math.random();
+      return {
+        x: X0 + u * k.w,
+        y: Y0 + v * k.h,
+        t: B0 + (1 - v) * (B1 - B0) * 0.85 + Math.random() * 0.15,
+        vx: k.w * (0.05 + Math.random() * 0.35),
+        vy: -k.h * (0.25 + Math.random() * 0.6),
+        s: 1 + Math.random() * 3.2,
+        r: Math.random() * 6,
+        w: Math.random() * 6.28,
+        e: Math.random() < 0.22,
+      };
+    });
+    void fx.add(D + 0.8, (x, t) => {
+      // the card: sepia, then charred; above the front only
+      const q = t <= B0 ? 0 : cl((t - B0) / (B1 - B0)),
+        yb = Y0 + k.h * (1 - q * q);
+      if (q < 1) {
+        x.save();
+        rr(x, X0, Y0, k.w, k.h, 12);
+        x.clip();
+        x.beginPath();
+        x.rect(X0 - 2, Y0 - 2, k.w + 4, yb - Y0 + 2);
+        x.clip();
+        const s1 = cl(t / 0.7),
+          s2 = cl((t - 0.65) / 0.6);
+        for (const [cv, a] of [
+          [plain, 1 - s1],
+          [sepia, s1 * (1 - s2)],
+          [charred, s2],
+        ] as const) {
+          if (a <= 0) continue;
+          x.globalAlpha = a;
+          x.drawImage(cv, X0, Y0, k.w, k.h);
+        }
+        x.restore();
+      }
+      // the front of embers
+      if (t > B0 && t < B1 + 0.1) {
+        x.save();
+        x.globalCompositeOperation = 'lighter';
+        const g = x.createLinearGradient(0, yb - k.h * 0.08, 0, yb + k.h * 0.05);
+        g.addColorStop(0, 'rgba(255,120,30,0)');
+        g.addColorStop(0.6, 'rgba(255,150,50,.85)');
+        g.addColorStop(1, 'rgba(255,60,0,0)');
+        x.fillStyle = g;
+        x.fillRect(X0 - 4, yb - k.h * 0.08, k.w + 8, k.h * 0.13);
+        x.restore();
+      }
+      for (const p of F) {
+        const a = t - p.t;
+        if (a <= 0) continue;
+        const u = a / 1.6;
+        if (u >= 1) continue;
+        const px = p.x + p.vx * a + Math.sin(p.w + a * 3) * 6,
+          py = p.y + p.vy * a * (1 + a * 0.4);
+        if (p.e) {
+          x.save();
+          x.globalCompositeOperation = 'lighter';
+          orb(
+            x,
+            px,
+            py,
+            p.s * 2.2,
+            `rgba(255,${150 + Math.floor(80 * (1 - u))},60,${1 - u})`,
+            'rgba(255,80,0,0)',
+          );
+          x.restore();
+        } else {
+          x.save();
+          x.translate(px, py);
+          x.rotate(p.r + a * 4);
+          x.fillStyle = `rgba(${(165 - 70 * u) | 0},${(155 - 65 * u) | 0},${(145 - 60 * u) | 0},${0.95 * (1 - u)})`;
+          x.fillRect(-p.s, -p.s * 0.55, p.s * 2, p.s * 1.1);
+          x.restore();
+        }
+      }
+    });
+    setTimeout(() => flot(fx, k, 'RÉDUIT EN CENDRES', '#fdba74', true), 400);
+    return wait(3000);
+  }
+
   // ════════ THE TRANSCENDENCE (combat.html: a golden aura, a halo without its cross; modernised):
   // a pillar of golden light falls on the card from above, the card rises into it; a halo forms over
   // it, rays turn behind it, motes of light climb; a flash and a ring of light at the peak, then the
@@ -2500,6 +2612,7 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
     programActivate: (c: LegacyCard) => activFx(c),
     // the card breaks (the legacy's briser); resolves once it has burst, its pieces still falling
     shatter: (c: LegacyCard) => briser(c),
+    ashes: (c: LegacyCard) => cendres(c),
     ultimate: (c: LegacyCard) => aura(c),
     // the breath of side `from` on side `to`, of an element (the engine's: brulure, gel, foudre…)
     breath(from: 0 | 1, to: 0 | 1, el: string) {
