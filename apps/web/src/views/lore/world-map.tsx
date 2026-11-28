@@ -800,7 +800,7 @@ function MapShip({
   if (!S || !image.data) return null;
   const holder = places.find((p) => holders.has(p.id));
   const x = glowX(places, holders);
-  const y = S === 1 ? SHIP.y[1] : Math.max(10, (holder?.y ?? 55) - SHIP.lift[S]);
+  const y = S === 1 ? SHIP.y[1] : Math.max(10, (holder?.y ?? 55) - (SHIP.lift[S] ?? 0));
   return (
     <img
       src={image.data}
@@ -809,7 +809,7 @@ function MapShip({
       style={{
         '--ship-x': `${x}%`,
         '--ship-y': `${y}%`,
-        '--ship-w': `${SHIP.w[S]}%`,
+        '--ship-w': `${SHIP.w[S] ?? 0}%`,
         '--ship-from-y': `${SHIP.y[1]}%`,
         '--ship-from-w': `${SHIP.w[1]}%`,
       }}
