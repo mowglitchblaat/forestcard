@@ -1,5 +1,26 @@
 [
   {
+    "date": "2026-11-28",
+    "intro": "Deux nouveaux pouvoirs arrivent en combat, le Charme et les Peaux, et la nouvelle animation de combat accueille le Glas.",
+    "groupes": [
+      {
+        "titre": "Combat",
+        "points": [
+          "Nouveau statut négatif, le Charme : pendant quelques tours, la carte charmée ne frappe plus qu’à une partie de sa force (de 0 à 65 % de son coup, tiré à chaque attaque), et une rage brise le charme.",
+          "Nouvelles Peaux (lave, épines, givre, toxique, maudite, pierre, électrique) : chaque attaque qui touche la carte peut renvoyer à l’attaquant une brûlure, un saignement, du gel, du poison, une malédiction, une fracture ou de la foudre."
+        ]
+      },
+      {
+        "titre": "Animations",
+        "points": [
+          "Le Charme (verre rose et petits cœurs) et chacune des sept Peaux ont leur effet dans la nouvelle animation de combat.",
+          "Le Glas y fait aussi son entrée : cloche qui sonne, faux spectrale, et son ombre qui avance sur la carte comme sur la barre de vie.",
+          "Une carte tuée par une détonation alors qu’elle allait se réanimer part maintenant en cendres."
+        ]
+      }
+    ]
+  },
+  {
     "date": "2026-11-27",
     "intro": "Le gel devient le même pour toutes les cartes, la nouvelle animation de combat montre enfin la Transcendance et les ceintures, et le site annonce les tournois.",
     "groupes": [
