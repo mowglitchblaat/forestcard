@@ -2286,7 +2286,14 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
     const F: { i: number; j: number; d: number; vx: number; vy: number; r: number }[] = [];
     for (let j = 0; j < L; j++)
       for (let i = 0; i < C; i++)
-        F.push({ i, j, d: (i / C) * 0.6 + R(0, 0.3), vx: R(0.4, 1.5), vy: R(-1.4, -0.4), r: R(-5, 5) });
+        F.push({
+          i,
+          j,
+          d: (i / C) * 0.6 + R(0, 0.3),
+          vx: R(0.4, 1.5),
+          vy: R(-1.4, -0.4),
+          r: R(-5, 5),
+        });
     // the scythe: a glowing crescent blade sweeping the card in an arc, with its trail
     const lame = (
       x: CanvasRenderingContext2D,
@@ -2338,7 +2345,8 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
         gr.addColorStop(0.5, '#c4b5fd');
         gr.addColorStop(1, '#7c3aed');
         x.fillStyle = gr;
-        for (let n = 5; n >= 1; n--) lame(x, cx0, cy0, R0, a + n * 0.09, fade * 0.13 * (6 - n), 0.16);
+        for (let n = 5; n >= 1; n--)
+          lame(x, cx0, cy0, R0, a + n * 0.09, fade * 0.13 * (6 - n), 0.16);
         lame(x, cx0, cy0, R0, a, fade, 0.16);
         x.globalAlpha = fade * 0.7;
         x.strokeStyle = '#ede9fe';
@@ -2349,8 +2357,7 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
         x.restore();
       }
       // reaped: the grey card, then its pieces flying away
-      if (t >= 1.1 && t < 1.25 && gone)
-        x.drawImage(tex, k.x, k.y, k.w, k.h);
+      if (t >= 1.1 && t < 1.25 && gone) x.drawImage(tex, k.x, k.y, k.w, k.h);
       if (t < 1.25) return;
       for (const f of F) {
         const q = cl((t - 1.25 - f.d) / 1.6);
