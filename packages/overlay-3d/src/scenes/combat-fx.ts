@@ -235,6 +235,14 @@ export function mechanicsOf(ctx: MechanicsContext) {
       return;
     }
     switch (k) {
+      // killed by a detonation, a card that would have come back burns to ashes (legacy cendresFx);
+      // the knell takes it with no ashes (legacy: « Pas de retour… »)
+      case 'anti_rea':
+        f.statuses.clear();
+        detach(f.marks.clear());
+        return ctx.legacy.ashes(f.card);
+      case 'glas_rea':
+        return ctx.legacy.say(f.card, 'Pas de retour…', '#a78bfa');
       // the charm (original/contact.ts): a ribbon of hearts from the other side, a heart locks around
       // the card; then the scene lays its status (the rose glass)
       case 'charme':
