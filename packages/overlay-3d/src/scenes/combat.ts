@@ -875,7 +875,12 @@ export async function playCombat(ctx: CombatContext, m: CombatMessage): Promise<
               ...(l.k === 'glas_recul' && l.n !== null ? { skulls: l.n } : {}),
             });
           else if (on && l.k === 'glas_mort') bar.knell({ threshold: 100 });
-          if (l.k === 'glas_monte' || l.k === 'glas_recul') return;
+          // the same shadow on the card: its front follows the bar (status/shaders.ts, KNELL)
+          if (on && l.k === 'glas') return f.statuses.set('knell', true, { level: 0 });
+          if (l.k === 'glas_monte' || l.k === 'glas_recul') {
+            if (on && threshold !== null) f.statuses.set('knell', true, { level: threshold });
+            return;
+          }
         }
         if (on && l.k === 'purif') {
           // a purification takes every status but the stun

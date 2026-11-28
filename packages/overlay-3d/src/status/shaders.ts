@@ -434,11 +434,11 @@ export const KNELL =
 void main(){` +
   HEAD +
   `
-  // the Knell: the picture dies from the left, as far as its level (1 to 3); behind the front its colour
-  // drains, it darkens and grains away; the front is ragged and faintly violet; a tick pushes it on
-  float lvl = clamp(uLevel, 1.0, 3.0);
+  // the Knell: the picture dies from the left, as far as its shadow on the life bar (uLevel: its
+  // threshold, 0 to 100 % of the max HP, scenes/combat.ts); behind the front its colour drains, it
+  // darkens and grains away; the front is ragged and faintly violet; a tick pushes it on
   float n = fbm(vec2(cuv.y * 7.0, t * 0.15));
-  float front = (0.12 + 0.17 * lvl + 0.06 * tk) * a;
+  float front = (clamp(uLevel, 0.0, 100.0) / 100.0 + 0.06 * tk) * a;
   float x = cuv.x + (n - 0.5) * 0.09;
   float dead = 1.0 - smoothstep(front - 0.08, front, x);
   vec2 drift = vec2(0.0, (fbm(cuv * 9.0 + t * 0.2) - 0.5) * 0.012 * dead);
