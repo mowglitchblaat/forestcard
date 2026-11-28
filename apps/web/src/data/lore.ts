@@ -19,6 +19,7 @@ const NumOrNull = z
 export const loreKeys = {
   chapters: ['lore', 'chapters'] as const,
   map: ['lore', 'map'] as const,
+  ship: ['lore', 'ship'] as const,
   events: ['lore', 'events'] as const,
 };
 export const EVENTS_REFRESH = 60 * 1000;
@@ -95,6 +96,7 @@ export type Place = z.infer<typeof Place>;
 // database filters), the admin gets everything.
 // tempete: the storm over the map, 0 (none) to 5 (80-tempete-et-intensite-orage.sql).
 // lueur: the violet glow in the sky, 0 (none) to 10 (96-lueur-ciel.sql).
+// vaisseau: the ship drawn by the lightning, 0 (hidden) to 3 (landed) (103-vaisseau.sql).
 // eclair_absorbe: the lightning absorbed, no place crackles any more (99-eclair-absorbe.sql). The whole
 // row is read, so
 // the map still loads before that column exists.
@@ -102,6 +104,7 @@ export async function fetchWorldMap(): Promise<{
   image: string | null;
   tempete: number;
   lueur: number;
+  vaisseau: number;
   eclairAbsorbe: boolean;
   places: Place[];
 }> {
@@ -121,6 +124,7 @@ export async function fetchWorldMap(): Promise<{
       image_path: z.string().nullable(),
       tempete: Num.default(0),
       lueur: Num.default(0),
+      vaisseau: Num.default(0),
       eclair_absorbe: z.boolean().default(false),
     })
     .nullable()
@@ -129,6 +133,7 @@ export async function fetchWorldMap(): Promise<{
     image: row?.image_path ?? null,
     tempete: row?.tempete ?? 0,
     lueur: row?.lueur ?? 0,
+    vaisseau: row?.vaisseau ?? 0,
     eclairAbsorbe: row?.eclair_absorbe ?? false,
     places: z
       .array(Place)
@@ -150,6 +155,34 @@ export async function setMapStorm(level: number): Promise<void> {
 export async function setMapGlow(level: number): Promise<void> {
   const lueur = Math.max(0, Math.min(10, Math.round(level)));
   await call(supabase.from('lore_carte').upsert({ id: 1, lueur }));
+}
+
+// The ship over the world map, 0 (hidden) to 3 (landed). Admin only.
+export async function setMapShip(stage: number): Promise<void> {
+  const vaisseau = Math.max(0, Math.min(3, Math.round(stage)));
+  await call(supabase.from('lore_carte').upsert({ id: 1, vaisseau }));
+}
+
+// The ship's picture: in the public repository, but encrypted (assets/cadres/vaisseau.bin: a 12-byte
+// IV, then AES-GCM); its key is readable by the players only once the ship shows (103-vaisseau.sql).
+// An object URL, or null while the key is out of reach.
+export async function fetchShipImage(): Promise<string | null> {
+  const row = z
+    .object({ cle: z.string() })
+    .nullable()
+    .parse(await call(supabase.from('lore_vaisseau').select('cle').eq('id', 1).maybeSingle()));
+  if (!row) return null;
+  const raw = Uint8Array.from(atob(row.cle), (ch) => ch.charCodeAt(0));
+  const key = await crypto.subtle.importKey('raw', raw, 'AES-GCM', false, ['decrypt']);
+  const res = await fetch('cadres/vaisseau.bin');
+  if (!res.ok) throw new Error(`Vaisseau : ${res.status}`);
+  const data = new Uint8Array(await res.arrayBuffer());
+  const plain = await crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv: data.slice(0, 12) },
+    key,
+    data.slice(12),
+  );
+  return URL.createObjectURL(new Blob([plain], { type: 'image/webp' }));
 }
 
 // The lightning absorbed (or back): its holder stops crackling on the world map. Admin only.

@@ -1084,6 +1084,40 @@
     opacity: 1;
   }
 }
+/* The ship over the world map (world-map.tsx, MapShip; lore_carte.vaisseau): placed by its centre
+   (--ship-x, --ship-y, --ship-w), a violet halo, a slow hover; coming down, it starts small and high
+   (--ship-from-y, --ship-from-w). */
+@utility lore-ship {
+  position: absolute;
+  left: var(--ship-x);
+  top: var(--ship-y);
+  width: var(--ship-w);
+  translate: -50% -50%;
+  pointer-events: none;
+  filter: drop-shadow(0 0 0.8vw rgb(190 110 255 / 0.75));
+  animation: lore-ship-hover 6s ease-in-out infinite;
+}
+@utility lore-ship-descend {
+  animation:
+    lore-ship-descend 14s ease-in-out both,
+    lore-ship-hover 6s ease-in-out 14s infinite;
+}
+@keyframes lore-ship-hover {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6%);
+  }
+}
+@keyframes lore-ship-descend {
+  from {
+    top: var(--ship-from-y);
+    width: var(--ship-from-w);
+    opacity: 0.75;
+  }
+}
 /* The storm over the world map (world-map.tsx, MapStorm; lore_carte.tempete): a darkened sky
    (--storm-dark), slanted rain from level 3 (--storm-rain), flashes lighting the sky
    (--storm-flash, played once per element) and lightning strikes that flicker then vanish. */
