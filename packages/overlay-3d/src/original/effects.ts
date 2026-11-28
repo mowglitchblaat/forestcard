@@ -2316,7 +2316,14 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
         if (p.e) {
           x.save();
           x.globalCompositeOperation = 'lighter';
-          orb(x, px, py, p.s * 2.2, `rgba(255,${150 + Math.floor(80 * (1 - u))},60,${1 - u})`, 'rgba(255,80,0,0)');
+          orb(
+            x,
+            px,
+            py,
+            p.s * 2.2,
+            `rgba(255,${150 + Math.floor(80 * (1 - u))},60,${1 - u})`,
+            'rgba(255,80,0,0)',
+          );
           x.restore();
         } else {
           x.save();
