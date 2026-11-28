@@ -224,6 +224,8 @@ export function mechanicsOf(ctx: MechanicsContext) {
           const nb = num(raw['nb']) ?? 0;
           return ctx.legacy.link(c!, null, nb > 0, nb);
         }
+        case 'glas':
+          return ctx.legacy.say(f.card, 'Le Glas se tait', '#e9d5ff');
         case 'marque':
           // a mark taken away: the blades above what is left go
           return ctx.legacy.marksDown(f.card, l.n ?? 0);
@@ -243,6 +245,17 @@ export function mechanicsOf(ctx: MechanicsContext) {
         return ctx.legacy.ashes(f.card);
       case 'glas_rea':
         return ctx.legacy.say(f.card, 'Pas de retour…', '#a78bfa');
+      // the Knell (legacy): its bell when laid, its retreat, and the death when the shadow reaches the
+      // HP (the scythe, the card in dust); the shadow on the life bar: scenes/combat.ts
+      case 'glas':
+        ctx.legacy.knellBell(f.card);
+        return ctx.legacy.say(f.card, '🔔 Le Glas sonne', '#c4b5fd', (num(raw['v']) ?? 0) >= 10);
+      case 'glas_recul':
+        return ctx.legacy.say(f.card, `Le Glas recule (${l.n ?? 0} 💀)`, '#e9d5ff');
+      case 'glas_mort':
+        f.statuses.clear();
+        detach(f.marks.clear());
+        return ctx.legacy.knellDeath(f.card);
       // the charm (original/contact.ts): a ribbon of hearts from the other side, a heart locks around
       // the card; then the scene lays its status (the rose glass)
       case 'charme':
