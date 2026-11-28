@@ -808,7 +808,11 @@ function MapAdmin() {
             const stage = Number(e.target.value);
             act.run(async () => {
               await setMapShip(stage);
-              return ['Vaisseau caché.', 'Vaisseau au loin.', 'Le vaisseau descend.', 'Vaisseau posé.'][stage] ?? '';
+              return (
+                ['Vaisseau caché.', 'Vaisseau au loin.', 'Le vaisseau descend.', 'Vaisseau posé.'][
+                  stage
+                ] ?? ''
+              );
             });
           }}
         >
