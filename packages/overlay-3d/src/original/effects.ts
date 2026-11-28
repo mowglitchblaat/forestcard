@@ -2227,6 +2227,159 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
     return impact;
   }
 
+  // ════════ THE KNELL'S BELL (combat.html, glasCloche): dark rings leave the top of the card, like the
+  // sound of a bell, and a bell swings over it. ════════
+  function glasCloche(c: LegacyCard): void {
+    const k = K(c),
+      cx = k.cx,
+      cy = k.y - k.h * 0.06;
+    void fx.add(1.6, (x, t) => {
+      for (let i = 0; i < 3; i++) {
+        const q = cl((t - i * 0.22) / 1.1);
+        if (q <= 0 || q >= 1) continue;
+        x.strokeStyle = `rgba(167,139,250,${0.75 * (1 - q)})`;
+        x.lineWidth = Math.max(2, k.w * 0.02) * (1 - q);
+        x.beginPath();
+        x.ellipse(cx, cy, k.w * (0.15 + q * 0.9), k.w * (0.08 + q * 0.45), 0, 0, 7);
+        x.stroke();
+      }
+      const a = Math.sin(Math.PI * cl(t / 1.2));
+      x.save();
+      x.globalAlpha = a;
+      x.font = `${Math.round(k.w * 0.22)}px serif`;
+      x.textAlign = 'center';
+      x.textBaseline = 'middle';
+      x.translate(cx, cy);
+      x.rotate(Math.sin(t * 14) * 0.35 * (1 - cl(t / 1.2)));
+      x.fillText('🔔', 0, 0);
+      x.restore();
+    });
+  }
+
+  // ════════ THE KNELL HAS TOLLED (combat.html, glasMort): the world darkens, the bell tolls three times,
+  // a spectral scythe reaps the card, it turns grey, then crumbles into dust that flies away. The card
+  // stays hidden (no shatter after). ════════
+  async function glasMort(c: LegacyCard): Promise<void> {
+    const k = K(c),
+      tw0 = Math.max(1, Math.round(k.w)),
+      th0 = Math.max(1, Math.round(k.h));
+    const face = faceCanvas(app, c);
+    // the card in grey, prepared once (a filter per piece and per frame would freeze the screen)
+    const tex = document.createElement('canvas');
+    tex.width = tw0;
+    tex.height = th0;
+    const tg = tex.getContext('2d')!;
+    tg.filter = 'grayscale(1) brightness(.8)';
+    tg.drawImage(face, 0, 0, tw0, th0);
+    tg.filter = 'none';
+    tg.globalCompositeOperation = 'source-atop';
+    tg.fillStyle = 'rgba(124,58,237,.18)';
+    tg.fillRect(0, 0, tw0, th0);
+    tg.globalCompositeOperation = 'source-over';
+    const C = 12,
+      L = 17,
+      sw = k.w / C,
+      sh = k.h / L,
+      tw = tw0 / C,
+      th = th0 / L;
+    // pieces of the card, leaving from left to right
+    const F: { i: number; j: number; d: number; vx: number; vy: number; r: number }[] = [];
+    for (let j = 0; j < L; j++)
+      for (let i = 0; i < C; i++)
+        F.push({
+          i,
+          j,
+          d: (i / C) * 0.6 + R(0, 0.3),
+          vx: R(0.4, 1.5),
+          vy: R(-1.4, -0.4),
+          r: R(-5, 5),
+        });
+    // the scythe: a glowing crescent blade sweeping the card in an arc, with its trail
+    const lame = (
+      x: CanvasRenderingContext2D,
+      cx0: number,
+      cy0: number,
+      R0: number,
+      a: number,
+      al: number,
+      w: number,
+    ) => {
+      x.beginPath();
+      x.arc(cx0, cy0, R0, a - 0.42, a);
+      x.arc(cx0, cy0, R0 * (1 - w), a, a - 0.32, true);
+      x.closePath();
+      x.globalAlpha = al;
+      x.fill();
+    };
+    let gone = false;
+    void fx.add(4.6, (x, t) => {
+      const dk = Math.min(1, t / 0.5) * (1 - cl((t - 3.8) / 0.8));
+      x.save();
+      x.setTransform(1, 0, 0, 1, 0, 0);
+      x.fillStyle = `rgba(8,3,16,${0.6 * dk})`;
+      x.fillRect(0, 0, x.canvas.width, x.canvas.height);
+      x.restore();
+      for (let i = 0; i < 3; i++) {
+        const q = cl((t - i * 0.35) / 1.2);
+        if (q <= 0 || q >= 1) continue;
+        x.strokeStyle = `rgba(196,181,253,${0.8 * (1 - q)})`;
+        x.lineWidth = Math.max(3, k.w * 0.03) * (1 - q);
+        x.beginPath();
+        x.ellipse(k.cx, k.y, k.w * (0.2 + q * 1.6), k.w * (0.1 + q * 0.8), 0, 0, 7);
+        x.stroke();
+      }
+      if (t > 0.55 && t < 1.7) {
+        // the blade's arc goes through the card's centre, from top to bottom
+        const cx0 = k.x + k.w * 1.35,
+          cy0 = k.y - k.h * 0.05,
+          R0 = Math.hypot(k.cx - cx0, k.cy - cy0),
+          ac = Math.atan2(k.cy - cy0, k.cx - cx0),
+          q = ez(cl((t - 0.55) / 0.6)),
+          fade = 1 - cl((t - 1.3) / 0.4),
+          a = ac + 0.75 - 1.6 * q;
+        x.save();
+        x.shadowColor = 'rgba(167,139,250,1)';
+        x.shadowBlur = 40;
+        const gr = x.createLinearGradient(k.x, k.y, k.x + k.w, k.y + k.h);
+        gr.addColorStop(0, '#f5f3ff');
+        gr.addColorStop(0.5, '#c4b5fd');
+        gr.addColorStop(1, '#7c3aed');
+        x.fillStyle = gr;
+        for (let n = 5; n >= 1; n--)
+          lame(x, cx0, cy0, R0, a + n * 0.09, fade * 0.13 * (6 - n), 0.16);
+        lame(x, cx0, cy0, R0, a, fade, 0.16);
+        x.globalAlpha = fade * 0.7;
+        x.strokeStyle = '#ede9fe';
+        x.lineWidth = Math.max(2, k.w * 0.012);
+        x.beginPath();
+        x.arc(cx0, cy0, R0, a - 0.42, a);
+        x.stroke();
+        x.restore();
+      }
+      // reaped: the grey card, then its pieces flying away
+      if (t >= 1.1 && t < 1.25 && gone) x.drawImage(tex, k.x, k.y, k.w, k.h);
+      if (t < 1.25) return;
+      for (const f of F) {
+        const q = cl((t - 1.25 - f.d) / 1.6);
+        if (q >= 1) continue;
+        const px = k.x + f.i * sw + q * q * f.vx * k.w * 0.9 + Math.sin(t * 5 + f.j) * q * 6,
+          py = k.y + f.j * sh + q * f.vy * k.h * 0.45,
+          z = 1 - q * 0.55;
+        x.save();
+        x.translate(px + sw / 2, py + sh / 2);
+        x.rotate(f.r * q);
+        x.globalAlpha = 1 - q;
+        x.drawImage(tex, f.i * tw, f.j * th, tw, th, (-sw * z) / 2, (-sh * z) / 2, sw * z, sh * z);
+        x.restore();
+      }
+    });
+    await wait(1100);
+    flot(fx, k, 'LE GLAS A SONNÉ', '#c4b5fd', true);
+    c.root.visible = false;
+    gone = true;
+    await wait(2850);
+  }
+
   // ════════ REDUCED TO ASHES (combat.html, cendresFx): killed by a detonation, a card that would have
   // come back burns instead: it turns sepia, then charred; a front of embers climbs from its bottom and
   // the card goes with it, in flakes of ash and sparks. The card stays hidden (no shatter after). ════════
@@ -2613,6 +2766,8 @@ export function legacyEffects(app: Application, fx: LegacyCanvas) {
     // the card breaks (the legacy's briser); resolves once it has burst, its pieces still falling
     shatter: (c: LegacyCard) => briser(c),
     ashes: (c: LegacyCard) => cendres(c),
+    knellBell: (c: LegacyCard) => glasCloche(c),
+    knellDeath: (c: LegacyCard) => glasMort(c),
     ultimate: (c: LegacyCard) => aura(c),
     // the breath of side `from` on side `to`, of an element (the engine's: brulure, gel, foudre…)
     breath(from: 0 | 1, to: 0 | 1, el: string) {
